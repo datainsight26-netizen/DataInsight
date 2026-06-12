@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="DataInsight — Dashboard empresarial com gráficos avançados." />
+  <title>DataInsight • Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
+</head>
+<body>
+  <a href="#conteudo" class="skip-link">Ir para conteúdo</a>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Navegação principal">
+      {% include 'partials/navbar.html' %}
+    </aside>
+    <div class="main">
+      <header class="topbar" role="banner">
+        <div class="topbar__left">
+          <button class="topbar__btn topbar__mobile-toggle" onclick="abrirSidebar()" aria-label="Abrir menu"><i class="fa-solid fa-bars"></i></button>
+          <span class="topbar__greeting">Olá, <strong>{{ session.usuario_nome }}</strong></span>
+        </div>
+        <div class="topbar__actions">
+          <button class="topbar__btn" onclick="alternarTema()" aria-label="Alternar tema" id="btnTema"><i class="fa-solid fa-moon"></i></button>
+          <a class="topbar__btn" href="{{ url_for('pagina_configuracoes') }}" title="Configurações"><i class="fa-solid fa-gear"></i></a>
+        </div>
+      </header>
+
+      <main id="conteudo" class="pagina" role="main">
+        <div class="container">
+          <header class="pagina__cabecalho">
+            <div class="migalhas" aria-label="Você está em">Início &gt; Dashboard</div>
+            <h1 class="h1">Dashboard</h1>
+            <p class="p">Visão estratégica completa do desempenho e métricas de sua empresa.</p>
+          </header>
+
+          <!-- Filtros e Período -->
+          <section class="cartao" aria-label="Filtros de análise" style="margin-top: 24px;">
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+              <label for="periodoDash" style="font-weight: 600;">Período:</label>
+              <select class="form-select w-auto" id="periodoDash" aria-label="Selecionar período">
+                <option value="7">Últimos 7 dias</option>
+                <option value="30" selected>Últimos 30 dias</option>
+                <option value="90">Últimos 90 dias</option>
+                <option value="365">Este ano</option>
+              </select>
+            </div>
+          </section>
+          <!-- Métricas Resumidas -->
+          <section aria-label="Métricas principais de desempenho" style="margin-top: 32px;">
+            <h2 class="h2">Indicador de desempenho</h2>
+            <div class="grade grade--4" style="margin-top: 16px;">
+              <article class="cartao" style=" border-left: 4px solid var(--primaria);">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                  <div>
+                    <div class="cartao__meta">Receita Total</div>
+                    <div class="cartao__valor" style="color: var(--primaria); font-size: 28px;" id="kpiReceita">--</div>
+                  </div>
+                  <i class="fa-solid fa-chart-line" style="font-size: 32px; color: var(--primaria); opacity: 0.2;"></i>
+                </div>
+              </article>
+
+              <article class="cartao" style=" border-left: 4px solid var(--primaria);">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                  <div>
+                    <div class="cartao__meta">Lucro Líquido</div>
+                    <div class="cartao__valor" style="color: var(--sucesso); font-size: 28px;" id="kpiLucro">--</div>
+                  </div>
+                  <i class="fa-solid fa-hand-holding-dollar"
+                    style="font-size: 32px; color: var(--sucesso); opacity: 0.2;"></i>
+                </div>
+              </article>
+
+              <article class="cartao" style=" border-left: 4px solid var(--primaria);">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                  <div>
+                    <div class="cartao__meta">Despesas Operacionais</div>
+                    <div class="cartao__valor" style="color: var(--perigo); font-size: 28px;" id="kpiDespesas">--</div>
+                  </div>
+                  <i class="fa-solid fa-money-bill-trend-up"
+                    style="font-size: 32px; color: var(--perigo); opacity: 0.2;"></i>
+                </div>
+              </article>
+
+              <article class="cartao" style=" border-left: 4px solid var(--primaria);">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                  <div>
+                    <div class="cartao__meta">Margem de Lucro</div>
+                    <div class="cartao__valor" style="color: var(--info); font-size: 28px;" id="kpiMargem">--</div>
+                  </div>
+                  <i class="fa-solid fa-percent" style="font-size: 32px; color: var(--info); opacity: 0.2;"></i>
+                </div>
+              </article>
+            </div>
+          </section>
+          <!-- Gráficos Principais - Layout Otimizado -->
+          <section style="margin-top: 48px;">
+            <h2 class="h2" style="margin-bottom: 24px;">Análise de Desempenho</h2>
+
+            <!-- Linha Temporal - Full Width -->
+            <article class="cartao" style="margin-bottom: 24px;">
+              <h3 class="h2" style="font-size: 18px; margin-bottom: 20px;">
+                <i class="fa-solid fa-chart-line" style="color: var(--sucesso); margin-right: 8px;"></i>
+                Evolução Financeira (Receita, Despesa e Lucro)
+              </h3>
+              <div id="graficoLinhaGaleria" style="min-height: 400px;"></div>
+            </article>
+
+            <!-- Grid 2x2 para outros gráficos -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;" class="grid-responsivo">
+              <!-- Barras -->
+              <article class="cartao">
+                <h3 class="h2" style="font-size: 18px; margin-bottom: 20px;">
+                  <i class="fa-solid fa-bars" style="color: var(--primaria); margin-right: 8px;"></i>
+                  Despesas por Categoria
+                </h3>
+                <div id="graficoBarrasGaleria" style="min-height: 320px;"></div>
+              </article>
+
+              <!-- Pizza -->
+              <article class="cartao">
+                <h3 class="h2" style="font-size: 18px; margin-bottom: 20px;">
+                  <i class="fa-solid fa-chart-pie" style="color: var(--aviso); margin-right: 8px;"></i>
+                  Margem de Lucro (%)
+                </h3>
+                <div id="graficoPizzaGaleria" style="min-height: 320px;"></div>
+              </article>
+
+              <!-- Área -->
+              <article class="cartao" style="grid-column: 1 / -1;">
+                <h3 class="h2" style="font-size: 18px; margin-bottom: 20px;">
+                  <i class="fa-solid fa-water" style="color: var(--info); margin-right: 8px;"></i>
+                  Lucro ao Longo do Tempo
+                </h3>
+                <div id="graficoAreaGaleria" style="min-height: 350px;"></div>
+              </article>
+            </div>
+          </section>
+
+
+          <!-- Insights e Recomendações -->
+          <section class="cartao"
+            style="margin-top: 48px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05)); border-left: 4px solid var(--primaria);">
+            <h2 class="h2">Insights e Recomendações</h2>
+            <div style="margin-top: 16px;">
+              <div
+                style="background: var(--cartao); padding: 16px; border-radius: var(--raio); margin-bottom: 12px; border-left: 3px solid var(--sucesso);">
+                <p class="p"><strong>✓ Ponto Forte:</strong> Crescimento de 15% na receita total com redução de 8% nas
+                  despesas operacionais. Margem de lucro em expansão.</p>
+              </div>
+              <div
+                style="background: var(--cartao); padding: 16px; border-radius: var(--raio); margin-bottom: 12px; border-left: 3px solid var(--aviso);">
+                <p class="p"><strong>⚠ Atenção:</strong> A categoria B apresenta queda de 12% comparado com o período
+                  anterior. Recomenda-se revisar estratégia de marketing.</p>
+              </div>
+              <div style="background: var(--cartao); padding: 16px; border-radius: var(--raio);">
+                <p class="p"><strong>→ Recomendação:</strong> Aumentar investimento em Produto Premium que está gerando
+                  35% mais ROI. Reduzir custos de fornecedores secundários.</p>
+              </div>
+            </div>
+          </section>
+
+        </div>
+        {% include 'partials/footer.html' %}
+      </main>
+    </div>
+  </div>
+
+  {% include 'partials/navbar_mobile.html' %}
+  {% include 'partials/painel_acessibilidade.html' %}
+  {% include 'partials/chatbot.html' %}
+
+  <div vw class="enabled" id="Vlibras">
+    <div vw-access-button class="active"></div>
+    <div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div>
+  </div>
+
+  <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+  <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
+  <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/graficos-avancados.js') }}"></script>
+  <script>
+    function abrirSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sidebarOverlay').classList.add('active');}
+    function fecharSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active');}
+  </script>
+</body>
+</html>

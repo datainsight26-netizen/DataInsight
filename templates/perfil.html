@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="DataInsight — Perfil do usuário e histórico de análises." />
+  <title>DataInsight • Perfil</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
+</head>
+<body>
+  <a href="#conteudo" class="skip-link">Ir para conteúdo</a>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Navegação principal">
+      {% include 'partials/navbar.html' %}
+    </aside>
+    <div class="main">
+      <header class="topbar" role="banner">
+        <div class="topbar__left">
+          <button class="topbar__btn topbar__mobile-toggle" onclick="abrirSidebar()" aria-label="Abrir menu"><i class="fa-solid fa-bars"></i></button>
+          <span class="topbar__greeting">Olá, <strong>{{ session.usuario_nome }}</strong></span>
+        </div>
+        <div class="topbar__actions">
+          <button class="topbar__btn" onclick="alternarTema()" aria-label="Alternar tema" id="btnTema"><i class="fa-solid fa-moon"></i></button>
+          <a class="topbar__btn" href="{{ url_for('pagina_configuracoes') }}" title="Configurações"><i class="fa-solid fa-gear"></i></a>
+        </div>
+      </header>
+
+      <main id="conteudo" class="pagina" role="main">
+        <div class="container">
+          <section class="cartao perfil-resumo" aria-label="Resumo do perfil">
+            <div class="perfil-resumo__top">
+              <div class="perfil-avatar" aria-hidden="true">
+                <i class="fa-solid fa-user fa-3x"></i>
+              </div>
+              <div class="perfil-dados">
+                <h1><strong>{{ session.usuario_nome }}</strong></h1>
+                <div class="perfil-acoes">
+                  <button class="botao botao--primario" type="button" id="botaoEditarPerfil">
+                    <i class="fa-solid fa-pen"></i> Editar perfil
+                  </button>
+                  <a href="{{ url_for('logout') }}" class="botao botao--suave">
+                    <i class="fa-solid fa-right-from-bracket"></i> Trocar conta
+                  </a>
+                </div>
+              </div>
+          </section>
+          <div style="height: 30px;"></div>
+          <div class="grade grade--2" style="gap: 24px;">
+            <section class="cartao" aria-labelledby="titulo-ultimas-analises">
+              <header class="cartao__cabecalho">
+                <h2 id="titulo-ultimas-analises">Últimas análises</h2>
+                <p class="cartao__subtitulo">Veja suas análises recentes</p>
+              </header>
+              <div class="cartao__conteudo">
+                <ul class="lista" id="listaUltimasAnalises">
+                  {% if ultimas_analises and ultimas_analises | length > 0 %}
+                  {% for item in ultimas_analises %}
+                  <li class="lista__item">
+                    <div class="lista__texto">
+                      <strong>Análise</strong>
+                      <span class="lista__titulo">{{ item.período_display }}</span>
+                      <span class="lista__meta" style="display:block; font-size: 12px; color:#666;">{{ item.data }} às
+                        {{ item.hora }}</span>
+                    </div>
+                    <a class="botao botao--suave" href="{{ url_for('visualizar_analise_route', index=loop.index0) }}"
+                      aria-label="Abrir análise {{ item.período_display }}">
+                      <i class="fa-solid fa-eye"></i> Abrir
+                    </a>
+                  </li>
+                  {% endfor %}
+                  {% else %}
+                  <li class="lista__item" style="color: var(--texto);">
+                    Nenhuma análise realizada ainda. Gere uma análise na página Análises de Métricas e ela aparecerá
+                    aqui.
+                  </li>
+                  {% endif %}
+                </ul>
+
+                <div class="cartao__acoes">
+                  <a class="botao botao--suave" href="{{ url_for('pagina_analise') }}">
+                    <i class="fa-solid fa-chart-line"></i> Realizar nova análise
+                  </a>
+                </div>
+              </div>
+            </section>
+
+            <section class="cartao" aria-labelledby="titulo-ultimos-relatorios">
+              <header class="cartao__cabecalho">
+                <h2 id="titulo-ultimos-relatorios">Últimos relatórios</h2>
+                <p class="cartao__subtitulo">Acesse seus relatórios gerados recentemente</p>
+              </header>
+              <div class="cartao__conteudo">
+                <ul class="lista" id="listaUltimosRelatorios">
+                  {% if ultimos_relatorios and ultimos_relatorios | length > 0 %}
+                  {% for item in ultimos_relatorios %}
+                  <li class="lista__item">
+                    <div class="lista__texto">
+                      <strong>Relatório</strong>
+                      <span class="lista__titulo">{{ item.nome }}</span>
+                      <span class="lista__meta" style="display:block; font-size: 12px; color:#666;">{{ item.periodo }} •
+                        {{ item.data }}</span>
+                    </div>
+                    <a class="botao botao--suave" href="{{ url_for('visualizar_relatorio', index=loop.index0) }}"
+                      aria-label="Abrir relatório {{ item.nome }}">
+                      <i class="fa-solid fa-eye"></i> Abrir
+                    </a>
+                  </li>
+                  {% endfor %}
+                  {% else %}
+                  <li class="lista__item" style="color: var(--texto);">
+                    Nenhum relatório gerado ainda. Gere um relatório na página Relatórios e ele aparecerá aqui.
+                  </li>
+                  {% endif %}
+                </ul>
+
+              </div>
+            </section>
+          </div>
+        </div>
+
+        {% include 'partials/footer.html' %}
+      </main>
+    </div>
+  </div>
+
+  {% include 'partials/navbar_mobile.html' %}
+  {% include 'partials/painel_acessibilidade.html' %}
+  {% include 'partials/chatbot.html' %}
+
+  <div vw class="enabled" id="Vlibras">
+    <div vw-access-button class="active"></div>
+    <div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div>
+  </div>
+
+  <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+  <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
+  <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  <script>
+    function abrirSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sidebarOverlay').classList.add('active');}
+    function fecharSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active');}
+  </script>
+</body>
+</html>

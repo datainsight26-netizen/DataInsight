@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DataInsight • Configurações</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+
+
+  <div class="layout">
+    <!-- SIDEBAR - Navegação Fixa -->
+    <aside class="sidebar" aria-label="Navegação principal" id="sidebar">
+      <!-- Navegação lateral -->
+      {% include 'partials/navbar.html' %}
+
+    </aside>
+
+
+    <div class="main">
+      <header class="topbar" role="banner">
+        <div class="topbar__left">
+          <button class="topbar__btn topbar__mobile-toggle" onclick="abrirSidebar()" aria-label="Abrir menu">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <span class="topbar__greeting">Olá, <strong>{{ session.usuario_nome }}</strong></span>
+        </div>
+        <div class="topbar__actions">
+          <button class="topbar__btn" onclick="alternarTema()" aria-label="Alternar tema" id="btnTema">
+            <i class="fa-solid fa-moon"></i>
+          </button>
+          <a class="topbar__btn" href="{{ url_for('pagina_configuracoes') }}" title="Configurações">
+            <i class="fa-solid fa-gear"></i>
+          </a>
+          <a class="topbar__btn" href="{{ url_for('pagina_perfil') }}" title="Perfil">
+            <i class="fa-solid fa-user"></i>
+          </a>
+        </div>
+      </header>
+
+      <main id="conteudo" class="pagina" role="main">
+        <div class="container">
+          <header class="pagina__cabecalho">
+            <div class="migalhas">Início &gt; Configurações</div>
+            <h1 class="h1">Acessibilidade e preferências</h1>
+            <p class="p">Ajuste o site para melhor leitura e navegação.</p>
+          </header>
+
+          <section class="grade grade--2" aria-label="Preferências">
+            <article class="cartao">
+              <h2 class="h2">Tema</h2>
+              <p class="p" style="margin-top:6px;">Controle de Tema.</p>
+
+              <div style="display:flex; gap: 12px; flex-wrap: wrap; margin-top: 16px;">
+                <button class="botao botao--primario" type="button" aria-label="Alternar modo claro/escuro"
+                  onclick="alternarTema()">Alternar</button>
+              </div>
+            </article>
+
+            <article class="cartao">
+              <h2 class="h2">Modo acessibilidade</h2>
+              <p class="p" style="margin-top:6px;">Ative ou desative todos os recursos de acessibilidade.</p>
+
+              <div style="display:flex; align-items:center; gap: 12px; margin-top: 16px;">
+                <span>Ativar acessibilidade</span>
+                <label class="switch">
+                  <input type="checkbox" id="toggleAcessibilidade">
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </article>
+
+            <article class="cartao">
+              <h2 class="h2">Leitura</h2>
+              <p class="p" style="margin-top:6px;">Controle de fonte.</p>
+
+              <div style="display:flex; gap: 12px; flex-wrap: wrap; margin-top: 16px;">
+                <button id="botaoAumentar" class="botao botao-func" type="button"
+                  aria-label="Aumentar fonte">A+</button>
+                <button id="botaoDiminuir" class="botao botao-func" type="button"
+                  aria-label="Diminuir fonte">A-</button>
+                <button class="botao botao--suave" type="button" aria-label="Redefinir fonte"
+                  onclick="localStorage.removeItem('escalaFonte'); location.reload();">Reset</button>
+              </div>
+            </article>
+
+
+            <article class="cartao">
+              <h2 class="h2">Contato</h2>
+              <p class="p" style="margin-top:6px;">Clique para entrar em contato.</p>
+
+              <div style="display:flex; gap: 12px; flex-wrap: wrap; margin-top: 16px;">
+                <a style="text-decoration: none" href="{{ url_for('pagina_contato') }}" class="botao botao--primario"
+                  aria-label="Abrir página de contato">Entrar em Contato</a>
+              </div>
+            </article>
+          </section>
+
+        </div>
+
+        <!-- Footer -->
+        {% include 'partials/footer.html' %}
+
+      </main>
+    </div>
+  </div>
+
+
+  <!-- Painel Acessibilidade -->
+  {% include 'partials/painel_acessibilidade.html' %}
+
+  <!-- Chatbot Flutuante -->
+  {% include 'partials/chatbot.html' %}
+
+  <!-- Navegação móvel -->
+  {% include 'partials/navbar_mobile.html' %}
+
+  <div vw class="enabled" id="Vlibras">
+    <div vw-access-button class="active"></div>
+    <div vw-plugin-wrapper>
+      <div class="vw-plugin-top-wrapper"></div>
+    </div>
+  </div>
+
+  <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+
+  <script>
+    new window.VLibras.Widget('https://vlibras.gov.br/app');
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+  <script>
+    // Controle de escala de fonte
+    document.addEventListener('DOMContentLoaded', function() {
+      const checkboxAcessibilidade = document.getElementById('toggleAcessibilidade');
+      const botaoAumentar = document.getElementById('botaoAumentar');
+      const botaoDiminuir = document.getElementById('botaoDiminuir');
+      
+      const acessibilidadeAtiva = localStorage.getItem('acessibilidadeAtiva') !== 'false';
+      if (checkboxAcessibilidade) {
+        checkboxAcessibilidade.checked = acessibilidadeAtiva;
+        checkboxAcessibilidade.addEventListener('change', function() {
+          setAcessibilidadeAtiva(this.checked);
+        });
+      }
+
+      const obterEscalaFonte = () => {
+        const escala = document.documentElement.style.getPropertyValue('--escala-fonte') || '1';
+        return parseFloat(escala);
+      };
+
+      const definirEscalaFonte = (escala) => {
+        const novaEscala = Math.max(0.8, Math.min(1.5, escala));
+        document.documentElement.style.setProperty('--escala-fonte', novaEscala);
+        localStorage.setItem('escalaFonte', novaEscala);
+      };
+
+      if (botaoAumentar) {
+        botaoAumentar.addEventListener('click', () => {
+          const escalaAtual = obterEscalaFonte();
+          definirEscalaFonte(escalaAtual + 0.1);
+        });
+      }
+
+      if (botaoDiminuir) {
+        botaoDiminuir.addEventListener('click', () => {
+          const escalaAtual = obterEscalaFonte();
+          definirEscalaFonte(escalaAtual - 0.1);
+        });
+      }
+
+      const escalaSalva = localStorage.getItem('escalaFonte');
+      if (escalaSalva) {
+        document.documentElement.style.setProperty('--escala-fonte', escalaSalva);
+      }
+    });
+
+    // Sidebar mobile toggle
+    function abrirSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      if (sidebar) sidebar.classList.add('open');
+      if (overlay) overlay.classList.add('active');
+    }
+    function fecharSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      if (sidebar) sidebar.classList.remove('open');
+      if (overlay) overlay.classList.remove('active');
+    }
+
+    // Ícone tema
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('btnTema');
+      if (btn) {
+        const update = () => {
+          const dark = document.body.classList.contains('tema-escuro');
+          btn.innerHTML = dark
+            ? '<i class="fa-solid fa-sun"></i>'
+            : '<i class="fa-solid fa-moon"></i>';
+        };
+        update();
+        btn.addEventListener('click', () => setTimeout(update, 50));
+      }
+    });
+  </script>
+</body>
+
+</html>

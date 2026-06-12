@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DataInsight • Redefinir Senha</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  </head>
+
+  <body>
+    <header class="barra-topo" role="banner">
+      <div class="sidebar__header">
+        <a class="marca" href="{{ url_for('pagina_landing') }}" aria-label="DataInsight - Início">
+          <span class="marca__simbolo">
+            <i class="fa-solid fa-chart-column"></i>
+          </span>
+          DataInsight
+        </a>
+      </div>
+    </header>
+
+    <main class="autenticacao" role="main">
+      <section class="cartao autenticacao__cartao" aria-labelledby="titulo-reset">
+        
+        <h1 id="titulo-reset" class="autenticacao__titulo">Redefinir Senha</h1>
+        <p class="autenticacao__subtitulo">
+          Digite sua nova senha abaixo.
+        </p>
+
+        <form method="POST" style="margin-top: 24px; display: grid; gap: 16px;">
+          
+          {% if erro %}
+            <div style="background-color: #fee; color: #c00; padding: 12px; border-radius: 4px;">
+              {{ msg or 'Erro ao redefinir senha' }}
+            </div>
+          {% endif %}
+
+          
+          <div class="campo">
+            <label class="obrigatorio" for="nova_senha">Nova senha</label>
+            <div class="campo-senha">
+              <input
+                placeholder="Ex: Xxx20xx@"
+                class="entrada"
+                id="nova_senha"
+                name="nova_senha"
+                type="password"
+                required
+              />
+              <span class="olho-senha" onclick="togglePassword('nova_senha', this)" aria-label="Mostrar ou ocultar senha">
+                <i class="fa-solid fa-eye"></i>
+              </span>
+            </div>
+          </div>
+
+          
+          <div class="campo">
+            <label class="obrigatorio" for="confirmar_senha">Confirmar senha</label>
+            <div class="campo-senha">
+              <input
+                placeholder="Digite novamente"
+                class="entrada"
+                id="confirmar_senha"
+                name="confirmar_senha"
+                type="password"
+                required
+              />
+              <span class="olho-senha" onclick="togglePassword('confirmar_senha', this)" aria-label="Mostrar ou ocultar senha">
+                <i class="fa-solid fa-eye"></i>
+              </span>
+            </div>
+          </div>
+
+          <button class="botao botao--primario" type="submit">
+            Redefinir senha
+          </button>
+
+          <div class="autenticacao__links">
+            <a href="{{ url_for('pg_login') }}">Voltar para login</a>
+          </div>
+
+        </form>
+      </section>
+    </main>
+
+    <!-- u{2672} Painel Avan�ado de Acessibilidade -->
+  {% include 'partials/painel_acessibilidade.html' %}
+
+  <!-- Chatbot Flutuante -->
+  {% include 'partials/chatbot.html' %}
+
+    
+    <div vw class="enabled" id="Vlibras">
+      <div vw-access-button class="active"></div>
+      <div vw-plugin-wrapper>
+        <div class="vw-plugin-top-wrapper"></div>
+      </div>
+    </div>
+
+    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+    <script>
+      new window.VLibras.Widget('https://vlibras.gov.br/app')
+    </script>
+
+    <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  </body>
+</html>

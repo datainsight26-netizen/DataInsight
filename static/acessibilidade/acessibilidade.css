@@ -1,0 +1,613 @@
+/**
+ * =========================================================
+ * ESTILOS DO SISTEMA AVANÇADO DE ACESSIBILIDADE
+ * =========================================================
+ */
+
+/* ========== VARIÁVEIS CSS ==========*/
+:root {
+  --escala-fonte: 1;
+  
+  /* Cores padrão */
+  --cor-primaria: #2c3e50;
+  --cor-secundaria: #3498db;
+  --cor-sucesso: #27ae60;
+  --cor-aviso: #f39c12;
+  --cor-erro: #e74c3c;
+  --cor-fundo: #ffffff;
+  --cor-texto: #2c3e50;
+  --cor-borda: #ecf0f1;
+  --cor-foco: #FFD700;
+}
+
+/* ========== APLICAR ESCALA DE FONTE ==========*/
+body {
+  font-size: calc(16px * var(--escala-fonte));
+  line-height: calc(1.5 * var(--escala-fonte));
+  letter-spacing: calc(0.5px * var(--escala-fonte));
+}
+
+h1 {
+  font-size: calc(2rem * var(--escala-fonte));
+}
+
+h2 {
+  font-size: calc(1.75rem * var(--escala-fonte));
+}
+
+h3 {
+  font-size: calc(1.5rem * var(--escala-fonte));
+}
+
+h4, h5, h6 {
+  font-size: calc(1.25rem * var(--escala-fonte));
+}
+
+button, input, select, textarea {
+  font-size: calc(1rem * var(--escala-fonte));
+  padding: calc(10px * var(--escala-fonte));
+}
+
+/* ========== TEMA ESCURO ==========*/
+[data-tema-acessibilidade="escuro"] {
+  --cor-fundo: #1a1a1a;
+  --cor-texto: #e0e0e0;
+  --cor-borda: #333333;
+}
+
+[data-tema-acessibilidade="escuro"] body {
+  background-color: var(--cor-fundo);
+  color: var(--cor-texto);
+}
+
+[data-tema-acessibilidade="escuro"] a {
+  color: #64b5f6;
+}
+
+[data-tema-acessibilidade="escuro"] button,
+[data-tema-acessibilidade="escuro"] input,
+[data-tema-acessibilidade="escuro"] select,
+[data-tema-acessibilidade="escuro"] textarea {
+  background-color: #2a2a2a;
+  color: #e0e0e0;
+  border-color: #444;
+}
+
+/* ========== TEMA SEPIA ==========*/
+[data-tema-acessibilidade="sepia"] {
+  --cor-fundo: #f4ecd8;
+  --cor-texto: #5c4a42;
+}
+
+[data-tema-acessibilidade="sepia"] body {
+  background-color: var(--cor-fundo);
+  color: var(--cor-texto);
+  filter: sepia(0.15);
+}
+
+/* ========== TEMA LEITURA ==========*/
+[data-tema-acessibilidade="leitura"] body {
+  background-color: #f5f5dc;
+  color: #3e3e3e;
+  font-family: Georgia, serif;
+  line-height: 1.8;
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+[data-tema-acessibilidade="leitura"] h1,
+[data-tema-acessibilidade="leitura"] h2,
+[data-tema-acessibilidade="leitura"] h3 {
+  font-family: Georgia, serif;
+  color: #2c3e50;
+}
+
+/* ========== TEMA CONTRASTE ==========*/
+[data-tema-acessibilidade="contraste"] {
+  --cor-fundo: #000000;
+  --cor-texto: #FFFF00;
+}
+
+[data-tema-acessibilidade="contraste"] body {
+  background-color: var(--cor-fundo);
+  color: var(--cor-texto);
+  font-weight: 600;
+}
+
+[data-tema-acessibilidade="contraste"] button {
+  background-color: #FFFF00 !important;
+  color: #000000 !important;
+  border: 3px solid #FFFF00 !important;
+}
+
+[data-tema-acessibilidade="contraste"] a {
+  color: #FFFF00;
+  text-decoration: underline;
+}
+
+/* ========== ALTO CONTRASTE ==========*/
+.alto-contraste {
+  --cor-texto: #000000;
+  --cor-fundo: #FFFFFF;
+}
+
+.alto-contraste body {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+  font-weight: 500;
+}
+
+.alto-contraste button {
+  background-color: #000000 !important;
+  color: #FFFFFF !important;
+  border: 2px solid #000000 !important;
+  font-weight: 600;
+}
+
+.alto-contraste input,
+.alto-contraste select,
+.alto-contraste textarea {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+}
+
+.alto-contraste a {
+  color: #0000FF;
+  text-decoration: underline;
+}
+
+/* ========== MODO DYSLEXIA ==========*/
+.dyslexia-friendly {
+  --font-dyslexia: "Comic Sans MS", "Trebuchet MS", sans-serif;
+}
+
+.dyslexia-friendly body {
+  font-family: var(--font-dyslexia);
+  font-size: calc(18px * var(--escala-fonte)) !important;
+  line-height: 1.8 !important;
+  letter-spacing: 0.15em !important;
+  word-spacing: 0.25em !important;
+}
+
+.dyslexia-friendly p {
+  margin-bottom: calc(2rem * var(--escala-fonte));
+  text-align: left !important;
+}
+
+.dyslexia-friendly li {
+  margin-bottom: calc(1rem * var(--escala-fonte));
+}
+
+/* ========== SEM ANIMAÇÕES ==========*/
+.sem-animacoes,
+.sem-animacoes * {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* ========== MOVIMENTO REDUZIDO ==========*/
+.movimento-reduzido {
+  scroll-behavior: auto !important;
+}
+
+.movimento-reduzido * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* ========== ESPAÇAMENTO AMPLO ==========*/
+.espacamento-amplo {
+  --espacamento-multiplo: 1.5;
+}
+
+.espacamento-amplo body {
+  padding: calc(1rem * var(--espacamento-multiplo));
+}
+
+.espacamento-amplo p,
+.espacamento-amplo li,
+.espacamento-amplo button,
+.espacamento-amplo input {
+  margin: calc(1rem * var(--espacamento-multiplo));
+  padding: calc(0.75rem * var(--espacamento-multiplo));
+}
+
+.espacamento-amplo button,
+.espacamento-amplo input,
+.espacamento-amplo select {
+  min-height: calc(44px * var(--espacamento-multiplo));
+  min-width: calc(44px * var(--espacamento-multiplo));
+}
+
+/* ========== FOCO VISUAL ALTO ==========*/
+.foco-alto *:focus-visible {
+  outline: 4px solid #00CCFF !important;
+  outline-offset: 4px !important;
+  box-shadow: 
+    0 0 15px rgba(0, 204, 255, 0.8),
+    0 0 25px rgba(0, 204, 255, 0.6),
+    inset 0 0 10px rgba(0, 204, 255, 0.2) !important;
+}
+
+.foco-alto button:focus-visible {
+  background-color: rgba(0, 204, 255, 0.2) !important;
+  transform: scale(1.05);
+}
+
+/* ========== INDICADORES VISUAIS GLOBAIS ==========*/
+*:focus-visible {
+  outline: 3px solid var(--cor-foco) !important;
+  outline-offset: 2px !important;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--cor-foco) !important;
+  outline-offset: 2px !important;
+}
+
+/* ========== ACESSIBILIDADE DE BOTÕES ==========*/
+button {
+  cursor: pointer;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 10px 15px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+button:hover,
+button:focus {
+  opacity: 0.9;
+  transform: scale(1.02);
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+/* ========== ACESSIBILIDADE DE LINKS ==========*/
+a {
+  color: var(--cor-secundaria);
+  text-decoration: none;
+  position: relative;
+  transition: color 0.2s ease;
+}
+
+a:hover,
+a:focus {
+  text-decoration: underline;
+  color: var(--cor-primaria);
+}
+
+a:visited {
+  color: #6c5ce7;
+}
+
+/* ========== ACESSIBILIDADE DE INPUTS ==========*/
+input,
+select,
+textarea {
+  border: 2px solid var(--cor-borda);
+  border-radius: 4px;
+  padding: 10px;
+  font-family: inherit;
+  font-size: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--cor-secundaria);
+  box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+  outline: none;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #7f8c8d;
+  opacity: 0.8;
+}
+
+/* ========== TABELAS ACESSÍVEIS ==========*/
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: calc(1.5rem * var(--escala-fonte)) 0;
+}
+
+th,
+td {
+  padding: calc(12px * var(--escala-fonte));
+  text-align: left;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+th {
+  background-color: rgba(52, 152, 219, 0.1);
+  font-weight: 600;
+  color: var(--cor-primaria);
+}
+
+tr:hover {
+  background-color: rgba(52, 152, 219, 0.05);
+}
+
+/* ========== ACESSIBILIDADE DE GRÁFICOS ==========*/
+.chart-container {
+  position: relative;
+  margin: calc(1.5rem * var(--escala-fonte)) 0;
+  padding: calc(1rem * var(--escala-fonte));
+  border: 2px solid var(--cor-borda);
+  border-radius: 8px;
+}
+
+.desc-grafico {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: rgba(52, 152, 219, 0.05);
+  border-left: 4px solid #3498db;
+  border-radius: 4px;
+}
+
+.btn-desc-grafico {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  width: 100%;
+  text-align: left;
+  transition: background-color 0.2s ease;
+}
+
+.btn-desc-grafico:hover,
+.btn-desc-grafico:focus {
+  background-color: #2980b9;
+}
+
+.btn-desc-grafico[aria-expanded="true"] {
+  background-color: #2980b9;
+  border-radius: 4px 4px 0 0;
+}
+
+.conteudo-desc {
+  padding: 1rem;
+  background-color: white;
+  border: 1px solid #3498db;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+}
+
+.tabela-dados-grafico {
+  width: 100%;
+  margin-top: 1rem;
+  font-size: 14px;
+}
+
+.tabela-dados-grafico th,
+.tabela-dados-grafico td {
+  padding: 8px;
+  border-bottom: 1px solid #3498db;
+}
+
+.tabela-dados-grafico th {
+  background-color: #ecf0f1;
+  font-weight: 600;
+}
+
+/* ========== CORES PARA DALTONISMO ==========*/
+.deuteranopia-friendly {
+  filter: url(#deuteranopia);
+}
+
+.protanopia-friendly {
+  filter: url(#protanopia);
+}
+
+.tritanopia-friendly {
+  filter: url(#tritanopia);
+}
+
+.acromatopsia-friendly {
+  filter: url(#acromatopsia);
+}
+
+/* ========== PAINEL DE ACESSIBILIDADE ==========*/
+.painel-acessibilidade {
+  position: fixed;
+  right: -350px;
+  top: 0;
+  width: 350px;
+  height: 100vh;
+  background-color: var(--cor-fundo);
+  color: var(--cor-texto);
+  border-left: 3px solid #3498db;
+  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.2);
+  z-index: 9998;
+  overflow-y: auto;
+  transition: right 0.3s ease;
+}
+
+.painel-acessibilidade.aberto {
+  right: 0;
+}
+
+.painel-acessibilidade-header {
+  padding: 20px;
+  background-color: rgba(52, 152, 219, 0.1);
+  border-bottom: 2px solid #3498db;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.painel-acessibilidade-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.painel-acessibilidade-conteudo {
+  padding: 20px;
+}
+
+.grupo-controle {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.grupo-controle label {
+  display: block;
+  margin: 10px 0 5px 0;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.grupo-controle input[type="checkbox"],
+.grupo-controle input[type="radio"] {
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+.grupo-controle select,
+.grupo-controle input[type="range"] {
+  width: 100%;
+  margin-top: 5px;
+}
+
+/* ========== ATALHOS DE TECLADO ==========*/
+.info-atalhos {
+  padding: 10px;
+  background-color: rgba(52, 152, 219, 0.1);
+  border-radius: 4px;
+  font-size: 12px;
+  margin-top: 20px;
+}
+
+.info-atalhos p {
+  margin: 5px 0;
+  font-family: monospace;
+}
+
+.info-atalhos kbd {
+  background-color: #2c3e50;
+  color: white;
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+
+/* ========== NOTIFICAÇÕES ACESSÍVEIS ==========*/
+[role="status"],
+[aria-live="polite"],
+[aria-live="assertive"] {
+  position: relative;
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+[role="status"] {
+  background-color: rgba(39, 174, 96, 0.1);
+  border-left: 4px solid #27ae60;
+  color: #27ae60;
+}
+
+/* ========== RESPONSIVIDADE ==========*/
+@media (max-width: 768px) {
+  .painel-acessibilidade {
+    width: 100%;
+    right: -100%;
+  }
+
+  body {
+    padding: calc(15px * var(--escala-fonte));
+  }
+
+  button {
+    min-height: 48px;
+    min-width: 48px;
+  }
+}
+
+/* ========== IMPRESSÃO ==========*/
+@media print {
+  .painel-acessibilidade,
+  .alternar-acessibilidade {
+    display: none !important;
+  }
+
+  body {
+    color: #000;
+    background-color: #fff;
+  }
+}
+
+/* ========== PREFERÊNCIAS DO SISTEMA ==========*/
+@media (prefers-color-scheme: dark) {
+  :root {
+    --cor-fundo: #1a1a1a;
+    --cor-texto: #e0e0e0;
+    --cor-borda: #333333;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .alto-contraste {
+    filter: contrast(150%);
+  }
+
+  button {
+    border: 3px solid currentColor;
+  }
+}
+
+/* ========== UTILITÁRIOS ==========*/
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #000;
+  color: white;
+  padding: 8px;
+  text-decoration: none;
+  z-index: 100;
+}
+
+.skip-link:focus {
+  top: 0;
+}

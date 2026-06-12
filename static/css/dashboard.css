@@ -1,0 +1,646 @@
+/* ============================================================================
+   DASHBOARD BI - Enterprise Analytics Platform
+   Padrão: Power BI, Notion, Stripe Dashboard, Linear
+   ============================================================================ */
+
+/* ============================================================================
+   1. DASHBOARD GRID LAYOUT
+   ============================================================================ */
+.dashboard {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--sp-lg);
+  width: 100%;
+}
+
+@media (max-width: 1440px) {
+  .dashboard {
+    grid-template-columns: repeat(8, 1fr);
+    gap: var(--sp-md);
+  }
+}
+
+@media (max-width: 1024px) {
+  .dashboard {
+    grid-template-columns: repeat(6, 1fr);
+    gap: var(--sp-md);
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard {
+    grid-template-columns: 1fr;
+    gap: var(--sp-md);
+  }
+}
+
+/* ============================================================================
+   2. KPI CARDS - INDICADORES CHAVE
+   ============================================================================ */
+.kpi-card {
+  grid-column: span 3;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-lg);
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition-base);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.kpi-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--color-primary), #0EA5E9);
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
+.kpi-card:hover {
+  border-color: var(--border-color);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  transform: translateY(-4px);
+}
+
+.kpi-card:hover::before {
+  opacity: 1;
+}
+
+.kpi-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--sp-lg);
+}
+
+.kpi-card__label {
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.kpi-card__icon {
+  font-size: var(--font-size-2xl);
+  opacity: 0.15;
+  transition: all var(--transition-base);
+}
+
+.kpi-card:hover .kpi-card__icon {
+  opacity: 0.25;
+  transform: scale(1.1);
+}
+
+.kpi-card__value {
+  font-size: var(--font-size-3xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--sp-sm);
+  line-height: 1;
+}
+
+.kpi-card__change {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-xs);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  padding: var(--sp-xs) var(--sp-sm);
+  border-radius: var(--radius-full);
+  width: fit-content;
+}
+
+.kpi-card__change.positive {
+  background-color: var(--color-success-light);
+  color: var(--color-success-dark);
+}
+
+.kpi-card__change.negative {
+  background-color: var(--color-danger-light);
+  color: var(--color-danger-dark);
+}
+
+.kpi-card__change.neutral {
+  background-color: var(--color-gray-100);
+  color: var(--text-secondary);
+}
+
+@media (max-width: 1440px) {
+  .kpi-card {
+    grid-column: span 4;
+  }
+}
+
+@media (max-width: 1024px) {
+  .kpi-card {
+    grid-column: span 3;
+  }
+}
+
+@media (max-width: 768px) {
+  .kpi-card {
+    grid-column: 1;
+  }
+}
+
+/* ============================================================================
+   3. CHART CARDS - GRÁFICOS
+   ============================================================================ */
+.chart-card {
+  grid-column: span 6;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-lg);
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition-base);
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-card:hover {
+  border-color: var(--border-color);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.chart-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--sp-lg);
+  padding-bottom: var(--sp-lg);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.chart-card__title {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.chart-card__actions {
+  display: flex;
+  gap: var(--sp-sm);
+}
+
+.chart-card__action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  transition: all var(--transition-base);
+  padding: var(--sp-xs) var(--sp-sm);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-base);
+}
+
+.chart-card__action-btn:hover {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.chart-card__body {
+  flex: 1;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chart-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--sp-lg);
+  padding-top: var(--sp-lg);
+  border-top: 1px solid var(--border-color);
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+}
+
+@media (max-width: 1440px) {
+  .chart-card {
+    grid-column: span 4;
+  }
+}
+
+@media (max-width: 1024px) {
+  .chart-card {
+    grid-column: span 6;
+  }
+}
+
+@media (max-width: 768px) {
+  .chart-card {
+    grid-column: 1;
+  }
+
+  .chart-card__body {
+    min-height: 250px;
+  }
+}
+
+/* ============================================================================
+   4. TABELAS DASHBOARD
+   ============================================================================ */
+.table-card {
+  grid-column: span 12;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all var(--transition-base);
+}
+
+.table-card:hover {
+  border-color: var(--border-color);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.table-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--sp-lg);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.table-card__title {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.table-card__filters {
+  display: flex;
+  gap: var(--sp-sm);
+  flex-wrap: wrap;
+}
+
+.table-card__body {
+  overflow-x: auto;
+}
+
+.table-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--sp-lg);
+  border-top: 1px solid var(--border-color);
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+}
+
+@media (max-width: 768px) {
+  .table-card {
+    grid-column: 1;
+  }
+}
+
+/* ============================================================================
+   5. FILTROS DASHBOARD
+   ============================================================================ */
+.dashboard-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-md);
+  margin-bottom: var(--sp-xl);
+  align-items: center;
+}
+
+.dashboard-filters__group {
+  display: flex;
+  gap: var(--sp-sm);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.dashboard-filters__label {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.dashboard-filters__select,
+.dashboard-filters__input {
+  padding: var(--sp-sm) var(--sp-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  transition: all var(--transition-base);
+}
+
+.dashboard-filters__select:focus,
+.dashboard-filters__input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+.dashboard-filters__button {
+  padding: var(--sp-sm) var(--sp-md);
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  font-weight: 600;
+  transition: all var(--transition-base);
+  font-size: var(--font-size-sm);
+}
+
+.dashboard-filters__button:hover {
+  background-color: var(--color-primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(59, 130, 246, 0.2);
+}
+
+@media (max-width: 768px) {
+  .dashboard-filters {
+    flex-direction: column;
+    gap: var(--sp-sm);
+  }
+
+  .dashboard-filters__group {
+    width: 100%;
+  }
+
+  .dashboard-filters__select,
+  .dashboard-filters__input {
+    width: 100%;
+  }
+
+  .dashboard-filters__button {
+    width: 100%;
+  }
+}
+
+/* ============================================================================
+   6. LEGENDS & STATS
+   ============================================================================ */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-lg);
+  margin-top: var(--sp-lg);
+  padding-top: var(--sp-lg);
+  border-top: 1px solid var(--border-color);
+}
+
+.legend__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.legend__color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend__label {
+  font-weight: 500;
+}
+
+.legend__value {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ============================================================================
+   7. COMPARAÇÃO PERÍODO
+   ============================================================================ */
+.period-comparison {
+  display: flex;
+  gap: var(--sp-md);
+  align-items: center;
+  padding: var(--sp-lg);
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--sp-lg);
+}
+
+.period-comparison__label {
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.period-comparison__select {
+  padding: var(--sp-sm) var(--sp-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.period-comparison__select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+/* ============================================================================
+   8. STATUS INDICATORS
+   ============================================================================ */
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-xs);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  padding: var(--sp-xs) var(--sp-md);
+  border-radius: var(--radius-full);
+}
+
+.status-indicator__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.status-indicator--success {
+  background-color: var(--color-success-light);
+  color: var(--color-success-dark);
+}
+
+.status-indicator--success .status-indicator__dot {
+  background-color: var(--color-success);
+}
+
+.status-indicator--danger {
+  background-color: var(--color-danger-light);
+  color: var(--color-danger-dark);
+}
+
+.status-indicator--danger .status-indicator__dot {
+  background-color: var(--color-danger);
+}
+
+.status-indicator--warning {
+  background-color: var(--color-warning-light);
+  color: var(--color-warning-dark);
+}
+
+.status-indicator--warning .status-indicator__dot {
+  background-color: var(--color-warning);
+}
+
+.status-indicator--neutral {
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+.status-indicator--neutral .status-indicator__dot {
+  background-color: var(--text-tertiary);
+}
+
+/* ============================================================================
+   9. EMPTY STATE
+   ============================================================================ */
+.dashboard-empty {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-3xl) var(--sp-lg);
+  text-align: center;
+  background: var(--bg-primary);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
+.dashboard-empty__icon {
+  font-size: 4rem;
+  opacity: 0.2;
+  margin-bottom: var(--sp-lg);
+}
+
+.dashboard-empty__title {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--sp-sm);
+}
+
+.dashboard-empty__text {
+  color: var(--text-secondary);
+  margin-bottom: var(--sp-lg);
+  max-width: 400px;
+}
+
+.dashboard-empty__action {
+  padding: var(--sp-sm) var(--sp-lg);
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  font-weight: 600;
+  transition: all var(--transition-base);
+}
+
+.dashboard-empty__action:hover {
+  background-color: var(--color-primary-dark);
+  transform: translateY(-2px);
+}
+
+/* ============================================================================
+   10. LOADING SKELETON
+   ============================================================================ */
+.dashboard-skeleton {
+  grid-column: span 3;
+  background: linear-gradient(
+    90deg,
+    var(--bg-secondary) 25%,
+    var(--bg-tertiary) 50%,
+    var(--bg-secondary) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+  height: 300px;
+  border-radius: var(--radius-lg);
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+/* ============================================================================
+   11. ANIMAÇÕES
+   ============================================================================ */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.kpi-card,
+.chart-card,
+.table-card {
+  animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.kpi-card:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.kpi-card:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.kpi-card:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.kpi-card:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+.chart-card:nth-child(5) {
+  animation-delay: 0.5s;
+}
+
+.table-card:nth-child(6) {
+  animation-delay: 0.6s;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

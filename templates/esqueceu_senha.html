@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DataInsight • Recuperar Senha</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+</head>
+
+<body>
+    <header class="barra-topo" role="banner">
+        <div class="sidebar__header">
+            <a class="marca" href="{{ url_for('pagina_landing') }}" aria-label="DataInsight - Início">
+                <span class="marca__simbolo" aria-hidden="true">
+                    <i class="fa-solid fa-chart-column"></i>
+                </span>
+                DataInsight
+            </a>
+        </div>
+    </header>
+
+    <main id="conteudo" class="autenticacao" role="main">
+        <section class="cartao autenticacao__cartao" aria-labelledby="titulo-recuperar">
+            <h1 id="titulo-recuperar" class="autenticacao__titulo">Recuperar Senha</h1>
+            <p class="autenticacao__subtitulo">Digite seu e-mail para receber um código de recuperação.</p>
+
+            <form id="formulario-recuperacao" action="{{ url_for('esqueceu_senha_route') }}" method="POST"
+                style="margin-top: 24px; display: grid; gap: 16px;">
+                <!-- Mensagem de feedback dinâmica -->
+                <div id="mensagem-feedback" role="alert" aria-live="polite" aria-atomic="true"
+                    style="display: none; padding: 12px; border-radius: 4px; margin-bottom: 16px;">
+                </div>
+
+                <!-- Mensagem de erro vinda do servidor (Jinja) -->
+                {% if error %}
+                <div role="alert"
+                    style="background-color: #fee; color: #c00; padding: 12px; border-radius: 4px; margin-bottom: 16px;">
+                    {{ msg or 'Erro ao processar sua solicitação' }}
+                </div>
+                {% endif %}
+
+                <!-- Mensagem de sucesso vinda do servidor (Jinja) -->
+                {% if success %}
+                <div role="alert"
+                    style="background-color: #efe; color: #060; padding: 12px; border-radius: 4px; margin-bottom: 16px;">
+                    {{ success_msg or 'Código enviado com sucesso! Verifique seu e-mail.' }}
+                </div>
+                {% endif %}
+
+                <div class="campo">
+                    <label class="obrigatorio" for="email">E-mail</label>
+                    <input placeholder="Ex: xxxx@gmail.com" class="entrada" id="email" name="email" type="email"
+                        autocomplete="email" required aria-required="true" aria-describedby="ajuda-email" />
+                    <small id="ajuda-email" style="color: var(--muted); margin-top: 4px; display: block;">Digite o
+                        e-mail cadastrado em sua conta</small>
+                </div>
+
+                <button class="botao botao--primario" type="submit" aria-label="Enviar código de recuperação"
+                    id="botao-enviar">
+                    <span id="texto-botao">Enviar Código</span>
+                    <span id="spinner-botao" style="display: none; margin-left: 8px;">
+                        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                    </span>
+                </button>
+
+                <div class="autenticacao__links">
+                    <a href="{{ url_for('pg_login') }}" aria-label="Voltar à página de login">
+                        <i class="fas fa-arrow-left" aria-hidden="true" style="margin-right: 4px;"></i>
+                        Voltar ao Login
+                    </a>
+                </div>
+            </form>
+        </section>
+    </main>
+
+    <!-- Painel Acessibilidade -->
+    <!-- u{2672} Painel Avan�ado de Acessibilidade -->
+  {% include 'partials/painel_acessibilidade.html' %}
+
+  <!-- Chatbot Flutuante -->
+  {% include 'partials/chatbot.html' %}
+
+    <!-- VLibras -->
+    <div vw class="enabled" id="Vlibras">
+        <div vw-access-button class="active"></div>
+        <div vw-plugin-wrapper>
+            <div class="vw-plugin-top-wrapper"></div>
+        </div>
+    </div>
+
+    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+
+    <script>
+        new window.VLibras.Widget('https://vlibras.gov.br/app')
+    </script>
+
+    <script>
+        /**
+         * Script para gerenciar o formulário de recuperação de senha
+         * Inclui validação, feedback dinâmico e acessibilidade
+         */
+        document.addEventListener('DOMContentLoaded', function () {
+            const formulario = document.getElementById('formulario-recuperacao');
+            const inputEmail = document.getElementById('email');
+            const botaoEnviar = document.getElementById('botao-enviar');
+            const textoBot = document.getElementById('texto-botao');
+            const spinnerBotao = document.getElementById('spinner-botao');
+            const mensagemFeedback = document.getElementById('mensagem-feedback');
+
+            /**
+             * Valida o formato do email
+             * @param {string} email - Email a ser validado
+             * @returns {boolean} - true se válido, false caso contrário
+             */
+            function validarEmail(email) {
+                const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return regex.test(email);
+            }
+
+            /**
+             * Exibe mensagem de feedback dinâmica
+             * @param {string} mensagem - Texto da mensagem
+             * @param {string} tipo - 'sucesso' ou 'erro'
+             */
+            function exibirFeedback(mensagem, tipo) {
+                mensagemFeedback.textContent = mensagem;
+                mensagemFeedback.style.display = 'block';
+
+                if (tipo === 'sucesso') {
+                    mensagemFeedback.style.backgroundColor = '#efe';
+                    mensagemFeedback.style.color = '#060';
+                    mensagemFeedback.style.borderLeft = '4px solid #060';
+                } else if (tipo === 'erro') {
+                    mensagemFeedback.style.backgroundColor = '#fee';
+                    mensagemFeedback.style.color = '#c00';
+                    mensagemFeedback.style.borderLeft = '4px solid #c00';
+                }
+
+                // Foca na mensagem para leitores de tela
+                mensagemFeedback.focus();
+            }
+
+            /**
+             * Desabilita o estado de carregamento do botão
+             */
+            function desabilitarCarregamento() {
+                botaoEnviar.disabled = false;
+                textoBot.style.display = 'inline';
+                spinnerBotao.style.display = 'none';
+                botaoEnviar.setAttribute('aria-busy', 'false');
+            }
+
+            /**
+             * Habilita o estado de carregamento do botão
+             */
+            function habilitarCarregamento() {
+                botaoEnviar.disabled = true;
+                textoBot.style.display = 'none';
+                spinnerBotao.style.display = 'inline';
+                botaoEnviar.setAttribute('aria-busy', 'true');
+            }
+
+            /**
+             * Trata o envio do formulário
+             */
+            formulario.addEventListener('submit', function (evento) {
+                evento.preventDefault();
+
+                const email = inputEmail.value.trim();
+
+                // Validação no cliente
+                if (!email) {
+                    exibirFeedback('Por favor, digite seu e-mail.', 'erro');
+                    inputEmail.focus();
+                    return;
+                }
+
+                if (!validarEmail(email)) {
+                    exibirFeedback('Por favor, digite um e-mail válido.', 'erro');
+                    inputEmail.focus();
+                    return;
+                }
+
+                // Limpar mensagem anterior
+                mensagemFeedback.style.display = 'none';
+
+                // Habilitar carregamento
+                habilitarCarregamento();
+
+                // Enviar formulário
+                fetch(formulario.action, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        email: email
+                    })
+                })
+                    .then(resposta => resposta.json())
+                    .then(dados => {
+                        desabilitarCarregamento();
+
+                        if (dados.sucesso) {
+                            exibirFeedback(dados.mensagem || 'Código enviado! Verifique seu e-mail.', 'sucesso');
+                            inputEmail.value = '';
+                            
+                            // Redirecionar para a página de verificação de código depois de 2 segundos
+                            if (dados.redirect_url) {
+                                setTimeout(() => {
+                                    window.location.href = dados.redirect_url;
+                                }, 2000);
+                            } else {
+                                inputEmail.focus();
+                            }
+                        } else {
+                            exibirFeedback(dados.mensagem || 'Erro ao enviar o código. Tente novamente.', 'erro');
+                            inputEmail.focus();
+                        }
+                    })
+                    .catch(erro => {
+                        desabilitarCarregamento();
+                        console.error('Erro na requisição:', erro);
+                        exibirFeedback('Erro ao processar sua solicitação. Tente novamente.', 'erro');
+                        inputEmail.focus();
+                    });
+            });
+
+            /**
+             * Permitir envio do formulário com Enter
+             */
+            inputEmail.addEventListener('keypress', function (evento) {
+                if (evento.key === 'Enter') {
+                    formulario.dispatchEvent(new Event('submit'));
+                }
+            });
+
+            /**
+             * Limpar mensagem de feedback ao clicar no input
+             */
+            inputEmail.addEventListener('focus', function () {
+                if (mensagemFeedback.style.display === 'block') {
+                    // Manter a mensagem visível para contexto
+                }
+            });
+        });
+    </script>
+
+    <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+
+</html>

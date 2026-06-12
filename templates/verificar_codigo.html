@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DataInsight • Verificação</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+</head>
+
+<body>
+    <header class="barra-topo" role="banner">
+        <div class="sidebar__header">
+            <a class="marca" href="{{ url_for('pagina_landing') }}" aria-label="DataInsight - Início">
+                <span class="marca__simbolo" aria-hidden="true">
+                    <i class="fa-solid fa-chart-column"></i>
+                </span>
+                DataInsight
+            </a>
+        </div>
+    </header>
+
+    <main id="conteudo" class="autenticacao" role="main">
+        <section class="cartao autenticacao__cartao" aria-labelledby="titulo-verificacao">
+            <h1 id="titulo-verificacao" class="autenticacao__titulo">Verificação</h1>
+            <p class="autenticacao__subtitulo">Digite o código de 6 dígitos enviado para seu e-mail.</p>
+
+            <form action="{{ url_for('verificar_codigo_route') }}" method="POST" style="margin-top: 24px; display: grid; gap: 16px;">
+                
+                {% if erro %}
+                <div style="background-color: #fee; color: #c00; padding: 12px; border-radius: 4px; text-align: center;">
+                    {{ erro }}
+                </div>
+                {% endif %}
+
+                <div class="campo">
+                    <label class="obrigatorio" for="codigo">Código de Verificação</label>
+                    <input 
+                        placeholder="000000" 
+                        class="entrada" 
+                        id="codigo" 
+                        name="codigo" 
+                        type="text" 
+                        maxlength="6" 
+                        style="text-align: center; letter-spacing: 4px; font-size: 1.2rem;" 
+                        required 
+                    />
+                </div>
+
+                <button class="botao botao--primario" type="submit">Verificar código</button>
+
+                <div class="autenticacao__links" style="justify-content: center;">
+                    <a href="{{ url_for('route_reenviar_codigo') }}">Não recebeu? Reenviar código</a>
+                </div>
+            </form>
+        </section>
+    </main>
+
+  <!-- Painel Acessibilidae -->
+   <!-- u{2672} Painel Avan�ado de Acessibilidade -->
+  {% include 'partials/painel_acessibilidade.html' %}
+
+  <!-- Chatbot Flutuante -->
+  {% include 'partials/chatbot.html' %}
+
+
+    
+    <div vw class="enabled" id="Vlibras">
+      <div vw-access-button class="active"></div>
+      <div vw-plugin-wrapper>
+        <div class="vw-plugin-top-wrapper"></div>
+      </div>
+    </div>
+
+    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+    <script>
+      new window.VLibras.Widget('https://vlibras.gov.br/app')
+    </script>
+
+    <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

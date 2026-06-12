@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="DataInsight — Crie sua conta gratuita e comece a analisar seus dados." />
+  <title>DataInsight • Criar Conta</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}" />
+
+  <style>
+    html, body { height: 100%; overflow: auto; }
+
+    .auth-wrapper {
+      display: grid;
+      grid-template-columns: 1fr 520px;
+      min-height: 100vh;
+    }
+
+    .auth-panel {
+      background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 50%, #60A5FA 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 60px;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+
+    .auth-panel::before {
+      content: '';
+      position: absolute;
+      top: -30%; right: -20%;
+      width: 600px; height: 600px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 50%;
+    }
+
+    .auth-panel::after {
+      content: '';
+      position: absolute;
+      bottom: -20%; left: -10%;
+      width: 400px; height: 400px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 50%;
+    }
+
+    .auth-panel__logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: 56px;
+      position: relative; z-index: 1;
+    }
+
+    .auth-panel__logo-icon {
+      width: 44px; height: 44px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      border: 1px solid rgba(255,255,255,0.3);
+    }
+
+    .auth-panel__tagline {
+      font-size: 0.75rem; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      opacity: 0.7; margin-bottom: 16px;
+      position: relative; z-index: 1;
+    }
+
+    .auth-panel__title {
+      font-size: 2rem; font-weight: 800;
+      line-height: 1.2; letter-spacing: -0.02em;
+      margin-bottom: 20px;
+      position: relative; z-index: 1;
+    }
+
+    .auth-panel__desc {
+      font-size: 1rem; opacity: 0.85;
+      line-height: 1.6; max-width: 380px;
+      position: relative; z-index: 1; margin-bottom: 36px;
+    }
+
+    .auth-panel__features {
+      list-style: none; padding: 0; margin: 0;
+      display: flex; flex-direction: column; gap: 12px;
+      position: relative; z-index: 1;
+    }
+
+    .auth-panel__features li {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 0.875rem; opacity: 0.9;
+    }
+
+    .auth-panel__features li i {
+      width: 22px; height: 22px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; flex-shrink: 0;
+    }
+
+    .auth-form-panel {
+      background: var(--fundo);
+      display: flex;
+      flex-direction: column;
+      border-left: 1px solid var(--borda);
+    }
+
+    .auth-form-panel__inner {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 48px 44px;
+    }
+
+    .auth-form-panel__logo-mobile {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      font-size: 1rem; font-weight: 800;
+      color: var(--texto);
+      margin-bottom: 32px;
+      text-decoration: none;
+    }
+
+    .auth-form-panel__logo-mobile .icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #3B82F6, #60A5FA);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 15px;
+    }
+
+    .auth-form-panel__heading {
+      font-size: 1.625rem; font-weight: 800;
+      letter-spacing: -0.02em; color: var(--texto); margin-bottom: 4px;
+    }
+
+    .auth-form-panel__sub {
+      font-size: 0.875rem; color: var(--suave); margin-bottom: 28px;
+    }
+
+    .auth-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+
+    .auth-field label {
+      font-size: 0.8rem; font-weight: 600; color: var(--texto);
+    }
+
+    .auth-input-wrap { position: relative; }
+
+    .auth-input {
+      width: 100%;
+      padding: 10px 14px 10px 38px;
+      border: 1.5px solid var(--borda);
+      border-radius: 9px;
+      font-family: var(--fonte); font-size: 0.875rem;
+      color: var(--texto); background: var(--cartao);
+      transition: all 0.15s; appearance: none;
+    }
+
+    .auth-input::placeholder { color: var(--suave); opacity: 0.6; }
+
+    .auth-input:focus {
+      outline: none;
+      border-color: var(--primaria);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+    }
+
+    .auth-input-icon {
+      position: absolute; left: 12px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--suave); font-size: 12px; pointer-events: none;
+    }
+
+    .auth-input-toggle {
+      position: absolute; right: 12px; top: 50%;
+      transform: translateY(-50%);
+      background: none; border: none;
+      color: var(--suave); cursor: pointer; padding: 4px; font-size: 12px;
+      transition: color 0.15s;
+    }
+
+    .auth-input-toggle:hover { color: var(--texto); }
+
+    .auth-input--error { border-color: #DC2626 !important; }
+    .auth-input--success { border-color: #16A34A !important; }
+
+    .auth-field-msg {
+      font-size: 0.72rem; font-weight: 500;
+      padding: 2px 0; display: none;
+    }
+
+    .auth-field-msg--error { color: #DC2626; display: block; }
+    .auth-field-msg--success { color: #16A34A; display: block; }
+    .auth-field-msg--hint { color: var(--suave); display: block; }
+
+    .auth-terms {
+      display: flex; align-items: flex-start;
+      gap: 10px; font-size: 0.8rem;
+      color: var(--texto); margin-bottom: 20px; line-height: 1.5;
+    }
+
+    .auth-terms input[type="checkbox"] {
+      width: 16px; height: 16px;
+      accent-color: var(--primaria); cursor: pointer; flex-shrink: 0; margin-top: 2px;
+    }
+
+    .auth-terms a { color: var(--primaria); font-weight: 600; text-decoration: none; }
+    .auth-terms a:hover { text-decoration: underline; }
+
+    .auth-submit {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%);
+      color: #fff; border: none; border-radius: 10px;
+      font-family: var(--fonte); font-size: 0.9rem; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center;
+      justify-content: center; gap: 8px; transition: all 0.2s;
+      box-shadow: 0 4px 14px rgba(59,130,246,0.3); margin-bottom: 16px;
+    }
+
+    .auth-submit:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(59,130,246,0.4); }
+    .auth-submit:active { transform: translateY(0); }
+    .auth-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .auth-footer-links {
+      display: flex; justify-content: center; align-items: center;
+      gap: 6px; font-size: 0.8rem; color: var(--suave); flex-wrap: wrap;
+    }
+
+    .auth-footer-links a { color: var(--primaria); font-weight: 600; text-decoration: none; }
+    .auth-footer-links a:hover { text-decoration: underline; }
+
+    .auth-alert-error {
+      background: rgba(220,38,38,0.08);
+      border: 1px solid rgba(220,38,38,0.25);
+      border-left: 4px solid #DC2626;
+      color: #B91C1C; border-radius: 8px;
+      padding: 10px 14px; font-size: 0.8rem;
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    /* Responsivo */
+    @media (max-width: 900px) {
+      .auth-wrapper { grid-template-columns: 1fr; }
+      .auth-panel { display: none; }
+      .auth-form-panel { border-left: none; min-height: 100vh; }
+      .auth-form-panel__logo-mobile { display: flex; }
+    }
+
+    @media (max-width: 480px) {
+      .auth-form-panel__inner { padding: 32px 20px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="auth-wrapper">
+
+    <!-- Painel visual esquerdo -->
+    <div class="auth-panel" aria-hidden="true">
+      <div class="auth-panel__logo">
+        <div class="auth-panel__logo-icon">
+          <i class="fa-solid fa-chart-column"></i>
+        </div>
+        DataInsight
+      </div>
+
+      <div class="auth-panel__tagline">Comece gratuitamente</div>
+      <h1 class="auth-panel__title">
+        Sua plataforma<br>de BI começa<br>aqui.
+      </h1>
+      <p class="auth-panel__desc">
+        Crie sua conta e tenha acesso imediato a gráficos, análises e
+        inteligência artificial para o seu negócio.
+      </p>
+
+      <ul class="auth-panel__features">
+        <li><i class="fa-solid fa-check"></i> Dashboard completo com KPIs</li>
+        <li><i class="fa-solid fa-check"></i> Análises automáticas por IA</li>
+        <li><i class="fa-solid fa-check"></i> Relatórios em PDF e Excel</li>
+        <li><i class="fa-solid fa-check"></i> Upload de CSV e dados manuais</li>
+        <li><i class="fa-solid fa-check"></i> Gráficos interativos avançados</li>
+      </ul>
+    </div>
+
+    <!-- Painel do formulário -->
+    <div class="auth-form-panel">
+      <div class="auth-form-panel__inner">
+
+        <!-- Logo mobile -->
+        <a href="{{ url_for('pagina_landing') }}" class="auth-form-panel__logo-mobile">
+          <div class="icon"><i class="fa-solid fa-chart-column"></i></div>
+          DataInsight
+        </a>
+
+        <h2 class="auth-form-panel__heading">Criar conta</h2>
+        <p class="auth-form-panel__sub">Preencha os dados abaixo para começar</p>
+
+        {% if error_cad %}
+        <div class="auth-alert-error" role="alert">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          <span>{{ msg or 'Erro ao criar conta. Tente novamente.' }}</span>
+        </div>
+        {% endif %}
+
+        <form id="formularioCadastro" action="{{ url_for('pg_cadastro') }}" method="POST">
+
+          <div class="auth-field">
+            <label for="nome">Nome completo <span style="color:#DC2626">*</span></label>
+            <div class="auth-input-wrap">
+          
+              <input type="text" id="nome" name="nome"
+                     class="auth-input"
+                     placeholder="Ex: Arthur Oliveira"
+                     autocomplete="name" required />
+            </div>
+          </div>
+
+          <div class="auth-field">
+            <label for="email">Email <span style="color:#DC2626">*</span></label>
+            <div class="auth-input-wrap">
+          
+              <input type="email" id="email" name="email"
+                     class="auth-input"
+                     placeholder="seu@email.com"
+                     autocomplete="email" required />
+            </div>
+          </div>
+
+          <div class="auth-field">
+            <label for="senha">Senha <span style="color:#DC2626">*</span></label>
+            <div class="auth-input-wrap">
+        
+              <input type="password" id="senha" name="senha"
+                     class="auth-input"
+                     style="padding-right:38px;"
+                     placeholder="Mínimo 8 caracteres"
+                     autocomplete="new-password"
+                     aria-describedby="dica-senha" required />
+              <button type="button" class="auth-input-toggle"
+                      onclick="togglePass('senha',this)"
+                      aria-label="Mostrar senha">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
+            <span id="mensagem" class="auth-field-msg"></span>
+            <span id="dica-senha" class="auth-field-msg auth-field-msg--hint">
+              Mínimo 8 caracteres com letras e números.
+            </span>
+          </div>
+
+          <div class="auth-field">
+            <label for="confirmar">Confirmar senha <span style="color:#DC2626">*</span></label>
+            <div class="auth-input-wrap">
+             
+              <input type="password" id="confirmar" name="confirmar"
+                     class="auth-input"
+                     style="padding-right:38px;"
+                     placeholder="Repita a senha"
+                     autocomplete="new-password" required />
+              <button type="button" class="auth-input-toggle"
+                      onclick="togglePass('confirmar',this)"
+                      aria-label="Mostrar confirmação de senha">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="auth-terms">
+            <input type="checkbox" id="termos" name="termos" required />
+            <label for="termos">
+              Concordo com os
+              <a href="{{ url_for('pagina_termos_uso') }}" target="_blank">
+                Termos de Uso e Política de Privacidade
+              </a>
+            </label>
+          </div>
+
+          <button type="submit" class="auth-submit" id="btnCadastrar">
+            <i class="fa-solid fa-user-plus"></i>
+            Criar conta gratuita
+          </button>
+
+        </form>
+
+        <div class="auth-footer-links">
+          <span>Já tem conta?</span>
+          <a href="{{ url_for('pagina_login') }}">Fazer login →</a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  {% include 'partials/painel_acessibilidade.html' %}
+  {% include 'partials/chatbot.html' %}
+
+  <div vw class="enabled" id="Vlibras">
+    <div vw-access-button class="active"></div>
+    <div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div>
+  </div>
+
+  <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+  <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
+  <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+  <script>
+    function togglePass(id, btn) {
+      const input = document.getElementById(id);
+      const icon = btn.querySelector('i');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('fa-eye','fa-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.replace('fa-eye-slash','fa-eye');
+      }
+    }
+
+    const senhaInput    = document.getElementById('senha');
+    const confirmaInput = document.getElementById('confirmar');
+    const msgEl         = document.getElementById('mensagem');
+    const form          = document.getElementById('formularioCadastro');
+
+    function validar() {
+      const s = senhaInput.value;
+      const c = confirmaInput.value;
+
+      if (s.length > 0 && s.length < 8) {
+        msgEl.textContent = '✕ Senha deve ter no mínimo 8 caracteres';
+        msgEl.className = 'auth-field-msg auth-field-msg--error';
+        senhaInput.classList.add('auth-input--error');
+        return false;
+      }
+      if (c.length > 0 && s !== c) {
+        msgEl.textContent = '✕ As senhas não coincidem';
+        msgEl.className = 'auth-field-msg auth-field-msg--error';
+        confirmaInput.classList.add('auth-input--error');
+        return false;
+      }
+      if (s.length >= 8 && s === c) {
+        msgEl.textContent = '✓ Senhas válidas';
+        msgEl.className = 'auth-field-msg auth-field-msg--success';
+        senhaInput.classList.remove('auth-input--error');
+        senhaInput.classList.add('auth-input--success');
+        confirmaInput.classList.remove('auth-input--error');
+        confirmaInput.classList.add('auth-input--success');
+        return true;
+      }
+      msgEl.textContent = '';
+      msgEl.className = 'auth-field-msg';
+      return true;
+    }
+
+    senhaInput.addEventListener('input', validar);
+    confirmaInput.addEventListener('input', validar);
+
+    form.addEventListener('submit', (e) => {
+      if (!validar()) { e.preventDefault(); return; }
+      const btn = document.getElementById('btnCadastrar');
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Criando conta...';
+      btn.disabled = true;
+    });
+  </script>
+</body>
+</html>

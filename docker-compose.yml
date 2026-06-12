@@ -1,0 +1,67 @@
+# ============================================================
+#  DataInsight — docker-compose.yml
+#  Orquestra: Flask (backend) + MongoDB (banco de dados)
+# ============================================================
+
+services:
+
+  # ──────────────────────────────────────────────
+  #  SERVIÇO 1: Aplicação Flask (DataInsight)
+  # ──────────────────────────────────────────────
+  web:
+    build: .                        # Usa o Dockerfile na pasta actual
+    container_name: datainsight_web
+    restart: unless-stopped         # Reinicia automaticamente se o container cair
+    ports:
+      - "5000:5000"                 # localhost:5000 → container:5000
+    env_file:
+      - .env                        # Lê as variáveis de ambiente do ficheiro .env
+    environment:
+      # URL de ligação ao MongoDB — usa o nome do serviço "mongo" como hostname
+      # O Docker resolve "mongo" automaticamente dentro da rede interna
+      - MONGO_URI=mongodb://mongo:27017/datainsight
+    volumes:
+      # Volume para uploads de ficheiros CSV — persiste mesmo se o container for recreado
+      - ./uploads:/app/uploads
+    depends_on:
+      mongo:
+        condition: service_healthy  # Só arranca depois do MongoDB estar pronto
+    networks:
+      - datainsight-net
+
+  # ──────────────────────────────────────────────
+  #  SERVIÇO 2: MongoDB
+  # ──────────────────────────────────────────────
+  mongo:
+    image: mongo:7                  # Imagem oficial do MongoDB versão 7
+    container_name: datainsight_mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"               # Expõe localmente para poderes usar o MongoDB Compass
+    volumes:
+      # Volume nomeado — os dados do MongoDB ficam guardados aqui
+      - mongo_data:/data/db
+    healthcheck:
+      # Verifica se o MongoDB está a responder antes de arrancar o Flask
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - datainsight-net
+
+# ──────────────────────────────────────────────
+#  VOLUMES — armazenamento persistente
+# ──────────────────────────────────────────────
+volumes:
+  mongo_data:
+    driver: local
+    # Os dados ficam em: /var/lib/docker/volumes/mongo_data/_data
+
+# ──────────────────────────────────────────────
+#  REDE — comunicação interna entre containers
+# ──────────────────────────────────────────────
+networks:
+  datainsight-net:
+    driver: bridge

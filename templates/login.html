@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="DataInsight — Faça login para acessar sua plataforma de BI inteligente." />
+  <title>DataInsight • Login</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}" />
+
+  <style>
+    /* LOGIN SPLIT LAYOUT */
+    html, body { height: 100%; overflow: hidden; }
+
+    .auth-wrapper {
+      display: grid;
+      grid-template-columns: 1fr 480px;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Painel esquerdo — visual BI */
+    .auth-panel {
+      background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 50%, #60A5FA 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 60px;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .auth-panel::before {
+      content: '';
+      position: absolute;
+      top: -30%; right: -20%;
+      width: 600px; height: 600px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 50%;
+    }
+
+    .auth-panel::after {
+      content: '';
+      position: absolute;
+      bottom: -20%; left: -10%;
+      width: 400px; height: 400px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 50%;
+    }
+
+    .auth-panel__logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: 56px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .auth-panel__logo-icon {
+      width: 44px; height: 44px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.3);
+    }
+
+    .auth-panel__tagline {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      opacity: 0.7;
+      margin-bottom: 16px;
+      position: relative; z-index: 1;
+    }
+
+    .auth-panel__title {
+      font-size: 2.25rem;
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      margin-bottom: 20px;
+      position: relative; z-index: 1;
+    }
+
+    .auth-panel__desc {
+      font-size: 1rem;
+      opacity: 0.85;
+      line-height: 1.6;
+      max-width: 400px;
+      position: relative; z-index: 1;
+      margin-bottom: 40px;
+    }
+
+    .auth-panel__stats {
+      display: flex;
+      gap: 32px;
+      position: relative; z-index: 1;
+    }
+
+    .auth-panel__stat { text-align: center; }
+
+    .auth-panel__stat-value {
+      font-size: 1.75rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .auth-panel__stat-label {
+      font-size: 0.75rem;
+      opacity: 0.75;
+      margin-top: 2px;
+    }
+
+    /* Painel direito — formulário */
+    .auth-form-panel {
+      background: var(--fundo);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow-y: auto;
+      border-left: 1px solid var(--borda);
+    }
+
+    .auth-form-panel__inner {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 48px 40px;
+    }
+
+    .auth-form-panel__logo-mobile {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--texto);
+      margin-bottom: 32px;
+      text-decoration: none;
+    }
+
+    .auth-form-panel__logo-mobile .icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #3B82F6, #60A5FA);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 15px;
+    }
+
+    .auth-form-panel__heading {
+      font-size: 1.75rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--texto);
+      margin-bottom: 6px;
+    }
+
+    .auth-form-panel__sub {
+      font-size: 0.875rem;
+      color: var(--suave);
+      margin-bottom: 32px;
+    }
+
+    .auth-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 18px;
+    }
+
+    .auth-field label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--texto);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .auth-field label a {
+      font-size: 0.75rem;
+      color: var(--primaria);
+      font-weight: 500;
+      text-decoration: none;
+    }
+
+    .auth-field label a:hover { text-decoration: underline; }
+
+    .auth-input-wrap { position: relative; }
+
+    .auth-input {
+      width: 100%;
+      padding: 11px 14px;
+      padding-left: 40px;
+      border: 1.5px solid var(--borda);
+      border-radius: 10px;
+      font-family: var(--fonte);
+      font-size: 0.875rem;
+      color: var(--texto);
+      background: var(--cartao);
+      transition: all 0.15s;
+      appearance: none;
+    }
+
+    .auth-input::placeholder { color: var(--suave); opacity: 0.6; }
+
+    .auth-input:focus {
+      outline: none;
+      border-color: var(--primaria);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+    }
+
+    .auth-input-icon {
+      position: absolute;
+      left: 13px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--suave);
+      font-size: 13px;
+      pointer-events: none;
+    }
+
+    .auth-input-toggle {
+      position: absolute;
+      right: 13px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--suave);
+      cursor: pointer;
+      padding: 4px;
+      font-size: 13px;
+      transition: color 0.15s;
+    }
+
+    .auth-input-toggle:hover { color: var(--texto); }
+
+    .auth-remember {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: var(--texto);
+      margin-bottom: 24px;
+    }
+
+    .auth-remember input[type="checkbox"] {
+      width: 16px; height: 16px;
+      accent-color: var(--primaria);
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    .auth-submit {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-family: var(--fonte);
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+      box-shadow: 0 4px 14px rgba(59,130,246,0.3);
+      margin-bottom: 20px;
+    }
+
+    .auth-submit:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(59,130,246,0.4);
+    }
+
+    .auth-submit:active { transform: translateY(0); }
+
+    .auth-footer-links {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--suave);
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .auth-footer-links a {
+      color: var(--primaria);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .auth-footer-links a:hover { text-decoration: underline; }
+
+    .auth-alert-error {
+      background: rgba(220,38,38,0.08);
+      border: 1px solid rgba(220,38,38,0.25);
+      border-left: 4px solid #DC2626;
+      color: #B91C1C;
+      border-radius: 8px;
+      padding: 11px 14px;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+      animation: fadeInUp 0.3s ease;
+    }
+
+    /* Responsivo */
+    @media (max-width: 900px) {
+      html, body { overflow: auto; }
+      .auth-wrapper { grid-template-columns: 1fr; }
+      .auth-panel { display: none; }
+      .auth-form-panel { border-left: none; height: auto; min-height: 100vh; }
+      .auth-form-panel__logo-mobile { display: flex; }
+    }
+
+    @media (max-width: 480px) {
+      .auth-form-panel__inner { padding: 32px 20px; }
+    }
+
+    @keyframes fadeInUp {
+      from { opacity:0; transform:translateY(8px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="auth-wrapper">
+
+    <!-- Painel visual esquerdo -->
+    <div class="auth-panel" aria-hidden="true">
+      <div class="auth-panel__logo">
+        <div class="auth-panel__logo-icon">
+          <i class="fa-solid fa-chart-column"></i>
+        </div>
+        DataInsight
+      </div>
+
+      <div class="auth-panel__tagline">Plataforma de BI Inteligente</div>
+      <h1 class="auth-panel__title">
+        Decisões mais<br>inteligentes,<br>resultados reais.
+      </h1>
+      <p class="auth-panel__desc">
+        Transforme seus dados em insights acionáveis com nossa plataforma de análise
+        potencializada por inteligência artificial.
+      </p>
+
+      <div class="auth-panel__stats">
+        <div class="auth-panel__stat">
+          <div class="auth-panel__stat-value">98%</div>
+          <div class="auth-panel__stat-label">Precisão da IA</div>
+        </div>
+        <div class="auth-panel__stat">
+          <div class="auth-panel__stat-value">24/7</div>
+          <div class="auth-panel__stat-label">Disponibilidade</div>
+        </div>
+        <div class="auth-panel__stat">
+          <div class="auth-panel__stat-value">+30%</div>
+          <div class="auth-panel__stat-label">Eficiência média</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Painel do formulário -->
+    <div class="auth-form-panel">
+      <div class="auth-form-panel__inner">
+
+        <!-- Logo mobile -->
+        <a href="{{ url_for('pagina_landing') }}" class="auth-form-panel__logo-mobile">
+          <div class="icon"><i class="fa-solid fa-chart-column"></i></div>
+          DataInsight
+        </a>
+
+        <h2 class="auth-form-panel__heading">Bem-vindo de volta</h2>
+        <p class="auth-form-panel__sub">Entre na sua conta para continuar</p>
+
+        <!-- Alerta de erro -->
+        {% if error %}
+        <div class="auth-alert-error" role="alert">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          <span>{{ msg or 'Email ou senha incorretos. Tente novamente.' }}</span>
+        </div>
+        {% endif %}
+
+        <!-- Formulário -->
+        <form action="{{ url_for('pg_login') }}" method="POST" id="formLogin">
+
+          <div class="auth-field">
+            <label for="email">Email</label>
+            <div class="auth-input-wrap">
+            
+              <input type="email" id="email" name="email"
+                     class="auth-input"
+                     placeholder="seu@email.com"
+                     autocomplete="email"
+                     required
+                     aria-label="Email" />
+            </div>
+          </div>
+
+          <div class="auth-field">
+            <label for="senha">
+              Senha
+              <a href="{{ url_for('esqueceu_senha_route') }}">Esqueceu a senha?</a>
+            </label>
+            <div class="auth-input-wrap">
+          
+              <input type="password" id="senha" name="senha"
+                     class="auth-input"
+                     style="padding-right:40px;"
+                     placeholder="••••••••"
+                     autocomplete="current-password"
+                     required
+                     aria-label="Senha" />
+              <button type="button"
+                      class="auth-input-toggle"
+                      onclick="togglePassword('senha', this)"
+                      aria-label="Mostrar ou ocultar senha">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="auth-remember">
+            <input type="checkbox" id="lembrar" name="lembrar" />
+            <label for="lembrar" style="margin:0; cursor:pointer; font-size:0.8rem;">
+              Lembrar por 30 dias
+            </label>
+          </div>
+
+          <button type="submit" class="auth-submit" id="btnEntrar">
+            <i class="fa-solid fa-arrow-right-to-bracket"></i>
+            Entrar na plataforma
+          </button>
+
+        </form>
+
+        <div class="auth-footer-links">
+          <span>Não tem conta?</span>
+          <a href="{{ url_for('pg_cadastro') }}">Criar conta gratuita →</a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Acessibilidade -->
+  {% include 'partials/painel_acessibilidade.html' %}
+  {% include 'partials/chatbot.html' %}
+
+  <div vw class="enabled" id="Vlibras">
+    <div vw-access-button class="active"></div>
+    <div vw-plugin-wrapper>
+      <div class="vw-plugin-top-wrapper"></div>
+    </div>
+  </div>
+
+  <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+  <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
+  <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+  <script>
+    function togglePassword(id, btn) {
+      const input = document.getElementById(id);
+      const icon = btn.querySelector('i');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('fa-eye','fa-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.replace('fa-eye-slash','fa-eye');
+      }
+    }
+
+    // Loading state no submit
+    document.getElementById('formLogin').addEventListener('submit', () => {
+      const btn = document.getElementById('btnEntrar');
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Entrando...';
+      btn.disabled = true;
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="DataInsight — Centro de Inteligência Artificial para análise de dados." />
+    <title>DataInsight • Inteligência IA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+</head>
+<body>
+    <a href="#conteudo" class="skip-link">Ir para conteúdo</a>
+    <div class="layout">
+        <aside class="sidebar" id="sidebar" aria-label="Navegação principal">
+            {% include 'partials/navbar.html' %}
+        </aside>
+        <div class="main">
+            <header class="topbar" role="banner">
+                <div class="topbar__left">
+                    <button class="topbar__btn topbar__mobile-toggle" onclick="abrirSidebar()" aria-label="Abrir menu"><i class="fa-solid fa-bars"></i></button>
+                    <span class="topbar__greeting">Olá, <strong>{{ session.usuario_nome }}</strong></span>
+                </div>
+                <div class="topbar__actions">
+                    <button class="topbar__btn" onclick="alternarTema()" aria-label="Alternar tema" id="btnTema"><i class="fa-solid fa-moon"></i></button>
+                    <a class="topbar__btn" href="{{ url_for('pagina_configuracoes') }}" title="Configurações"><i class="fa-solid fa-gear"></i></a>
+                </div>
+            </header>
+
+            <main id="conteudo" class="pagina" role="main">
+                <div class="container">
+                    <header class="pagina__cabecalho">
+                        <div class="migalhas" aria-label="Você está em">Inteligência IA</div>
+                        <h1 class="h1">Centro de Inteligência</h1>
+                        <p class="p">Converse com seu Analista, Cientista de Dados e Consultor Virtual.</p>
+                    </header>
+
+                    <!-- Container principal com cabeçalho de botões de tela cheia -->
+                    <div class="fullscreen-header">
+                        <button id="btn-fullscreen" class="fullscreen-btn" title="Tela Cheia">
+                            <i class="fa-solid fa-expand"></i> Tela Cheia
+                        </button>
+                    </div>
+
+                    <div class="page-ia-container" style="flex-direction: row; gap: 20px;">
+                        <div class="chat-sidebar"
+                            style="width: 210px; background: var(--cartao); border-radius: 12px; border: 1px solid var(--borda); padding: 15px; display: flex; flex-direction: column; gap: 15px;">
+                            <button id="btn-nova-conversa"
+                                style="background: var(--primaria); color: white; border: none; padding: 10px; border-radius: 8px; width: 100%; cursor: pointer;"><i
+                                    class="fa-solid fa-plus"></i> Nova Conversa</button>
+
+                            <!-- Botão SAIR DA TELA CHEIA dentro do sidebar -->
+                            <button id="btn-exit-fullscreen" class="exit-fullscreen-btn" title="Sair da Tela Cheia">
+                                <i class="fa-solid fa-compress"></i> Sair da Tela Cheia
+                            </button>
+
+                            <hr style="border-color: var(--borda);">
+                            <div style="flex: 1; overflow-y: auto;">
+                                <p
+                                    style="font-size: 13px; color: var(--muted); font-weight: bold; margin-bottom: 10px;">
+                                    GALERIAS</p>
+                                <button id="btn-galeria-graficos"
+                                    style="background: transparent; border: none; color: var(--texto); text-align: left; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 13px; width: 100%; transition: 0.2s;"><i
+                                        class="fa-solid fa-chart-area"></i> Gráficos</button>
+                                <button id="btn-galeria-arquivos"
+                                    style="background: transparent; border: none; color: var(--texto); text-align: left; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 13px; width: 100%; transition: 0.2s;"><i
+                                        class="fa-solid fa-file-pdf"></i> Arquivos & PDFs</button>
+
+                                <p
+                                    style="font-size: 13px; color: var(--muted); font-weight: bold; margin-bottom: 10px; margin-top: 20px;">
+                                    HISTÓRICO</p>
+                                <div id="historico-lista"
+                                    style="font-size: 14px; color: var(--texto); display: flex; flex-direction: column; gap: 5px;">
+                                    <span style="color: var(--muted);"><i class="fa-solid fa-message"></i> Conversa
+                                        Atual</span>
+                                </div>
+                            </div>
+                            <button id="btn-apagar-historico"
+                                style="background: transparent; color: var(--perigo); border: 1px solid var(--perigo); padding: 10px; border-radius: 8px; width: 100%; cursor: pointer;"><i
+                                    class="fa-solid fa-trash"></i> Apagar Histórico</button>
+                        </div>
+
+                        <div class="chat-box" id="chat-box" style="flex: 1;">
+                            <div class="chat-messages" id="chat-messages">
+                                <!-- Mensagens via JS -->
+                            </div>
+
+                            <div class="chat-input-area">
+                                <input type="text" id="chat-input"
+                                    placeholder="Ex: Faça uma análise do faturamento dos últimos 30 dias com gráficos..."
+                                    autocomplete="off">
+                                <button id="chat-send"><i class="fa-solid fa-paper-plane"></i> Enviar</button>
+                            </div>
+                        </div>
+
+                        <!-- GALERIA (Oculta por padrão) -->
+                        <div id="gallery-box"
+                            style="flex: 1; display: none; flex-direction: column; background: var(--fundo); border-radius: 12px; border: 1px solid var(--borda); overflow: hidden;">
+                            <div
+                                style="padding: 20px; border-bottom: 1px solid var(--borda); display: flex; justify-content: space-between; align-items: center; background: var(--cartao);">
+                                <h2 id="gallery-main-title" style="margin: 0; font-size: 1.2rem; color: var(--texto);">
+                                    Galeria</h2>
+                                <select id="gallery-period-select"
+                                    style="padding: 8px; border-radius: 6px; border: 1px solid var(--borda); background: var(--fundo); color: var(--texto); cursor: pointer;">
+                                    <option value="7_dias">Últimos 7 Dias</option>
+                                    <option value="30_dias" selected>Últimos 30 Dias</option>
+                                    <option value="90_dias">Últimos 90 Dias</option>
+                                    <option value="ano_atual">Este Ano</option>
+                                </select>
+                            </div>
+                            <div id="gallery-grid"
+                                style="flex: 1; padding: 20px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; align-content: start;">
+                                <!-- Itens via JS -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- FOOTER DENTRO DO SCROLL -->
+                    {% include 'partials/footer.html' %}
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal Global de IA (Gráficos e PDFs) -->
+    <div id="ia-modal"
+        style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+        <div
+            style="background: var(--fundo); width: 85%; height: 85%; border-radius: 12px; padding: 25px; display: flex; flex-direction: column; position: relative; border: 1px solid var(--borda); box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+            <button onclick="document.getElementById('ia-modal').style.display='none'"
+                style="position: absolute; right: 25px; top: 25px; background: var(--perigo); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; z-index: 10;"><i
+                    class="fa-solid fa-xmark"></i> Fechar</button>
+
+            <div id="modal-header-actions" style="margin-bottom: 20px; display: flex; gap: 15px; align-items: center;">
+                <h2 id="modal-titulo" style="margin: 0; color: var(--texto);">Galeria</h2>
+                <div id="modal-filtros" style="display: none; gap: 10px;">
+                    <select id="modal-periodo-select"
+                        style="padding: 8px; border-radius: 6px; border: 1px solid var(--borda); background: var(--cartao); color: var(--texto);">
+                        <option value="7_dias">Últimos 7 Dias</option>
+                        <option value="30_dias" selected>Últimos 30 Dias</option>
+                        <option value="90_dias">Últimos 90 Dias</option>
+                        <option value="ano_atual">Este Ano</option>
+                    </select>
+                    <button id="modal-btn-atualizar"
+                        style="background: var(--primaria); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer;">Atualizar
+                        Gráfico</button>
+                </div>
+                <div id="modal-downloads" style="display: none; gap: 10px; margin-left: auto; margin-right: 80px;">
+                    <a href="/api/download/excel" class="botao botao--suave"
+                        style="color: #10B981; border-color: #10B981;"><i class="fa-solid fa-file-excel"></i> Baixar
+                        Excel</a>
+                    <a href="/api/download/csv" class="botao botao--suave" style="color: var(--texto);"><i
+                            class="fa-solid fa-file-csv"></i> Baixar CSV</a>
+                </div>
+            </div>
+
+            <div id="modal-conteudo"
+                style="flex: 1; background: var(--cartao); border-radius: 8px; padding: 20px; border: 1px solid var(--borda); overflow: hidden; display: flex; flex-direction: column;">
+            </div>
+        </div>
+    </div>
+
+    {% include 'partials/navbar_mobile.html' %}
+    {% include 'partials/painel_acessibilidade.html' %}
+    {% include 'partials/chatbot.html' %}
+
+    <div vw class="enabled" id="Vlibras">
+        <div vw-access-button class="active"></div>
+        <div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div>
+    </div>
+
+    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+    <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
+    <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/ia.js') }}"></script>
+    <script>
+      function abrirSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sidebarOverlay').classList.add('active');}
+      function fecharSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active');}
+    </script>
+</body>
+</html>

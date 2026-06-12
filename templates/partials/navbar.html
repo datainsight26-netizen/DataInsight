@@ -1,0 +1,71 @@
+<div class="sidebar__header">
+  <a href="{{ url_for('pagina_home') }}" class="sidebar__logo">
+    <div class="sidebar__logo-icon">
+      <i class="fa-solid fa-chart-line"></i>
+    </div>
+    <span class="sidebar__logo-text">DataInsight</span>
+  </a>
+</div>
+
+<nav aria-label="Navegação principal">
+  <span class="nav-section-label">Principal</span>
+
+  <a href="{{ url_for('pagina_home') }}"
+     {% if request.endpoint=='pagina_home' %}aria-current="page"{% endif %}>
+    <i class="fa-solid fa-house"></i>
+    Início
+  </a>
+
+  <a href="{{ url_for('pagina_dados') }}"
+     {% if request.endpoint=='pagina_dados' %}aria-current="page"{% endif %}>
+    <i class="fa-solid fa-table-list"></i>
+    Dados
+  </a>
+
+  <a href="{{ url_for('pagina_graficoAvancado') }}"
+     {% if request.endpoint=='pagina_graficoAvancado' %}aria-current="page"{% endif %}>
+    <i class="fa-solid fa-layer-group"></i>
+    Dashboard
+  </a>
+
+  <span class="nav-section-label">Análise</span>
+
+  <a href="{{ url_for('pagina_analise') }}"
+     {% if request.endpoint=='pagina_analise' %}aria-current="page"{% endif %}>
+    <i class="fa-solid fa-chart-line"></i>
+    Análises
+  </a>
+
+  <a href="{{ url_for('pagina_relatorio') }}"
+     {% if request.endpoint=='pagina_relatorio' %}aria-current="page"{% endif %}>
+    <i class="fa-solid fa-file-pdf"></i>
+    Relatórios
+  </a>
+
+  <a href="{{ url_for('pagina_ia') }}"
+     {% if request.endpoint=='pagina_ia' %}aria-current="page"{% endif %}>
+    <i class="fa-solid fa-robot"></i>
+    IA
+  </a>
+
+  <span class="nav-section-label">Conta</span>
+
+  <a href="{{ url_for('pagina_perfil') }}"
+     {% if request.endpoint=='pagina_perfil' %}aria-current="page"{% endif %}>
+    <i class="fa-solid fa-user"></i>
+    Perfil
+  </a>
+
+  <a href="{{ url_for('pagina_configuracoes') }}"
+     {% if request.endpoint=='pagina_configuracoes' %}aria-current="page"{% endif %}>
+    <i class="fa-solid fa-gear"></i>
+    Configurações
+  </a>
+</nav>
+
+<div class="sidebar__footer">
+  <a href="{{ url_for('logout') }}">
+    <i class="fa-solid fa-right-from-bracket"></i>
+    Sair
+  </a>
+</div>

@@ -1,0 +1,20 @@
+[
+  {
+    "Faturamento": "245680",
+    "Despesas": "160250",
+    "Lucro": "85430",
+    "Período": "Agosto"
+  },
+  {
+    "Faturamento": "280000",
+    "Despesas": "155000",
+    "Lucro": "125000",
+    "Período": "Setembro"
+  },
+  {
+    "Faturamento": "320000",
+    "Despesas": "150000",
+    "Lucro": "170000",
+    "Período": "Outubro"
+  }
+]

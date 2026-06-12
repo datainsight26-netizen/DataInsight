@@ -1,0 +1,789 @@
+/* ============================================================================
+   LAYOUT - DataInsight Platform
+   Estrutura visual: Sidebar + Topbar + Main + Footer
+   ============================================================================ */
+
+/* ============================================================================
+   1. ESTRUTURA GERAL
+   ============================================================================ */
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  flex: 1;
+}
+
+/* ============================================================================
+   2. SIDEBAR - NAVEGAÇÃO FIXA
+   ============================================================================ */
+.sidebar {
+  width: var(--sidebar-width);
+  height: 100vh;
+  background-color: var(--bg-primary);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: var(--z-fixed);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  
+  /* Scrollbar estilizada */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-gray-300) transparent;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: var(--color-gray-300);
+  border-radius: var(--radius-full);
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-400);
+}
+
+.sidebar__header {
+  padding: var(--sp-lg);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.marca {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-700);
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: all var(--transition-base);
+  padding: var(--sp-sm) var(--sp-md);
+  border-radius: var(--radius-lg);
+}
+
+.marca:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.marca__simbolo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--color-primary), #0EA5E9);
+  color: white;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-lg);
+}
+
+/* NAV LINKS */
+.nav {
+  flex: 1;
+  padding: var(--sp-lg) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-xs);
+  overflow-y: auto;
+}
+
+.nav__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-md);
+  padding: var(--sp-sm) var(--sp-lg);
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: all var(--transition-base);
+  position: relative;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-500);
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  margin: 0 var(--sp-md);
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+}
+
+.nav__item:hover {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.nav__item.active,
+.nav__item[aria-current="page"] {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  border-left-color: var(--color-primary);
+  font-weight: var(--font-weight-600);
+}
+
+.nav__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.nav__label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav__divider {
+  height: 1px;
+  background-color: var(--border-color);
+  margin: var(--sp-sm) var(--sp-lg);
+}
+
+.nav__section-title {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-700);
+  color: var(--text-muted);
+  padding: var(--sp-md) var(--sp-lg);
+  margin-top: var(--sp-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ============================================================================
+   3. MAIN CONTENT - ÁREA PRINCIPAL
+   ============================================================================ */
+.main {
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ============================================================================
+   4. TOPBAR - BARRA DE TOPO
+   ============================================================================ */
+.topbar {
+  height: var(--topbar-height);
+  background-color: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+  padding: 0 var(--sp-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  z-index: var(--z-sticky);
+}
+
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-md);
+  margin-left: auto;
+}
+
+.topbar__user {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.topbar__user strong {
+  color: var(--text-primary);
+}
+
+/* ============================================================================
+   5. CONTENT - CONTEÚDO COM SCROLL
+   ============================================================================ */
+.page,
+.pagina {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--sp-xl);
+  display: flex;
+  flex-direction: column;
+  
+  /* Scrollbar estilizada */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-gray-300) transparent;
+}
+
+.page::-webkit-scrollbar,
+.pagina::-webkit-scrollbar {
+  width: 8px;
+}
+
+.page::-webkit-scrollbar-track,
+.pagina::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.page::-webkit-scrollbar-thumb,
+.pagina::-webkit-scrollbar-thumb {
+  background: var(--color-gray-300);
+  border-radius: var(--radius-full);
+}
+
+.page::-webkit-scrollbar-thumb:hover,
+.pagina::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-400);
+}
+
+/* Espaço para footer não cobrir conteúdo */
+.pagina {
+  display: flex;
+  flex-direction: column;
+}
+
+.page__header,
+.pagina__cabecalho {
+  margin-bottom: var(--sp-2xl);
+}
+
+.breadcrumb,
+.migalhas {
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+  margin-bottom: var(--sp-sm);
+  text-transform: capitalize;
+}
+
+/* ============================================================================
+   6. SEÇÕES & CARDS
+   ============================================================================ */
+.section {
+  margin-bottom: var(--sp-2xl);
+}
+
+.section__title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-700);
+  margin-bottom: var(--sp-lg);
+  color: var(--text-primary);
+}
+
+.section__subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-top: -var(--sp-md);
+  margin-bottom: var(--sp-lg);
+}
+
+.card-grid {
+  display: grid;
+  gap: var(--sp-lg);
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+@media (max-width: 1024px) {
+  .card-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================================
+   7. FOOTER
+   ============================================================================ */
+.footer,
+.rodape {
+  background-color: var(--bg-primary);
+  border-top: 1px solid var(--border-color);
+  padding: var(--sp-xl) var(--sp-lg);
+  flex-shrink: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+  overflow: auto;
+  min-height: auto;
+}
+
+.footer__content,
+.rodape__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--sp-lg);
+  max-width: var(--container-max-width);
+  margin: 0 auto;
+}
+
+.footer__section,
+.rodape__col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-sm);
+}
+
+.footer__section h3,
+.rodape__col h3 {
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-700);
+  margin-bottom: var(--sp-md);
+}
+
+.footer__link,
+.rodape__col a {
+  color: var(--text-tertiary);
+  text-decoration: none;
+  transition: color var(--transition-base);
+  font-size: var(--font-size-sm);
+}
+
+.footer__link:hover,
+.rodape__col a:hover {
+  color: var(--text-secondary);
+}
+
+.footer__bottom {
+  border-top: 1px solid var(--border-color);
+  padding-top: var(--sp-lg);
+  margin-top: var(--sp-lg);
+  text-align: center;
+  color: var(--text-muted);
+}
+
+/* ============================================================================
+   8. MODAL & OVERLAYS
+   ============================================================================ */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal-backdrop);
+  animation: fadeIn var(--transition-base);
+}
+
+.modal {
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-2xl);
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  z-index: var(--z-modal);
+  animation: slideInUp var(--transition-base);
+}
+
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-lg);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.modal__title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-700);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.modal__close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: var(--font-size-lg);
+  transition: color var(--transition-base);
+}
+
+.modal__close:hover {
+  color: var(--text-primary);
+}
+
+.modal__content {
+  padding: var(--sp-lg);
+}
+
+.modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sp-md);
+  padding: var(--sp-lg);
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+/* ============================================================================
+   9. NOTIFICAÇÕES & ALERTS
+   ============================================================================ */
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-md);
+  padding: var(--sp-md) var(--sp-lg);
+  border-radius: var(--radius-lg);
+  border-left: 4px solid;
+  animation: slideInDown var(--transition-base);
+}
+
+.alert-primary {
+  background-color: var(--color-primary-light);
+  border-left-color: var(--color-primary);
+  color: var(--color-primary-dark);
+}
+
+.alert-success {
+  background-color: var(--color-success-light);
+  border-left-color: var(--color-success);
+  color: var(--color-success-dark);
+}
+
+.alert-danger {
+  background-color: var(--color-danger-light);
+  border-left-color: var(--color-danger);
+  color: var(--color-danger-dark);
+}
+
+.alert-warning {
+  background-color: var(--color-warning-light);
+  border-left-color: var(--color-warning);
+  color: var(--color-warning-dark);
+}
+
+.alert__icon {
+  flex-shrink: 0;
+  font-size: var(--font-size-lg);
+}
+
+.alert__content {
+  flex: 1;
+}
+
+.alert__close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity var(--transition-base);
+}
+
+.alert__close:hover {
+  opacity: 1;
+}
+
+/* ============================================================================
+   10. DROPDOWNS & MENUS
+   ============================================================================ */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+}
+
+.dropdown__menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: var(--sp-sm);
+  min-width: 200px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: var(--z-dropdown);
+  overflow: hidden;
+  animation: slideInDown var(--transition-fast);
+}
+
+.dropdown__item {
+  display: block;
+  width: 100%;
+  padding: var(--sp-sm) var(--sp-lg);
+  background: none;
+  border: none;
+  text-align: left;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  font-size: var(--font-size-sm);
+}
+
+.dropdown__item:hover {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.dropdown__item.danger:hover {
+  background-color: var(--color-danger-light);
+  color: var(--color-danger-dark);
+}
+
+.dropdown__divider {
+  height: 1px;
+  background-color: var(--border-color);
+  margin: var(--sp-xs) 0;
+}
+
+/* ============================================================================
+   11. RESPONSIVIDADE - MOBILE
+   ============================================================================ */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 240px;
+  }
+
+  .main {
+    margin-left: 240px;
+  }
+
+  .page,
+  .pagina {
+    padding: var(--sp-lg);
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform var(--transition-base);
+    width: 100%;
+    max-width: 280px;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: calc(var(--z-fixed) - 1);
+    animation: fadeIn var(--transition-base);
+  }
+
+  .main {
+    margin-left: 0;
+  }
+
+  .page,
+  .pagina {
+    padding: var(--sp-md);
+  }
+
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal {
+    width: 95%;
+  }
+
+  .topbar {
+    padding: 0 var(--sp-md);
+  }
+
+  .topbar__actions {
+    gap: var(--sp-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  .page,
+  .pagina {
+    padding: var(--sp-md);
+  }
+
+  .page__header,
+  .pagina__cabecalho {
+    margin-bottom: var(--sp-lg);
+  }
+
+  .section {
+    margin-bottom: var(--sp-lg);
+  }
+
+  .card,
+  .cartao {
+    padding: var(--sp-md);
+  }
+
+  .footer__content,
+  .rodape__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal__footer {
+    flex-direction: column;
+    gap: var(--sp-sm);
+  }
+
+  .modal__footer .btn,
+  .modal__footer .botao {
+    width: 100%;
+  }
+}
+
+/* ============================================================================
+   12. NAVBAR MOBILE - MENU HAMBURGER
+   ============================================================================ */
+.navbar-mobile {
+  display: none;
+  height: var(--navbar-height);
+  background-color: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+  padding: 0 var(--sp-md);
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+}
+
+@media (max-width: 768px) {
+  .navbar-mobile {
+    display: flex;
+  }
+
+  .navbar-mobile__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-sm);
+    font-weight: var(--font-weight-700);
+    color: var(--text-primary);
+  }
+
+  .navbar-mobile__toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-primary);
+    font-size: var(--font-size-xl);
+    padding: var(--sp-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* ============================================================================
+   13. UTILIDADES
+   ============================================================================ */
+.breadcrumb {
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+}
+
+.divider {
+  height: 1px;
+  background-color: var(--border-color);
+  margin: var(--sp-lg) 0;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-3xl) var(--sp-lg);
+  text-align: center;
+}
+
+.empty-state__icon {
+  font-size: 4rem;
+  margin-bottom: var(--sp-lg);
+  opacity: 0.3;
+}
+
+.empty-state__title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-700);
+  margin-bottom: var(--sp-sm);
+  color: var(--text-primary);
+}
+
+.empty-state__text {
+  color: var(--text-secondary);
+  margin-bottom: var(--sp-lg);
+  max-width: 400px;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--border-color);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-tertiary) 25%,
+    var(--bg-secondary) 50%,
+    var(--bg-tertiary) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+.badge-pulse {
+  position: relative;
+}
+
+.badge-pulse::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: var(--radius-full);
+  background-color: currentColor;
+  opacity: 0.15;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

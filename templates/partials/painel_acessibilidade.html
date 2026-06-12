@@ -1,0 +1,23 @@
+<div class="acessibilidade-flutuante" aria-label="Ferramentas de acessibilidade">
+    <div id="painelAcessibilidade" class="acessibilidade-painel" role="dialog" aria-modal="false"
+        aria-labelledby="tituloAcessibilidade">
+        <h2 id="tituloAcessibilidade" class="acessibilidade-titulo">Acessibilidade</h2>
+
+        <div class="acessibilidade-acoes">
+            <button class="botao botao--suave" type="button" id="botaoAumentar">Aumentar fonte</button>
+            <button class="botao botao--suave" type="button" id="botaoDiminuir">Diminuir fonte</button>
+            <button class="botao botao--suave" type="button" id="botaoLer">Ler página (voz)</button>
+            <button class="botao botao--suave" type="button" id="botaoParar">Parar leitura</button>
+
+        </div>
+
+        <p class="ajuda" style="margin:10px 0 0;">
+            Dica: use TAB para navegar e Enter/Espaço para ativar botões.
+        </p>
+    </div>
+
+    <button id="alternarAcessibilidade" class="acessibilidade-alternar" type="button" aria-expanded="false"
+        aria-controls="painelAcessibilidade">
+        <img src="static/img/Logo acessibilidade.png" alt="img-acessibilidade">
+    </button>
+</div>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DataInsight • Confirmar Exclusão</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+
+  <div class="layout">
+    <aside class="sidebar" aria-label="Navegação principal">
+      <div class="sidebar__header">
+        <a class="marca" href="{{ url_for('pagina_landing') }}" aria-label="DataInsight - Início">
+          <span class="marca__simbolo" aria-hidden="true">
+            <i class="fa-solid fa-chart-column"></i>
+          </span>
+          DataInsight
+        </a>
+      </div>
+
+      <!-- Navegação lateral -->
+      {% include 'partials/navbar.html' %}
+
+    </aside>
+
+    <!-- Navegação móvel -->
+    {% include 'partials/navbar_mobile.html' %}
+
+    <div class="main">
+      <header class="topbar">
+        <div class="topbar__actions">
+          <button class="botao botao--suave" type="button" onclick="alternarTema()" aria-label="Alternar tema">
+            <i class="fa-solid fa-moon"></i>
+          </button>
+          <a class="botao botao--suave" href="{{ url_for('pagina_configuracoes') }}" aria-label="Abrir configurações">
+            <i class="fa-solid fa-gear"></i>
+          </a>
+        </div>
+      </header>
+
+      <main id="conteudo" class="pagina" role="main">
+        <div class="container">
+          <header class="pagina__cabecalho">
+            <div class="migalhas">Início &gt; Dados &gt; Confirmar Exclusão</div>
+            <h1 class="h1">Confirmação de Exclusão</h1>
+            <p class="p">Digite sua senha para confirmar a exclusão permanente de todos os dados.</p>
+          </header>
+
+          <section style="display: flex; justify-content: center; margin-top: 40px;">
+            <div class="cartao" style="max-width: 500px; width: 100%;">
+              
+              <div style="background: rgba(220, 38, 38, 0.1); padding: 16px; border-radius: 8px; border-left: 4px solid #DC2626; margin-bottom: 24px;">
+                <p style="color: var(--perigo); font-weight: 600; margin: 0;">
+                  <i class="fa-solid fa-exclamation-triangle"></i> ATENÇÃO: Esta ação é IRREVERSÍVEL!
+                </p>
+                <p style="color: var(--texto); margin-top: 8px; margin-bottom: 0;">
+                  Todos os seus dados será apagados permanentemente. Esta ação não pode ser desfeita.
+                </p>
+              </div>
+
+              <form id="formConfirmarExclusao">
+                <div style="margin-bottom: 20px;">
+                  <label for="senhaConfirmacao" style="display: block; font-weight: 600; margin-bottom: 8px;">
+                    Confirme sua Senha
+                  </label>
+                  <input 
+                    type="password" 
+                    id="senhaConfirmacao" 
+                    class="entrada" 
+                    placeholder="Digite sua senha" 
+                    required
+                    style="width: 100%; padding: 12px; border: 1px solid var(--borda); border-radius: 6px; font-size: 16px;"
+                  />
+                </div>
+
+                <div style="display: flex; gap: 12px; margin-top: 24px;">
+                  <button 
+                    type="submit" 
+                    class="botao botao--delet" 
+                    style="flex: 1; justify-content: center;"
+                  >
+                    Sim, Apagar Todos os Dados
+                  </button>
+                  <a 
+                    href="{{ url_for('pagina_dados') }}" 
+                    class="botao botao--suave" 
+                    style="flex: 1; justify-content: center; text-decoration: none;"
+                  >
+                    Cancelar
+                  </a>
+                </div>
+              </form>
+
+              <div id="mensagemStatus" style="margin-top: 16px; display: none;"></div>
+
+            </div>
+          </section>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  {% include 'partials/footer.html' %}
+
+  <!-- Painel Acessibilidae -->
+  <!-- u{2672} Painel Avan�ado de Acessibilidade -->
+  {% include 'partials/painel_acessibilidade.html' %}
+
+  <!-- Chatbot Flutuante -->
+  {% include 'partials/chatbot.html' %}
+
+  <div vw class="enabled" id="Vlibras">
+    <div vw-access-button class="active"></div>
+    <div vw-plugin-wrapper>
+      <div class="vw-plugin-top-wrapper"></div>
+    </div>
+  </div>
+
+  <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+
+  <script>
+    new window.VLibras.Widget('https://vlibras.gov.br/app');
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+  <script>
+    const token = new URLSearchParams(window.location.search).get('token');
+    const form = document.getElementById('formConfirmarExclusao');
+    const statusDiv = document.getElementById('mensagemStatus');
+
+    if (!token) {
+      window.location.href = '{{ url_for("pagina_dados") }}';
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const senha = document.getElementById('senhaConfirmacao').value;
+
+      if (!senha) {
+        statusDiv.style.display = 'block';
+        statusDiv.innerHTML = `
+          <div style="padding: 12px; border-radius: 6px; background: rgba(220, 38, 38, 0.1); border: 1px solid #DC2626;">
+            <p style="color: var(--perigo); margin: 0;"><strong>✗ Erro:</strong> Digite sua senha</p>
+          </div>
+        `;
+        return;
+      }
+
+      try {
+        const formData = new FormData();
+        formData.append('senha', senha);
+
+        const response = await fetch(`/processar-exclusao?token=${token}`, {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          statusDiv.style.display = 'block';
+          statusDiv.innerHTML = `
+            <div style="padding: 12px; border-radius: 6px; background: rgba(220, 38, 38, 0.1); border: 1px solid #DC2626;">
+              <p style="color: var(--perigo); margin: 0;"><strong>✗ Erro:</strong> ${data.mensagem}</p>
+            </div>
+          `;
+          return;
+        }
+
+        statusDiv.style.display = 'block';
+        statusDiv.innerHTML = `
+          <div style="padding: 12px; border-radius: 6px; background: rgba(22, 163, 74, 0.1); border: 1px solid #16A34A;">
+            <p style="color: var(--sucesso); margin: 0;"><strong>✓ Sucesso:</strong> ${data.mensagem}</p>
+          </div>
+        `;
+
+        setTimeout(() => {
+          window.location.href = '{{ url_for("pagina_dados") }}';
+        }, 2000);
+
+      } catch (erro) {
+        statusDiv.style.display = 'block';
+        statusDiv.innerHTML = `
+          <div style="padding: 12px; border-radius: 6px; background: rgba(220, 38, 38, 0.1); border: 1px solid #DC2626;">
+            <p style="color: var(--perigo); margin: 0;"><strong>✗ Erro:</strong> Erro ao processar exclusão</p>
+          </div>
+        `;
+      }
+    });
+  </script>
+
+</body>
+
+</html>
+

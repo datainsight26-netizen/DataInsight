@@ -1,0 +1,415 @@
+/* ============================================================================
+   UTILITÁRIOS & COMPATIBILIDADE
+   Classes auxiliares e compatibilidade com código legado
+   ============================================================================ */
+
+/* ============================================================================
+   1. MARGIN & PADDING UTILITIES
+   ============================================================================ */
+.mb-0 { margin-bottom: 0; }
+.mb-xs { margin-bottom: var(--sp-xs); }
+.mb-sm { margin-bottom: var(--sp-sm); }
+.mb-md { margin-bottom: var(--sp-md); }
+.mb-lg { margin-bottom: var(--sp-lg); }
+.mb-xl { margin-bottom: var(--sp-xl); }
+.mb-2xl { margin-bottom: var(--sp-2xl); }
+
+.mt-0 { margin-top: 0; }
+.mt-xs { margin-top: var(--sp-xs); }
+.mt-sm { margin-top: var(--sp-sm); }
+.mt-md { margin-top: var(--sp-md); }
+.mt-lg { margin-top: var(--sp-lg); }
+.mt-xl { margin-top: var(--sp-xl); }
+
+.mx-auto { margin-left: auto; margin-right: auto; }
+.my-auto { margin-top: auto; margin-bottom: auto; }
+
+.p-0 { padding: 0; }
+.p-xs { padding: var(--sp-xs); }
+.p-sm { padding: var(--sp-sm); }
+.p-md { padding: var(--sp-md); }
+.p-lg { padding: var(--sp-lg); }
+.p-xl { padding: var(--sp-xl); }
+
+.px-md { padding-left: var(--sp-md); padding-right: var(--sp-md); }
+.py-md { padding-top: var(--sp-md); padding-bottom: var(--sp-md); }
+
+/* ============================================================================
+   2. WIDTH & HEIGHT
+   ============================================================================ */
+.w-100 { width: 100%; }
+.w-auto { width: auto; }
+.h-100 { height: 100%; }
+.h-auto { height: auto; }
+
+/* ============================================================================
+   3. DISPLAY & VISIBILITY
+   ============================================================================ */
+.d-none { display: none; }
+.d-block { display: block; }
+.d-inline { display: inline; }
+.d-inline-block { display: inline-block; }
+.d-flex { display: flex; }
+.d-grid { display: grid; }
+
+.flex-wrap { flex-wrap: wrap; }
+.flex-col { flex-direction: column; }
+.flex-center { justify-content: center; }
+.flex-between { justify-content: space-between; }
+.align-items-center { align-items: center; }
+.justify-content-center { justify-content: center; }
+
+.gap-xs { gap: var(--sp-xs); }
+.gap-sm { gap: var(--sp-sm); }
+.gap-md { gap: var(--sp-md); }
+.gap-lg { gap: var(--sp-lg); }
+.gap-xl { gap: var(--sp-xl); }
+
+.m-0 { margin: 0; }
+
+/* ============================================================================
+   4. TEXT UTILITIES
+   ============================================================================ */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-tertiary { color: var(--text-tertiary); }
+.text-muted { color: var(--text-muted); }
+
+.text-sm { font-size: var(--font-size-sm); }
+.text-base { font-size: var(--font-size-base); }
+.text-lg { font-size: var(--font-size-lg); }
+.text-xl { font-size: var(--font-size-xl); }
+
+.font-normal { font-weight: 400; }
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+
+.line-clamp-1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* ============================================================================
+   5. BACKGROUND & COLORS
+   ============================================================================ */
+.bg-primary { background-color: var(--bg-primary); }
+.bg-secondary { background-color: var(--bg-secondary); }
+.bg-tertiary { background-color: var(--bg-tertiary); }
+
+.bg-success { background-color: var(--color-success-light); }
+.bg-danger { background-color: var(--color-danger-light); }
+.bg-warning { background-color: var(--color-warning-light); }
+
+.text-success { color: var(--color-success); }
+.text-danger { color: var(--color-danger); }
+.text-warning { color: var(--color-warning); }
+
+/* ============================================================================
+   6. BORDER UTILITIES
+   ============================================================================ */
+.border { border: 1px solid var(--border-color); }
+.border-top { border-top: 1px solid var(--border-color); }
+.border-bottom { border-bottom: 1px solid var(--border-color); }
+.border-left { border-left: 1px solid var(--border-color); }
+.border-right { border-right: 1px solid var(--border-color); }
+
+.rounded { border-radius: var(--radius-md); }
+.rounded-sm { border-radius: var(--radius-sm); }
+.rounded-lg { border-radius: var(--radius-lg); }
+.rounded-xl { border-radius: var(--radius-xl); }
+.rounded-full { border-radius: var(--radius-full); }
+
+/* ============================================================================
+   7. SHADOW UTILITIES
+   ============================================================================ */
+.shadow-sm { box-shadow: var(--shadow-sm); }
+.shadow-md { box-shadow: var(--shadow-md); }
+.shadow-lg { box-shadow: var(--shadow-lg); }
+
+/* ============================================================================
+   8. OVERFLOW
+   ============================================================================ */
+.overflow-hidden { overflow: hidden; }
+.overflow-auto { overflow: auto; }
+.overflow-x-auto { overflow-x: auto; }
+.overflow-y-auto { overflow-y: auto; }
+
+/* ============================================================================
+   9. GRID COMPATIBILIDADE
+   ============================================================================ */
+.grade {
+  display: grid;
+  gap: var(--sp-lg);
+}
+
+.grade--2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.grade--3 { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+.grade--4 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+
+@media (max-width: 1024px) {
+  .grade--3,
+  .grade--4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .grade--2,
+  .grade--3,
+  .grade--4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================================
+   10. CONTAINER
+   ============================================================================ */
+.container {
+  width: 100%;
+  max-width: var(--container-max-width, 1400px);
+  margin: 0 auto;
+  padding: 0 var(--sp-md);
+}
+
+@media (max-width: 1024px) {
+  .container {
+    padding: 0 var(--sp-md);
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 var(--sp-sm);
+  }
+}
+
+/* ============================================================================
+   11. SECTION SPACING
+   ============================================================================ */
+.section {
+  padding: var(--sp-xl) 0;
+}
+
+.section--lg {
+  padding: var(--sp-2xl) 0;
+}
+
+.section--sm {
+  padding: var(--sp-lg) 0;
+}
+
+/* ============================================================================
+   12. COMPATIBILIDADE LEGADA
+   ============================================================================ */
+
+/* Boostrap Classes */
+.row {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--sp-md);
+}
+
+.col-12 { grid-column: span 12; }
+.col-11 { grid-column: span 11; }
+.col-10 { grid-column: span 10; }
+.col-9 { grid-column: span 9; }
+.col-8 { grid-column: span 8; }
+.col-7 { grid-column: span 7; }
+.col-6 { grid-column: span 6; }
+.col-5 { grid-column: span 5; }
+.col-4 { grid-column: span 4; }
+.col-3 { grid-column: span 3; }
+.col-2 { grid-column: span 2; }
+.col-1 { grid-column: span 1; }
+
+.col-lg-6 { grid-column: span 6; }
+.col-lg-5 { grid-column: span 5; }
+.col-lg-4 { grid-column: span 4; }
+.col-lg-3 { grid-column: span 3; }
+.col-lg-2 { grid-column: span 2; }
+
+.col-md-6 { grid-column: span 6; }
+.col-md-4 { grid-column: span 4; }
+.col-md-3 { grid-column: span 3; }
+
+.col-sm-6 { grid-column: span 6; }
+.col-sm-12 { grid-column: span 12; }
+
+.fw-bold { font-weight: 700; }
+.fw-semibold { font-weight: 600; }
+
+.g-3 { gap: var(--sp-lg); }
+.g-2 { gap: var(--sp-md); }
+.g-1 { gap: var(--sp-sm); }
+
+.p-1 { padding: var(--sp-sm); }
+
+.m-0 { margin: 0; }
+
+.mb-4 { margin-bottom: var(--sp-xl); }
+.mb-3 { margin-bottom: var(--sp-lg); }
+.mb-2 { margin-bottom: var(--sp-md); }
+.mb-1 { margin-bottom: var(--sp-sm); }
+
+.mt-4 { margin-top: var(--sp-xl); }
+.mt-3 { margin-top: var(--sp-lg); }
+.mt-2 { margin-top: var(--sp-md); }
+.mt-1 { margin-top: var(--sp-sm); }
+
+.flex-wrap { flex-wrap: wrap; }
+
+/* Formulário */
+.form-select {
+  padding: var(--sp-sm) var(--sp-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-base);
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+.form-select.w-auto {
+  width: auto;
+}
+
+/* ============================================================================
+   13. RESPONSIVE CLASSES
+   ============================================================================ */
+@media (max-width: 1024px) {
+  .hide-lg { display: none; }
+  .col-lg-6 { grid-column: span 12; }
+  .col-lg-4 { grid-column: span 6; }
+  .col-lg-3 { grid-column: span 6; }
+}
+
+@media (max-width: 768px) {
+  .hide-md { display: none; }
+  .col-md-6 { grid-column: span 12; }
+  .col-md-4 { grid-column: span 12; }
+  .col-md-3 { grid-column: span 12; }
+  .col-sm-6 { grid-column: span 12; }
+}
+
+@media (max-width: 480px) {
+  .hide-sm { display: none; }
+  .col-12 { grid-column: span 12; }
+  
+  .container {
+    padding: 0 var(--sp-sm);
+  }
+}
+
+/* ============================================================================
+   14. CLEARFIX & FLOATS
+   ============================================================================ */
+.clearfix::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+.float-start { float: left; }
+.float-end { float: right; }
+
+/* ============================================================================
+   15. POSIÇÃO
+   ============================================================================ */
+.position-relative { position: relative; }
+.position-absolute { position: absolute; }
+.position-fixed { position: fixed; }
+.position-sticky { position: sticky; }
+
+/* ============================================================================
+   16. OPACIDADE
+   ============================================================================ */
+.opacity-0 { opacity: 0; }
+.opacity-25 { opacity: 0.25; }
+.opacity-50 { opacity: 0.5; }
+.opacity-75 { opacity: 0.75; }
+.opacity-100 { opacity: 1; }
+
+/* ============================================================================
+   17. TRANSITION
+   ============================================================================ */
+.transition-all {
+  transition: all var(--transition-base);
+}
+
+.transition-fast {
+  transition: all var(--transition-fast);
+}
+
+/* ============================================================================
+   18. ANIMAÇÕES
+   ============================================================================ */
+.animate-fadeIn {
+  animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-slideInUp {
+  animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================================
+   19. VARIÁVEIS LEGADO
+   ============================================================================ */
+.muted {
+  color: var(--text-muted);
+}
+
+.texto-secundario {
+  color: var(--text-secondary);
+}
+
+.d-flex {
+  display: flex;
+}
+
+.align-items-center {
+  align-items: center;
+}
+
+.justify-content-between {
+  justify-content: space-between;
+}

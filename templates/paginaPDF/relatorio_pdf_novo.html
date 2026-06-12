@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>{{ dados.nome }}</title>
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: #f4f6f9;
+        padding: 20px;
+        line-height: 1.6;
+        color: #333;
+      }
+      
+      .container {
+        background: white;
+        padding: 40px;
+        max-width: 900px;
+        margin: auto;
+      }
+      
+      /* HEADER */
+      .header {
+        display: flex;
+        justify-content: space-between;
+        border-bottom: 3px solid #2c3e50;
+        padding-bottom: 20px;
+        margin-bottom: 30px;
+      }
+      
+      .header-left h1 {
+        font-size: 28px;
+        color: #2c3e50;
+        margin-bottom: 8px;
+      }
+
+      .header-left p {
+        font-size: 14px;
+        color: #666;
+      }
+      
+      .header-right {
+        text-align: right;
+      }
+
+      .header-right .logo {
+        font-size: 24px;
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 8px;
+      }
+
+      .header-right p {
+        font-size: 12px;
+        color: #999;
+      }
+      
+      /* TÍTULOS */
+      h2 {
+        margin-top: 30px;
+        margin-bottom: 15px;
+        font-size: 18px;
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 8px;
+      }
+
+      h3 {
+        font-size: 16px;
+        color: #34495e;
+        margin-top: 15px;
+        margin-bottom: 10px;
+      }
+      
+      /* KPI CARDS */
+      .kpis {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+        margin-top: 15px;
+        margin-bottom: 25px;
+      }
+      
+      .card {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        padding: 18px;
+        border-radius: 8px;
+        text-align: center;
+        border-left: 4px solid #3498db;
+      }
+
+      .card.destaque {
+        background: linear-gradient(135deg, #e6f4ea 0%, #a8d5ba 100%);
+        border-left-color: #10B981;
+      }
+      
+      .card p {
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 8px;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+      
+      .card h3 {
+        margin: 0;
+        font-size: 22px;
+        color: #2c3e50;
+        font-weight: bold;
+      }
+      
+      /* TABELA */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+        margin-bottom: 25px;
+      }
+      
+      thead {
+        background: #2c3e50;
+        color: white;
+      }
+      
+      th {
+        padding: 12px;
+        text-align: center;
+        font-weight: 600;
+        font-size: 13px;
+        border: 1px solid #34495e;
+      }
+
+      td {
+        padding: 10px 12px;
+        text-align: center;
+        border: 1px solid #ddd;
+        font-size: 12px;
+      }
+
+      tbody tr:nth-child(even) {
+        background: #f9f9f9;
+      }
+      
+      /* INSIGHTS */
+      .insights-section {
+        background: #f0f8ff;
+        padding: 15px;
+        border-left: 4px solid #3498db;
+        margin-top: 25px;
+        border-radius: 4px;
+      }
+
+      .insights-section ul {
+        margin: 10px 0 0 20px;
+        font-size: 13px;
+        color: #333;
+      }
+
+      .insights-section li {
+        margin-bottom: 8px;
+        line-height: 1.5;
+      }
+      
+      /* FOOTER */
+      .footer {
+        margin-top: 40px;
+        padding-top: 15px;
+        border-top: 2px solid #ddd;
+        font-size: 11px;
+        color: #999;
+        text-align: center;
+      }
+      
+      /* MÉDIA MOBILIZADOR */
+      .section-description {
+        font-size: 13px;
+        color: #666;
+        margin-bottom: 15px;
+        line-height: 1.6;
+      }
+
+      .button-area {
+        display: none;
+      }
+
+      @media print {
+        body {
+          padding: 0;
+        }
+        .container {
+          max-width: 100%;
+          margin: 0;
+          padding: 20px;
+        }
+      }
+    </style>
+
+    <!-- Biblioteca para gerar PDF no navegador se pdfkit falhar -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  </head>
+
+  <body>
+    <div id="relatorio" class="container">
+      <!-- HEADER -->
+      <div class="header">
+        <div class="header-left">
+          <h1>{{ dados.nome }}</h1>
+          <p><strong>Período:</strong> {{ dados.periodo }}</p>
+          <p><strong>Gerado em:</strong> {{ dados.data }}</p>
+        </div>
+
+        <div class="header-right">
+          <div class="logo">📊 DataInsight</div>
+          <p>Relatório Inteligente gerado por IA</p>
+        </div>
+      </div>
+
+      <!-- KPI -->
+      {% if dados.kpis is defined and dados.kpis %}
+        <h2>📈 Indicadores de Desempenho (KPIs)</h2>
+        <div class="kpis">
+          <div class="card">
+            <p>Faturamento</p>
+            <h3>R$ {{ dados.kpis.faturamento }}</h3>
+          </div>
+          <div class="card">
+            <p>Lucro</p>
+            <h3>R$ {{ dados.kpis.lucro }}</h3>
+          </div>
+          <div class="card">
+            <p>Despesas</p>
+            <h3>R$ {{ dados.kpis.despesas }}</h3>
+          </div>
+          <div class="card destaque">
+            <p>Crescimento</p>
+            <h3>{{ dados.kpis.crescimento }}</h3>
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- TABELA -->
+      {% if dados.dadosDetalhados %}
+        <h2>📊 Análise Detalhada por Período</h2>
+        {% if dados.tabela | default([]) | length > 0 %}
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 20%;">Mês/Período</th>
+                <th style="width: 20%;">Faturamento</th>
+                <th style="width: 20%;">Lucro</th>
+                <th style="width: 20%;">Despesas</th>
+                <th style="width: 20%;">Margem</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in dados.tabela %}
+                <tr>
+                  <td><strong>{{ item.mes }}</strong></td>
+                  <td>R$ {{ item.fat }}</td>
+                  <td>R$ {{ item.luc }}</td>
+                  <td>R$ {{ item.desp }}</td>
+                  <td><strong>{{ item.margem }}</strong></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p class="section-description">Nenhum dado disponível para a tabela no período selecionado.</p>
+        {% endif %}
+      {% endif %}
+
+      <!-- INSIGHTS -->
+      <div class="insights-section">
+        <h2 style="margin-top: 0; color: #2c3e50; border: none; padding: 0;">💡 Insights & Recomendações</h2>
+        {% if dados.insights is defined and dados.insights|length > 0 %}
+          <ul>
+            {% for insight in dados.insights %}
+              <li>{{ insight }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <ul>
+            <li>Análise rápida gerada automaticamente pela IA com base no período solicitado.</li>
+            <li>Revise os KPIs acima para identificar oportunidades de melhoria.</li>
+          </ul>
+        {% endif %}
+      </div>
+
+      <!-- FOOTER -->
+      <div class="footer">
+        <p>🔐 Este relatório foi gerado confidencialmente pela plataforma DataInsight.</p>
+        <p>Período de análise: <strong>{{ dados.periodo }}</strong> | Data: <strong>{{ dados.data }}</strong></p>
+        <p style="margin-top: 10px; border-top: 1px solid #ddd; padding-top: 10px;">
+          DataInsight™ © 2024 - Todos os direitos reservados. Informações confidenciais e proprietárias.
+        </p>
+      </div>
+    </div>
+
+    <!-- Botão de download manual (fallback) -->
+    <div style="text-align: center; margin-top: 30px; display: {{ 'block' if auto else 'none' }};">
+      <button onclick="baixarPDFManual()" style="padding: 12px 30px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold;">
+        📥 Baixar PDF
+      </button>
+    </div>
+
+    <script>
+      // Função para download manual
+      function baixarPDFManual() {
+        const elemento = document.getElementById('relatorio');
+        const dataStr = '{{ dados.data }}'.replace(/\//g, '_');
+        const option = {
+          margin: [10, 10, 10, 10],
+          filename: 'relatorio_ia_' + dataStr + '.pdf',
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          pagebreak: { mode: ['css', 'legacy'] }
+        };
+        html2pdf().set(option).from(elemento).save()
+          .then(() => {
+            console.log('PDF gerado com sucesso');
+          })
+          .catch(err => {
+            console.error('Erro ao gerar PDF:', err);
+            alert('Erro ao gerar PDF: ' + err.message);
+          });
+      }
+
+      // Script para gerar PDF automaticamente se auto=true
+      window.addEventListener('DOMContentLoaded', () => {
+        const auto = {{ auto | tojson }};
+        if (auto) {
+          console.log('Iniciando download automático de PDF com html2pdf...');
+          // Se chegou aqui, pdfkit falhou no servidor. Usar html2pdf
+          setTimeout(() => {
+            try {
+              baixarPDFManual();
+            } catch (error) {
+              console.error('Erro ao iniciar geração de PDF:', error);
+              alert('Erro: ' + error.message);
+            }
+          }, 1500);
+        }
+      });
+    </script>
+  </body>
+</html>

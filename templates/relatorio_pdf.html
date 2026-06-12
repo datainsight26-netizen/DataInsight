@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>{{ dados.nome }}</title>
+
+    <!-- Fontes modernas -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+    <style>
+      :root {
+        --primaria: #3b82f6;
+        --primaria-escura: #2563eb;
+        --sucesso: #10b981;
+        --aviso: #f59e0b;
+        --perigo: #ef4444;
+        --texto-escuro: #1f2937;
+        --texto-claro: #6b7280;
+        --fundo: #f8fafc;
+        --borda: #e2e8f0;
+      }
+
+      body {
+        font-family: 'Inter', sans-serif;
+        background: #e2e8f0; /* Fundo fora do papel */
+        margin: 0;
+        padding: 40px 20px;
+        color: var(--texto-escuro);
+      }
+      
+      .container {
+        background: white;
+        padding: 50px 60px;
+        max-width: 900px;
+        margin: auto;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        border-top: 8px solid var(--primaria);
+      }
+
+      /* CABEÇALHO */
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        border-bottom: 2px solid var(--borda);
+        padding-bottom: 25px;
+        margin-bottom: 35px;
+      }
+
+      .header-info h1 {
+        margin: 0 0 10px 0;
+        font-size: 32px;
+        color: var(--texto-escuro);
+        letter-spacing: -0.5px;
+      }
+
+      .header-info p {
+        margin: 0;
+        font-size: 15px;
+        color: var(--texto-claro);
+      }
+
+      .logo-area {
+        text-align: right;
+      }
+
+      .logo-marca {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        justify-content: flex-end;
+        color: var(--primaria);
+        margin-bottom: 8px;
+      }
+
+      .logo-marca i {
+        font-size: 20px;
+      }
+
+      .logo-marca h2 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: -1px;
+      }
+
+      /* TÍTULOS DE SEÇÃO */
+      .section-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--texto-escuro);
+        margin: 40px 0 20px 0;
+        padding-bottom: 8px;
+        border-bottom: 2px solid var(--fundo);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .section-title i {
+        color: var(--primaria);
+      }
+
+      /* KPIs */
+      .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+        margin-bottom: 10px;
+      }
+
+      .kpi-card {
+        background: var(--fundo);
+        padding: 20px 15px;
+        border-radius: 8px;
+        text-align: center;
+        border: 1px solid var(--borda);
+      }
+
+      .kpi-card.highlight {
+        background: rgba(16, 185, 129, 0.1);
+        border-color: rgba(16, 185, 129, 0.3);
+      }
+
+      .kpi-label {
+        font-size: 13px;
+        color: var(--texto-claro);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 500;
+      }
+
+      .kpi-value {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--texto-escuro);
+        margin: 0;
+      }
+
+      .kpi-card.highlight .kpi-value {
+        color: var(--sucesso);
+      }
+
+      /* TABELAS */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+        font-size: 14px;
+      }
+
+      th {
+        background: var(--fundo);
+        color: var(--texto-claro);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 12px;
+        letter-spacing: 0.5px;
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 2px solid var(--borda);
+      }
+
+      td {
+        padding: 12px 15px;
+        border-bottom: 1px solid var(--borda);
+        color: var(--texto-escuro);
+      }
+
+      tbody tr:nth-child(even) {
+        background-color: rgba(248, 250, 252, 0.5);
+      }
+
+      /* INSIGHTS */
+      .insights-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .insights-list li {
+        position: relative;
+        padding: 15px 15px 15px 45px;
+        background: var(--fundo);
+        margin-bottom: 10px;
+        border-radius: 8px;
+        font-size: 15px;
+        line-height: 1.5;
+        border-left: 4px solid var(--primaria);
+      }
+
+      .insights-list li::before {
+        content: '\f0eb'; /* ícone de lâmpada */
+        font-family: "Font Awesome 6 Free";
+        font-weight: 900;
+        position: absolute;
+        left: 15px;
+        top: 15px;
+        color: var(--primaria);
+      }
+
+      /* RODAPÉ */
+      .footer {
+        margin-top: 50px;
+        padding-top: 20px;
+        border-top: 1px solid var(--borda);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        color: var(--texto-claro);
+      }
+
+      .acoes {
+        text-align: center;
+        margin-top: 30px;
+      }
+
+      .btn-baixar {
+        background: var(--primaria);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        font-size: 16px;
+        font-weight: 500;
+        border-radius: 6px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: background 0.2s;
+        font-family: 'Inter', sans-serif;
+      }
+
+      .btn-baixar:hover {
+        background: var(--primaria-escura);
+      }
+
+      .text-right { text-align: right; }
+      .text-center { text-align: center; }
+      
+      /* Oculta o botão na hora da impressão */
+      @media print {
+        body { background: white; padding: 0; }
+        .container { box-shadow: none; padding: 0; max-width: 100%; border-top: none; }
+        .acoes { display: none; }
+      }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  </head>
+
+  <body>
+    <div id="relatorio" class="container">
+      
+      <!-- CABEÇALHO -->
+      <div class="header">
+        <div class="header-info">
+          <h1>{{ dados.nome }}</h1>
+          <p><strong>Período de Análise:</strong> {{ dados.periodo }}</p>
+        </div>
+
+        <div class="logo-area">
+          <div class="logo-marca">
+            <i class="fa-solid fa-chart-column"></i>
+            <h2>DataInsight</h2>
+          </div>
+          <p style="margin:0; font-size:13px; color: var(--texto-claro);">Emitido em: {{ dados.data }}</p>
+        </div>
+      </div>
+
+      <!-- KPIs PRINCIPAIS -->
+      {% if dados.kpis is defined %}
+        <h2 class="section-title"><i class="fa-solid fa-chart-bar"></i> Resumo de Desempenho</h2>
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Faturamento</div>
+            <p class="kpi-value">R$ {{ dados.kpis.faturamento }}</p>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Lucro Líquido</div>
+            <p class="kpi-value" style="color: var(--sucesso);">R$ {{ dados.kpis.lucro }}</p>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Despesas</div>
+            <p class="kpi-value" style="color: var(--perigo);">R$ {{ dados.kpis.despesas }}</p>
+          </div>
+          <div class="kpi-card highlight">
+            <div class="kpi-label">Crescimento</div>
+            <p class="kpi-value">{{ dados.kpis.crescimento }}</p>
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- GRÁFICO -->
+      {% if dados.grafico and dados.tabela %}
+        <h2 class="section-title"><i class="fa-solid fa-chart-simple"></i> Visualização Gráfica</h2>
+        <div style="width:100%; height:320px; margin-bottom:20px;">
+          <div id="grafico-pdf" style="width:100%; height:300px;"></div>
+        </div>
+      {% endif %}
+
+      <!-- TENDÊNCIAS -->
+      {% if dados.tendencias and dados.tabela %}
+        <h2 class="section-title"><i class="fa-solid fa-arrow-trend-up"></i> Tendências de Crescimento</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Mês</th>
+              <th class="text-right">Faturamento</th>
+              <th class="text-right">Variação (vs Mês Anterior)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in dados.tabela %}
+              <tr>
+                <td><strong>{{ item.mes }}</strong></td>
+                <td class="text-right">R$ {{ item.fat }}</td>
+                <td class="text-right">
+                  {% if '-' in item.variacao %}
+                    <span style="color: var(--perigo);"><i class="fa-solid fa-arrow-down" style="font-size: 10px;"></i> {{ item.variacao }}</span>
+                  {% elif item.variacao != '-' and item.variacao != '0%' %}
+                    <span style="color: var(--sucesso);"><i class="fa-solid fa-arrow-up" style="font-size: 10px;"></i> {{ item.variacao }}</span>
+                  {% else %}
+                    <span style="color: var(--texto-claro);">{{ item.variacao }}</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+
+      <!-- ANÁLISE DE MARGEM -->
+      {% if dados.margem and dados.tabela %}
+        <h2 class="section-title"><i class="fa-solid fa-percent"></i> Análise de Margem de Lucro</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Mês</th>
+              <th class="text-right">Lucro Registrado</th>
+              <th class="text-right">Margem (%)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in dados.tabela %}
+              <tr>
+                <td><strong>{{ item.mes }}</strong></td>
+                <td class="text-right">R$ {{ item.luc }}</td>
+                <td class="text-right" style="font-weight: 600; color: var(--primaria);">{{ item.margem }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+
+      <!-- TABELA DE DADOS DETALHADA -->
+      {% if dados.dadosDetalhados and dados.tabela %}
+        <h2 class="section-title"><i class="fa-solid fa-table"></i> Tabela Consolidada de Dados</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Período</th>
+              <th class="text-right">Faturamento</th>
+              <th class="text-right">Despesas</th>
+              <th class="text-right">Lucro</th>
+              <th class="text-right">Margem</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in dados.tabela %}
+              <tr>
+                <td><strong>{{ item.mes }}</strong></td>
+                <td class="text-right">R$ {{ item.fat }}</td>
+                <td class="text-right" style="color: var(--perigo);">R$ {{ item.desp }}</td>
+                <td class="text-right" style="color: var(--sucesso);">R$ {{ item.luc }}</td>
+                <td class="text-right">{{ item.margem }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+
+      <!-- INSIGHTS E RECOMENDAÇÕES -->
+      {% if dados.insights and dados.insights|length > 0 %}
+        <div style="page-break-inside: avoid;">
+          <h2 class="section-title"><i class="fa-solid fa-lightbulb"></i> Inteligência e Recomendações</h2>
+          <ul class="insights-list">
+            {% for insight in dados.insights %}
+              <li>{{ insight }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      <!-- RODAPÉ DO DOCUMENTO -->
+      <div class="footer">
+        <div>Relatório Confidencial gerado pela plataforma <strong>DataInsight</strong></div>
+        <div>Página 1</div>
+      </div>
+    </div>
+
+    <!-- BOTÃO DE AÇÃO -->
+    <div class="acoes">
+      <button class="btn-baixar" onclick="gerarPDF()">
+        <i class="fa-solid fa-file-pdf"></i> Salvar PDF
+      </button>
+    </div>
+
+    <script>
+      function gerarPDF() {
+        const elemento = document.getElementById("relatorio");
+        const btn = document.querySelector(".btn-baixar");
+        
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gerando...';
+        btn.disabled = true;
+
+        return gerarGraficoPDF()
+          .then(() => new Promise(resolve => setTimeout(resolve, 800))) // Dar tempo para renderização
+          .then(() => {
+            const opt = {
+              margin: [10, 0, 10, 0], // Top, left, bottom, right
+              filename: '{{ dados.nome | replace(" ", "_") }}.pdf',
+              image: { type: 'jpeg', quality: 0.98 },
+              html2canvas: { scale: 2, useCORS: true, logging: false },
+              jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            return html2pdf().set(opt).from(elemento).save();
+          })
+          .then(() => {
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> PDF Salvo';
+            setTimeout(() => {
+              btn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> Salvar PDF';
+              btn.disabled = false;
+            }, 3000);
+          })
+          .catch(err => {
+            console.error('Erro ao gerar PDF:', err);
+            btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Erro';
+            btn.disabled = false;
+          });
+      }
+
+      function gerarGraficoPDF() {
+        const chartEl = document.getElementById('grafico-pdf');
+        // Usa a propriedade default caso a tabela seja None
+        const tabela = {{ dados.tabela | default([]) | tojson }};
+        
+        if (!chartEl || typeof ApexCharts === 'undefined' || !Array.isArray(tabela) || tabela.length === 0) {
+          return Promise.resolve();
+        }
+
+        const labels = tabela.map(item => item.mes);
+        // Usa os valores brutos para o gráfico funcionar perfeitamente
+        const faturamento = tabela.map(item => Number(item.fat_raw || 0));
+        const lucro = tabela.map(item => Number(item.luc_raw || 0));
+
+        if (window.graficoPdf) {
+          window.graficoPdf.destroy();
+        }
+
+        window.graficoPdf = new ApexCharts(chartEl, {
+          chart: { 
+            type: 'area', 
+            height: 300, 
+            toolbar: { show: false },
+            animations: { enabled: false } // Desabilitar animações garante que a captura do canvas seja imediata e correta
+          },
+          colors: ['#3b82f6', '#10b981'],
+          dataLabels: { enabled: false },
+          stroke: { curve: 'smooth', width: 3 },
+          fill: {
+            type: 'gradient',
+            gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05, stops: [0, 90, 100] }
+          },
+          series: [
+            { name: 'Faturamento', data: faturamento },
+            { name: 'Lucro', data: lucro }
+          ],
+          xaxis: { 
+            categories: labels,
+            axisBorder: { show: false },
+            axisTicks: { show: false }
+          },
+          yaxis: { 
+            labels: { formatter: v => 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) } 
+          },
+          grid: { borderColor: '#e2e8f0', strokeDashArray: 4 },
+          legend: { position: 'top', horizontalAlign: 'right' }
+        });
+
+        return window.graficoPdf.render();
+      }
+
+      window.addEventListener('DOMContentLoaded', () => {
+        try {
+          gerarGraficoPDF().then(() => {
+            const auto = {{ auto|tojson }};
+            if (auto) {
+              setTimeout(gerarPDF, 500); // pequeno delay para garantir que as fontes carregaram
+            }
+          });
+        } catch (error) {
+          console.error('Falha ao renderizar gráfico no PDF:', error);
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="DataInsight — Painel de visão rápida do negócio com KPIs, gráficos e insights de IA." />
+  <title>DataInsight • Início</title>
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
+
+  <!-- Charts -->
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
+</head>
+
+<body>
+  <a href="#conteudo" class="skip-link">Ir para conteúdo</a>
+
+  <div class="layout">
+
+    <!-- SIDEBAR FIXA -->
+    <aside class="sidebar" id="sidebar" aria-label="Navegação principal">
+      {% include 'partials/navbar.html' %}
+    </aside>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <div class="main">
+
+      <!-- TOPBAR -->
+      <header class="topbar" role="banner">
+        <div class="topbar__left">
+          <!-- Botão hamburger (mobile) -->
+          <button class="topbar__btn topbar__mobile-toggle"
+                  id="sidebarToggle"
+                  onclick="abrirSidebar()"
+                  aria-label="Abrir menu">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <span class="topbar__greeting">
+            Olá, <strong>{{ session.usuario_nome }}</strong>
+          </span>
+        </div>
+
+        <div class="topbar__actions">
+          <button class="topbar__btn"
+                  onclick="alternarTema()"
+                  aria-label="Alternar tema"
+                  id="btnTema"
+                  title="Alternar tema claro/escuro">
+            <i class="fa-solid fa-moon"></i>
+          </button>
+          <a class="topbar__btn"
+             href="{{ url_for('pagina_configuracoes') }}"
+             aria-label="Configurações"
+             title="Configurações">
+            <i class="fa-solid fa-gear"></i>
+          </a>
+          <a class="topbar__btn"
+             href="{{ url_for('pagina_perfil') }}"
+             aria-label="Perfil"
+             title="Perfil">
+            <i class="fa-solid fa-user"></i>
+          </a>
+        </div>
+      </header>
+
+      <!-- ÁREA DE SCROLL -->
+      <main id="conteudo" class="pagina" role="main" tabindex="-1">
+        <div class="container">
+
+          <!-- CABEÇALHO DA PÁGINA -->
+          <header class="pagina__cabecalho anim-fade-up">
+            <div class="migalhas">Início</div>
+            <h1 class="h1">Visão rápida do negócio</h1>
+            <p class="p">Indicadores de desempenho e oportunidades identificadas pela IA.</p>
+          </header>
+
+          <!-- FILTRO DE PERÍODO -->
+          <section class="cartao anim-fade-up anim-fade-up-d1" style="margin-bottom:20px;" aria-label="Filtros">
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+              <label for="periodo" style="font-size:0.8rem; font-weight:600; white-space:nowrap;">
+                <i class="fa-solid fa-calendar-days" style="color:var(--primaria); margin-right:4px;"></i>
+                Período
+              </label>
+              <select class="selecao" id="periodo" aria-label="Selecionar período"
+                      style="width:auto; padding:7px 12px; font-size:0.8rem;">
+                <option value="7_dias">Últimos 7 dias</option>
+                <option value="30_dias" selected>Últimos 30 dias</option>
+                <option value="90_dias">Últimos 90 dias</option>
+                <option value="ano_atual">Este ano</option>
+              </select>
+            </div>
+          </section>
+
+          <!-- STATUS DO NEGÓCIO (IA) -->
+          <section class="cartao anim-fade-up anim-fade-up-d1"
+                   id="status-negocio-section"
+                   style="margin-bottom:20px; border-left:4px solid var(--sucesso);"
+                   aria-label="Status do negócio">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+              <i class="fa-solid fa-circle-check" style="color:var(--sucesso);"></i>
+              <h2 style="font-size:0.9rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; margin:0; color:var(--suave);">Status do Negócio</h2>
+            </div>
+            <div id="status-negocio-container">
+              <div class="skeleton" style="height:18px; width:70%; margin-bottom:8px; border-radius:6px;"></div>
+              <div class="skeleton" style="height:14px; width:45%; border-radius:6px;"></div>
+            </div>
+          </section>
+
+          <!-- KPIs -->
+          <section aria-label="Indicadores de desempenho" style="margin-bottom:20px;">
+            <div class="kpi-grid">
+
+              <article class="kpi-card-premium anim-fade-up anim-fade-up-d1"
+                       style="--kpi-color:#3B82F6; --kpi-bg:rgba(59,130,246,0.08);">
+                <div class="kpi-card-premium__header">
+                  <span class="kpi-card-premium__label">Faturamento</span>
+                  <span class="kpi-card-premium__icon"><i class="fa-solid fa-arrow-trend-up"></i></span>
+                </div>
+                <div class="kpi-card-premium__value" data-indicador="faturamento-valor">—</div>
+                <span class="kpi-card-premium__change kpi-card-premium__change--up"
+                      data-indicador="faturamento-percent">—</span>
+              </article>
+
+              <article class="kpi-card-premium anim-fade-up anim-fade-up-d2"
+                       style="--kpi-color:#16A34A; --kpi-bg:rgba(22,163,74,0.08);">
+                <div class="kpi-card-premium__header">
+                  <span class="kpi-card-premium__label">Lucro</span>
+                  <span class="kpi-card-premium__icon"><i class="fa-solid fa-dollar-sign"></i></span>
+                </div>
+                <div class="kpi-card-premium__value" data-indicador="lucro-valor">—</div>
+                <span class="kpi-card-premium__change kpi-card-premium__change--up"
+                      data-indicador="lucro-percent">—</span>
+              </article>
+
+              <article class="kpi-card-premium anim-fade-up anim-fade-up-d3"
+                       style="--kpi-color:#DC2626; --kpi-bg:rgba(220,38,38,0.08);">
+                <div class="kpi-card-premium__header">
+                  <span class="kpi-card-premium__label">Despesas</span>
+                  <span class="kpi-card-premium__icon"><i class="fa-solid fa-receipt"></i></span>
+                </div>
+                <div class="kpi-card-premium__value" data-indicador="despesa-valor">—</div>
+                <span class="kpi-card-premium__change kpi-card-premium__change--down"
+                      data-indicador="despesa-percent">—</span>
+              </article>
+
+              <article class="kpi-card-premium anim-fade-up anim-fade-up-d4"
+                       style="--kpi-color:#8B5CF6; --kpi-bg:rgba(139,92,246,0.08);">
+                <div class="kpi-card-premium__header">
+                  <span class="kpi-card-premium__label">Crescimento</span>
+                  <span class="kpi-card-premium__icon"><i class="fa-solid fa-chart-bar"></i></span>
+                </div>
+                <div class="kpi-card-premium__value" data-indicador="crescimento-valor">—</div>
+                <span class="kpi-card-premium__change kpi-card-premium__change--up">Acumulado</span>
+              </article>
+
+            </div>
+          </section>
+
+          <!-- GRÁFICOS -->
+          <section style="margin-bottom:20px;" aria-label="Gráficos principais">
+            <h2 style="font-size:1rem; font-weight:700; margin-bottom:14px; color:var(--texto);">
+              Gráficos Principais
+            </h2>
+            <div class="grade grade--2">
+
+              <article class="cartao anim-fade-up anim-fade-up-d2">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+                  <h3 style="font-size:0.875rem; font-weight:700; margin:0; color:var(--texto);">
+                    Evolução do Faturamento
+                  </h3>
+                  <span class="badge-status badge-status--info">
+                    <i class="fa-solid fa-circle" style="font-size:6px;"></i> Ao vivo
+                  </span>
+                </div>
+                <div id="graficoLinhaFaturamento"></div>
+              </article>
+
+              <article class="cartao anim-fade-up anim-fade-up-d3">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+                  <h3 style="font-size:0.875rem; font-weight:700; margin:0; color:var(--texto);">
+                    Comparativo de Métricas
+                  </h3>
+                  <span class="badge-status badge-status--success">
+                    <i class="fa-solid fa-circle" style="font-size:6px;"></i> Ativo
+                  </span>
+                </div>
+                <div id="graficoPizzaComparativa"></div>
+              </article>
+
+            </div>
+          </section>
+
+          <!-- INSIGHTS DA IA -->
+          <section class="cartao anim-fade-up anim-fade-up-d4"
+                   style="background:linear-gradient(135deg, rgba(59,130,246,0.06) 0%, rgba(99,102,241,0.03) 100%);
+                          border-left:4px solid var(--primaria);"
+                   aria-label="Insights da IA">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+              <div style="width:28px; height:28px; background:var(--primaria); border-radius:8px;
+                          display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px;">
+                <i class="fa-solid fa-robot"></i>
+              </div>
+              <h2 style="font-size:0.9rem; font-weight:700; margin:0; color:var(--texto);">Insights da IA</h2>
+            </div>
+            <div id="container-insights-ia" style="display:flex; flex-direction:column; gap:10px;">
+              <div class="skeleton" style="height:16px; width:80%; border-radius:6px;"></div>
+              <div class="skeleton" style="height:16px; width:60%; border-radius:6px;"></div>
+              <div class="skeleton" style="height:16px; width:70%; border-radius:6px;"></div>
+            </div>
+          </section>
+
+        </div><!-- /container -->
+
+        <!-- FOOTER DENTRO DO SCROLL -->
+        {% include 'partials/footer.html' %}
+
+      </main><!-- /pagina -->
+
+    </div><!-- /main -->
+  </div><!-- /layout -->
+
+  <!-- Mobile nav & overlay -->
+  {% include 'partials/navbar_mobile.html' %}
+
+  <!-- Acessibilidade -->
+  {% include 'partials/painel_acessibilidade.html' %}
+
+  <!-- Chatbot -->
+  {% include 'partials/chatbot.html' %}
+
+  <!-- VLibras -->
+  <div vw class="enabled" id="Vlibras">
+    <div vw-access-button class="active"></div>
+    <div vw-plugin-wrapper>
+      <div class="vw-plugin-top-wrapper"></div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+  <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
+  <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/home.js') }}"></script>
+
+  <script>
+    // Sidebar mobile toggle
+    function abrirSidebar() {
+      document.getElementById('sidebar').classList.add('open');
+      document.getElementById('sidebarOverlay').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+    function fecharSidebar() {
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('sidebarOverlay').classList.remove('active');
+      document.body.style.overflow = '';
+    }
+    // Ícone tema
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('btnTema');
+      const update = () => {
+        const dark = document.body.classList.contains('tema-escuro');
+        btn.innerHTML = dark
+          ? '<i class="fa-solid fa-sun"></i>'
+          : '<i class="fa-solid fa-moon"></i>';
+      };
+      update();
+      btn.addEventListener('click', () => setTimeout(update, 50));
+    });
+  </script>
+
+</body>
+</html>

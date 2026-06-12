@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <title>DataInsight • Dashboard</title>
+
+  <!-- CSS - Design System & Layout -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/design-system.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
+
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- Charts -->
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+</head>
+
+<body>
+  <div class="layout">
+    <!-- SIDEBAR - Navegação Fixa -->
+    <aside class="sidebar" aria-label="Navegação principal" id="sidebar">
+      <div class="sidebar__header">
+        <a class="marca" href="{{ url_for('pagina_landing') }}" aria-label="DataInsight - Voltar para início">
+          <span class="marca__simbolo" aria-hidden="true">
+            <i class="fa-solid fa-chart-column"></i>
+          </span>
+          <span>DataInsight</span>
+        </a>
+      </div>
+
+      <!-- Navegação lateral -->
+      {% include 'partials/navbar.html' %}
+    </aside>
+
+    <!-- Overlay Sidebar Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <!-- MAIN - Conteúdo Principal -->
+    <div class="main">
+      <!-- TOPBAR - Barra de Topo -->
+      <header class="topbar">
+        <button class="btn btn-ghost" id="sidebarToggle" onclick="toggleSidebar()" aria-label="Abrir/fechar menu" style="display: none;">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        
+        <div class="topbar__actions">
+          <div class="topbar__user">
+            Olá, <strong>{{ session.usuario_nome }}</strong>
+          </div>
+          
+          <button class="btn btn-ghost" type="button" onclick="alternarTema()" aria-label="Alternar tema">
+            <i class="fa-solid fa-sun"></i>
+          </button>
+          
+          <a class="btn btn-ghost" href="{{ url_for('pagina_configuracoes') }}" aria-label="Abrir configurações">
+            <i class="fa-solid fa-gear"></i>
+          </a>
+        </div>
+      </header>
+
+      <!-- CONTEÚDO - Página com Scroll -->
+      <main id="conteudo" class="page" role="main">
+        <div class="container">
+          <!-- Page Header -->
+          <div class="page__header">
+            <div class="breadcrumb">Início</div>
+            <h1>Dashboard</h1>
+            <p>Visão geral e indicadores de desempenho do seu negócio</p>
+          </div>
+
+          <!-- Filtros -->
+          <div class="dashboard-filters">
+            <div class="dashboard-filters__group">
+              <label class="dashboard-filters__label" for="periodo">Período:</label>
+              <select class="dashboard-filters__select" id="periodo" aria-label="Selecionar período">
+                <option value="7_dias">Últimos 7 dias</option>
+                <option value="30_dias" selected>Últimos 30 dias</option>
+                <option value="90_dias">Últimos 90 dias</option>
+                <option value="ano_atual">Este ano</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Status do Negócio (IA) -->
+          <div class="card mb-2xl" style="border-left: 4px solid var(--color-success); grid-column: 1 / -1;">
+            <div style="display: flex; align-items: center; gap: var(--sp-md);">
+              <i class="fa-solid fa-lightbulb" style="font-size: 1.5rem; color: var(--color-success); opacity: 0.5;"></i>
+              <div>
+                <h2 class="h3 mb-sm">Análise de Inteligência Artificial</h2>
+                <p id="status-negocio-container" style="color: var(--text-secondary); animation: pulse 2s infinite;">
+                  A IA está analisando seu negócio...
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- KPIs - Indicadores Principais -->
+          <div class="dashboard">
+            <!-- KPI 1 - Faturamento -->
+            <div class="kpi-card">
+              <div class="kpi-card__header">
+                <div>
+                  <div class="kpi-card__label">Faturamento</div>
+                </div>
+                <div class="kpi-card__icon">
+                  <i class="fa-solid fa-dollar-sign"></i>
+                </div>
+              </div>
+              <div class="kpi-card__value" data-indicador="faturamento-valor">--</div>
+              <div class="kpi-card__change positive" data-indicador="faturamento-percent">
+                <i class="fa-solid fa-arrow-trend-up"></i>
+                <span>--</span>
+              </div>
+            </div>
+
+            <!-- KPI 2 - Lucro -->
+            <div class="kpi-card">
+              <div class="kpi-card__header">
+                <div>
+                  <div class="kpi-card__label">Lucro</div>
+                </div>
+                <div class="kpi-card__icon">
+                  <i class="fa-solid fa-chart-line"></i>
+                </div>
+              </div>
+              <div class="kpi-card__value" data-indicador="lucro-valor">--</div>
+              <div class="kpi-card__change positive" data-indicador="lucro-percent">
+                <i class="fa-solid fa-arrow-trend-up"></i>
+                <span>--</span>
+              </div>
+            </div>
+
+            <!-- KPI 3 - Despesas -->
+            <div class="kpi-card">
+              <div class="kpi-card__header">
+                <div>
+                  <div class="kpi-card__label">Despesas</div>
+                </div>
+                <div class="kpi-card__icon">
+                  <i class="fa-solid fa-wallet"></i>
+                </div>
+              </div>
+              <div class="kpi-card__value" style="color: var(--color-danger);" data-indicador="despesa-valor">--</div>
+              <div class="kpi-card__change negative" data-indicador="despesa-percent">
+                <i class="fa-solid fa-arrow-trend-down"></i>
+                <span>--</span>
+              </div>
+            </div>
+
+            <!-- KPI 4 - Crescimento -->
+            <div class="kpi-card">
+              <div class="kpi-card__header">
+                <div>
+                  <div class="kpi-card__label">Crescimento</div>
+                </div>
+                <div class="kpi-card__icon">
+                  <i class="fa-solid fa-rocket"></i>
+                </div>
+              </div>
+              <div class="kpi-card__value" data-indicador="crescimento-valor">--</div>
+              <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">Acumulado no período</div>
+            </div>
+
+            <!-- Chart 1 - Evolução Faturamento -->
+            <div class="chart-card">
+              <div class="chart-card__header">
+                <h2 class="h3 m-0">Evolução do Faturamento</h2>
+                <div class="chart-card__actions">
+                  <button class="chart-card__action-btn" aria-label="Baixar dados">
+                    <i class="fa-solid fa-download"></i>
+                  </button>
+                  <button class="chart-card__action-btn" aria-label="Mais opções">
+                    <i class="fa-solid fa-ellipsis"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="chart-card__body">
+                <div id="graficoLinhaFaturamento" class="w-100"></div>
+              </div>
+            </div>
+
+            <!-- Chart 2 - Comparativo -->
+            <div class="chart-card">
+              <div class="chart-card__header">
+                <h2 class="h3 m-0">Comparativo de Métricas</h2>
+                <div class="chart-card__actions">
+                  <button class="chart-card__action-btn" aria-label="Baixar dados">
+                    <i class="fa-solid fa-download"></i>
+                  </button>
+                  <button class="chart-card__action-btn" aria-label="Mais opções">
+                    <i class="fa-solid fa-ellipsis"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="chart-card__body">
+                <div id="graficoPizzaComparativa" class="w-100"></div>
+              </div>
+            </div>
+
+            <!-- Table - Dados Detalhados (Placeholder) -->
+            <div class="table-card">
+              <div class="table-card__header">
+                <h2 class="h3 m-0">Últimas Transações</h2>
+                <div class="table-card__filters">
+                  <button class="btn btn-sm btn-secondary" aria-label="Filtrar">
+                    <i class="fa-solid fa-filter"></i> Filtrar
+                  </button>
+                  <button class="btn btn-sm btn-secondary" aria-label="Exportar">
+                    <i class="fa-solid fa-download"></i> Exportar
+                  </button>
+                </div>
+              </div>
+              <div class="table-card__body">
+                <p style="padding: var(--sp-lg); color: var(--text-tertiary); text-align: center;">
+                  <i class="fa-solid fa-table"></i> Dados das transações aparecerão aqui
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- FOOTER -->
+      <footer class="footer">
+        <div class="footer__content">
+          <div class="footer__section">
+            <h3>Produto</h3>
+            <a href="#" class="footer__link">Features</a>
+            <a href="#" class="footer__link">Preços</a>
+            <a href="#" class="footer__link">Documentação</a>
+          </div>
+          <div class="footer__section">
+            <h3>Empresa</h3>
+            <a href="{{ url_for('contato_route') }}" class="footer__link">Contato</a>
+            <a href="{{ url_for('termos_route') }}" class="footer__link">Termos de Uso</a>
+            <a href="#" class="footer__link">Privacidade</a>
+          </div>
+          <div class="footer__section">
+            <h3>Comunidade</h3>
+            <a href="#" class="footer__link">Blog</a>
+            <a href="#" class="footer__link">Fórum</a>
+            <a href="#" class="footer__link">GitHub</a>
+          </div>
+        </div>
+        <div class="footer__bottom">
+          <p>&copy; 2024 DataInsight. Todos os direitos reservados.</p>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Acessibilidade -->
+  {% include 'partials/painel_acessibilidade.html' %}
+
+  <!-- Chatbot -->
+  {% include 'partials/chatbot.html' %}
+
+  <!-- VLibras -->
+  <div vw class="enabled" id="Vlibras">
+    <div vw-access-button class="active"></div>
+    <div vw-plugin-wrapper>
+      <div class="vw-plugin-top-wrapper"></div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+  <script>
+    new window.VLibras.Widget('https://vlibras.gov.br/app');
+  </script>
+
+  <!-- Toggle Sidebar Mobile -->
+  <script>
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('open');
+    }
+
+    // Mostrar/esconder botão de toggle em mobile
+    window.addEventListener('resize', function() {
+      const toggle = document.getElementById('sidebarToggle');
+      if (window.innerWidth <= 768) {
+        toggle.style.display = 'flex';
+      } else {
+        toggle.style.display = 'none';
+      }
+    });
+    
+    // Chamar ao carregar
+    window.dispatchEvent(new Event('resize'));
+
+    // Fechar sidebar ao clicar em um link no mobile
+    if (window.innerWidth <= 768) {
+      document.querySelectorAll('.nav__item').forEach(link => {
+        link.addEventListener('click', toggleSidebar);
+      });
+    }
+  </script>
+
+  <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/home.js') }}"></script>
+</body>
+</html>

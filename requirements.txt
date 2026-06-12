@@ -1,0 +1,14 @@
+flask
+pymongo
+bcrypt
+certifi
+python-dotenv
+wkhtmltopdf
+pdfkit
+pandas
+openpyxl
+Flask-Mail
+agno
+google-generativeai
+google-genai
+OpenAIChat

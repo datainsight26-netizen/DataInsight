@@ -1,0 +1,174 @@
+<!-- Modal de Mapeamento de Colunas -->
+<div class="modal fade" id="modalMapeamento" tabindex="-1" aria-labelledby="modalMapeamentoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content" style="background: var(--cartao); color: var(--texto); border: 1px solid var(--borda);">
+      <div class="modal-header" style="border-bottom: 1px solid var(--borda);">
+        <h5 class="modal-title" id="modalMapeamentoLabel">
+          <i class="fa-solid fa-map-location-dot me-2 text-primary"></i>
+          Configurar Indicadores do Negócio
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: var(--botao-fechar-filtro);"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-4">Para que a IA e os gráficos funcionem corretamente, identifique quais colunas da sua planilha representam cada indicador abaixo:</p>
+        
+        <form id="formMapeamento">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Data dos Registros</label>
+              <select name="data" class="form-select select-coluna" required>
+                <option value="">Selecione a coluna...</option>
+              </select>
+              <div class="form-text">Coluna contendo as datas (ex: Data, Dia, Periodo)</div>
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Faturamento / Receita</label>
+              <select name="faturamento" class="form-select select-coluna" required>
+                <option value="">Selecione a coluna...</option>
+              </select>
+              <div class="form-text">Total bruto de vendas (ex: Valor, Total, Venda)</div>
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Despesas / Gastos</label>
+              <select name="despesa" class="form-select select-coluna">
+                <option value="">Opcional (Cálculo automático se omitido)</option>
+              </select>
+              <div class="form-text">Custos operacionais (ex: Custo, Despesa, Gasto)</div>
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Lucro Líquido</label>
+              <select name="lucro" class="form-select select-coluna">
+                <option value="">Opcional (Faturamento - Despesas)</option>
+              </select>
+              <div class="form-text">Resultado final (ex: Lucro, Profit)</div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer" style="border-top: 1px solid var(--borda);">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Configurar Depois</button>
+        <button type="button" class="btn btn-primary" onclick="salvarMapeamentoUsuario(event)">
+          <i class="fa-solid fa-check me-1"></i> Confirmar Configuração
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  :root {
+    --botao-fechar-filtro: none;
+  }
+  .tema-escuro {
+    --botao-fechar-filtro: invert(1) grayscale(100%) brightness(200%);
+  }
+</style>
+
+<script>
+async function abrirModalMapeamento(colunas) {
+  const selects = document.querySelectorAll('.select-coluna');
+  
+  // 1. Popular os selects com as colunas disponíveis
+  selects.forEach(select => {
+    const firstOption = select.options[0];
+    select.innerHTML = '';
+    select.appendChild(firstOption);
+    
+    colunas.forEach(col => {
+      const opt = document.createElement('option');
+      opt.value = col;
+      opt.textContent = col;
+      select.appendChild(opt);
+    });
+  });
+
+  // 2. Tentar carregar o mapeamento salvo do servidor
+  let mapeamentoSalvo = {};
+  try {
+    const res = await fetch('/api/mapeamento');
+    if (res.ok) {
+      mapeamentoSalvo = await res.json();
+    }
+  } catch (err) {
+    console.error("Erro ao buscar mapeamento salvo:", err);
+  }
+
+  // 3. Preencher os selects com o que já foi salvo ou usar sugestões inteligentes
+  const keys = ['data', 'faturamento', 'despesa', 'lucro'];
+  const sugestoes = {
+    data: ['data', 'date', 'periodo', 'dia', 'mês'],
+    faturamento: ['faturamento', 'venda', 'receita', 'total', 'valor'],
+    despesa: ['despesa', 'custo', 'gasto', 'saida'],
+    lucro: ['lucro', 'profit', 'resultado']
+  };
+
+  keys.forEach(key => {
+    const select = document.querySelector(`select[name="${key}"]`);
+    if (!select) return;
+
+    // Se já existe um mapeamento salvo para essa chave e a coluna existe nos dados atuais
+    if (mapeamentoSalvo[key] && colunas.includes(mapeamentoSalvo[key])) {
+      select.value = mapeamentoSalvo[key];
+    } 
+    // Caso contrário, tenta usar a sugestão inteligente
+    else {
+      const termos = sugestoes[key];
+      const match = colunas.find(col => termos.some(t => col.toLowerCase().includes(t)));
+      if (match) select.value = match;
+    }
+  });
+
+  // 4. Mostrar o modal
+  const modalEl = document.getElementById('modalMapeamento');
+  let myModal = bootstrap.Modal.getInstance(modalEl);
+  if (!myModal) {
+    myModal = new bootstrap.Modal(modalEl);
+  }
+  myModal.show();
+}
+
+async function salvarMapeamentoUsuario(event) {
+  const btn = event.target.closest('button');
+  const originalHtml = btn.innerHTML;
+  
+  const form = document.getElementById('formMapeamento');
+  const formData = new FormData(form);
+  const mapeamento = {};
+  
+  formData.forEach((value, key) => {
+    if (value) mapeamento[key] = value;
+  });
+
+  try {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Salvando...';
+
+    const res = await fetch('/api/mapeamento', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(mapeamento)
+    });
+
+    if (res.ok) {
+      // Pequeno delay para feedback visual
+      setTimeout(() => {
+        alert('Configuração salva! O sistema agora está adaptado aos seus dados.');
+        location.reload();
+      }, 500);
+    } else {
+      const errorData = await res.json();
+      alert('Erro ao salvar configuração: ' + (errorData.mensagem || 'Erro desconhecido'));
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  } catch (e) {
+    console.error(e);
+    alert('Erro de conexão ao tentar salvar o mapeamento.');
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }
+}
+</script>

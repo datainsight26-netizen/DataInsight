@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório DataInsight</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .relatorio-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #2c3e50;
+            padding-bottom: 20px;
+        }
+        
+        .header-left h1 {
+            font-size: 28px;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .header-left p {
+            color: #666;
+            font-size: 14px;
+            margin: 5px 0;
+        }
+        
+        .header-right {
+            text-align: right;
+        }
+        
+        .header-right .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .header-right p {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        h2 {
+            font-size: 18px;
+            color: #2c3e50;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 8px;
+        }
+        
+        .kpis-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .kpi-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid #3498db;
+        }
+        
+        .kpi-card.destaque {
+            background: linear-gradient(135deg, #e6f4ea 0%, #a8d5ba 100%);
+            border-left-color: #10B981;
+        }
+        
+        .kpi-card p {
+            font-size: 12px;
+            color: #666;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        
+        .kpi-card h3 {
+            font-size: 22px;
+            color: #2c3e50;
+            margin: 0;
+            font-weight: bold;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        thead {
+            background: #2c3e50;
+            color: white;
+        }
+        
+        th {
+            padding: 12px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 13px;
+            border: 1px solid #34495e;
+        }
+        
+        td {
+            padding: 10px 12px;
+            text-align: center;
+            border: 1px solid #ddd;
+            font-size: 12px;
+        }
+        
+        tbody tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        
+        .insights-box {
+            background: #f0f8ff;
+            padding: 15px;
+            border-left: 4px solid #3498db;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .insights-box ul {
+            margin: 10px 0 0 20px;
+            font-size: 13px;
+            color: #333;
+        }
+        
+        .insights-box li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 15px;
+            border-top: 2px solid #ddd;
+            font-size: 11px;
+            color: #999;
+            text-align: center;
+        }
+        
+        .download-button {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        button {
+            padding: 12px 30px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .download-button {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="pdf-content" class="relatorio-container">
+        <!-- HEADER -->
+        <div class="header">
+            <div class="header-left">
+                <h1>{{ dados.nome }}</h1>
+                <p><strong>Período:</strong> {{ dados.periodo }}</p>
+                <p><strong>Gerado em:</strong> {{ dados.data }}</p>
+            </div>
+            <div class="header-right">
+                <div class="logo">📊 DataInsight</div>
+                <p>Relatório Inteligente gerado por IA</p>
+            </div>
+        </div>
+        
+        <!-- KPIs -->
+        {% if dados.kpis %}
+        <h2>📈 Indicadores de Desempenho (KPIs)</h2>
+        <div class="kpis-grid">
+            <div class="kpi-card">
+                <p>Faturamento</p>
+                <h3>R$ {{ dados.kpis.faturamento }}</h3>
+            </div>
+            <div class="kpi-card">
+                <p>Lucro</p>
+                <h3>R$ {{ dados.kpis.lucro }}</h3>
+            </div>
+            <div class="kpi-card">
+                <p>Despesas</p>
+                <h3>R$ {{ dados.kpis.despesas }}</h3>
+            </div>
+            <div class="kpi-card destaque">
+                <p>Crescimento</p>
+                <h3>{{ dados.kpis.crescimento }}</h3>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- TABELA -->
+        {% if dados.dadosDetalhados and dados.tabela %}
+        <h2>📊 Análise Detalhada por Período</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Período</th>
+                    <th>Faturamento</th>
+                    <th>Lucro</th>
+                    <th>Despesas</th>
+                    <th>Margem</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in dados.tabela %}
+                <tr>
+                    <td><strong>{{ item.mes }}</strong></td>
+                    <td>R$ {{ item.fat }}</td>
+                    <td>R$ {{ item.luc }}</td>
+                    <td>R$ {{ item.desp }}</td>
+                    <td><strong>{{ item.margem }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+        
+        <!-- INSIGHTS -->
+        {% if dados.insights %}
+        <div class="insights-box">
+            <h2 style="margin-top: 0; border: none; padding: 0; font-size: 16px;">💡 Insights & Recomendações</h2>
+            <ul>
+                {% for insight in dados.insights %}
+                <li>{{ insight }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        
+        <!-- FOOTER -->
+        <div class="footer">
+            <p>🔐 Este relatório foi gerado confidencialmente pela plataforma DataInsight.</p>
+            <p>Período: <strong>{{ dados.periodo }}</strong> | Data: <strong>{{ dados.data }}</strong></p>
+            <p style="margin-top: 10px; border-top: 1px solid #ddd; padding-top: 10px;">
+                DataInsight™ © 2026 - Todos os direitos reservados.
+            </p>
+        </div>
+    </div>
+    
+    <!-- BOTÃO DE DOWNLOAD -->
+    <div class="download-button">
+        <button onclick="gerarPDF()">📥 Baixar PDF</button>
+    </div>
+    
+    <script>
+        function gerarPDF() {
+            const element = document.getElementById('pdf-content');
+            const opt = {
+                margin: 10,
+                filename: 'relatorio_ia.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+        
+        // Auto-download se auto=true
+        window.addEventListener('load', function() {
+            const auto = {{ auto|tojson }};
+            if (auto) {
+                console.log('Iniciando download automático...');
+                setTimeout(function() {
+                    gerarPDF();
+                }, 1500);
+            }
+        });
+    </script>
+</body>
+</html>
