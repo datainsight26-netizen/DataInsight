@@ -12,3 +12,4 @@ agno
 google-generativeai
 google-genai
 OpenAIChat
+gunicorn
