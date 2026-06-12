@@ -11,4 +11,5 @@ Flask-Mail
 agno
 google-generativeai
 google-genai
+openai
 gunicorn
