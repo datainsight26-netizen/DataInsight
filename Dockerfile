@@ -14,7 +14,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # 4. Dependências do sistema (necessárias para algumas libs Python)
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y --no-install-recommends \ 
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
@@ -32,9 +32,9 @@ COPY . .
 # 8. Criar a pasta uploads (necessária para o upload de CSVs)
 RUN mkdir -p uploads
 
-# 9. Expor a porta 5000 (porta padrão do Flask / Gunicorn)
-EXPOSE 5000
+# 9. Expor a porta padrão do container
+EXPOSE 8080
 
 # 10. Comando de arranque — Gunicorn com 2 workers
-#     app:app  →  ficheiro app.py, variável app (Flask instance)
-CMD gunicorn --bind 0.0.0.0:${PORT:-5000} --workers 2 --timeout 120 app:app
+#     Usa a variável de ambiente $PORT para compatibilidade Railway / outros PaaS
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 2 --timeout 120 app:app"]
