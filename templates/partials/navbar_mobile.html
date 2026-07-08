@@ -1,0 +1,40 @@
+<!-- Overlay da sidebar mobile -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="fecharSidebar()"></div>
+
+<!-- Bottom Navigation Mobile -->
+<nav class="navbar-bottom" aria-label="Navegação mobile">
+  <a class="navbar-bottom__item {% if request.endpoint=='pagina_home' %}active{% endif %}"
+     href="{{ url_for('pagina_home') }}" aria-label="Início"
+     {% if request.endpoint=='pagina_home' %}aria-current="page"{% endif %}>
+    <i class="fa-solid fa-house"></i>
+    <span>Início</span>
+  </a>
+
+  <a class="navbar-bottom__item {% if request.endpoint=='pagina_dados' %}active{% endif %}"
+     href="{{ url_for('pagina_dados') }}" aria-label="Dados"
+     {% if request.endpoint=='pagina_dados' %}aria-current="page"{% endif %}>
+    <i class="fa-solid fa-table-list"></i>
+    <span>Dados</span>
+  </a>
+
+  <a class="navbar-bottom__item {% if request.endpoint=='pagina_graficoAvancado' %}active{% endif %}"
+     href="{{ url_for('pagina_graficoAvancado') }}" aria-label="Dashboard"
+     {% if request.endpoint=='pagina_graficoAvancado' %}aria-current="page"{% endif %}>
+    <i class="fa-solid fa-layer-group"></i>
+    <span>Dashboard</span>
+  </a>
+
+  <a class="navbar-bottom__item {% if request.endpoint=='pagina_analise' %}active{% endif %}"
+     href="{{ url_for('pagina_analise') }}" aria-label="Análises"
+     {% if request.endpoint=='pagina_analise' %}aria-current="page"{% endif %}>
+    <i class="fa-solid fa-chart-line"></i>
+    <span>Análises</span>
+  </a>
+
+  <a class="navbar-bottom__item {% if request.endpoint=='pagina_ia' %}active{% endif %}"
+     href="{{ url_for('pagina_ia') }}" aria-label="IA"
+     {% if request.endpoint=='pagina_ia' %}aria-current="page"{% endif %}>
+    <i class="fa-solid fa-robot"></i>
+    <span>IA</span>
+  </a>
+</nav>

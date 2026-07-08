@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Produtos - Autocomplete</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: #f8f9ff;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .info-box {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #555;
+            line-height: 1.5;
+        }
+
+        .info-box strong {
+            color: #667eea;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 13px;
+            display: none;
+        }
+
+        .status.success {
+            display: block;
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            display: block;
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .stats {
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .stats h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 13px;
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: #666;
+        }
+
+        .stat-value {
+            color: #333;
+            font-weight: 600;
+        }
+
+        /* Estilo do autocomplete */
+        .autocomplete-sugestoes {
+            margin-top: 8px;
+        }
+
+        .autocomplete-item {
+            padding: 12px !important;
+            cursor: pointer;
+            transition: background 0.2s !important;
+            border-bottom: 1px solid #eee !important;
+        }
+
+        .autocomplete-item:hover {
+            background: #f5f5f5 !important;
+        }
+
+        .autocomplete-item strong {
+            color: #333;
+        }
+
+        .autocomplete-item small {
+            display: block;
+            margin-top: 4px;
+            color: #999;
+            font-size: 12px;
+        }
+
+        .loading {
+            text-align: center;
+            color: #999;
+            padding: 10px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body data-ia-help="page_exemplo_autocomplete_produtos">
+    <div class="container">
+        <h1>📦 Cadastro de Produtos</h1>
+        <p class="subtitle">Sistema com Autocomplete Inteligente</p>
+
+        <div class="info-box">
+            <strong>💡 Dica:</strong> Se você já cadastrou um produto antes, comece a digitar o nome e o sistema sugerirá completar os campos automaticamente!
+        </div>
+
+        <form id="formProduto">
+            <div class="form-group">
+                <label for="inputProduto">Nome do Produto *</label>
+                <div class="input-wrapper">
+                    <input
+                        type="text"
+                        id="inputProduto"
+                        name="produto"
+                        placeholder="Ex: Placa de Vídeo RTX 3060"
+                        required
+                        autocomplete="off"
+                    >
+                </div>
+                <small style="color: #999; margin-top: 4px; display: block;">
+                    ↳ Digite pelo menos 2 caracteres para ver sugestões
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label for="inputCategoria">Categoria *</label>
+                <input
+                    type="text"
+                    id="inputCategoria"
+                    name="categoria"
+                    placeholder="Ex: Eletrônico, Periférico, etc"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="inputPreco">Preço (R$) *</label>
+                <input
+                    type="number"
+                    id="inputPreco"
+                    name="preco"
+                    placeholder="0.00"
+                    step="0.01"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="inputEstoque">Estoque *</label>
+                <input
+                    type="number"
+                    id="inputEstoque"
+                    name="estoque"
+                    placeholder="0"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="inputSku">SKU/Código</label>
+                <input
+                    type="text"
+                    id="inputSku"
+                    name="sku"
+                    placeholder="Opcional"
+                >
+            </div>
+
+            <button type="submit">✓ Salvar Produto</button>
+        </form>
+
+        <div id="statusMessage" class="status"></div>
+
+        <div class="stats" id="statsContainer" style="display: none;">
+            <h3>📊 Estatísticas dos Seus Produtos</h3>
+            <div class="stat-item">
+                <span class="stat-label">Total de Produtos:</span>
+                <span class="stat-value" id="statTotal">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Preço Médio:</span>
+                <span class="stat-value" id="statPrecoMedio">R$ 0.00</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Preço Máximo:</span>
+                <span class="stat-value" id="statPrecoMax">R$ 0.00</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Preço Mínimo:</span>
+                <span class="stat-value" id="statPrecoMin">R$ 0.00</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Estoque Total:</span>
+                <span class="stat-value" id="statEstoque">0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Incluir o script de autocomplete -->
+    <script src="{{ url_for('static', filename='js/autocomplete-produtos.js') }}"></script>
+
+    <script>
+        // Inicializar o autocomplete de produtos
+        const autocomplete = new AutocompleteProdutos();
+
+        // Obter elementos do formulário
+        const formProduto = document.getElementById('formProduto');
+        const inputProduto = document.getElementById('inputProduto');
+        const statusMessage = document.getElementById('statusMessage');
+        const statsContainer = document.getElementById('statsContainer');
+
+        // Quando um produto é selecionado via autocomplete
+        inputProduto.addEventListener('produtoSelecionado', (e) => {
+            console.log('✓ Produto selecionado via autocomplete:', e.detail.nome_produto);
+            mostrarNotificacao('Dados do produto carregados automaticamente!', 'success');
+        });
+
+        // Quando o formulário é enviado
+        formProduto.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const dados = {
+                nome_produto: document.getElementById('inputProduto').value.trim(),
+                categoria: document.getElementById('inputCategoria').value.trim(),
+                preco: document.getElementById('inputPreco').value,
+                estoque: document.getElementById('inputEstoque').value,
+                sku: document.getElementById('inputSku').value.trim()
+            };
+
+            // Validar dados
+            if (!dados.nome_produto || !dados.categoria || !dados.preco || !dados.estoque) {
+                mostrarNotificacao('Por favor, preencha todos os campos obrigatórios!', 'error');
+                return;
+            }
+
+            // Salvar produto
+            const produtoId = await salvarProdutoAutomaticamente(dados);
+
+            if (produtoId) {
+                mostrarNotificacao(
+                    `✓ Produto "${dados.nome_produto}" salvo com sucesso!`,
+                    'success'
+                );
+
+                // Limpar formulário
+                formProduto.reset();
+
+                // Atualizar estatísticas
+                setTimeout(() => {
+                    carregarEstatisticas();
+                }, 500);
+            } else {
+                mostrarNotificacao('Erro ao salvar o produto. Tente novamente!', 'error');
+            }
+        });
+
+        /**
+         * Mostra notificação
+         */
+        function mostrarNotificacao(mensagem, tipo) {
+            statusMessage.textContent = mensagem;
+            statusMessage.className = `status ${tipo}`;
+
+            // Auto-remover após 4 segundos
+            setTimeout(() => {
+                statusMessage.className = 'status';
+            }, 4000);
+        }
+
+        /**
+         * Carrega e mostra estatísticas
+         */
+        async function carregarEstatisticas() {
+            try {
+                const response = await fetch('/api/produtos/estatisticas');
+                const dados = await response.json();
+
+                if (dados.sucesso) {
+                    const stats = dados.estatisticas;
+
+                    document.getElementById('statTotal').textContent = stats.total;
+                    document.getElementById('statPrecoMedio').textContent =
+                        `R$ ${parseFloat(stats.preco_medio).toFixed(2)}`;
+                    document.getElementById('statPrecoMax').textContent =
+                        `R$ ${parseFloat(stats.preco_max).toFixed(2)}`;
+                    document.getElementById('statPrecoMin').textContent =
+                        `R$ ${parseFloat(stats.preco_min).toFixed(2)}`;
+                    document.getElementById('statEstoque').textContent = stats.estoque_total;
+
+                    statsContainer.style.display = 'block';
+                }
+            } catch (erro) {
+                console.error('Erro ao carregar estatísticas:', erro);
+            }
+        }
+
+        // Carregar estatísticas ao inicializar
+        carregarEstatisticas();
+    </script>
+</body>
+</html>

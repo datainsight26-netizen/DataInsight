@@ -14,17 +14,21 @@ if uri and 'mongodb+srv' in uri:
 else:
     cliente = MongoClient(uri)
 
-db = cliente["teste"]
+db = cliente["cadastro"]
 usuario = db["usuarios"]
 dados_colecao = db["dados"]
 chat_historico = db["chat_historico"]
 galeria = db["galeria"]
+produtos_historico = db["produtos_historico"]
 
 def criar_index():
     usuario.create_index("email", unique=True)
     dados_colecao.create_index("criado_em")
     chat_historico.create_index("usuario_id")
     galeria.create_index("usuario_id")
+    produtos_historico.create_index("usuario_id")
+    produtos_historico.create_index("nome_produto")
+    produtos_historico.create_index([("nome_produto", "text")])
 
 def salvar_dados(usuario_id, nome_planilha, colunas, dados):
     """Salva os dados no banco de dados"""

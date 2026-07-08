@@ -10,6 +10,187 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
     <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+    
+    <style>
+        /* ========== EFEITOS TECNOLÓGICOS - PÁGINA IA ========== */
+        
+        @keyframes pulse-glow {
+            0%, 100% { 
+                box-shadow: 0 0 15px rgba(59, 130, 246, 0.2),
+                            inset 0 0 15px rgba(59, 130, 246, 0.05);
+            }
+            50% { 
+                box-shadow: 0 0 30px rgba(59, 130, 246, 0.5),
+                            inset 0 0 30px rgba(59, 130, 246, 0.15);
+            }
+        }
+        
+        @keyframes pulse-border {
+            0%, 100% { 
+                border-color: rgba(59, 130, 246, 0.2);
+                box-shadow: 0 0 10px rgba(59, 130, 246, 0.1);
+            }
+            50% { 
+                border-color: rgba(59, 130, 246, 0.6);
+                box-shadow: 0 0 25px rgba(59, 130, 246, 0.3);
+            }
+        }
+        
+        @keyframes button-pulse {
+            0%, 100% { 
+                box-shadow: 0 0 0px rgba(59, 130, 246, 0);
+            }
+            50% { 
+                box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+            }
+        }
+        
+        .page-ia-container {
+            position: relative;
+        }
+        
+        /* Chat box com pulsação */
+        .chat-box {
+            border: 1px solid rgba(59, 130, 246, 0.3) !important;
+            background: var(--cartao) !important;
+            border-radius: 12px;
+            animation: pulse-border 2s ease-in-out infinite;
+            transition: all 0.3s ease;
+        }
+        
+        .chat-box:hover {
+            animation: none;
+            border-color: rgba(59, 130, 246, 0.8) !important;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+        }
+        
+        /* Sidebar com pulsação suave */
+        .chat-sidebar {
+            border: 1px solid rgba(59, 130, 246, 0.2) !important;
+            animation: pulse-border 2.5s ease-in-out infinite;
+            transition: all 0.3s ease;
+        }
+        
+        .chat-sidebar:hover {
+            animation: none;
+            border-color: rgba(59, 130, 246, 0.6) !important;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+        }
+        
+        /* Botões com pulsação */
+        #btn-nova-conversa {
+            animation: button-pulse 2s ease-in-out infinite;
+            transition: all 0.3s ease;
+        }
+        
+        #btn-nova-conversa:hover {
+            animation: none;
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.6) !important;
+        }
+        
+        /* Chat input area */
+        .chat-input-area {
+            border-top: 1px solid rgba(59, 130, 246, 0.2);
+            padding-top: 15px;
+            animation: pulse-glow 3s ease-in-out infinite;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        /* Galeria com pulsação */
+        #gallery-box {
+            border: 1px solid rgba(59, 130, 246, 0.2) !important;
+            animation: pulse-border 2.5s ease-in-out infinite;
+            transition: all 0.3s ease;
+        }
+        
+        #gallery-box:hover {
+            animation: none;
+            border-color: rgba(59, 130, 246, 0.6) !important;
+        }
+        
+        /* Itens da galeria com destaque */
+        #gallery-grid > div {
+            opacity: 0.8;
+            transition: all 0.3s ease;
+        }
+        
+        #gallery-grid > div:hover {
+            opacity: 1;
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.25);
+        }
+        
+        /* Modal com pulsação elegante */
+        #ia-modal > div {
+            border: 1px solid rgba(59, 130, 246, 0.3) !important;
+            animation: pulse-glow 2.5s ease-in-out infinite;
+            box-shadow: 0 0 40px rgba(59, 130, 246, 0.15),
+                        0 0 80px rgba(59, 130, 246, 0.05) !important;
+        }
+
+        #ia-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 9999;
+            backdrop-filter: blur(5px);
+            overflow: hidden;
+        }
+
+        .ia-modal-window {
+            position: absolute;
+            top: 10%;
+            left: 7.5%;
+            width: 85%;
+            height: 85%;
+            min-width: 360px;
+            min-height: 280px;
+            max-width: calc(100% - 40px);
+            max-height: calc(100% - 40px);
+        }
+
+        #modal-header-actions {
+            cursor: grab;
+            user-select: none;
+        }
+
+        #modal-header-actions:active {
+            cursor: grabbing;
+        }
+
+        #modal-resize-handle {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            right: 12px;
+            bottom: 12px;
+            cursor: nwse-resize;
+            z-index: 20;
+        }
+
+        .chatbot-transition-overlay {
+            position: fixed;
+            z-index: 25000;
+            border-radius: 28px;
+            overflow: hidden;
+            pointer-events: none;
+            transition: all 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+            box-shadow: 0 30px 90px rgba(15, 23, 42, 0.35);
+        }
+
+        .chatbox-highlight {
+            animation: chatbox-highlight 1.2s ease forwards;
+        }
+
+        @keyframes chatbox-highlight {
+            0% { box-shadow: 0 0 12px rgba(59, 130, 246, 0.18); }
+            50% { box-shadow: 0 0 42px rgba(59, 130, 246, 0.35); }
+            100% { box-shadow: 0 0 18px rgba(59, 130, 246, 0.2); }
+        }
+    </style>
 </head>
 <body>
     <a href="#conteudo" class="skip-link">Ir para conteúdo</a>
@@ -29,7 +210,7 @@
                 </div>
             </header>
 
-            <main id="conteudo" class="pagina" role="main">
+            <main id="conteudo" class="pagina" role="main" data-ia-help="page_ia">
                 <div class="container">
                     <header class="pagina__cabecalho">
                         <div class="migalhas" aria-label="Você está em">Inteligência IA</div>
@@ -121,44 +302,6 @@
                     {% include 'partials/footer.html' %}
                 </div>
             </main>
-        </div>
-    </div>
-
-    <!-- Modal Global de IA (Gráficos e PDFs) -->
-    <div id="ia-modal"
-        style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
-        <div
-            style="background: var(--fundo); width: 85%; height: 85%; border-radius: 12px; padding: 25px; display: flex; flex-direction: column; position: relative; border: 1px solid var(--borda); box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-            <button onclick="document.getElementById('ia-modal').style.display='none'"
-                style="position: absolute; right: 25px; top: 25px; background: var(--perigo); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; z-index: 10;"><i
-                    class="fa-solid fa-xmark"></i> Fechar</button>
-
-            <div id="modal-header-actions" style="margin-bottom: 20px; display: flex; gap: 15px; align-items: center;">
-                <h2 id="modal-titulo" style="margin: 0; color: var(--texto);">Galeria</h2>
-                <div id="modal-filtros" style="display: none; gap: 10px;">
-                    <select id="modal-periodo-select"
-                        style="padding: 8px; border-radius: 6px; border: 1px solid var(--borda); background: var(--cartao); color: var(--texto);">
-                        <option value="7_dias">Últimos 7 Dias</option>
-                        <option value="30_dias" selected>Últimos 30 Dias</option>
-                        <option value="90_dias">Últimos 90 Dias</option>
-                        <option value="ano_atual">Este Ano</option>
-                    </select>
-                    <button id="modal-btn-atualizar"
-                        style="background: var(--primaria); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer;">Atualizar
-                        Gráfico</button>
-                </div>
-                <div id="modal-downloads" style="display: none; gap: 10px; margin-left: auto; margin-right: 80px;">
-                    <a href="/api/download/excel" class="botao botao--suave"
-                        style="color: #10B981; border-color: #10B981;"><i class="fa-solid fa-file-excel"></i> Baixar
-                        Excel</a>
-                    <a href="/api/download/csv" class="botao botao--suave" style="color: var(--texto);"><i
-                            class="fa-solid fa-file-csv"></i> Baixar CSV</a>
-                </div>
-            </div>
-
-            <div id="modal-conteudo"
-                style="flex: 1; background: var(--cartao); border-radius: 8px; padding: 20px; border: 1px solid var(--borda); overflow: hidden; display: flex; flex-direction: column;">
-            </div>
         </div>
     </div>
 

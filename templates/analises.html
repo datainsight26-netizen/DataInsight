@@ -10,6 +10,52 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
     <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
+    
+    <style>
+      /* ========== EFEITO DE LUZ NOS KPIs - ANÁLISES ========== */
+      @keyframes shimmer-light {
+        0% {
+          left: -100%;
+        }
+        100% {
+          left: 100%;
+        }
+      }
+      
+      /* KPI Cards com efeito de luz nas cores de cada indicador */
+      .grade--4 .cartao {
+        position: relative;
+        overflow: hidden;
+      }
+      
+      .grade--4 .cartao::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        animation: shimmer-light 2.5s linear infinite alternate;
+        pointer-events: none;
+      }
+      
+      /* Cores específicas para cada KPI */
+      .grade--4 .cartao:nth-child(1)::before {
+        background: linear-gradient(90deg, transparent, #3B82F6, transparent);
+      }
+      
+      .grade--4 .cartao:nth-child(2)::before {
+        background: linear-gradient(90deg, transparent, #16A34A, transparent);
+      }
+      
+      .grade--4 .cartao:nth-child(3)::before {
+        background: linear-gradient(90deg, transparent, #DC2626, transparent);
+      }
+      
+      .grade--4 .cartao:nth-child(4)::before {
+        background: linear-gradient(90deg, transparent, #F59E0B, transparent);
+      }
+    </style>
 </head>
 
 <body>
@@ -32,7 +78,7 @@
                             class="fa-solid fa-gear"></i></a>
                 </div>
             </header>
-            <main id="conteudo" class="pagina" role="main">
+            <main id="conteudo" class="pagina" role="main" data-ia-help="page_analises">
                 <div class="container">
                     <header class="pagina__cabecalho">
                         <div class="migalhas">Início &gt; Métricas</div>
@@ -72,9 +118,9 @@
                         <div class="grade grade--4">
 
                             <!-- Métrica 1 -->
-                            <div class="cartao" style="cursor: pointer; transition: all 0.3s;"
-                                onclick="selecionarMetrica(this, 'faturamento')"
-                                style=" border-left: 4px solid var(--primaria);">
+                            <div class="cartao" data-ia-help="faturamento" data-ia-help-value="#fat-valor" data-ia-help-trend="Crescimento positivo no período" style="cursor: pointer; transition: all 0.3s; border-left: 4px solid var(--primaria);"
+                                onclick="selecionarMetrica(this, 'faturamento')">
+
                                 <div style="display: flex; justify-content: space-between; align-items: start;">
                                     <div>
                                         <h3 class="h3" style="margin: 0 0 8px;">Faturamento</h3>
@@ -93,9 +139,9 @@
                             </div>
 
                             <!-- Métrica 2 -->
-                            <div class="cartao" style="cursor: pointer; transition: all 0.3s;"
-                                onclick="selecionarMetrica(this, 'despesas')"
-                                style=" border-left: 4px solid var(--primaria);">
+                            <div class="cartao" data-ia-help="despesas" data-ia-help-value="#desp-valor" data-ia-help-trend="Analise a redução ou aumento desses custos" style="cursor: pointer; transition: all 0.3s; border-left: 4px solid var(--perigo);"
+                                onclick="selecionarMetrica(this, 'despesas')">
+
                                 <div style="display: flex; justify-content: space-between; align-items: start;">
                                     <div>
                                         <h3 class="h3" style="margin: 0 0 8px;">Despesas</h3>
@@ -113,9 +159,9 @@
                             </div>
 
                             <!-- Métrica 3 -->
-                            <div class="cartao" style="cursor: pointer; transition: all 0.3s;"
-                                onclick="selecionarMetrica(this, 'lucro')"
-                                style=" border-left: 4px solid var(--primaria);">
+                            <div class="cartao" data-ia-help="lucro" data-ia-help-value="#luc-valor" data-ia-help-trend="Lucro é calculado como faturamento menos despesas" style="cursor: pointer; transition: all 0.3s; border-left: 4px solid var(--sucesso);"
+                                onclick="selecionarMetrica(this, 'lucro')">
+
                                 <div style="display: flex; justify-content: space-between; align-items: start;">
                                     <div>
                                         <h3 class="h3" style="margin: 0 0 8px;">Lucro</h3>
@@ -133,9 +179,9 @@
                             </div>
 
                             <!-- Métrica 4 -->
-                            <div class="cartao" style="cursor: pointer; transition: all 0.3s;"
-                                onclick="selecionarMetrica(this, 'margem')"
-                                style=" border-left: 4px solid var(--primaria);">
+                            <div class="cartao" data-ia-help="margem" data-ia-help-value="#mg-valor" data-ia-help-trend="Margem alta indica maior eficiência financeira" style="cursor: pointer; transition: all 0.3s; border-left: 4px solid var(--aviso);"
+                                onclick="selecionarMetrica(this, 'margem')">
+
                                 <div style="display: flex; justify-content: space-between; align-items: start;">
                                     <div>
                                         <h3 class="h3" style="margin: 0 0 8px;">Margem Líquida</h3>
@@ -155,8 +201,6 @@
 
                         </div>
                     </section>
-
-                    <!-- GRÁFICO DINÂMICO -->
                     <section class="cartao" aria-labelledby="titulo-analise" style="margin-top: 24px;">
                         <div
                             style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
@@ -167,12 +211,14 @@
                             </div>
                         </div>
 
-                        <div id="grafico-metricas"
+                        <div id="grafico-metricas" data-ia-help="grafico_metricas" data-ia-help-trend="Visualize as métricas em evolução ao longo do tempo"
                             style="width: 100%; min-height: 400px; border: 1px solid var(--borda); border-radius: var(--raio); padding: 16px; background: rgba(229, 231, 235, 0.1);">
                         </div>
+                        
                     </section>
+
                     <!-- COMPARAÇÃO ENTRE PERÍODOS -->
-                    <section class="cartao" aria-label="Comparação entre períodos" style="margin-top: 24px;">
+                    <section class="cartao" data-ia-help="comparacao_periodos" data-ia-help-trend="Comparação atual vs. anterior" data-ia-help-highlight="Observe as variações de métrica entre períodos" aria-label="Comparação entre períodos" style="margin-top: 24px;">
                         <h2 class="h2" style="margin-bottom: 8px;">Comparação entre Períodos</h2>
                         <p class="p" style="font-size: 14px; color: var(--suave); margin-bottom: 16px;">
                             <span id="label-periodo-atual">Período selecionado</span>
@@ -243,6 +289,128 @@
                             </table>
                         </div>
                     </section>
+           <div style="height: 20px;"></div>                   <!-- PRODUTOS -->
+          <section class="cartao anim-fade-up anim-fade-up-d3 produto-overview" aria-label="Métricas de produtos" style="margin-bottom:20px;">
+            <div class="produto-overview__top">
+              <div>
+                <h2 class="produto-overview__title">Métricas de Produtos</h2>
+              
+                <p id="produtos-overview-meta" class="produto-overview__meta" style="margin-top:8px; font-size:0.92rem; color:var(--texto-secundario);">Carregando informações do produto...</p>
+              </div>
+              <span class="badge-status badge-status--success produto-overview__tag">Baseado no período selecionado</span>
+            </div>
+
+            <div id="produtos-overview-loading" class="produto-overview__loading">
+              <div class="skeleton" style="width:100%; max-width:360px;"></div>
+              <div class="skeleton" style="width:100%; max-width:260px;"></div>
+            </div>
+
+            <div id="produtos-overview" class="produto-overview__content" style="display:none;">
+              <div class="produto-overview__section produto-overview__section--cards">
+                <div class="produto-overview__section-header">
+                </div>
+                <div class="grade grade--3 produto-overview__grid produto-overview__grid--cards">
+                  <article class="cartao produto-card produto-card--vendas">
+                    <div class="produto-card__head">
+                      <h3 class="produto-card__title">Mais vendido</h3>
+                      <span class="produto-card__badge produto-card__badge--vendas">Vendas</span>
+                    </div>
+                    <div id="produto-mais-vendido" class="produto-card__value">Carregando...</div>
+                  </article>
+
+                  <article class="cartao produto-card produto-card--estoque">
+                    <div class="produto-card__head">
+                      <h3 class="produto-card__title">Menos vendido</h3>
+                      <span class="produto-card__badge produto-card__badge--info">Estoque</span>
+                    </div>
+                    <div id="produto-menos-vendido" class="produto-card__value">Carregando...</div>
+                  </article>
+
+                  <article class="cartao produto-card produto-card--lucro">
+                    <div class="produto-card__head">
+                      <h3 class="produto-card__title">Maior lucro</h3>
+                      <span class="produto-card__badge produto-card__badge--lucro">Lucro</span>
+                    </div>
+                    <div id="produto-maior-lucro" class="produto-card__value">Carregando...</div>
+                  </article>
+                </div>
+
+                <div class="grade grade--3 produto-overview__grid produto-overview__grid--cards">
+                  <article class="cartao produto-card produto-card--despesa">
+                    <div class="produto-card__head">
+                      <h3 class="produto-card__title">Maior despesa</h3>
+                      <span class="produto-card__badge produto-card__badge--despesa">Despesa</span>
+                    </div>
+                    <div id="produto-maior-despesa" class="produto-card__value">Carregando...</div>
+                  </article>
+
+                  <article class="cartao produto-card produto-card--warning">
+                    <div class="produto-card__head">
+                      <h3 class="produto-card__title">Menor despesa</h3>
+                      <span class="produto-card__badge produto-card__badge--warning">Custo</span>
+                    </div>
+                    <div id="produto-menos-despesa" class="produto-card__value">Carregando...</div>
+                  </article>
+
+                  <article class="cartao produto-card produto-card--perigo">
+                    <div class="produto-card__head">
+                      <h3 class="produto-card__title">Estoque crítico</h3>
+                      <span class="produto-card__badge produto-card__badge--perigo">Urgente</span>
+                    </div>
+                    <div id="produto-estoque" class="produto-card__value">Carregando...</div>
+                  </article>
+                </div>
+              </div>
+
+              <div class="produto-overview__section produto-overview__section--charts">
+                <div class="produto-overview__section-header produto-overview__section-header--compact">
+                  <h3>Distribuição</h3>
+                  <p>Top 5 por volume e valor, com uma visualização mais fácil.</p>
+                </div>
+                <div class="grade grade--2 produto-overview__grid produto-overview__grid--charts">
+                  <article class="cartao produto-grafico-card produto-grafico-card--vendas">
+                    <div class="produto-card__head">
+                      <h3 class="produto-card__title">Top 5 vendas</h3>
+                      <span class="badge-status badge-status--info">Quantidade</span>
+                    </div>
+                    <div id="graficoProdutosVendas"></div>
+                  </article>
+
+                  <article class="cartao produto-grafico-card produto-grafico-card--lucro">
+                    <div class="produto-card__head">
+                      <h3 class="produto-card__title">Top 5 lucro</h3>
+                      <span class="badge-status badge-status--success">Lucro</span>
+                    </div>
+                    <div id="graficoProdutosLucro"></div>
+                  </article>
+                </div>
+              </div>
+
+              <div class="produto-overview__section produto-overview__section--table">
+                <div class="produto-overview__section-header produto-overview__section-header--compact">
+                  <h3>Lista de produtos</h3>
+                  <p>Veja os valores por produto com maior clareza.</p>
+                </div>
+                <div class="produto-tabela__wrapper">
+                  <table class="produto-tabela">
+                    <thead>
+                      <tr>
+                        <th>Produto</th>
+                        <th>Venda</th>
+                        <th>Despesa</th>
+                        <th>Lucro</th>
+                        <th>Qtd</th>
+                        <th>Estoque</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tabela-produtos-body">
+                      <tr class="produto-tabela__empty"><td colspan="6">Carregando dados de produtos...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
 
                     <!-- EXPLICAÇÃO DA MÉTRICA -->
                     <section class="cartao" aria-label="Explicação das métricas" style="margin-top: 24px;">
@@ -367,6 +535,7 @@
         };
         {% endif %}
     </script>
+    <script src="{{ url_for('static', filename='js/home.js') }}"></script>
     <script src="{{ url_for('static', filename='js/analise.js') }}"></script>
 </body>
 

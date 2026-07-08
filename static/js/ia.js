@@ -3,7 +3,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const input = document.getElementById('chat-input');
     const sendBtn = document.getElementById('chat-send');
 
-    let currentSessionId = Date.now().toString();
+    let currentSessionId = sessionStorage.getItem('chatbotSessionId') || localStorage.getItem('chatbotSessionId') || Date.now().toString();
+    sessionStorage.setItem('chatbotSessionId', currentSessionId);
+    localStorage.setItem('chatbotSessionId', currentSessionId);
+
+    const CHATBOT_OPEN_KEY = 'chatbotOpen';
+    const CHATBOT_MESSAGES_KEY = 'chatbotMessages';
+    const CHATBOT_SESSION_KEY = 'chatbotSessionId';
+    const CHATBOT_TRANSITION_DONE_KEY = 'chatbotIaTransitionDone';
 
     // ==================== FUNÇÕES DE TELA CHEIA ====================
     const pageContainer = document.querySelector('.page-ia-container');
@@ -151,6 +158,118 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function restoreChatbotSession() {
+        const savedSession = sessionStorage.getItem(CHATBOT_SESSION_KEY) || localStorage.getItem(CHATBOT_SESSION_KEY);
+        if (savedSession) {
+            currentSessionId = savedSession;
+            sessionStorage.setItem(CHATBOT_SESSION_KEY, currentSessionId);
+            localStorage.setItem(CHATBOT_SESSION_KEY, currentSessionId);
+        }
+    }
+
+    function restoreChatbotConversationToPage() {
+        let saved = sessionStorage.getItem(CHATBOT_MESSAGES_KEY);
+        if (!saved) {
+            saved = localStorage.getItem(CHATBOT_MESSAGES_KEY);
+        }
+        if (!saved) return false;
+        try {
+            const messages = JSON.parse(saved);
+            if (!Array.isArray(messages) || messages.length === 0) return false;
+            messagesDiv.innerHTML = '';
+            messages.forEach(m => {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = `chat-msg ${m.remetente}`;
+                msgDiv.innerHTML = m.html;
+                messagesDiv.appendChild(msgDiv);
+            });
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            return true;
+        } catch (err) {
+            console.warn('Falha ao restaurar conversa do chatbot:', err);
+            return false;
+        }
+    }
+
+    function animateChatbotIntoPage() {
+        const chatbotCard = document.getElementById('chatbot-card');
+        const chatBox = document.getElementById('chat-box');
+        if (!chatbotCard || !chatBox) return;
+        if (!chatbotCard.classList.contains('active')) return;
+
+        const cardRect = chatbotCard.getBoundingClientRect();
+        const targetRect = chatBox.getBoundingClientRect();
+        const clone = chatbotCard.cloneNode(true);
+        clone.style.position = 'fixed';
+        clone.style.margin = '0';
+        clone.style.top = `${cardRect.top}px`;
+        clone.style.left = `${cardRect.left}px`;
+        clone.style.width = `${cardRect.width}px`;
+        clone.style.height = `${cardRect.height}px`;
+        clone.style.transition = 'all 0.7s cubic-bezier(0.22, 1, 0.36, 1)';
+        clone.style.zIndex = '25000';
+        clone.style.pointerEvents = 'none';
+        clone.style.borderRadius = '28px';
+        clone.style.boxShadow = '0 30px 90px rgba(15, 23, 42, 0.35)';
+        document.body.appendChild(clone);
+
+        requestAnimationFrame(() => {
+            clone.style.top = `${targetRect.top}px`;
+            clone.style.left = `${targetRect.left}px`;
+            clone.style.width = `${targetRect.width}px`;
+            clone.style.height = `${targetRect.height}px`;
+            clone.style.borderRadius = '16px';
+            clone.style.opacity = '0.95';
+            clone.style.boxShadow = '0 35px 120px rgba(59, 130, 246, 0.35)';
+        });
+
+        clone.addEventListener('transitionend', () => {
+            if (clone.parentNode) clone.parentNode.removeChild(clone);
+            chatBox.classList.add('chatbox-highlight');
+            setTimeout(() => chatBox.classList.remove('chatbox-highlight'), 1200);
+            const chatbotCardVisible = document.getElementById('chatbot-card');
+            if (chatbotCardVisible) {
+                chatbotCardVisible.classList.remove('active');
+                chatbotCardVisible.classList.add('hidden');
+            }
+        }, { once: true });
+    }
+
+    function tryAnimateChatbotTransition(attempt = 0) {
+        const openState = sessionStorage.getItem(CHATBOT_OPEN_KEY) || localStorage.getItem(CHATBOT_OPEN_KEY);
+        if (openState !== 'true') return;
+        if (sessionStorage.getItem(CHATBOT_TRANSITION_DONE_KEY) === 'true') return;
+
+        const chatbotCard = document.getElementById('chatbot-card');
+        if (!chatbotCard || !chatbotCard.classList.contains('active')) {
+            if (attempt < 15) {
+                setTimeout(() => tryAnimateChatbotTransition(attempt + 1), 120);
+            }
+            return;
+        }
+
+        const restored = restoreChatbotConversationToPage();
+        if (restored) {
+            animateChatbotIntoPage();
+            sessionStorage.setItem(CHATBOT_TRANSITION_DONE_KEY, 'true');
+        }
+    }
+
+    function saveChatbotConversationToState() {
+        const messages = [];
+        messagesDiv.querySelectorAll('.chat-msg').forEach(el => {
+            messages.push({ html: el.innerHTML, remetente: el.classList.contains('bot') ? 'bot' : 'user' });
+        });
+        if (messages.length) {
+            const payload = JSON.stringify(messages);
+            sessionStorage.setItem(CHATBOT_MESSAGES_KEY, payload);
+            localStorage.setItem(CHATBOT_MESSAGES_KEY, payload);
+        }
+    }
+
+    const observer = new MutationObserver(saveChatbotConversationToState);
+    observer.observe(messagesDiv, { childList: true, subtree: true });
+
     function carregarSessoes() {
         fetch('/api/chatbot/sessoes')
             .then(res => res.json())
@@ -244,18 +363,235 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ------------------ LÓGICA DO MODAL ------------------
     const modal = document.getElementById('ia-modal');
+    const modalWindow = document.querySelector('.ia-modal-window');
+    const modalCloseBtn = document.getElementById('ia-modal-close');
+    const modalHeaderActions = document.getElementById('modal-header-actions');
     const modalTitulo = document.getElementById('modal-titulo');
     const modalConteudo = document.getElementById('modal-conteudo');
     const modalFiltros = document.getElementById('modal-filtros');
     const modalDownloads = document.getElementById('modal-downloads');
     const modalPeriodoSelect = document.getElementById('modal-periodo-select');
     const btnAtualizarModal = document.getElementById('modal-btn-atualizar');
+    const modalResizeHandle = document.getElementById('modal-resize-handle');
+    const IA_MODAL_STATE_KEY = 'DataInsight_IA_ModalState';
 
     const chatBox = document.getElementById('chat-box');
     const galleryBox = document.getElementById('gallery-box');
     const galleryTitle = document.getElementById('gallery-main-title');
     const gallerySelect = document.getElementById('gallery-period-select');
     const galleryGrid = document.getElementById('gallery-grid');
+
+    let modalDragState = null;
+    let modalResizeState = null;
+
+    function salvarEstadoModal() {
+        const state = {
+            visible: modal.style.display === 'flex' || modal.style.display === 'block',
+            top: parseInt(modalWindow.style.top || '0', 10),
+            left: parseInt(modalWindow.style.left || '0', 10),
+            width: parseInt(modalWindow.style.width || modalWindow.offsetWidth, 10),
+            height: parseInt(modalWindow.style.height || modalWindow.offsetHeight, 10)
+        };
+        localStorage.setItem(IA_MODAL_STATE_KEY, JSON.stringify(state));
+    }
+
+    function carregarEstadoModal() {
+        const saved = localStorage.getItem(IA_MODAL_STATE_KEY);
+        if (!saved) return;
+        try {
+            const state = JSON.parse(saved);
+            if (!state || typeof state !== 'object') return;
+            const top = Number.isFinite(state.top) ? state.top : 0;
+            const left = Number.isFinite(state.left) ? state.left : 0;
+            const width = Number.isFinite(state.width) ? state.width : modalWindow.offsetWidth;
+            const height = Number.isFinite(state.height) ? state.height : modalWindow.offsetHeight;
+            aplicarPosicaoModal(clampModalState({ top, left, width, height }));
+            if (state.visible) {
+                modal.style.display = 'flex';
+                modal.setAttribute('aria-hidden', 'false');
+            }
+        } catch (err) {
+            console.warn('Falha ao carregar estado do modal IA:', err);
+        }
+    }
+
+    function clampModalState({ top, left, width, height }) {
+        const minWidth = 360;
+        const minHeight = 280;
+        const maxWidth = window.innerWidth - 40;
+        const maxHeight = window.innerHeight - 40;
+        return {
+            top: Math.min(Math.max(10, top), Math.max(10, window.innerHeight - minHeight - 10)),
+            left: Math.min(Math.max(10, left), Math.max(10, window.innerWidth - minWidth - 10)),
+            width: Math.min(Math.max(minWidth, width), maxWidth),
+            height: Math.min(Math.max(minHeight, height), maxHeight)
+        };
+    }
+
+    function aplicarPosicaoModal({ top, left, width, height }) {
+        modalWindow.style.top = `${top}px`;
+        modalWindow.style.left = `${left}px`;
+        modalWindow.style.width = `${width}px`;
+        modalWindow.style.height = `${height}px`;
+    }
+
+    function tocarBolhaModal(tipo) {
+        try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+            const ctx = new AudioCtx();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            const filter = ctx.createBiquadFilter();
+            osc.type = 'triangle';
+            osc.frequency.value = tipo === 'open' ? 920 : 700;
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(tipo === 'open' ? 1600 : 1200, ctx.currentTime);
+            gain.gain.setValueAtTime(tipo === 'open' ? 0.55 : 0.38, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.28);
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.28);
+            osc.onended = () => { try { ctx.close(); } catch(e) {} };
+        } catch(err) {
+            console.warn('Erro ao tocar bolha modal:', err);
+        }
+    }
+
+    function mostrarModal() {
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
+        if (!modalWindow.style.top || !modalWindow.style.left) {
+            aplicarPosicaoModal(clampModalState({ top: 40, left: 40, width: Math.min(1040, window.innerWidth - 80), height: Math.min(700, window.innerHeight - 80) }));
+        }
+        // Animação pop-in
+        modalWindow.classList.remove('ia-modal-pop-in');
+        void modalWindow.offsetWidth;
+        modalWindow.classList.add('ia-modal-pop-in');
+        tocarBolhaModal('open');
+        salvarEstadoModal();
+    }
+
+    function fecharModal() {
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+        modalWindow.classList.remove('ia-modal-pop-in');
+        tocarBolhaModal('close');
+        salvarEstadoModal();
+    }
+
+    function iniciarArrasteModal(event) {
+        if (event.button !== 0) return;
+        modalDragState = {
+            startX: event.clientX,
+            startY: event.clientY,
+            initialTop: parseInt(modalWindow.style.top || '0', 10),
+            initialLeft: parseInt(modalWindow.style.left || '0', 10)
+        };
+        document.addEventListener('mousemove', arrastarModal);
+        document.addEventListener('mouseup', pararArrasteModal);
+        event.preventDefault();
+    }
+
+    function arrastarModal(event) {
+        if (!modalDragState) return;
+        const deltaX = event.clientX - modalDragState.startX;
+        const deltaY = event.clientY - modalDragState.startY;
+        const next = clampModalState({
+            top: modalDragState.initialTop + deltaY,
+            left: modalDragState.initialLeft + deltaX,
+            width: parseInt(modalWindow.style.width || modalWindow.offsetWidth, 10),
+            height: parseInt(modalWindow.style.height || modalWindow.offsetHeight, 10)
+        });
+        aplicarPosicaoModal(next);
+    }
+
+    function pararArrasteModal() {
+        if (!modalDragState) return;
+        document.removeEventListener('mousemove', arrastarModal);
+        document.removeEventListener('mouseup', pararArrasteModal);
+        modalDragState = null;
+        salvarEstadoModal();
+    }
+
+    function iniciarRedimensionamentoModal(event) {
+        if (event.button !== 0) return;
+        modalResizeState = {
+            startX: event.clientX,
+            startY: event.clientY,
+            initialWidth: modalWindow.offsetWidth,
+            initialHeight: modalWindow.offsetHeight
+        };
+        document.addEventListener('mousemove', redimensionarModal);
+        document.addEventListener('mouseup', pararRedimensionamentoModal);
+        event.preventDefault();
+    }
+
+    function redimensionarModal(event) {
+        if (!modalResizeState) return;
+        const next = clampModalState({
+            top: parseInt(modalWindow.style.top || '0', 10),
+            left: parseInt(modalWindow.style.left || '0', 10),
+            width: modalResizeState.initialWidth + (event.clientX - modalResizeState.startX),
+            height: modalResizeState.initialHeight + (event.clientY - modalResizeState.startY)
+        });
+        aplicarPosicaoModal(next);
+    }
+
+    function pararRedimensionamentoModal() {
+        if (!modalResizeState) return;
+        document.removeEventListener('mousemove', redimensionarModal);
+        document.removeEventListener('mouseup', pararRedimensionamentoModal);
+        modalResizeState = null;
+        salvarEstadoModal();
+    }
+
+    modalCloseBtn.addEventListener('click', fecharModal);
+    modalHeaderActions.addEventListener('mousedown', iniciarArrasteModal);
+    modalResizeHandle.addEventListener('mousedown', iniciarRedimensionamentoModal);
+    window.addEventListener('resize', () => {
+        aplicarPosicaoModal(clampModalState({
+            top: parseInt(modalWindow.style.top || '0', 10),
+            left: parseInt(modalWindow.style.left || '0', 10),
+            width: parseInt(modalWindow.style.width || modalWindow.offsetWidth, 10),
+            height: parseInt(modalWindow.style.height || modalWindow.offsetHeight, 10)
+        }));
+        salvarEstadoModal();
+    });
+
+    document.addEventListener('DataInsight_OpenIaModal', () => {
+        console.log('[IA] DataInsight_OpenIaModal recebido no document');
+        mostrarModal();
+    });
+
+    window.addEventListener('DataInsight_OpenIaModal', () => {
+        console.log('[IA] DataInsight_OpenIaModal recebido no window');
+        mostrarModal();
+    });
+
+    document.addEventListener('DataInsight_CloseIaModal', () => {
+        console.log('[IA] DataInsight_CloseIaModal recebido no document');
+        fecharModal();
+    });
+
+    window.addEventListener('DataInsight_CloseIaModal', () => {
+        console.log('[IA] DataInsight_CloseIaModal recebido no window');
+        fecharModal();
+    });
+
+    window.DataInsightOpenIaModal = function() {
+        console.log('[IA] DataInsightOpenIaModal chamada manualmente');
+        mostrarModal();
+    };
+
+    window.closeDataInsightIaModal = function() {
+        console.log('[IA] closeDataInsightIaModal chamada manualmente');
+        fecharModal();
+    };
+
+    carregarEstadoModal();
 
     function mostrarChat() {
         chatBox.style.display = 'flex';
@@ -555,6 +891,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    restoreChatbotSession();
     carregarSessoes();
     carregarHistorico();
+    tryAnimateChatbotTransition();
 });

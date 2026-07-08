@@ -1,7 +1,10 @@
 import os
+import importlib.util
 from dotenv import load_dotenv
+import base64
 from agno.agent import Agent
-from agno.models.openai import OpenAIChat
+from agno.team import Team
+from agno.models.ollama import Ollama
 from backend.home.home import calcular_desempenho, converter_datas, encontrar_coluna_data, obter_colunas_mapeadas, COL_FATURAMENTO, COL_DESPESA, calcular_total_dinamico
 from backend.db import dados_colecao, chat_historico
 from datetime import datetime
@@ -9,15 +12,110 @@ import pandas as pd
 import numpy as np
 from flask import session, jsonify, request, send_file
 import io
+import subprocess
 
 # Carrega as variáveis do arquivo .env
 load_dotenv()
 
+# Cache global do Kokoro para evitar reinicialização a cada chamada (principal causa do atraso)
+_kokoro_pipelines = {}
+
+def selecionar_modelo_ollama() -> str:
+    """Escolhe automaticamente um modelo Ollama compatível com ferramentas."""
+    modelos_preferidos = []
+
+    modelo_env = os.getenv("OLLAMA_MODEL", "").strip()
+    if modelo_env:
+        modelos_preferidos.append(modelo_env)
+
+    modelos_preferidos.extend(["llama3.2:3b", "phi3:mini"])
+
+    modelos_instalados = set()
+    try:
+        resultado = subprocess.run(["ollama", "list"], capture_output=True, text=True, timeout=20)
+        if resultado.returncode == 0:
+            for linha in resultado.stdout.splitlines()[1:]:
+                partes = linha.split()
+                if partes:
+                    modelos_instalados.add(partes[0])
+    except Exception:
+        modelos_instalados = set()
+
+    for modelo in modelos_preferidos:
+        if not modelos_instalados or modelo in modelos_instalados:
+            return modelo
+
+    return modelos_preferidos[0] if modelos_preferidos else "llama3.2:3b"
+
+def sintetizar_resposta_voz(texto: str):
+    """Tenta sintetizar resposta em áudio usando Kokoro, se disponível."""
+    if not texto:
+        return None
+    try:
+        # Prefer Kokoro if installed
+        if importlib.util.find_spec("kokoro") is not None:
+            from kokoro import KPipeline
+
+            resultado = None
+            for lang_code in ["pt-BR", "pt_br", "pt", "a"]:
+                try:
+                    if lang_code not in _kokoro_pipelines:
+                        _kokoro_pipelines[lang_code] = KPipeline(lang_code=lang_code)
+                    pipeline = _kokoro_pipelines[lang_code]
+                    resultado = pipeline(texto)
+                    break
+                except Exception:
+                    _kokoro_pipelines.pop(lang_code, None)
+                    resultado = None
+            if resultado is not None:
+                audio_bytes = None
+                if isinstance(resultado, (bytes, bytearray)):
+                    audio_bytes = bytes(resultado)
+                elif hasattr(resultado, 'audio'):
+                    audio_bytes = resultado.audio if isinstance(resultado.audio, (bytes, bytearray)) else None
+                elif isinstance(resultado, dict) and resultado.get('audio') is not None:
+                    if isinstance(resultado['audio'], (bytes, bytearray)):
+                        audio_bytes = bytes(resultado['audio'])
+                    elif isinstance(resultado['audio'], str):
+                        try:
+                            audio_bytes = base64.b64decode(resultado['audio'])
+                        except Exception:
+                            audio_bytes = resultado['audio'].encode('utf-8')
+
+                if audio_bytes is not None:
+                    return (base64.b64encode(audio_bytes).decode('utf-8'), 'audio/wav')
+
+        # Fallback: try gTTS if available (returns mp3)
+        if importlib.util.find_spec('gtts') is not None:
+            try:
+                from gtts import gTTS
+                import io
+                bio = io.BytesIO()
+                tts = gTTS(text=texto, lang='pt')
+                tts.write_to_fp(bio)
+                mp3_bytes = bio.getvalue()
+                return (base64.b64encode(mp3_bytes).decode('utf-8'), 'audio/mpeg')
+            except Exception as e:
+                print(f"Erro ao sintetizar com gTTS: {e}")
+
+        # No TTS available
+        return None
+    except Exception as erro:
+        print(f"Erro ao sintetizar voz: {erro}")
+        return None
+
+
+def sintetizar_texto_voz(texto: str):
+    """Gera áudio via Kokoro para qualquer texto fornecido."""
+    return sintetizar_resposta_voz(texto)
+
 # ==========================
 # FERRAMENTAS DO ANALISTA
 # ==========================
-def obter_resumo_financeiro(periodo: str = "30_dias") -> str:
+def obter_resumo_financeiro(periodo: str = "30_dias", *args, **kwargs) -> str:
     """Busca o resumo financeiro (faturamento, lucro, despesa). O período pode ser '7_dias', '30_dias', '90_dias' ou 'ano_atual'."""
+    if not periodo and kwargs.get("periodo"):
+        periodo = kwargs.get("periodo")
     try:
         resposta, status = calcular_desempenho(periodo)
         if status != 200:
@@ -38,8 +136,10 @@ def obter_resumo_financeiro(periodo: str = "30_dias") -> str:
     except Exception as erro:
         return f"Erro ao calcular resumo: {str(erro)}"
 
-def obter_transacoes_recentes(limite: int = 5) -> str:
+def obter_transacoes_recentes(limite: int = 5, *args, **kwargs) -> str:
     """Retorna as últimas transações registradas para dar contexto detalhado à IA."""
+    if not limite and kwargs.get("limite"):
+        limite = kwargs.get("limite")
     usuario_id = session.get('usuario_id')
     if not usuario_id:
         return "Usuário não autenticado."
@@ -58,7 +158,7 @@ def obter_transacoes_recentes(limite: int = 5) -> str:
 # ==========================
 # FERRAMENTAS DO CIENTISTA
 # ==========================
-def prever_receita_mes_seguinte() -> str:
+def prever_receita_mes_seguinte(*args, **kwargs) -> str:
     """Prevê o faturamento do próximo mês usando regressão linear simples com base no histórico."""
     usuario_id = session.get('usuario_id')
     if not usuario_id:
@@ -98,7 +198,7 @@ def prever_receita_mes_seguinte() -> str:
     except Exception as erro:
         return f"Erro ao prever receita: {str(erro)}"
 
-def detectar_anomalias_despesas() -> str:
+def detectar_anomalias_despesas(*args, **kwargs) -> str:
     """Verifica se há picos de despesas no último mês em comparação com a média histórica."""
     usuario_id = session.get('usuario_id')
     if not usuario_id:
@@ -136,7 +236,7 @@ def detectar_anomalias_despesas() -> str:
 # ==========================
 # FERRAMENTAS DO CONSULTOR
 # ==========================
-def calcular_ponto_equilibrio() -> str:
+def calcular_ponto_equilibrio(*args, **kwargs) -> str:
     """Calcula o Ponto de Equilíbrio baseado nas médias de despesas e faturamento."""
     usuario_id = session.get('usuario_id')
     if not usuario_id:
@@ -171,9 +271,14 @@ def calcular_ponto_equilibrio() -> str:
 # ==========================
 # FERRAMENTAS DO ASSISTENTE
 # ==========================
-def gerar_arquivo_download(tipo: str, periodo: str = '30_dias') -> str:
+def gerar_arquivo_download(tipo: str = '', periodo: str = '30_dias', *args, **kwargs) -> str:
     """Gera um link para download dos dados financeiros do usuário. O tipo pode ser 'csv' ou 'excel' ou 'pdf'. O periodo pode ser '7_dias', '30_dias', '90_dias', 'ano_atual' ou 'mes_XX'."""
-    tipo = tipo.lower()
+    if not tipo and kwargs.get('tipo'):
+        tipo = kwargs.get('tipo')
+    if not periodo and kwargs.get('periodo'):
+        periodo = kwargs.get('periodo')
+    if tipo:
+        tipo = str(tipo).lower()
     if tipo == 'pdf':
         try:
             from backend.home.home import calcular_desempenho, obter_dados_graficos
@@ -272,14 +377,12 @@ def exportar_dados_usuario(tipo):
 # ==========================
 def obter_time_agentes():
     """Configura o Time de Agentes e o Orquestrador."""
-    chave_api = os.getenv("OPENAI_API_KEY")
-    # Limpar aspas se vier do .env com aspas duplas
-    chave_api = chave_api.strip('"').strip("'") if chave_api else None
-    
-    if not chave_api:
-        raise ValueError("A variável OPENAI_API_KEY não foi encontrada no arquivo .env")
-        
-    modelo_ia = OpenAIChat(id="gpt-4o", api_key=chave_api)
+
+    modelo_selecionado = selecionar_modelo_ollama()
+    modelo_ia = Ollama(
+        id=modelo_selecionado,
+        host=os.getenv("OLLAMA_HOST", "http://localhost:11434")
+    )
     
     analista = Agent(
         name="Analista de Dados",
@@ -314,21 +417,20 @@ def obter_time_agentes():
     )
     
     # Orquestrador (Team Leader)
-    orquestrador = Agent(
+    orquestrador = Team(
         name="Assistente Inteligente DataInsight",
         model=modelo_ia,
-        team=[analista, cientista, consultor, assistente_executivo],
+        members=[analista, cientista, consultor, assistente_executivo],
         instructions=[
             "Você é o líder do time virtual do DataInsight.",
             "Deleque perguntas sobre dados passados e faturamento para o Analista de Dados.",
             "Deleque perguntas sobre previsões e anomalias para o Cientista de Dados.",
             "Deleque perguntas sobre estratégia e ponto de equilíbrio para o Consultor Financeiro.",
             "Delegue pedidos de gerar, baixar ou exportar arquivos (PDF, Excel, CSV) para o Assistente Executivo.",
-            "INSTRUÇÃO CRÍTICA SOBRE GRÁFICOS: Para gerar gráficos, o sistema já possui os dados no banco. Apenas crie uma resposta dizendo 'Aqui está o gráfico solicitado:' e insira EXATAMENTE esta tag no final do texto: <div class='grafico-ia-render' data-periodo='30_dias' data-tipo='linha' data-metricas='faturamento,lucro' data-titulo='Faturamento Mensal'></div>. Troque '30_dias' por 7_dias, 30_dias, 90_dias, ano_atual ou mes_XX conforme pedido. Troque 'linha' por 'barras' ou 'pizza' conforme o tipo. E MUDANÇA IMPORTANTE: Em 'data-metricas', liste (separado por vírgula e sem espaços) APENAS as métricas que o usuário pedir (ex: 'faturamento', ou 'lucro,despesas', ou 'faturamento,lucro,despesas'). Se ele não especificar, coloque 'faturamento,lucro'. O 'data-titulo' deve descrever o gráfico gerado.",
+            "INSTRUÇÃO CRÍTICA SOBRE GRÁFICOS: Para gerar gráficos, o systema já possui os dados no banco. Apenas crie uma resposta dizendo 'Aqui está o gráfico solicitado:' e insira EXATAMENTE esta tag no final do texto: <div class='grafico-ia-render' data-periodo='30_dias' data-tipo='linha' data-metricas='faturamento,lucro' data-titulo='Faturamento Mensal'></div>. Troque '30_dias' por 7_dias, 30_dias, 90_dias, ano_atual ou mes_XX conforme pedido. Troque 'linha' por 'barras' ou 'pizza' conforme o tipo. E MUDANÇA IMPORTANTE: Em 'data-metricas', liste (separado por vírgula e sem espaços) APENAS as métricas que o usuário pedir (ex: 'faturamento', ou 'lucro,despesas', ou 'faturamento,lucro,despesas'). Se ele não especificar, coloque 'faturamento,lucro'. O 'data-titulo' deve descrever o gráfico gerado.",
             "Após os agentes retornarem os dados, sintetize a resposta final para o usuário de forma clara, profissional e amigável.",
             "Formate a resposta livremente com Markdown. Você DEVE usar **negrito** para destacar valores, datas e números importantes. Sempre que fizer sentido, organize comparações e finanças em pequenas tabelas Markdown para ficar bem visual. Não economize em usar tabelas ou listas estruturadas."
         ],
-        show_tool_calls=False,
         markdown=False
     )
     
@@ -474,9 +576,23 @@ def perguntar_chatbot():
             # Salva apenas o conteudo da resposta limpa no historico
             salvar_mensagem_historico(usuario_id, 'bot', resposta.content, sessao_id)
         
-        return jsonify({
-            "resposta": resposta.content
-        })
+        resposta_texto = resposta.content
+        resposta_voz = sintetizar_resposta_voz(resposta_texto)
+
+        payload = {
+            "resposta": resposta_texto,
+            "resposta_voz": bool(resposta_voz)
+        }
+        if resposta_voz:
+            # resposta_voz is expected to be (base64_str, mimetype)
+            try:
+                b64, mimetype = resposta_voz
+            except Exception:
+                b64, mimetype = (resposta_voz, 'audio/wav')
+            payload["resposta_voz_base64"] = b64
+            payload["resposta_voz_mimetype"] = mimetype
+
+        return jsonify(payload)
     except Exception as e:
         print(f"Erro no chatbot: {str(e)}")
         return jsonify({"resposta": "Desculpe, tive um problema técnico ao processar sua pergunta. Tente novamente em instantes."}), 500

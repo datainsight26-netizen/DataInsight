@@ -40,7 +40,9 @@ function getThemeColors() {
         faturamento: isDark ? '#60a5fa' : '#3b82f6',
         despesas: isDark ? '#ef5350' : '#dc2626',
         lucro: isDark ? '#4ade80' : '#16a34a',
-        margem: isDark ? '#fbbf24' : '#d97706'
+        margem: isDark ? '#fbbf24' : '#d97706',
+        // 'suave' is used for text color in charts and UI elements
+        suave: isDark ? '#e5e7eb' : '#374151'
     };
 }
 
@@ -86,16 +88,25 @@ function atualizarEstilosMetricas() {
 // =============================
 // GRÁFICO
 // =============================
-function selecionarMetrica(elemento) {
+// selecionarMetrica aceita (elemento, nomeMetrica) conforme chamada no HTML
+function selecionarMetrica(elemento, nomeMetrica) {
+    // Se chamado sem não nome explícito, tenta descobrir pelo checkbox interno
+    if (!nomeMetrica) {
+        const checkbox = elemento.querySelector('.metrica-checkbox');
+        if (checkbox) {
+            nomeMetrica = checkbox.id.replace('check-', '');
+        }
+    }
     const checkbox = elemento.querySelector('.metrica-checkbox');
-    checkbox.checked = !checkbox.checked;
+    if (checkbox) checkbox.checked = !checkbox.checked;
 
-    elemento.style.borderLeft = checkbox.checked ? '4px solid var(--primaria)' : 'none';
-    elemento.style.background = checkbox.checked ? 'rgba(59,130,246,0.05)' : 'transparent';
+    elemento.style.borderLeft = (checkbox && checkbox.checked) ? '4px solid var(--primaria)' : 'none';
+    elemento.style.background = (checkbox && checkbox.checked) ? 'rgba(59,130,246,0.05)' : 'transparent';
 
     salvarMetricasSelecionadas();
     atualizarGrafico();
 }
+
 
 function atualizarGrafico() {
     if (!dadosAtualGrafico || !dadosAtualGrafico.labels) {
@@ -230,6 +241,7 @@ function aplicarFiltros() {
             console.log("API:", data);
             dadosAtualGrafico = data.grafico;
             preencherCards(data);
+            preencherAnalisesDecisao(data);
             preencherTabela(data);
             atualizarGrafico();
         })
@@ -343,6 +355,31 @@ function preencherCards(data) {
         data.margem.variacao >= 0 ? '#16a34a' : '#dc2626';
 }
 
+function preencherAnalisesDecisao(data) {
+    const decisao = data.analises_decisao || {};
+    const classificacao = decisao.classificacao || {};
+    const projecao = decisao.projecao || {};
+    const predicao = decisao.predicao || {};
+    const recomendacao = decisao.recomendacao || {};
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
+
+    setText('decisao-classificacao-nivel', classificacao.nivel || '--');
+    setText('decisao-classificacao-score', classificacao.score ? `${classificacao.score} / 100` : '--');
+    setText('decisao-classificacao-descricao', classificacao.descricao || '--');
+
+    setText('decisao-projecao-valor', formatarMoeda(projecao.valor || 0));
+    setText('decisao-projecao-descricao', projecao.descricao || '--');
+
+    setText('decisao-predicao-valor', formatarMoeda(predicao.valor || 0));
+    setText('decisao-predicao-descricao', predicao.descricao || '--');
+
+    setText('decisao-recomendacao-prioridade', recomendacao.prioridade || '--');
+    setText('decisao-recomendacao-texto', recomendacao.texto || '--');
+}
+
 function preencherTabela(data) {
 
     document.getElementById('label-periodo-atual').textContent =
@@ -383,26 +420,7 @@ function setLinha(prefixo, dados, positivoBom) {
     el.style.color = (positivo === positivoBom) ? '#16a34a' : '#dc2626';
 }
 
-// =============================
-// FORMATADORES
-// =============================
-function formatarMoeda(valor) {
-    return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL'
-    }).format(valor || 0);
-}
-
-function formatarVariacao(v) {
-    const sinal = v >= 0 ? '↑ ' : '↓ ';
-    return sinal + Math.abs(v).toFixed(1) + '%';
-}
-
-function formatarData(dataStr) {
-    if (!dataStr) return '--';
-    const [ano, mes, dia] = dataStr.split('-');
-    return `${dia}/${mes}/${ano}`;
-}
+// (formatarMoeda, formatarVariacao e formatarData já declarados no topo do arquivo)
 
 // =============================
 // LIMPAR
@@ -449,6 +467,17 @@ function limparFiltros() {
     document.getElementById('desp-variacao').textContent = '--';
     document.getElementById('luc-variacao').textContent = '--';
     document.getElementById('mg-variacao').textContent = '--';
+
+    // limpa análises de decisão
+    document.getElementById('decisao-classificacao-nivel').textContent = '--';
+    document.getElementById('decisao-classificacao-score').textContent = '--';
+    document.getElementById('decisao-classificacao-descricao').textContent = '--';
+    document.getElementById('decisao-projecao-valor').textContent = '--';
+    document.getElementById('decisao-projecao-descricao').textContent = '--';
+    document.getElementById('decisao-predicao-valor').textContent = '--';
+    document.getElementById('decisao-predicao-descricao').textContent = '--';
+    document.getElementById('decisao-recomendacao-prioridade').textContent = '--';
+    document.getElementById('decisao-recomendacao-texto').textContent = '--';
 
     // limpa TABELA
     const ids = [
@@ -533,3 +562,107 @@ window.alternarTema = function () {
         }
     }, 100);
 };
+
+// =============================
+// ANÁLISES AVANÇADAS - Handlers
+// =============================
+function coletarOpcoesAvancadas() {
+    return {
+        classificacao: !!document.getElementById('adv-classificacao')?.checked,
+        tendencia: !!document.getElementById('adv-tendencia')?.checked,
+        anomalia: !!document.getElementById('adv-anomalia')?.checked,
+        correlacao: !!document.getElementById('adv-correlacao')?.checked,
+        recomendacao: !!document.getElementById('adv-recomendacao')?.checked
+    };
+}
+
+function mostrarResultadoAnalises(resumo) {
+    const container = document.getElementById('resultado-analises-avancadas');
+    const rapido = document.getElementById('insights-rapidos');
+    if (!container || !rapido) return;
+    rapido.textContent = resumo || 'Sem resultados.';
+    container.style.display = 'block';
+}
+
+function executarAnalisesAvancadas() {
+    const opcoes = coletarOpcoesAvancadas();
+    const periodo = JSON.parse(localStorage.getItem('analise_periodo') || 'null');
+
+    if (!periodo) {
+        alert('Selecione um período antes de executar as análises.');
+        return;
+    }
+
+    // Mostrar loading simples
+    mostrarResultadoAnalises('Executando análises...');
+
+    fetch('/api/analises-avancadas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ periodo, opcoes })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data && data.resumo) {
+            mostrarResultadoAnalises(data.resumo);
+        } else {
+            mostrarResultadoAnalises('Análises concluídas. Confira os relatórios.');
+        }
+    })
+    .catch(err => {
+        console.error('Erro análises avançadas', err);
+        mostrarResultadoAnalises('Erro ao executar análises. Tente novamente.');
+    });
+}
+
+function gerarInsights() {
+    // Reutiliza o endpoint de análises avançadas solicitando apenas insights
+    const opcoes = coletarOpcoesAvancadas();
+    const periodo = JSON.parse(localStorage.getItem('analise_periodo') || 'null');
+    if (!periodo) { alert('Selecione um período antes.'); return; }
+    mostrarResultadoAnalises('Gerando insights...');
+
+    fetch('/api/analises-avancadas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ periodo, opcoes, apenas_insights: true })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data && data.insights_texto) mostrarResultadoAnalises(data.insights_texto);
+        else mostrarResultadoAnalises('Nenhum insight disponível.');
+    })
+    .catch(err => { console.error(err); mostrarResultadoAnalises('Erro ao gerar insights.'); });
+}
+
+function exportarCSVAnalises() {
+    const opcoes = coletarOpcoesAvancadas();
+    const periodo = JSON.parse(localStorage.getItem('analise_periodo') || 'null');
+    if (!periodo) { alert('Selecione um período antes.'); return; }
+
+    // Solicita CSV ao backend; fallback: gerar localmente se não houver endpoint
+    fetch('/api/analises-avancadas/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ periodo, opcoes })
+    })
+    .then(r => {
+        if (!r.ok) throw new Error('Erro exportando CSV');
+        return r.blob();
+    })
+    .then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'analises_avancadas.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    })
+    .catch(err => {
+        console.warn('Export endpoint inválido, tentando gerar CSV localmente', err);
+        // gerar CSV local simulado
+        mostrarResultadoAnalises('Exportação não disponível no servidor. Faça download manualmente.');
+    });
+}

@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
 
   <!-- Charts -->
-  <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 </head>
 
 <body>
@@ -70,7 +70,7 @@
       </header>
 
       <!-- ÁREA DE SCROLL -->
-      <main id="conteudo" class="pagina" role="main" tabindex="-1">
+      <main id="conteudo" class="pagina" role="main" tabindex="-1" data-ia-help="page_home">
         <div class="container">
 
           <!-- CABEÇALHO DA PÁGINA -->
@@ -100,6 +100,7 @@
           <!-- STATUS DO NEGÓCIO (IA) -->
           <section class="cartao anim-fade-up anim-fade-up-d1"
                    id="status-negocio-section"
+                   data-ia-help="status_negocio"
                    style="margin-bottom:20px; border-left:4px solid var(--sucesso);"
                    aria-label="Status do negócio">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
@@ -117,45 +118,66 @@
             <div class="kpi-grid">
 
               <article class="kpi-card-premium anim-fade-up anim-fade-up-d1"
-                       style="--kpi-color:#3B82F6; --kpi-bg:rgba(59,130,246,0.08);">
+                       style="--kpi-color:#3B82F6; --kpi-bg:rgba(59,130,246,0.08); cursor:pointer;"
+                       data-ia-help="kpi_faturamento"
+                       data-ia-help-value="#faturamento-valor"
+                       data-kpi="faturamento"
+                       role="button"
+                       tabindex="0"
+                       title="Clique para ver o detalhamento do faturamento">
                 <div class="kpi-card-premium__header">
                   <span class="kpi-card-premium__label">Faturamento</span>
                   <span class="kpi-card-premium__icon"><i class="fa-solid fa-arrow-trend-up"></i></span>
                 </div>
-                <div class="kpi-card-premium__value" data-indicador="faturamento-valor">—</div>
+                <div id="faturamento-valor" class="kpi-card-premium__value" data-indicador="faturamento-valor">—</div>
                 <span class="kpi-card-premium__change kpi-card-premium__change--up"
                       data-indicador="faturamento-percent">—</span>
               </article>
 
               <article class="kpi-card-premium anim-fade-up anim-fade-up-d2"
-                       style="--kpi-color:#16A34A; --kpi-bg:rgba(22,163,74,0.08);">
+                       style="--kpi-color:#16A34A; --kpi-bg:rgba(22,163,74,0.08); cursor:pointer;"
+                       data-ia-help="kpi_lucro"
+                       data-ia-help-value="#lucro-valor"
+                       data-kpi="lucro"
+                       role="button"
+                       tabindex="0"
+                       title="Clique para ver o detalhamento do lucro">
                 <div class="kpi-card-premium__header">
                   <span class="kpi-card-premium__label">Lucro</span>
                   <span class="kpi-card-premium__icon"><i class="fa-solid fa-dollar-sign"></i></span>
                 </div>
-                <div class="kpi-card-premium__value" data-indicador="lucro-valor">—</div>
+                <div id="lucro-valor" class="kpi-card-premium__value" data-indicador="lucro-valor">—</div>
                 <span class="kpi-card-premium__change kpi-card-premium__change--up"
                       data-indicador="lucro-percent">—</span>
               </article>
 
               <article class="kpi-card-premium anim-fade-up anim-fade-up-d3"
-                       style="--kpi-color:#DC2626; --kpi-bg:rgba(220,38,38,0.08);">
+                       style="--kpi-color:#DC2626; --kpi-bg:rgba(220,38,38,0.08); cursor:pointer;"
+                       data-ia-help="kpi_despesas"
+                       data-ia-help-value="#despesa-valor"
+                       data-kpi="despesa"
+                       role="button"
+                       tabindex="0"
+                       title="Clique para ver o detalhamento das despesas">
                 <div class="kpi-card-premium__header">
                   <span class="kpi-card-premium__label">Despesas</span>
                   <span class="kpi-card-premium__icon"><i class="fa-solid fa-receipt"></i></span>
                 </div>
-                <div class="kpi-card-premium__value" data-indicador="despesa-valor">—</div>
+                <div id="despesa-valor" class="kpi-card-premium__value" data-indicador="despesa-valor">—</div>
                 <span class="kpi-card-premium__change kpi-card-premium__change--down"
                       data-indicador="despesa-percent">—</span>
               </article>
 
               <article class="kpi-card-premium anim-fade-up anim-fade-up-d4"
-                       style="--kpi-color:#8B5CF6; --kpi-bg:rgba(139,92,246,0.08);">
+                       style="--kpi-color:#8B5CF6; --kpi-bg:rgba(139,92,246,0.08);"
+                       data-ia-help="kpi_crescimento"
+                       data-ia-help-value="#crescimento-valor"
+                       data-kpi="crescimento">
                 <div class="kpi-card-premium__header">
                   <span class="kpi-card-premium__label">Crescimento</span>
                   <span class="kpi-card-premium__icon"><i class="fa-solid fa-chart-bar"></i></span>
                 </div>
-                <div class="kpi-card-premium__value" data-indicador="crescimento-valor">—</div>
+                <div id="crescimento-valor" class="kpi-card-premium__value" data-indicador="crescimento-valor">—</div>
                 <span class="kpi-card-premium__change kpi-card-premium__change--up">Acumulado</span>
               </article>
 
@@ -178,7 +200,7 @@
                     <i class="fa-solid fa-circle" style="font-size:6px;"></i> Ao vivo
                   </span>
                 </div>
-                <div id="graficoLinhaFaturamento"></div>
+                <div id="graficoLinhaFaturamento" data-ia-help="grafico_faturamento"></div>
               </article>
 
               <article class="cartao anim-fade-up anim-fade-up-d3">
@@ -190,14 +212,16 @@
                     <i class="fa-solid fa-circle" style="font-size:6px;"></i> Ativo
                   </span>
                 </div>
-                <div id="graficoPizzaComparativa"></div>
+                <div id="graficoPizzaComparativa" data-ia-help="grafico_comparativo"></div>
               </article>
 
             </div>
           </section>
 
+
           <!-- INSIGHTS DA IA -->
           <section class="cartao anim-fade-up anim-fade-up-d4"
+                   data-ia-help="insights_ia"
                    style="background:linear-gradient(135deg, rgba(59,130,246,0.06) 0%, rgba(99,102,241,0.03) 100%);
                           border-left:4px solid var(--primaria);"
                    aria-label="Insights da IA">
@@ -248,6 +272,23 @@
   <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
   <script src="{{ url_for('static', filename='js/home.js') }}"></script>
+
+  <div id="kpiDetalheModal" class="modal-backdrop" style="display:none; position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.65); align-items:center; justify-content:center; padding:20px;">
+    <div class="modal" style="background:var(--cartao); width:100%; max-width:680px; border-radius:20px; box-shadow:0 24px 70px rgba(0,0,0,0.35); overflow:hidden; max-height:90vh; display:flex; flex-direction:column; color:var(--text-primary); border:1px solid var(--border-color);">
+      <div class="modal__header" style="display:flex; align-items:center; justify-content:space-between; padding:20px 24px; border-bottom:1px solid var(--border-color);">
+        <h2 class="modal__title" id="kpiDetalheTitulo" style="font-size:1.1rem; margin:0; color:var(--text-primary);">Detalhes do KPI</h2>
+        <button type="button" class="modal__close" aria-label="Fechar" onclick="fecharModalDetalhe()" style="border:none; background:transparent; font-size:1.6rem; line-height:1; cursor:pointer; color:var(--text-primary);">×</button>
+      </div>
+      <div class="modal__content" style="padding:20px 24px; overflow:auto; flex:1; color:var(--text-primary);">
+        <div id="kpiDetalheBody">
+          <p>Carregando detalhes...</p>
+        </div>
+      </div>
+      <div class="modal__footer" style="padding:16px 24px; border-top:1px solid var(--border-color); text-align:right; background:var(--bg-secondary);">
+        <button type="button" class="botao botao--suave" onclick="fecharModalDetalhe()" style="padding:10px 18px; border:none; background:var(--bg-primary); color:var(--text-primary); border-radius:10px; cursor:pointer;">Fechar</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     // Sidebar mobile toggle

@@ -56,10 +56,93 @@ def calcular_metricas(df):
     return fat, desp, luc, mg
 
 
+def calcular_regressao_linear(series):
+    valores = [float(v) for v in series if pd.notna(v)]
+
+    if len(valores) < 2:
+        return 0.0, float(valores[-1]) if valores else 0.0
+
+    x = list(range(1, len(valores) + 1))
+    x_media = sum(x) / len(x)
+    y_media = sum(valores) / len(valores)
+
+    covariancia = sum((xi - x_media) * (yi - y_media) for xi, yi in zip(x, valores))
+    variancia = sum((xi - x_media) ** 2 for xi in x)
+
+    if variancia == 0:
+        return 0.0, y_media
+
+    inclinacao = covariancia / variancia
+    intercepto = y_media - inclinacao * x_media
+
+    return inclinacao, intercepto
+
+
+def projetar_valor(series, horizonte=1):
+    inclinacao, intercepto = calcular_regressao_linear(series)
+    valor = intercepto + inclinacao * (len(series) + horizonte)
+    return round(max(0.0, valor), 2)
+
+
+def montar_analises_decisao(faturamento, despesas, lucro, margem, faturamento_anterior, lucro_anterior, series_faturamento, series_lucro):
+    crescimento_faturamento = variacao_percentual(faturamento_anterior, faturamento)
+    crescimento_lucro = variacao_percentual(lucro_anterior, lucro)
+
+    if margem >= 25 and crescimento_lucro >= 5:
+        nivel = "Saudável"
+        score = 92
+        descricao = "Margem forte e tendência positiva, com espaço para expansão e investimento em vendas."
+        recomendacao = "Priorize campanhas de retenção, upsell e aumento de ticket médio."
+        prioridade = "Alta"
+    elif margem >= 15 and crescimento_lucro >= 0:
+        nivel = "Estável"
+        score = 78
+        descricao = "O negócio está controlado, mas ainda há ganho ao otimizar custos e aumentar eficiência."
+        recomendacao = "Revise processos operacionais e reduza gargalos de produtividade."
+        prioridade = "Média"
+    else:
+        nivel = "Atenção"
+        score = 61
+        descricao = "Margem apertada e desempenho frágil; é preciso agir rapidamente para proteger a rentabilidade."
+        recomendacao = "Concentre-se em corte de desperdícios, renegociação de despesas e cobrança mais ágil."
+        prioridade = "Alta"
+
+    projeção_faturamento = projetar_valor(series_faturamento, horizonte=1)
+    projeção_lucro = projetar_valor(series_lucro, horizonte=1)
+
+    return {
+        "classificacao": {
+            "nivel": nivel,
+            "score": score,
+            "descricao": descricao,
+        },
+        "projecao": {
+            "titulo": "Projeção de faturamento",
+            "valor": projeção_faturamento,
+            "descricao": f"Com base na tendência dos últimos meses, o próximo período pode fechar em torno de {projeção_faturamento:.2f}.",
+        },
+        "predicao": {
+            "titulo": "Previsão de lucro",
+            "valor": projeção_lucro,
+            "descricao": f"A regressão simples indica um lucro estimado de {projeção_lucro:.2f} para o próximo ciclo.",
+        },
+        "recomendacao": {
+            "titulo": "Ação recomendada",
+            "texto": recomendacao,
+            "prioridade": prioridade,
+        },
+        "sinais": {
+            "crescimento_faturamento": crescimento_faturamento,
+            "crescimento_lucro": crescimento_lucro,
+            "margem": margem,
+        },
+    }
+
+
 # ======================
 # 🔥 GERAR SÉRIES MENSAIS (GRÁFICO NOVO)
 # ======================
-def gerar_series(df, col_data):
+def gerar_series(df, col_data, mapeamento=None):
     if df.empty or not col_data:
         return {
             "meses": [],
@@ -77,17 +160,27 @@ def gerar_series(df, col_data):
     # Criar coluna de mês/ano
     df["mes"] = df[col_data].dt.strftime("%Y-%m-%d")
 
-    # Pegar apenas colunas numéricas
-    colunas_numericas = df.select_dtypes(include="number").columns
-    df_num = df[["mes"] + list(colunas_numericas)]
+    from backend.home.home import obter_coluna_indicador
+    if mapeamento is None:
+        mapeamento = {}
 
-    agrupado = df_num.groupby("mes").sum().reset_index()
+    col_fat = obter_coluna_indicador(df, 'faturamento', mapeamento, COL_FATURAMENTO)
+    col_desp = obter_coluna_indicador(df, 'despesa', mapeamento, COL_DESPESA)
+    col_luc = obter_coluna_indicador(df, 'lucro', mapeamento, COL_LUCRO)
+
+    # Converte colunas para numérico para garantir a soma correta
+    colunas_para_converter = [col for col in [col_fat, col_desp, col_luc] if col and col in df.columns]
+    for col in colunas_para_converter:
+        df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+
+    # Selecionar apenas as colunas que importam para o agrupamento
+    colunas_agrupar = ["mes"] + colunas_para_converter
+    df_filtrado = df[colunas_agrupar]
+
+    agrupado = df_filtrado.groupby("mes").sum().reset_index()
 
     # 🔥 MESES EM ISO
     meses = agrupado["mes"].tolist()
-
-    def soma_colunas(row, colunas):
-        return sum([row[c] for c in colunas if c in row and pd.notna(row[c])])
 
     faturamento = []
     despesas = []
@@ -95,9 +188,9 @@ def gerar_series(df, col_data):
     margem = []
 
     for _, row in agrupado.iterrows():
-        fat = soma_colunas(row, COL_FATURAMENTO)
-        desp = soma_colunas(row, COL_DESPESA)
-        luc = soma_colunas(row, COL_LUCRO) or (fat - desp)
+        fat = float(row[col_fat]) if col_fat and col_fat in row else 0.0
+        desp = float(row[col_desp]) if col_desp and col_desp in row else 0.0
+        luc = float(row[col_luc]) if col_luc and col_luc in row else (fat - desp)
 
         mg = (luc / fat * 100) if fat != 0 else 0
 
@@ -220,7 +313,18 @@ def analise_por_periodo():
         fat_a, desp_a, luc_a, mg_a = calcular_metricas_dinamicas(df_ant)
 
         # 🔥 GRÁFICO NOVO
-        series = gerar_series(df_atual, col_data)
+        series = gerar_series(df_atual, col_data, mapeamento)
+
+        analises_decisao = montar_analises_decisao(
+            fat,
+            desp,
+            luc,
+            mg,
+            fat_a,
+            luc_a,
+            series.get("faturamento", []),
+            series.get("lucro", [])
+        )
 
         # Salvar período
         salvar_ultimo_periodo(user, data_inicio_str, data_fim_str)
@@ -279,6 +383,7 @@ def analise_por_periodo():
                 "valor_anterior": mg_a,
                 "variacao": round(mg - mg_a, 2),
             },
+            "analises_decisao": analises_decisao,
 
             # 🔥 NOVO FORMATO PARA GRÁFICO
             "grafico": grafico_dados

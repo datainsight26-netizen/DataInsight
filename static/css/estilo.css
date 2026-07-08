@@ -26,7 +26,7 @@
   --color-primary-light: #DBEAFE;
   --color-primary-dark: #1E40AF;
   --color-success: #16A34A;
-  --color-danger: #DC2626;
+  --color-danger: #ff0000;
   --color-warning: #F59E0B;
   --color-white: #FFFFFF;
   --color-black: #111827;
@@ -1283,10 +1283,23 @@ body {
   color: var(--primaria);
 }
 
-/* Topbar removida para evitar conflito com premium.css */
+.topbar {
+  border-bottom: 1px solid var(--borda);
+  padding: var(--esp2) var(--esp3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--cartao);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-radius: 10px;
+}
+
 .topbar__actions {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   align-items: center;
 }
 
@@ -2139,6 +2152,287 @@ table td {
 }
 
 /* ============================
+   PRODUTOS OVERVIEW
+   ============================ */
+
+.produto-overview__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.produto-overview__title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--texto);
+}
+
+.produto-overview__subtitle {
+  margin: 6px 0 0;
+  color: var(--texto-secundario);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.produto-overview__tag {
+  font-size: 0.78rem;
+  padding: 6px 12px;
+}
+
+.produto-overview__loading {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.produto-overview__content {
+  display: grid;
+  gap: 24px;
+}
+
+.produto-overview__section {
+  display: grid;
+  gap: 16px;
+  padding: 10px 0;
+}
+
+.produto-overview__section--charts,
+.produto-overview__section--table {
+  padding-top: 20px;
+  border-top: 1px solid rgba(148,163,184,0.12);
+}
+
+.produto-overview__section-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.produto-overview__section-header--compact {
+  gap: 4px;
+}
+
+.produto-overview__section-header h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--texto);
+}
+
+.produto-overview__section-header p {
+  margin: 0;
+  color: var(--texto-secundario);
+  font-size: 0.92rem;
+}
+
+.produto-card {
+  border: 1px solid var(--border-color);
+  background: linear-gradient(180deg, var(--bg-secondary) 0%, rgba(255,255,255,0.04) 100%);
+  padding: 20px;
+  border-radius: 20px;
+  min-height: 130px;
+}
+
+.produto-card__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.produto-card__title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--texto);
+}
+
+.produto-card__badge {
+  font-size: 0.75rem;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+}
+
+.produto-card__badge--vendas {
+  background: rgba(59,130,246,0.18);
+  color: #1D4ED8;
+}
+
+.produto-card__badge--info {
+  background: rgba(14,165,233,0.12);
+  color: #0EA5E9;
+}
+
+.produto-card__badge--lucro {
+  background: rgba(16,185,129,0.12);
+  color: #10B981;
+}
+
+.produto-card__badge--despesa {
+  background: rgba(249,115,22,0.12);
+  color: #F97316;
+}
+
+.produto-card__badge--warning {
+  background: rgba(245,158,11,0.12);
+  color: #F59E0B;
+}
+
+.produto-card__badge--perigo {
+  background: rgba(239,68,68,0.12);
+  color: #EF4444;
+}
+
+.produto-card__value {
+  display: grid;
+  gap: 8px;
+  color: var(--texto);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.produto-card__info {
+  display: grid;
+  gap: 14px;
+}
+
+.produto-card__stats {
+  display: grid;
+  gap: 10px;
+}
+
+.produto-card__stat {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.08);
+  color: var(--texto);
+  font-size: 0.9rem;
+  min-width: 0;
+}
+
+.produto-card__stat span {
+  font-weight: 700;
+  color: inherit;
+}
+
+.produto-card__stat--vendas {
+  background: rgba(59,130,246,0.14);
+  border: 1px solid rgba(59,130,246,0.22);
+}
+
+.produto-card__stat--lucro {
+  background: rgba(16,185,129,0.14);
+  border: 1px solid rgba(16,185,129,0.22);
+}
+
+.produto-card__stat--despesa {
+  background: rgba(249,115,22,0.14);
+  border: 1px solid rgba(249,115,22,0.22);
+}
+
+.produto-card__stat--estoque {
+  background: rgba(14,165,233,0.14);
+  border: 1px solid rgba(14,165,233,0.22);
+}
+
+.produto-grafico-card {
+  min-height: 280px;
+}
+
+.produto-tabela__wrapper {
+  overflow:auto;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.produto-tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.93rem;
+  min-width: 720px;
+}
+
+.produto-tabela th,
+.produto-tabela td {
+  padding: 16px 14px;
+  border-bottom: 1px solid rgba(148,163,184,0.16);
+  color: var(--texto);
+}
+
+.produto-tabela th {
+  text-align: right;
+  font-weight: 700;
+  color: var(--texto);
+  background: rgba(99,102,241,0.08);
+}
+
+.produto-tabela th:first-child,
+.produto-tabela td:first-child {
+  text-align: left;
+}
+
+.produto-tabela td {
+  font-size: 0.95rem;
+}
+
+.produto-tabela tbody tr:nth-child(odd) {
+  background: rgba(255,255,255,0.03);
+}
+
+.produto-tabela tbody tr:hover {
+  background: rgba(59,130,246,0.08);
+}
+
+.produto-tabela__empty td {
+  text-align: center;
+  color: var(--texto-secundario);
+  padding: 28px 12px;
+}
+
+.produto-tabela tbody tr:hover {
+  background: rgba(59,130,246,0.06);
+}
+
+.produto-overview__grid--cards article {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.produto-overview__grid--cards article:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.08);
+}
+
+.produto-overview__grid--charts article {
+  padding: 20px;
+}
+
+.produto-overview__grid--charts .produto-card__head {
+  margin-bottom: 18px;
+}
+
+.produto-overview__grid--charts #graficoProdutosVendas,
+.produto-overview__grid--charts #graficoProdutosLucro {
+  min-height: 220px;
+}
+
+/* ============================
    CHATBOT - ASSISTENTE IA
    ============================ */
 
@@ -2769,7 +3063,7 @@ table td {
     position: relative;
     display: flex;
     align-items: center;
-    width: 250px;
+    width: 200px;
 }
 
 .busca-tabela-icon {
@@ -2781,31 +3075,13 @@ table td {
 }
 
 .entrada--busca {
-    padding: 6px 60px 6px 30px !important; /* Aumentado padding direito para o contador */
+    padding: 6px 10px 6px 30px !important;
     font-size: 13px !important;
     height: 32px !important;
     border-radius: 8px !important;
-    width: 250px !important; /* Aumentado um pouco para caber o contador */
+    width: 100% !important;
     background: var(--cartao) !important;
     border: 1px solid var(--borda) !important;
-}
-
-.contador-busca {
-    position: absolute;
-    right: 10px;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--primaria);
-    background: rgba(59, 130, 246, 0.1);
-    padding: 2px 6px;
-    border-radius: 4px;
-    pointer-events: none;
-    display: none;
-}
-
-.tema-escuro .contador-busca {
-    background: rgba(59, 130, 246, 0.2);
-    color: #60a5fa;
 }
 
 .celula-destaque {
@@ -2831,48 +3107,3 @@ table td {
 .celula-destaque-anima {
     animation: flashHighlight 0.5s ease-in-out;
 }
-
-/* ============================
-   RESPONSIVIDADE TABELA DADOS
-   ============================ */
-.tabela-header-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-    gap: 16px;
-    flex-wrap: wrap;
-}
-
-.tabela-header-acoes {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-@media (max-width: 768px) {
-    .tabela-header-container {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .tabela-header-acoes {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .busca-tabela-container {
-        width: 100% !important;
-    }
-    
-    .entrada--busca {
-        width: 100% !important;
-    }
-    
-    .tabela-header-acoes .botao {
-        width: 100% !important;
-        justify-content: center;
-    }
-}
-

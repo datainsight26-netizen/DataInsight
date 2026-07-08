@@ -1,9 +1,50 @@
 import pandas as pd
 import numpy as np
+import unicodedata
+import re
 from typing import Optional
 
 # =====================================================
-#  UTILIDADES
+#  UTILIDADES DE NORMALIZAÇÃO E MAPEAMENTO
+# =====================================================
+
+def _normalizar(texto):
+    """Remove acentos e coloca em minúsculas para comparação."""
+    texto = unicodedata.normalize('NFD', str(texto).lower())
+    return ''.join(c for c in texto if unicodedata.category(c) != 'Mn')
+
+
+def limpar_e_converter_numero(val):
+    """Converte valores numéricos bagunçados (com símbolos monetários, vírgula como decimal) para float."""
+    if pd.isna(val) or val == "" or str(val).strip().lower() in ("nan", "none", "null"):
+        return 0.0
+    val_str = str(val).strip()
+    val_str = re.sub(r'[R\$\€\s]', '', val_str)
+    
+    if not val_str:
+        return 0.0
+        
+    if '.' in val_str and ',' in val_str:
+        if val_str.find('.') < val_str.find(','):
+            val_str = val_str.replace('.', '').replace(',', '.')
+        else:
+            val_str = val_str.replace(',', '')
+    elif ',' in val_str:
+        parts = val_str.split(',')
+        if len(parts) == 2 and len(parts[1]) <= 2:
+            val_str = val_str.replace(',', '.')
+        else:
+            val_str = val_str.replace(',', '')
+    elif '.' in val_str:
+        parts = val_str.split('.')
+        if len(parts) == 2 and len(parts[1]) == 3:
+            val_str = val_str.replace('.', '')
+            
+    try:
+        num = float(pd.to_numeric(val_str, errors='coerce'))
+        return num if not np.isnan(num) else 0.0
+    except Exception:
+        return 0.0
 # =====================================================
 
 def encontrar_coluna_data(df: pd.DataFrame) -> Optional[str]:
@@ -96,7 +137,7 @@ def preencher_inteligente(df: pd.DataFrame) -> pd.DataFrame:
 
             if not np.isnan(media):
                 df.loc[vazios, col] = media
-                print(f"✓ {col}: {total_vazios} preenchidos com média ({media:.2f})")
+                print(f"[OK] {col}: {total_vazios} preenchidos com media ({media:.2f})")
 
         # =========================
         # TEXTO → MODA
@@ -110,7 +151,7 @@ def preencher_inteligente(df: pd.DataFrame) -> pd.DataFrame:
                 if not moda.empty:
                     valor = moda.iloc[0]
                     df.loc[vazios, col] = valor
-                    print(f"✓ {col}: {total_vazios} preenchidos com moda ('{valor}')")
+                    print(f"[OK] {col}: {total_vazios} preenchidos com moda ('{valor}')")
 
     return df
 
@@ -122,7 +163,9 @@ def preencher_inteligente(df: pd.DataFrame) -> pd.DataFrame:
 def limpar_dados(df: pd.DataFrame) -> pd.DataFrame:
     """
     Limpeza conservadora com melhoria estatística:
-    - Remove espaços
+    - Mapeia e alinha automaticamente colunas bagunçadas
+    - Calcula valores ausentes (Lucro = Faturamento - Despesas, etc.)
+    - Remove espaços e resolve duplicatas
     - Remove linhas totalmente vazias
     - Formata datas
     - Preenche dados automaticamente
@@ -133,10 +176,95 @@ def limpar_dados(df: pd.DataFrame) -> pd.DataFrame:
 
     df = df.copy()
 
-    # =========================
-    # 1. LIMPAR COLUNAS
-    # =========================
-    df.columns = df.columns.str.strip()
+    # ============================================================
+    # 1. AUTO-MAPEAMENTO E ALINHAMENTO DE COLUNAS BAGUNÇADAS
+    # ============================================================
+    df.columns = [str(col).strip() for col in df.columns]
+
+    # Dicionário de sinônimos/aliases normalizados para mapear para as colunas core
+    aliases_mapeamento = {
+        "Faturamento": [r'faturamento', r'receita', r'venda', r'total', r'entrada', r'faturado', r'revenue', r'sales', r'income', r'val.*faturado'],
+        "Despesas": [r'despesa', r'gasto', r'custo', r'saida', r'expense', r'cost', r'outgoing', r'val.*gasto', r'val.*despesa'],
+        "Lucro": [r'lucro', r'profit', r'ganho', r'net_profit', r'lucro_liquido', r'sobrou'],
+        "Período": [r'periodo', r'data', r'date', r'mes', r'ano', r'dia', r'time', r'timestamp'],
+        "Produto": [r'produto', r'product', r'item', r'mercadoria', r'sku', r'nome_produto', r'nome do produto']
+    }
+
+    mapeamento_encontrado = {}
+    colunas_usadas = set()
+
+    for padrao, aliases in aliases_mapeamento.items():
+        for col in df.columns:
+            if col in colunas_usadas:
+                continue
+            col_norm = _normalizar(col)
+            if any(re.search(alias, col_norm) for alias in aliases):
+                mapeamento_encontrado[col] = padrao
+                colunas_usadas.add(col)
+                break
+
+    if mapeamento_encontrado:
+        df = df.rename(columns=mapeamento_encontrado)
+        print(f"[AUTO-MAP] Mapeadas colunas por alias: {mapeamento_encontrado}")
+
+    # Fallback por tipo para colunas essenciais ausentes
+    colunas_financeiras = ["Faturamento", "Despesas", "Lucro"]
+    colunas_ausentes = [c for c in colunas_financeiras if c not in df.columns]
+
+    if colunas_ausentes:
+        colunas_restantes = [col for col in df.columns if col not in ["Faturamento", "Despesas", "Lucro", "Período", "Produto"]]
+        numericas_restantes = [col for col in colunas_restantes if detectar_tipo_coluna(df[col]) == "numerico"]
+        for col_ausente in colunas_ausentes:
+            if numericas_restantes:
+                col_para_mapear = numericas_restantes.pop(0)
+                df = df.rename(columns={col_para_mapear: col_ausente})
+                print(f"[AUTO-MAP] Coluna numérica '{col_para_mapear}' mapeada por tipo para '{col_ausente}'")
+
+    # Mapeamento do Período por tipo caso esteja ausente
+    if "Período" not in df.columns:
+        colunas_restantes = [col for col in df.columns if col not in ["Faturamento", "Despesas", "Lucro", "Período", "Produto"]]
+        datas_restantes = [col for col in colunas_restantes if detectar_tipo_coluna(df[col]) == "data"]
+        if datas_restantes:
+            col_para_mapear = datas_restantes[0]
+            df = df.rename(columns={col_para_mapear: "Período"})
+            print(f"[AUTO-MAP] Coluna de data '{col_para_mapear}' mapeada por tipo para 'Período'")
+        else:
+            from datetime import datetime
+            hoje = datetime.now().strftime("%Y-%m-%d")
+            df["Período"] = hoje
+            print(f"[AUTO-MAP] Criada coluna 'Período' com data padrão '{hoje}'")
+
+    # Garante que as três colunas financeiras existem no DataFrame
+    for col in ["Faturamento", "Despesas", "Lucro"]:
+        if col not in df.columns:
+            df[col] = 0.0
+            print(f"[AUTO-MAP] Criada coluna financeira vazia '{col}'")
+
+    # Limpar e converter dados das colunas financeiras para float
+    for col in ["Faturamento", "Despesas", "Lucro"]:
+        df[col] = df[col].apply(limpar_e_converter_numero).astype(float)
+
+    # Reconstruir/calcular dados cruzados ausentes (ex: Lucro = Faturamento - Despesas)
+    cond_lucro = (df["Lucro"] == 0) | df["Lucro"].isna()
+    df.loc[cond_lucro, "Lucro"] = df.loc[cond_lucro, "Faturamento"] - df.loc[cond_lucro, "Despesas"]
+
+    cond_despesas = (df["Despesas"] == 0) | df["Despesas"].isna()
+    df.loc[cond_despesas, "Despesas"] = df.loc[cond_despesas, "Faturamento"] - df.loc[cond_despesas, "Lucro"]
+
+    cond_faturamento = (df["Faturamento"] == 0) | df["Faturamento"].isna()
+    df.loc[cond_faturamento, "Faturamento"] = df.loc[cond_faturamento, "Despesas"] + df.loc[cond_faturamento, "Lucro"]
+
+    # Resolver colunas duplicadas após remoção de espaços em branco e mapeamento
+    colunas_unicas = []
+    contadores = {}
+    for col in df.columns:
+        if col in contadores:
+            contadores[col] += 1
+            colunas_unicas.append(f"{col}_{contadores[col]}")
+        else:
+            contadores[col] = 0
+            colunas_unicas.append(col)
+    df.columns = colunas_unicas
 
     for col in df.columns:
         if df[col].dtype == "object":
@@ -144,7 +272,7 @@ def limpar_dados(df: pd.DataFrame) -> pd.DataFrame:
                 lambda x: " ".join(x.strip().split()) if isinstance(x, str) else x
             )
 
-    print("✓ Espaços tratados")
+    print("[OK] Espacos tratados e colunas duplicadas resolvidas")
 
     # =========================
     # 2. REMOVER LINHAS VAZIAS
@@ -154,21 +282,30 @@ def limpar_dados(df: pd.DataFrame) -> pd.DataFrame:
     removidas = antes - len(df)
 
     print(
-        f"✓ {removidas} linhas vazias removidas"
+        f"[OK] {removidas} linhas vazias removidas"
         if removidas > 0 else
-        "✓ Nenhuma linha vazia encontrada"
+        "[OK] Nenhuma linha vazia encontrada"
     )
 
     # =========================
     # 3. TRATAR DATAS
     # =========================
+    # Converter colunas do tipo datetime para strings para evitar erros de BSON/serialização com NaT/NaTType
+    for col in df.columns:
+        if pd.api.types.is_datetime64_any_dtype(df[col]):
+            non_null = df[col].dropna()
+            has_time = (non_null.dt.hour != 0).any() or (non_null.dt.minute != 0).any() or (non_null.dt.second != 0).any() if not non_null.empty else False
+            fmt = "%Y-%m-%d %H:%M:%S" if has_time else "%Y-%m-%d"
+            df[col] = df[col].dt.strftime(fmt).fillna("")
+            print(f"[OK] Coluna datetime formatada: {col}")
+
     col_data = encontrar_coluna_data(df)
 
     if col_data:
         df = converter_datas(df, col_data)
-        print(f"✓ Data formatada: {col_data}")
+        print(f"[OK] Data formatada: {col_data}")
     else:
-        print("✓ Nenhuma coluna de data")
+        print("[OK] Nenhuma coluna de data")
 
     # =========================
     # 4. PREENCHIMENTO INTELIGENTE
@@ -189,8 +326,8 @@ def limpar_dados(df: pd.DataFrame) -> pd.DataFrame:
     # =========================
     completude = validar_completude_dados(df)
 
-    print(f"\n✓ Limpeza concluída")
-    print(f"✓ Linhas: {df.shape[0]}")
-    print(f"✓ Completude: {completude:.2f}%")
+    print(f"\n[OK] Limpeza concluida")
+    print(f"[OK] Linhas: {df.shape[0]}")
+    print(f"[OK] Completude: {completude:.2f}%")
 
     return df

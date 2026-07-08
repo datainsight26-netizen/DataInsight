@@ -3,6 +3,7 @@ from datetime import timedelta
 from flask_mail import Mail
 from functools import wraps
 import os
+import traceback
 from dotenv import load_dotenv
 #------------------ IMPORTAÇÕES BACKEND ------------------
 # Importação user
@@ -11,7 +12,7 @@ from backend.user import tela_cadastro, login, esqueceu_senha, verificar_codigo,
 from backend.dados.carregar_dados import carregar_dados
 from backend.dados.salvar_dados import salvar_dados_manuais
 from backend.dados.apagar_dados import apagar_dados_usuario
-from backend.dados.upload_arquivo import upload_arquivo
+from backend.dados.upload_arquivo import upload_arquivo, listar_abas_excel
 from backend.dados.exclusao_dados import solicitar_exclusao_dados, confirmar_exclusao_dados, pagina_confirmacao_exclusao
 #Importação analise
 from backend.analise.analise import analise_por_periodo, obter_ultimo_periodo
@@ -23,14 +24,19 @@ from backend.perfil.pagina_de_perfil import pagina_perfil as pagina_perfil_backe
 from backend.perfil.vizualizar_relatorio import vizualizar_relatorio
 from backend.perfil.visualizar_analise import visualizar_analise
 # Importação home
-from backend.home.home import calcular_desempenho, obter_dados_graficos, gerar_status_negocio
+from backend.home.home import calcular_desempenho, obter_dados_graficos, gerar_status_negocio, obter_detalhes_kpi, obter_produtos_overview
 from backend.DashBoard.dashboard_rotas import dashboard_page, dashboard_dados
 # Importação mapeamento
 from backend.dados.mapeamento import obter_mapeamento, salvar_mapeamento
 # Importação contato
 from backend.contato.contato import enviar_mensagem_contato
 # Chatbot Import
-from backend.chatbot.chatbot import perguntar_chatbot
+from backend.chatbot.chatbot import perguntar_chatbot, sintetizar_texto_voz
+# Importação produtos
+from backend.produtos import (
+    salvar_produto, buscar_produtos_por_nome, obter_produto_exato,
+    listar_produtos, obter_categorias, deletar_produto, obter_estatisticas_produtos
+)
 load_dotenv()
 
 key = os.getenv('SECRET_KEY')
@@ -56,9 +62,9 @@ try:
     mail = Mail(app)
     # Armazenar como atributo do app para acesso em context
     app.mail = mail
-    print(f"✓ Flask-Mail inicializado com sucesso!\n")
+    print("Flask-Mail initialized successfully.\n")
 except Exception as e:
-    print(f"✗ Erro ao inicializar Flask-Mail: {str(e)}\n")
+    print("Error initializing Flask-Mail: " + str(e) + "\n")
     mail = None
 # =================== UPLOAD ===================
 UPLOAD_FOLDER = "uploads"
@@ -203,6 +209,13 @@ def upload():
     """Faz upload do arquivo e salva os dados no banco de dados"""
     return upload_arquivo()
 
+@app.route("/upload/abas", methods=["POST"])
+@login_required
+def upload_listar_abas():
+    """Lista as abas de um arquivo Excel sem importar os dados"""
+    return listar_abas_excel()
+
+
 # =================== MAPEAMENTO ===================
 @app.route("/api/mapeamento", methods=["GET"])
 @login_required
@@ -263,12 +276,27 @@ def api_desempenho():
     return calcular_desempenho(periodo)
 
 
+@app.route('/api/desempenho/detalhe', methods=['GET'])
+@login_required
+def api_desempenho_detalhe():
+    """Retorna detalhamento dos KPIs para modal"""
+    periodo = request.args.get('periodo', '30_dias')
+    kpi = request.args.get('kpi', 'faturamento')
+    return obter_detalhes_kpi(periodo, kpi)
+
+
 @app.route('/api/graficos', methods=['GET'])
 @login_required
 def api_graficos():
     """Retorna dados para os gráficos"""
     periodo = request.args.get('periodo', '30_dias')
     return obter_dados_graficos(periodo)
+
+@app.route('/api/produtos/overview', methods=['GET'])
+@login_required
+def api_produtos_overview():
+    periodo = request.args.get('periodo', '30_dias')
+    return obter_produtos_overview(periodo)
 
 @app.route('/api/status_negocio', methods=['GET'])
 @login_required
@@ -321,6 +349,43 @@ def api_download_arquivo(tipo):
 def perguntar():
     return perguntar_chatbot()
 
+@app.route('/api/chatbot/sintetizar', methods=['POST'])
+@login_required
+def api_chatbot_sintetizar():
+    dados = request.get_json() or {}
+    texto = (dados.get('texto') or '').strip()
+    if not texto:
+        return jsonify({"erro": "Texto não fornecido."}), 400
+
+    try:
+        resposta_voz = sintetizar_texto_voz(texto)
+    except Exception as e:
+        print('Erro no endpoint /api/chatbot/sintetizar:', e)
+        traceback.print_exc()
+        return jsonify({
+            "resposta_voz_base64": None,
+            "resposta_voz_mimetype": None,
+            "erro": "Falha interna ao sintetizar áudio"
+        }), 200
+
+    if not resposta_voz:
+        return jsonify({
+            "resposta_voz_base64": None,
+            "resposta_voz_mimetype": None,
+            "erro": "TTS indisponível"
+        }), 200
+
+    # resposta_voz can be (base64, mimetype) or a raw base64 string
+    try:
+        b64, mimetype = resposta_voz
+    except Exception:
+        b64, mimetype = (resposta_voz, 'audio/wav')
+
+    return jsonify({
+        "resposta_voz_base64": b64,
+        "resposta_voz_mimetype": mimetype
+    }), 200
+
 @app.route('/api/chatbot/sessoes', methods=['GET'])
 @login_required
 def api_sessoes_chatbot():
@@ -345,11 +410,132 @@ def api_insight_diario():
     from backend.chatbot.chatbot import gerar_insight_diario
     return gerar_insight_diario()
 
-@app.route('/api/download/<tipo_arquivo>')
+# Rota /api/download/<tipo> já registrada acima (linha 332)
+
+# =================== PRODUTOS - AUTOCOMPLETE ===================
+
+@app.route('/api/produtos/buscar', methods=['GET'])
 @login_required
-def baixar_arquivo_ia(tipo_arquivo):
-    from backend.chatbot.chatbot import exportar_dados_usuario
-    return exportar_dados_usuario(tipo_arquivo)
+def api_buscar_produtos():
+    """Busca produtos por nome com autocomplete"""
+    termo = request.args.get('termo', '').strip()
+    limite = request.args.get('limite', 10, type=int)
+    user_id = session.get('usuario_id')
+    
+    if not termo:
+        return jsonify({"erro": "Termo de busca obrigatório"}), 400
+    
+    try:
+        produtos = buscar_produtos_por_nome(user_id, termo, limite)
+        return jsonify({"sucesso": True, "produtos": produtos})
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+
+@app.route('/api/produtos/obter/<nome_produto>', methods=['GET'])
+@login_required
+def api_obter_produto(nome_produto):
+    """Obtém dados completos de um produto específico"""
+    user_id = session.get('usuario_id')
+    
+    try:
+        produto = obter_produto_exato(user_id, nome_produto)
+        if produto:
+            return jsonify({"sucesso": True, "produto": produto})
+        else:
+            return jsonify({"sucesso": False, "erro": "Produto não encontrado"}), 404
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+
+@app.route('/api/produtos/salvar', methods=['POST'])
+@login_required
+def api_salvar_produto():
+    """Salva ou atualiza um produto no histórico"""
+    user_id = session.get('usuario_id')
+    dados = request.get_json()
+    
+    if not dados or not dados.get('nome_produto'):
+        return jsonify({"erro": "nome_produto obrigatório"}), 400
+    
+    try:
+        produto_id = salvar_produto(
+            usuario_id=user_id,
+            nome_produto=dados.get('nome_produto'),
+            categoria=dados.get('categoria'),
+            preco=dados.get('preco'),
+            estoque=dados.get('estoque'),
+            sku=dados.get('sku'),
+            descricao=dados.get('descricao')
+        )
+        return jsonify({"sucesso": True, "produto_id": produto_id})
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+
+@app.route('/api/produtos/listar', methods=['GET'])
+@login_required
+def api_listar_produtos():
+    """Lista todos os produtos do usuário"""
+    user_id = session.get('usuario_id')
+    pagina = request.args.get('pagina', 1, type=int)
+    limite = request.args.get('limite', 50, type=int)
+    
+    skip = (pagina - 1) * limite
+    
+    try:
+        produtos = listar_produtos(user_id, limite=limite, skip=skip)
+        total = obter_estatisticas_produtos(user_id)["total"]
+        return jsonify({
+            "sucesso": True,
+            "produtos": produtos,
+            "total": total,
+            "pagina": pagina
+        })
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+
+@app.route('/api/produtos/categorias', methods=['GET'])
+@login_required
+def api_obter_categorias():
+    """Obtém lista de categorias cadastradas"""
+    user_id = session.get('usuario_id')
+    
+    try:
+        categorias = obter_categorias(user_id)
+        return jsonify({"sucesso": True, "categorias": categorias})
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+
+@app.route('/api/produtos/deletar/<produto_id>', methods=['DELETE'])
+@login_required
+def api_deletar_produto(produto_id):
+    """Deleta um produto do histórico"""
+    user_id = session.get('usuario_id')
+    
+    try:
+        if deletar_produto(user_id, produto_id):
+            return jsonify({"sucesso": True})
+        else:
+            return jsonify({"sucesso": False, "erro": "Produto não encontrado"}), 404
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+
+@app.route('/api/produtos/estatisticas', methods=['GET'])
+@login_required
+def api_estatisticas_produtos():
+    """Retorna estatísticas dos produtos"""
+    user_id = session.get('usuario_id')
+    
+    try:
+        stats = obter_estatisticas_produtos(user_id)
+        return jsonify({"sucesso": True, "estatisticas": stats})
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
 # ============ Verificar Senha =================
 @app.route('/verificar_codigo', methods=['GET', 'POST'])
 def verificar_codigo_route():

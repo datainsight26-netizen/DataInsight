@@ -1,11 +1,10 @@
 <!-- Botão Flutuante do Chatbot -->
 <div id="chatbot-container" class="chatbot-wrapper">
     <button id="chatbot-toggle" class="chatbot-button" aria-label="Abrir Chatbot">
-         <i class="fa-solid fa-robot"></i>
+        <i class="fa-solid fa-robot"></i>
     </button>
-
     <div id="chatbot-card" class="chatbot-card hidden">
-        <div class="chatbot-header">
+        <div class="chatbot-header" id="chatbot-drag-handle">
             <div class="chatbot-title">
                 <i class="fa-solid fa-robot"></i>
                 <span>Assistente DataInsight</span>
@@ -17,6 +16,7 @@
                 Olá! Sou o assistente inteligente do DataInsight. Como posso ajudar você hoje?
             </div>
         </div>
+        <div class="chatbot-resize-handle" id="chatbot-resize-handle" title="Arraste para redimensionar"></div>
         <div class="chatbot-input-area">
             <input type="text" id="chatbot-input" placeholder="Digite sua pergunta...">
             <button id="chatbot-send" class="chatbot-send" aria-label="Enviar">
@@ -26,262 +26,798 @@
     </div>
 </div>
 
-<style>
-/* Estilos do Chatbot */
+
+</div>
+
+
+
+
+<style>/* ====================================================
+   CHATBOT - DESIGN REFINADO COM ESTILO TRANSLÚCIDO
+   ==================================================== */
+
+/* Container principal do chatbot */
 .chatbot-wrapper {
     position: fixed;
-    bottom: 25px;
-    right: 25px; /* Padrão: Direita quando acessibilidade está desligada */
+    bottom: 30px;
+    right: 30px;
     z-index: 9999;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Quando acessibilidade está ATIVADA, move para a ESQUERDA */
+/* Acessibilidade: move para esquerda */
 body.acessibilidade-ativada .chatbot-wrapper {
     right: auto;
-    left: 25px;
+    left: 30px;
 }
 
+/* ====================================================
+   BOTÃO FLUTUANTE
+   ==================================================== */
 .chatbot-button {
-    width: 60px;
-    height: 60px;
+    width: 64px;
+    height: 64px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
-    color: white;
-    border: none;
-    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+    background: rgba(59, 130, 246, 0.85);
+    backdrop-filter: blur(12px);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 
+        0 8px 32px rgba(59, 130, 246, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 26px;
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    font-size: 28px;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .chatbot-button:hover {
-    transform: scale(1.1) rotate(5deg);
-    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
+    transform: scale(1.12) rotate(8deg);
+    background: rgba(59, 130, 246, 0.95);
+    box-shadow: 
+        0 12px 48px rgba(59, 130, 246, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
+/* ====================================================
+   CARD PRINCIPAL - ESTILO TRANSLÚCIDO
+   ==================================================== */
 .chatbot-card {
-    position: absolute;
-    bottom: 80px;
-    right: 0; /* Alinha com o botão na direita por padrão */
-    width: 350px;
-    height: 500px;
-    background: white;
-    border-radius: 20px;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    position: fixed;
+    bottom: 100px;
+    right: 0;
+    left: auto;
+    top: auto;
+    width: 380px;
+    height: 540px;
+    min-width: 320px;
+    min-height: 360px;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(32px) saturate(180%);
+    -webkit-backdrop-filter: blur(32px) saturate(180%);
+    border: 1px solid rgba(96, 165, 250, 0.18);
+    border-radius: 28px;
+    box-shadow: 
+        0 40px 120px rgba(15, 23, 42, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    transform: translateY(30px);
+    transform: translateY(40px) scale(0.96);
     opacity: 0;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
     pointer-events: none;
+    z-index: 20000;
 }
 
-@media (max-width: 480px) {
-    .chatbot-card {
-        width: calc(100vw - 50px);
-        height: 70vh;
+/* Animação Pop-in para o Chatbot Card */
+@keyframes chatbotPopIn {
+    0% {
+        transform: translateY(40px) scale(0.85);
+        opacity: 0;
+    }
+    70% {
+        transform: translateY(-10px) scale(1.03);
+        opacity: 0.9;
+    }
+    100% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
     }
 }
 
 .chatbot-card.active {
-    transform: translateY(0);
-    opacity: 1;
+    animation: chatbotPopIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     pointer-events: auto;
 }
 
-/* Ajuste do card quando estiver na esquerda */
+/* Animação Pop-in para o Modal IA */
+@keyframes iaModalPopIn {
+    0% {
+        transform: scale(0.82) translateY(30px);
+        opacity: 0;
+    }
+    65% {
+        transform: scale(1.04) translateY(-6px);
+        opacity: 0.92;
+    }
+    100% {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+}
+
+.ia-modal-pop-in {
+    animation: iaModalPopIn 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
+}
+
+
+/* Ajuste do card na esquerda */
 body.acessibilidade-ativada .chatbot-card {
     right: auto;
     left: 0;
 }
 
-.hidden {
-    display: none;
-}
-
+/* ====================================================
+   HEADER - TRANSLÚCIDO COM GRADIENTE
+   ==================================================== */
 .chatbot-header {
-    background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
-    color: white;
-    padding: 20px;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.7) 0%, rgba(37, 99, 235, 0.8) 100%);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 18px 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    cursor: grab;
+    user-select: none;
+}
+
+.chatbot-header:active {
+    cursor: grabbing;
 }
 
 .chatbot-title {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
     font-weight: 600;
-    font-size: 16px;
+    font-size: 17px;
+    color: #ffffff;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.chatbot-title i {
+    font-size: 22px;
+    background: rgba(255, 255, 255, 0.18);
+    padding: 6px;
+    border-radius: 12px;
+    backdrop-filter: blur(4px);
 }
 
 .chatbot-close-btn {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    font-size: 20px;
-    width: 30px;
-    height: 30px;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    font-size: 22px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.2s;
+    transition: all 0.25s ease;
 }
 
 .chatbot-close-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.25);
+    transform: rotate(90deg) scale(1.05);
 }
 
+/* ====================================================
+   HANDLE DE REDIMENSIONAMENTO
+   ==================================================== */
+.chatbot-resize-handle {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    right: 14px;
+    bottom: 14px;
+    cursor: se-resize;
+    border-radius: 6px;
+    background: rgba(59, 130, 246, 0.3);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.15);
+    z-index: 10;
+    transition: all 0.3s ease;
+}
+
+.chatbot-resize-handle:hover {
+    background: rgba(59, 130, 246, 0.5);
+    transform: scale(1.1);
+}
+
+.chatbot-resize-handle::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid rgba(255, 255, 255, 0.3);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+/* ====================================================
+   MENSAGENS - ÁREA PRINCIPAL
+   ==================================================== */
 .chatbot-messages {
     flex: 1;
-    padding: 20px;
+    padding: 20px 24px;
     overflow-y: auto;
-    background: #F9FAFB;
+    background: rgba(255, 255, 255, 0.04);
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
+    scroll-behavior: smooth;
 }
 
+.chatbot-messages::-webkit-scrollbar {
+    width: 4px;
+}
+
+.chatbot-messages::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 10px;
+}
+
+.chatbot-messages::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.3);
+    border-radius: 10px;
+}
+
+/* ====================================================
+   MENSAGENS - ESTILO TRANSLÚCIDO
+   ==================================================== */
 .message {
-    padding: 12px 16px;
-    border-radius: 15px;
-    max-width: 85%;
+    padding: 14px 20px;
+    border-radius: 18px;
+    max-width: 88%;
     font-size: 14px;
-    line-height: 1.5;
+    line-height: 1.6;
     white-space: pre-wrap;
     word-wrap: break-word;
-    animation: fadeIn 0.3s ease;
+    animation: fadeIn 0.35s ease;
+    transition: all 0.2s ease;
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(8px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .message.bot {
-    background: #FFFFFF;
-    color: #1F2937;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: #f1f5f9;
     align-self: flex-start;
-    border-bottom-left-radius: 2px;
-    border: 1px solid #E5E7EB;
+    border-bottom-left-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .message.user {
-    background: #3B82F6;
-    color: white;
+    background: rgba(59, 130, 246, 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: #ffffff;
     align-self: flex-end;
-    border-bottom-right-radius: 2px;
+    border-bottom-right-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.2);
 }
 
+/* ====================================================
+   INPUT - ESTILO TRANSLÚCIDO
+   ==================================================== */
 .chatbot-input-area {
-    padding: 20px;
-    background: white;
-    border-top: 1px solid #F3F4F6;
+    padding: 18px 24px 22px;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
     display: flex;
     gap: 12px;
+    align-items: center;
 }
 
 .chatbot-input-area input {
     flex: 1;
-    border: 1px solid #E5E7EB;
-    border-radius: 25px;
-    padding: 10px 18px;
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 12px 20px;
     font-size: 14px;
+    color: #f1f5f9;
     outline: none;
-    transition: all 0.2s;
+    transition: all 0.3s ease;
+}
+
+.chatbot-input-area input::placeholder {
+    color: rgba(255, 255, 255, 0.35);
 }
 
 .chatbot-input-area input:focus {
-    border-color: #3B82F6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.4);
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.08);
 }
 
+/* ====================================================
+   BOTÕES DE AÇÃO
+   ==================================================== */
 .chatbot-send {
-    background: #3B82F6;
-    color: white;
-    border: none;
-    width: 42px;
-    height: 42px;
+    background: rgba(59, 130, 246, 0.7);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);
 }
 
 .chatbot-send:hover {
-    background: #2563EB;
-    transform: scale(1.1);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    background: rgba(59, 130, 246, 0.9);
+    transform: scale(1.08);
+    box-shadow: 0 6px 28px rgba(59, 130, 246, 0.35);
 }
 
 .chatbot-send i {
     font-size: 16px;
-    margin-left: 2px; /* Pequeno ajuste para centralizar visualmente o ícone de avião */
 }
 
-/* Suporte ao Modo Escuro */
-body.tema-escuro .chatbot-card {
-    background: #1F2937;
-    border: 1px solid #374151;
+.chatbot-voice-btn {
+    background: rgba(16, 185, 129, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
 
-body.tema-escuro .chatbot-messages {
-    background: #111827;
+.chatbot-voice-btn:hover {
+    background: rgba(16, 185, 129, 0.8);
+    transform: scale(1.05);
 }
 
-body.tema-escuro .message.bot {
-    background: #374151;
-    color: #F9FAFB;
-    border-color: #4B5563;
+.chatbot-voice-btn.listening {
+    background: rgba(239, 68, 68, 0.7);
+    animation: pulse 1.2s infinite;
 }
 
-body.tema-escuro .chatbot-input-area {
-    background: #1F2937;
-    border-top-color: #374151;
+@keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.3); }
+    50% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
 }
 
-body.tema-escuro .chatbot-input-area input {
-    background: #111827;
-    border-color: #4B5563;
-    color: white;
-}
-
-/* Animação Typing */
+/* ====================================================
+   INDICADOR DE DIGITAÇÃO
+   ==================================================== */
 .message.bot.typing {
     display: flex;
-    gap: 4px;
-    padding: 12px 16px;
+    gap: 5px;
+    padding: 14px 22px;
     width: fit-content;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(8px);
 }
 
 .dot {
-    width: 6px;
-    height: 6px;
-    background: #9CA3AF;
+    width: 7px;
+    height: 7px;
+    background: rgba(255, 255, 255, 0.4);
     border-radius: 50%;
-    animation: typingPulse 1.5s infinite ease-in-out;
+    animation: typingPulse 1.4s infinite ease-in-out;
 }
 
 .dot:nth-child(2) { animation-delay: 0.2s; }
 .dot:nth-child(3) { animation-delay: 0.4s; }
 
 @keyframes typingPulse {
-    0%, 60%, 100% { transform: translateY(0); }
-    30% { transform: translateY(-4px); }
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
+    30% { transform: translateY(-6px); opacity: 1; }
 }
+
+/* ====================================================
+   MODAL DA IA - TRANSLÚCIDO
+   ==================================================== */
+.ia-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 30000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(5, 14, 35, 0.6);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+}
+
+/* Animação Pop-in para a Janela do Modal */
+@keyframes modalPopIn {
+    0% {
+        transform: scale(0.85);
+        opacity: 0;
+    }
+    70% {
+        transform: scale(1.02);
+        opacity: 0.9;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.ia-modal-window {
+    position: relative;
+    width: min(92%, 1080px);
+    max-width: 1080px;
+    min-width: 360px;
+    height: min(85vh, 760px);
+    min-height: 320px;
+    border-radius: 32px;
+    overflow: hidden;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+    border: 1px solid rgba(96, 165, 250, 0.12);
+    box-shadow: 
+        0 40px 120px rgba(15, 23, 42, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+}
+
+.ia-modal-window.pop-in {
+    animation: modalPopIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+
+/* ====================================================
+   MODAL HEADER
+   ==================================================== */
+.ia-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 20px 28px;
+    cursor: grab;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.06);
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(8px);
+}
+
+.ia-modal-title-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.ia-modal-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: rgba(59, 130, 246, 0.15);
+    color: #93bbfc;
+    font-weight: 700;
+    border: 1px solid rgba(59, 130, 246, 0.15);
+    backdrop-filter: blur(4px);
+}
+
+.ia-modal-title-group h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: #f8fafc;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.ia-modal-subtitle {
+    margin: 4px 0 0;
+    color: rgba(148, 163, 184, 0.7);
+    font-size: 0.9rem;
+}
+
+.ia-modal-close-btn {
+    width: 44px;
+    height: 44px;
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 50%;
+    background: rgba(31, 41, 55, 0.4);
+    backdrop-filter: blur(4px);
+    color: #f8fafc;
+    font-size: 1.3rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.ia-modal-close-btn:hover {
+    transform: scale(1.06);
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.2);
+}
+
+/* ====================================================
+   MODAL BODY
+   ==================================================== */
+.ia-modal-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.9fr);
+    gap: 20px;
+    padding: 24px 28px;
+    overflow: hidden;
+}
+
+.ia-modal-content {
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(148, 163, 184, 0.06);
+    border-radius: 24px;
+    padding: 24px;
+    color: #e2e8f0;
+    overflow-y: auto;
+    min-height: 220px;
+}
+
+.ia-modal-sidebar {
+    display: grid;
+    gap: 16px;
+    align-content: start;
+}
+
+.ia-modal-card {
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(148, 163, 184, 0.05);
+    border-radius: 22px;
+    padding: 20px;
+    color: #cbd5e1;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+.ia-modal-card strong {
+    display: block;
+    margin-bottom: 14px;
+    color: #f8fafc;
+    font-weight: 600;
+}
+
+.ia-modal-card ul {
+    margin: 0;
+    padding-left: 20px;
+    list-style: disc;
+    color: #cbd5e1;
+    font-size: 0.95rem;
+}
+
+.ia-modal-card li {
+    margin-bottom: 10px;
+}
+
+/* ====================================================
+   MODAL FOOTER
+   ==================================================== */
+.ia-modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 28px 22px;
+    border-top: 1px solid rgba(148, 163, 184, 0.05);
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(8px);
+}
+
+.ia-modal-status {
+    color: rgba(148, 163, 184, 0.6);
+    font-size: 0.9rem;
+}
+
+.ia-modal-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.ia-modal-select,
+.ia-modal-action-btn {
+    border-radius: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(4px);
+    color: #f8fafc;
+    padding: 10px 18px;
+    font-size: 0.95rem;
+}
+
+.ia-modal-select {
+    cursor: pointer;
+}
+
+.ia-modal-action-btn {
+    cursor: pointer;
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.7), rgba(125, 211, 252, 0.5));
+    backdrop-filter: blur(8px);
+    color: #f8fafc;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 8px 32px rgba(59, 130, 246, 0.15);
+    transition: all 0.3s ease;
+}
+
+.ia-modal-action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 40px rgba(59, 130, 246, 0.25);
+}
+
+.ia-modal-resize {
+    position: absolute;
+    right: 18px;
+    bottom: 18px;
+    width: 24px;
+    height: 24px;
+    cursor: nwse-resize;
+    border-radius: 8px;
+    background: rgba(59, 130, 246, 0.15);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: 0 0 24px rgba(59, 130, 246, 0.08);
+}
+
+/* ====================================================
+   RESPONSIVIDADE
+   ==================================================== */
+@media (max-width: 900px) {
+    .ia-modal-body {
+        grid-template-columns: 1fr;
+    }
+    
+    .ia-modal-sidebar {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .ia-modal-sidebar {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 560px) {
+    .ia-modal-window {
+        width: calc(100vw - 20px);
+        height: calc(100vh - 20px);
+        min-height: 320px;
+        border-radius: 24px;
+    }
+    
+    .ia-modal-body {
+        padding: 16px;
+    }
+    
+    .ia-modal-header {
+        padding: 16px 20px;
+    }
+    
+    .ia-modal-footer {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 16px 20px;
+    }
+    
+    .ia-modal-actions {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .chatbot-card {
+        width: calc(100vw - 32px);
+        height: 70vh;
+        bottom: 80px;
+        border-radius: 20px;
+    }
+    
+    .chatbot-wrapper {
+        bottom: 20px;
+        right: 20px;
+    }
+    
+    body.acessibilidade-ativada .chatbot-wrapper {
+        left: 20px;
+    }
+    
+    .chatbot-input-area {
+        padding: 14px 16px 18px;
+        gap: 10px;
+    }
+    
+    .chatbot-messages {
+        padding: 16px;
+    }
+    
+    .chatbot-header {
+        padding: 14px 18px;
+    }
+}
+
+/* ====================================================
+   MODO ESCURO - JÁ INCLUÍDO NO DESIGN TRANSLÚCIDO
+   ==================================================== */
+/* O design translúcido já funciona em ambos os modos,
+   mas mantemos suporte para personalização adicional */
+
+body.tema-escuro .chatbot-card {
+    background: rgba(15, 23, 42, 0.7);
+}
+
+body.tema-escuro .message.bot {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+body.tema-escuro .message.user {
+    background: rgba(59, 130, 246, 0.4);
+}
+
+body.tema-escuro .chatbot-input-area input {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+/* ====================================================
+   UTILITÁRIOS
+   ==================================================== */
+.hidden {
+    display: none !important;
+}
+
+.chatbot-card.hidden {
+    display: none !important;
+}
+
 </style>
 
 <script>
@@ -293,88 +829,1136 @@ body.tema-escuro .chatbot-input-area input {
         const input = document.getElementById('chatbot-input');
         const sendBtn = document.getElementById('chatbot-send');
         const messagesContainer = document.getElementById('chatbot-messages');
+        const voicePanel = document.getElementById('ia-modal');
+        const voiceStatus = document.getElementById('voice-status');
+        const voiceTranscript = document.getElementById('voice-transcript');
+        const voiceResponse = document.getElementById('modal-conteudo');
+        const voicePanelClose = null;
+        let recognition = null;
+        let ignorarResultados = false;
+        let iniciarAposFala = false;
+        let currentRequestId = 0;
+        let latestRequestId = 0;
+        let vozAtiva = localStorage.getItem('vozAtiva') !== 'false';
+        let vozAtivaNoBrowser = ('webkitSpeechRecognition' in window) || ('SpeechRecognition' in window);
+        
+        let currentAudio = null;
+        let currentAbortController = null;
+        let microfoneBloqueado = false;
 
-        if (!toggleBtn || !card) return;
 
-        function toggleChat() {
-            if (card.classList.contains('hidden')) {
-                card.classList.remove('hidden');
-                // Force reflow
-                card.offsetHeight;
-                card.classList.add('active');
-            } else {
-                card.classList.remove('active');
-                setTimeout(() => {
-                    if (!card.classList.contains('active')) {
-                        card.classList.add('hidden');
-                    }
-                }, 400);
+        if (!card) return;
+
+        const CHATBOT_STORAGE_OPEN = 'chatbotOpen';
+        const CHATBOT_STORAGE_POSITION = 'chatbotPosition';
+        const CHATBOT_STORAGE_SIZE = 'chatbotSize';
+        const CHATBOT_STORAGE_MESSAGES = 'chatbotMessages';
+        const CHATBOT_SESSION_ID = 'chatbotSessionId';
+        const CHATBOT_MIN_WIDTH = 300;
+        const CHATBOT_MIN_HEIGHT = 320;
+
+        let currentSessionId = sessionStorage.getItem(CHATBOT_SESSION_ID) || Date.now().toString();
+        sessionStorage.setItem(CHATBOT_SESSION_ID, currentSessionId);
+
+        function aplicarPosicaoSalva(pos) {
+            if (!pos || typeof pos !== 'object') return;
+            const x = Number(pos.x);
+            const y = Number(pos.y);
+            if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+            card.style.left = `${Math.min(Math.max(10, x), window.innerWidth - card.offsetWidth - 10)}px`;
+            card.style.top = `${Math.min(Math.max(10, y), window.innerHeight - card.offsetHeight - 10)}px`;
+            card.style.right = 'auto';
+            card.style.bottom = 'auto';
+        }
+
+        function aplicarTamanhoSalvo(size) {
+            if (!size || typeof size !== 'object') return;
+            const width = Number(size.width);
+            const height = Number(size.height);
+            if (Number.isFinite(width) && width >= CHATBOT_MIN_WIDTH) {
+                card.style.width = `${Math.min(width, window.innerWidth - 20)}px`;
+            }
+            if (Number.isFinite(height) && height >= CHATBOT_MIN_HEIGHT) {
+                card.style.height = `${Math.min(height, window.innerHeight - 20)}px`;
             }
         }
 
-        toggleBtn.addEventListener('click', toggleChat);
-        closeBtn.addEventListener('click', toggleChat);
+        function salvarEstadoChatbot() {
+            localStorage.setItem(CHATBOT_STORAGE_OPEN, card.classList.contains('active') ? 'true' : 'false');
+            localStorage.setItem(CHATBOT_STORAGE_POSITION, JSON.stringify({ x: parseInt(card.style.left || card.getBoundingClientRect().left, 10), y: parseInt(card.style.top || card.getBoundingClientRect().top, 10) }));
+            localStorage.setItem(CHATBOT_STORAGE_SIZE, JSON.stringify({ width: parseInt(card.style.width || card.offsetWidth, 10), height: parseInt(card.style.height || card.offsetHeight, 10) }));
+        }
 
-        function adicionarMensagem(texto, remetente) {
+        const IA_HELP_TEXTS = {
+            faturamento: {
+                title: 'Faturamento',
+                description: 'Mostra quanto sua empresa arrecadou em vendas no período. Exemplo: se 27/01 foi o maior faturamento, esse é o dia em que você vendeu mais.'
+            },
+            despesas: {
+                title: 'Despesas',
+                description: 'Mostra o custo total com despesas operacionais. Um pico em 02/02 indica que os custos foram maiores nesse dia.'
+            },
+            lucro: {
+                title: 'Lucro',
+                description: 'Mostra o valor que sobrou depois de subtrair as despesas do faturamento. Lucro positivo indica que você está gerando resultado.'
+            },
+            margem: {
+                title: 'Margem Líquida',
+                description: 'Mostra a porcentagem do faturamento que se converte em lucro. Margem mais alta significa maior eficiência.'
+            },
+            grafico_metricas: {
+                title: 'Gráfico comparativo',
+                description: 'Mostra como as métricas selecionadas evoluíram ao longo do tempo, permitindo identificar dias de maior receita ou maior custo.'
+            },
+            comparacao_periodos: {
+                title: 'Comparação entre períodos',
+                description: 'Compara o desempenho atual com o período anterior, ajudando a ver se o faturamento está crescendo ou se as despesas aumentaram.'
+            },
+            kpi_faturamento: {
+                title: 'KPI de Faturamento',
+                description: 'Este cartão mostra seu faturamento total no período selecionado. É o principal indicador de receita.'
+            },
+            kpi_lucro: {
+                title: 'KPI de Lucro',
+                description: 'Este cartão mostra o lucro líquido do período. Ele indica quanto você realmente teve de ganho após custos.'
+            },
+            kpi_despesas: {
+                title: 'KPI de Despesas',
+                description: 'Este cartão mostra o total de despesas. Reduzir esse valor melhora a rentabilidade.'
+            },
+            kpi_crescimento: {
+                title: 'KPI de Crescimento',
+                description: 'Mostra a taxa de crescimento acumulada do período. Use-o para medir se seu negócio está avançando.'
+            },
+            status_negocio: {
+                title: 'Status do Negócio',
+                description: 'Apresenta a condição atual da empresa com base nas principais métricas de desempenho.'
+            },
+            insights_ia: {
+                title: 'Insights da IA',
+                description: 'Mostra informações geradas automaticamente pela inteligência artificial sobre pontos importantes do seu negócio.'
+            },
+            dados_painel_estatisticas: {
+                title: 'Painel de Estatísticas de Dados',
+                description: 'Mostra métricas resumidas sobre o conjunto de dados atual, como linhas, colunas, completude e duplicatas.'
+            },
+            dados_exclusao: {
+                title: 'Excluir dados',
+                description: 'Esta área permite solicitar a exclusão segura de todos os dados carregados. Use com cuidado.'
+            },
+            dados_upload: {
+                title: 'Upload de Arquivos',
+                description: 'Arraste ou escolha arquivos para carregar dados no sistema. Suporta CSV, Excel, JSON e textos estruturados.'
+            },
+            dados_planilha_manual: {
+                title: 'Planilha de Dados Manual',
+                description: 'Aqui você pode inserir colunas e preencher dados manualmente, além de configurar a tabela antes de salvar.'
+            },
+            dados_tabela: {
+                title: 'Tabela de Dados',
+                description: 'Exibe os dados carregados em formato de planilha, com controles de edição, filtros e exportação.'
+            },
+            contato_formulario: {
+                title: 'Formulário de Contato',
+                description: 'Use este formulário para enviar dúvidas, sugestões ou solicitações diretamente à equipe de suporte.'
+            },
+            contato_info: {
+                title: 'Informações de Contato',
+                description: 'Mostra os canais de contato disponíveis, como e-mail, telefone e localização da empresa.'
+            },
+            login_form: {
+                title: 'Formulário de login',
+                description: 'Digite seu email e senha para entrar na sua conta. Use o link de recuperação se precisar redefinir a senha.'
+            },
+            cadastro_form: {
+                title: 'Formulário de cadastro',
+                description: 'Informe seus dados para criar uma nova conta e começar a usar a plataforma.'
+            },
+            perfil_resumo: {
+                title: 'Resumo do Perfil',
+                description: 'Mostra o nome do usuário e ações rápidas para editar perfil ou sair da conta.'
+            },
+            perfil_ultimas_analises: {
+                title: 'Últimas análises',
+                description: 'Exibe as análises recentes realizadas por você e permite abrir cada item para revisar detalhes.'
+            },
+            perfil_ultimos_relatorios: {
+                title: 'Últimos relatórios',
+                description: 'Mostra os relatórios gerados recentemente e permite acessá-los rapidamente.'
+            },
+            relatorios_configuracao: {
+                title: 'Configuração do relatório',
+                description: 'Defina o nome e período do relatório antes de selecionar o conteúdo a ser incluído.'
+            },
+            relatorios_conteudo: {
+                title: 'Seleção de conteúdo',
+                description: 'Escolha quais seções devem entrar no relatório, como indicadores, gráficos e insights.'
+            },
+            relatorios_acoes: {
+                title: 'Ações de relatório',
+                description: 'Gere a pré-visualização ou exporte o relatório em PDF diretamente desta área.'
+            },
+            graficos_filtros: {
+                title: 'Filtros de análise',
+                description: 'Ajuste o período de visualização para ver dados de 7 dias, 30 dias, 90 dias ou o ano atual.'
+            },
+            graficos_kpis: {
+                title: 'KPIs de desempenho',
+                description: 'Mostra métricas chave como receita, lucro, despesas e margem para ajudar na tomada de decisão.'
+            },
+            graficos_principais: {
+                title: 'Gráficos principais',
+                description: 'Visualiza a evolução financeira, despesas por categoria e margem de lucro ao longo do tempo.'
+            },
+            graficos_insights: {
+                title: 'Insights e recomendações',
+                description: 'Destaques e recomendações para priorizar ações estratégicas com base nas métricas apresentadas.'
+            },
+            ia_conversa: {
+                title: 'Chat de IA',
+                description: 'Área de conversas onde você faz perguntas e recebe respostas do assistente inteligente.'
+            },
+            ia_galeria: {
+                title: 'Galeria de IA',
+                description: 'Veja exemplos de gráficos, arquivos ou relatórios salvos para referência rápida.'
+            },
+            grafico_faturamento: {
+                title: 'Evolução do faturamento',
+                description: 'Mostra a linha do tempo do faturamento ao longo do período, indicando o dia mais forte em vendas.'
+            },
+            grafico_comparativo: {
+                title: 'Comparativo de métricas',
+                description: 'Mostra a participação relativa de cada métrica no período, ajudando a entender equilíbrio entre receita, lucro e despesas.'
+            },
+            page_landing: {
+                title: 'Página Inicial',
+                description: 'Página de boas-vindas da plataforma. Aqui você encontra o resumo visual e os principais benefícios do DataInsight.'
+            },
+            page_login: {
+                title: 'Página de Login',
+                description: 'Use esta página para acessar sua conta com email e senha. Se esquecer a senha, clique em "Esqueceu a senha" para recuperar seu acesso.'
+            },
+            page_cadastro: {
+                title: 'Cadastro',
+                description: 'Crie uma conta gratuita para começar a analisar seus dados. Informações como email e senha são usadas para proteger seu acesso.'
+            },
+            page_contato: {
+                title: 'Contato',
+                description: 'Página de contato com a equipe de suporte. Envie dúvidas, sugestões e problemas relacionados à plataforma.'
+            },
+            page_dados: {
+                title: 'Dados',
+                description: 'Tela de gestão de dados. Aqui você pode carregar, mapear, transformar e exportar suas informações.'
+            },
+            page_analises: {
+                title: 'Análises',
+                description: 'Dashboard de análises financeiras e operacionais. Clique nos cards ou gráficos para obter explicações detalhadas.'
+            },
+            page_home: {
+                title: 'Dashboard Principal',
+                description: 'A página principal do usuário com KPIs, gráficos e alertas de desempenho do negócio.'
+            },
+            page_home_novo: {
+                title: 'Dashboard Moderno',
+                description: 'Visualização principal com indicadores e comparativos. Use os KPI cards para entender rapidamente o desempenho.'
+            },
+            page_perfil: {
+                title: 'Perfil',
+                description: 'Página de perfil do usuário. Atualize seus dados pessoais, email e configurações de conta.'
+            },
+            page_configuracoes: {
+                title: 'Configurações',
+                description: 'Ajuste preferências da sua conta, tema, acessibilidade e notificações da plataforma.'
+            },
+            page_relatorios: {
+                title: 'Relatórios',
+                description: 'Área para gerar relatórios em PDF e Excel a partir das análises feitas na plataforma.'
+            },
+            page_graficos_avancados: {
+                title: 'Gráficos Avançados',
+                description: 'Visualizações detalhadas e personalizáveis para analisar dados com profundidade.'
+            },
+            page_ia: {
+                title: 'Assistente de IA',
+                description: 'A página do assistente inteligente. Aqui você pode fazer perguntas e gerar insights automatizados.'
+            },
+            page_esqueceu_senha: {
+                title: 'Recuperação de Senha',
+                description: 'Envie seu email para receber o link de redefinição de senha e recuperar o acesso à sua conta.'
+            },
+            page_redefinir_senha: {
+                title: 'Redefinir Senha',
+                description: 'Defina uma nova senha segura após receber o código de recuperação por email.'
+            },
+            page_verificar_codigo: {
+                title: 'Verificar Código',
+                description: 'Insira o código enviado por email para validar sua identidade antes de alterar a senha.'
+            },
+            page_confirmacao_exclusao: {
+                title: 'Confirmação de Exclusão',
+                description: 'Página para confirmar exclusão de dados ou conta. Use com cuidado para evitar perda de informações.'
+            },
+            page_termos_de_uso: {
+                title: 'Termos de Uso',
+                description: 'Explique as regras e condições de uso da plataforma para manter sua conta segura e em conformidade.'
+            },
+            page_exemplo_autocomplete_produtos: {
+                title: 'Exemplo de Autocomplete',
+                description: 'Demonstração de preenchimento automático de produtos enquanto o usuário digita.'
+            },
+            page_relatorio_pdf: {
+                title: 'Relatório PDF',
+                description: 'Mostra como o relatório será renderizado em PDF para visualização ou exportação.'
+            }
+        };
+
+        function obterValorPersonalizado(elemento) {
+            if (!elemento || !(elemento instanceof Element)) return null;
+            const explicit = elemento.dataset.iaHelpValue;
+            if (!explicit) return null;
+            const valor = explicit.trim();
+            if (!valor) return null;
+
+            if (valor.startsWith('#') || valor.startsWith('.')) {
+                const target = elemento.querySelector(valor) || document.querySelector(valor);
+                return target ? target.textContent.trim() : null;
+            }
+
+            return valor;
+        }
+
+        function extrairValorDoElemento(elemento) {
+            const explicit = obterValorPersonalizado(elemento);
+            if (explicit) return explicit;
+            if (!elemento || !(elemento instanceof Element)) return null;
+            const texto = Array.from(elemento.querySelectorAll('span, p, h1, h2, h3, div, strong, em'))
+                .map(el => el.textContent.trim())
+                .filter(Boolean)
+                .join(' ');
+            const match = texto.match(/[-+]?[0-9]{1,3}(?:[.,][0-9]{3})*(?:[.,][0-9]+)?/);
+            return match ? match[0] : null;
+        }
+
+        function gerarAnaliseContextual(elemento, dados) {
+            const descricao = dados.description || '';
+            const valor = extrairValorDoElemento(elemento);
+            const trend = elemento.dataset.iaHelpTrend;
+            const highlight = elemento.dataset.iaHelpHighlight;
+            let analise = descricao;
+
+            if (valor) {
+                analise += ` Atualmente, o valor visível nesta área é ${valor}.`;
+            }
+
+            if (trend) {
+                analise += ` Tendência observada: ${trend}.`;
+            }
+
+            if (highlight) {
+                analise += ` Observação: ${highlight}.`;
+            }
+
+            if (!valor && !trend && !highlight) {
+                analise += ' Clique em detalhes para ver números e comparações específicas.';
+            }
+
+            return analise.trim();
+        }
+
+        function mostrarAjudaChatbot(chave, elemento, titulo, descricao) {
+            const dados = IA_HELP_TEXTS[chave] || { title: titulo || 'Explicação', description: descricao || 'Clique em outra área para ver mais detalhes.' };
+            const analise = gerarAnaliseContextual(elemento, dados);
+            abrirChatbot();
+            adicionarMensagem(`<strong>${dados.title}</strong><br>${analise}`, 'bot', true);
+        }
+
+        function registrarAjudaContextual() {
+            document.body.addEventListener('dblclick', (event) => {
+                const elemento = event.target.closest('[data-ia-help]');
+                if (!elemento) return;
+                if (elemento.closest('.chatbot-wrapper')) return;
+                const chave = elemento.dataset.iaHelp;
+                const titulo = elemento.dataset.iaHelpTitle;
+                const descricao = elemento.dataset.iaHelpDescription;
+                mostrarAjudaChatbot(chave, elemento, titulo, descricao);
+            });
+        }
+
+        function abrirChatbot(comSom = true) {
+            card.classList.remove('hidden');
+            card.offsetHeight;
+            card.classList.add('active');
+            card.style.pointerEvents = 'auto';
+            localStorage.setItem(CHATBOT_STORAGE_OPEN, 'true');
+            if (comSom) tocarBolha('open');
+        }
+
+        function fecharChatbot(comSom = true) {
+            card.classList.remove('active');
+            card.style.pointerEvents = 'none';
+            setTimeout(() => {
+                if (!card.classList.contains('active')) {
+                    card.classList.add('hidden');
+                }
+            }, 400);
+            localStorage.setItem(CHATBOT_STORAGE_OPEN, 'false');
+            if (comSom) tocarBolha('close');
+            messagesContainer.innerHTML = '<div class="message bot">Olá! Sou o assistente inteligente do DataInsight. Como posso ajudar você hoje?</div>';
+        }
+
+        function carregarEstadoChatbot() {
+            const aberto = localStorage.getItem(CHATBOT_STORAGE_OPEN);
+            const pos = JSON.parse(localStorage.getItem(CHATBOT_STORAGE_POSITION) || 'null');
+            const size = JSON.parse(localStorage.getItem(CHATBOT_STORAGE_SIZE) || 'null');
+            const isIaPage = window.location.pathname.endsWith('/ia');
+            if (pos) aplicarPosicaoSalva(pos);
+            if (size) aplicarTamanhoSalvo(size);
+            const savedSession = sessionStorage.getItem(CHATBOT_SESSION_ID) || localStorage.getItem(CHATBOT_SESSION_ID);
+            if (savedSession) {
+                currentSessionId = savedSession;
+                sessionStorage.setItem(CHATBOT_SESSION_ID, currentSessionId);
+                localStorage.setItem(CHATBOT_SESSION_ID, currentSessionId);
+            } else {
+                sessionStorage.setItem(CHATBOT_SESSION_ID, currentSessionId);
+                localStorage.setItem(CHATBOT_SESSION_ID, currentSessionId);
+            }
+            if (aberto === 'true') {
+                abrirChatbot(false);
+                // Recuperar mensagens salvas ao navegar entre páginas
+                setTimeout(carregarMensagensSalvas, 50);
+            } else {
+                card.classList.add('hidden');
+            }
+        }
+
+        function toggleChat() {
+            if (card.classList.contains('active')) {
+                fecharChatbot();
+            } else {
+                abrirChatbot();
+            }
+        }
+
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', toggleChat);
+        }
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                fecharChatbot();
+            });
+        }
+
+        carregarEstadoChatbot();
+        registrarAjudaContextual();
+
+        const dragHandle = document.getElementById('chatbot-drag-handle');
+        const resizeHandle = document.getElementById('chatbot-resize-handle');
+        let isDragging = false;
+        let isResizing = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let startLeft = 0;
+        let startTop = 0;
+        let startWidth = 0;
+        let startHeight = 0;
+
+        function iniciarDrag(event) {
+            if (event.target.closest('.chatbot-close-btn')) return;
+            if (!card.classList.contains('active')) return;
+            isDragging = true;
+            dragStartX = event.clientX;
+            dragStartY = event.clientY;
+            startLeft = card.getBoundingClientRect().left;
+            startTop = card.getBoundingClientRect().top;
+            card.style.right = 'auto';
+            card.style.bottom = 'auto';
+            document.body.style.userSelect = 'none';
+        }
+
+        function moverDrag(event) {
+            if (!isDragging) return;
+            const deltaX = event.clientX - dragStartX;
+            const deltaY = event.clientY - dragStartY;
+            const newLeft = Math.min(Math.max(10, startLeft + deltaX), window.innerWidth - card.offsetWidth - 10);
+            const newTop = Math.min(Math.max(10, startTop + deltaY), window.innerHeight - card.offsetHeight - 10);
+            card.style.left = `${newLeft}px`;
+            card.style.top = `${newTop}px`;
+        }
+
+        function finalizarDrag() {
+            if (!isDragging) return;
+            isDragging = false;
+            document.body.style.userSelect = '';
+            salvarEstadoChatbot();
+        }
+
+        function iniciarResize(event) {
+            isResizing = true;
+            dragStartX = event.clientX;
+            dragStartY = event.clientY;
+            startWidth = card.offsetWidth;
+            startHeight = card.offsetHeight;
+            document.body.style.userSelect = 'none';
+            event.stopPropagation();
+        }
+
+        function moverResize(event) {
+            if (!isResizing) return;
+            const deltaX = event.clientX - dragStartX;
+            const deltaY = event.clientY - dragStartY;
+            const newWidth = Math.max(CHATBOT_MIN_WIDTH, Math.min(window.innerWidth - 20, startWidth + deltaX));
+            const newHeight = Math.max(CHATBOT_MIN_HEIGHT, Math.min(window.innerHeight - 20, startHeight + deltaY));
+            card.style.width = `${newWidth}px`;
+            card.style.height = `${newHeight}px`;
+        }
+
+        function finalizarResize() {
+            if (!isResizing) return;
+            isResizing = false;
+            document.body.style.userSelect = '';
+            salvarEstadoChatbot();
+        }
+
+        if (dragHandle) {
+            dragHandle.style.cursor = 'move';
+            dragHandle.style.touchAction = 'none';
+            dragHandle.addEventListener('pointerdown', iniciarDrag);
+        }
+        if (resizeHandle) {
+            resizeHandle.style.touchAction = 'none';
+            resizeHandle.addEventListener('pointerdown', iniciarResize);
+        }
+        document.addEventListener('pointermove', (event) => {
+            moverDrag(event);
+            moverResize(event);
+        });
+        document.addEventListener('pointerup', () => {
+            finalizarDrag();
+            finalizarResize();
+        });
+
+        function isCloseCommand(text) {
+            return /\b(sair|fechar|encerrar|parar|desligar|finalizar|chega)\b/i.test(text);
+        }
+
+        function processVoiceClose(texto) {
+            if (!isCloseCommand(texto)) {
+                return false;
+            }
+
+            if (card.classList.contains('active')) {
+                fecharChatbot();
+            }
+
+            if (typeof window.closeDataInsightIaModal === 'function') {
+                window.closeDataInsightIaModal();
+            } else if (typeof document !== 'undefined') {
+                document.dispatchEvent(new Event('DataInsight_CloseIaModal'));
+            }
+
+            if (voiceStatus) voiceStatus.textContent = 'Assistente fechado pelo comando de voz.';
+            return true;
+        }
+
+        function abrirModalIaPorVoz() {
+            if (typeof window === 'undefined' || typeof window.dispatchEvent !== 'function') return;
+            window.dispatchEvent(new CustomEvent('DataInsight_OpenIaModal'));
+        }
+
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function adicionarMensagem(htmlOuTexto, remetente, jaMarcado = false) {
             const divMensagem = document.createElement('div');
             divMensagem.className = `message ${remetente}`;
             
-            // Usar o marked.js se estiver disponível, caso contrário cai pro fallback seguro
-            let textoFormatado = texto;
-            if (typeof marked !== 'undefined') {
-                textoFormatado = marked.parse(texto);
+            if (jaMarcado) {
+                divMensagem.innerHTML = htmlOuTexto;
             } else {
-                textoFormatado = texto
-                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/\n/g, '<br>')
-                    .replace(/- (.*?)(<br>|$)/g, '<li>$1</li>');
+                let textoFormatado = '';
+                // Se vier um objeto/array, renderizar de forma amigável
+                if (typeof htmlOuTexto === 'object') {
+                    try {
+                        if (Array.isArray(htmlOuTexto)) {
+                            // array de objetos -> tabela
+                            const arr = htmlOuTexto;
+                            const keys = Array.from(arr.reduce((set, row) => { if (row && typeof row === 'object') Object.keys(row).forEach(k => set.add(k)); return set; }, new Set()));
+                            textoFormatado = '<div class="table-responsive"><table><thead><tr>' + keys.map(k => `<th>${k}</th>`).join('') + '</tr></thead><tbody>' + arr.map(row => '<tr>' + keys.map(k => `<td>${row && row[k] !== undefined && row[k] !== null ? String(row[k]) : ''}</td>`).join('') + '</tr>').join('') + '</tbody></table></div>';
+                        } else {
+                            // objeto simples -> pretty JSON
+                            textoFormatado = `<pre class="json">${escapeHtml(JSON.stringify(htmlOuTexto, null, 2))}</pre>`;
+                        }
+                    } catch (e) {
+                        textoFormatado = escapeHtml(String(htmlOuTexto));
+                    }
+                    divMensagem.innerHTML = textoFormatado;
+                } else {
+                    textoFormatado = htmlOuTexto;
+                    if (typeof marked !== 'undefined') {
+                        textoFormatado = marked.parse(String(htmlOuTexto));
+                    } else {
+                        textoFormatado = String(htmlOuTexto)
+                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                            .replace(/\n/g, '<br>')
+                            .replace(/- (.*?)(<br>|$)/g, '<li>$1</li>');
+                    }
+                    divMensagem.innerHTML = textoFormatado;
+                }
             }
             
-            divMensagem.innerHTML = textoFormatado;
             messagesContainer.appendChild(divMensagem);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            salvarMensagensNoStorage();
             return divMensagem;
         }
 
-        async function enviarMensagem() {
-            const texto = input.value.trim();
-            if (!texto) return;
+        function salvarMensagensNoStorage() {
+            const messages = [];
+            messagesContainer.querySelectorAll('.message:not(.typing)').forEach(el => {
+                messages.push({
+                    html: el.innerHTML,
+                    remetente: el.classList.contains('user') ? 'user' : 'bot'
+                });
+            });
+            const payload = JSON.stringify(messages);
+            sessionStorage.setItem(CHATBOT_STORAGE_MESSAGES, payload);
+            localStorage.setItem(CHATBOT_STORAGE_MESSAGES, payload);
+        }
 
-            adicionarMensagem(texto, 'user');
-            input.value = '';
-            
-            // Adiciona indicador de "digitando"
+        function carregarMensagensSalvas() {
+            let saved = sessionStorage.getItem(CHATBOT_STORAGE_MESSAGES);
+            if (!saved) {
+                saved = localStorage.getItem(CHATBOT_STORAGE_MESSAGES);
+            }
+            if (!saved) return;
+            try {
+                const messages = JSON.parse(saved);
+                if (messages && messages.length > 0) {
+                    messagesContainer.innerHTML = '';
+                    messages.forEach(m => {
+                        adicionarMensagem(m.html, m.remetente, true);
+                    });
+                }
+            } catch (e) {
+                console.warn('Erro ao carregar mensagens salvas:', e);
+            }
+        }
+
+        const audioContext = window.AudioContext ? new window.AudioContext() : null;
+
+        function tocarBolha(tipo = 'open') {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                const filter = ctx.createBiquadFilter();
+                osc.type = 'triangle';
+                osc.frequency.value = tipo === 'open' ? 920 : 700;
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(tipo === 'open' ? 1600 : 1200, ctx.currentTime);
+                gain.gain.setValueAtTime(tipo === 'open' ? 0.6 : 0.4, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.28);
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.28);
+                osc.onended = () => { try { ctx.close(); } catch(e) {} };
+            } catch(err) {
+                console.warn('Erro ao tocar bolha:', err);
+            }
+        }
+
+        function pararMicrofoneParaFala() {
+            microfoneBloqueado = true;
+            ignorarResultados = true;
+            iniciarAposFala = false;
+            if (recognition) {
+                try { recognition.stop(); } catch(e) {}
+                recognition = null;
+            }
+        }
+
+        function reativarMicrofoneAposFala() {
+            setTimeout(() => {
+                microfoneBloqueado = false;
+                ignorarResultados = false;
+                if (vozAtiva && vozAtivaNoBrowser && !recognition) {
+                    try { iniciarReconhecimento(); } catch(e) {
+                        console.warn('Erro ao reativar reconhecimento após fala:', e);
+                    }
+                }
+            }, 1000);
+        }
+
+        function falarTexto(texto) {
+            if (!texto || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+            pararMicrofoneParaFala();
+            const utterance = new SpeechSynthesisUtterance(texto);
+            utterance.lang = 'pt-BR';
+            utterance.onend = () => { reativarMicrofoneAposFala(); };
+            utterance.onerror = () => { reativarMicrofoneAposFala(); };
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function mostrarPainelVoz(comMensagemPadrao = false) {
+            if (voiceStatus) voiceStatus.textContent = 'Aguardando comando de voz...';
+            if (voiceTranscript) voiceTranscript.textContent = '';
+            if (voiceResponse) voiceResponse.textContent = '';
+            tocarBolha();
+            if (vozAtiva && vozAtivaNoBrowser && !recognition) {
+                if (!comMensagemPadrao) {
+                    iniciarReconhecimento();
+                } else {
+                    iniciarAposFala = true;
+                }
+            }
+            if (comMensagemPadrao) {
+                const mensagemPadrao = 'Olá! Como posso ajudar você hoje?';
+                if (voiceResponse) {
+                    voiceResponse.innerHTML = `<p><strong>${mensagemPadrao}</strong></p>`;
+                }
+                if (voiceStatus) voiceStatus.textContent = 'Assistente pronto. Diga sua pergunta.';
+
+                if (vozAtiva && vozAtivaNoBrowser) {
+                    try { if (recognition) { recognition.stop(); recognition = null; } } catch(e) { console.warn('Erro ao parar reconhecimento:', e); }
+                    ignorarResultados = true;
+                    fetch('/api/chatbot/sintetizar', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ texto: mensagemPadrao })
+                    })
+                    .then(res => res.json().then(data => ({ ok: res.ok, data })))
+                    .then(({ ok, data }) => {
+                        if (ok && data.resposta_voz_base64) {
+                            try { if (recognition) { recognition.stop(); recognition = null; } } catch(e) { console.warn('Erro ao parar reconhecimento:', e); }
+                            iniciarAposFala = true;
+                            const audio = new Audio(`data:${data.resposta_voz_mimetype};base64,${data.resposta_voz_base64}`);
+                            audio.onended = () => {
+                                ignorarResultados = false;
+                                if (iniciarAposFala) {
+                                    iniciarAposFala = false;
+                                    try { iniciarReconhecimento(); } catch(e) { console.warn('Erro ao iniciar reconhecimento após fala:', e); }
+                                }
+                            };
+                            audio.onerror = () => {
+                                ignorarResultados = false;
+                                console.warn('Falha ao reproduzir áudio Kokoro, usando TTS fallback.');
+                                try { if (recognition) { recognition.stop(); recognition = null; } } catch(e) {}
+                                iniciarAposFala = true;
+                                falarTexto(mensagemPadrao);
+                            };
+                            audio.play().catch(() => {
+                                ignorarResultados = false;
+                                console.warn('Falha ao reproduzir áudio Kokoro, usando TTS fallback.');
+                                try { if (recognition) { recognition.stop(); recognition = null; } } catch(e) {}
+                                iniciarAposFala = true;
+                                falarTexto(mensagemPadrao);
+                            });
+                        } else {
+                            ignorarResultados = false;
+                            if (data.erro) {
+                                console.warn('Kokoro não disponível:', data.erro);
+                            }
+                            try { if (recognition) { recognition.stop(); recognition = null; } } catch(e) {}
+                            iniciarAposFala = true;
+                            falarTexto(mensagemPadrao);
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('Erro ao chamar /api/chatbot/sintetizar:', error);
+                        ignorarResultados = false;
+                        falarTexto(mensagemPadrao);
+                    });
+                } else {
+                    falarTexto(mensagemPadrao);
+                }
+            }
+        }
+
+        function esconderPainelVoz() {
+            tocarBolha();
+        }
+
+        function ativarReconhecimentoContinuo() {
+            if (!vozAtiva || recognition || !vozAtivaNoBrowser) return;
+            if (voiceStatus) {
+                voiceStatus.textContent = 'Microfone pronto. Diga "data" a qualquer momento.';
+            }
+            iniciarReconhecimento();
+        }
+
+        async function iniciarReconhecimento() {
+            if (!vozAtiva || recognition || !vozAtivaNoBrowser) return;
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                if (voiceStatus) voiceStatus.textContent = 'Seu navegador não oferece suporte a reconhecimento de voz.';
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.lang = 'pt-BR';
+            recognition.continuous = true;
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = () => {
+                if (voiceStatus) voiceStatus.textContent = 'Assistente ativo. Diga "data" para abrir o modal.';
+                console.log('SpeechRecognition iniciado');
+            };
+
+            recognition.onaudiostart = () => {
+                console.log('Audio start');
+            };
+
+            recognition.onspeechstart = () => {
+                if (voiceStatus) voiceStatus.textContent = 'Ouvindo...';
+                console.log('Speech start');
+            };
+
+            recognition.onspeechend = () => {
+                if (voiceStatus) voiceStatus.textContent = 'Esperando novo comando...';
+                console.log('Speech end');
+            };
+
+            recognition.onaudioend = () => {
+                console.log('Audio end');
+            };
+
+            recognition.onresult = (event) => {
+                if (ignorarResultados || microfoneBloqueado) {
+                    console.log('Ignorando resultado de reconhecimento enquanto o sistema fala.');
+                    return;
+                }
+
+                const transcript = event.results[event.results.length - 1][0].transcript.trim();
+                if (!transcript) return;
+                if (voiceTranscript) voiceTranscript.textContent = transcript;
+
+                const textoMinusculo = transcript.toLowerCase();
+                const textoNormalizado = textoMinusculo
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^a-z0-9 ]/g, '')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+
+                console.log('Resultado speech normalizado:', textoNormalizado);
+
+                let textoAposWake = '';
+                const wakeMatch = textoNormalizado.match(/\b(data|dados|assistant)\b/i);
+                if (wakeMatch && typeof wakeMatch.index === 'number') {
+                    textoAposWake = textoNormalizado.slice(wakeMatch.index + wakeMatch[0].length).trim();
+                }
+
+                const acionouWake = !!wakeMatch;
+                console.log('Wake:', acionouWake, 'textoAposWake:', textoAposWake);
+
+                if (acionouWake) {
+                    abrirChatbot();
+                    if (typeof document !== 'undefined' && typeof document.dispatchEvent === 'function') {
+                        document.dispatchEvent(new Event('DataInsight_OpenIaModal'));
+                    }
+                    if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+                        window.dispatchEvent(new Event('DataInsight_OpenIaModal'));
+                    }
+                    if (voiceStatus) {
+                        voiceStatus.textContent = 'Palavra-chave detectada. Abrindo assistente...';
+                    }
+                    mostrarPainelVoz(true);
+                    if (textoAposWake) {
+                        enviarMensagem(textoAposWake);
+                    }
+                    return;
+                }
+
+                if (voiceStatus) {
+                    voiceStatus.textContent = 'Pergunta recebida. Processando...';
+                }
+                enviarMensagem(transcript);
+            };
+
+            recognition.onerror = (event) => {
+                if (event?.error === 'no-speech') {
+                    console.warn('SpeechRecognition no-speech recebido; reiniciando...', event);
+                    if (voiceStatus) voiceStatus.textContent = 'Nenhuma fala detectada. Tentando novamente...';
+                    return;
+                }
+                if (voiceStatus) voiceStatus.textContent = `Erro no reconhecimento de voz: ${event?.error || 'desconhecido'}. Reiniciando...`;
+                console.error('SpeechRecognition error', event);
+            };
+
+            recognition.onend = () => {
+                recognition = null;
+                if (vozAtiva && !microfoneBloqueado) {
+                    setTimeout(iniciarReconhecimento, 500);
+                }
+            };
+
+            try {
+                recognition.start();
+                if (voiceStatus) voiceStatus.textContent = 'Microfone ativo. Diga "data" para abrir o assistente.';
+            } catch (erro) {
+                if (voiceStatus) voiceStatus.textContent = 'Não foi possível iniciar o microfone automaticamente.';
+            }
+        }
+
+        function exibirRespostaNoPainel(texto) {
+            if (!voiceResponse) return;
+            const respostaRaw = (texto || '').trim();
+            if (!respostaRaw) {
+                voiceResponse.innerHTML = '<p>Sem resposta para exibir.</p>';
+                return;
+            }
+
+            // Tenta interpretar como JSON primeiro
+            let parsed = null;
+            try {
+                parsed = JSON.parse(respostaRaw);
+            } catch (e) {
+                parsed = null;
+            }
+
+            // Render helper: cria tabela responsiva a partir de array de objetos
+            function buildTableFromArray(arr) {
+                if (!Array.isArray(arr) || arr.length === 0) return '<p>Sem dados tabulares.</p>';
+                const keys = Array.from(arr.reduce((set, row) => {
+                    if (row && typeof row === 'object') Object.keys(row).forEach(k => set.add(k));
+                    return set;
+                }, new Set()));
+                let html = '<div class="table-responsive"><table><thead><tr>' + keys.map(k => `<th>${k}</th>`).join('') + '</tr></thead><tbody>';
+                arr.forEach(row => {
+                    html += '<tr>' + keys.map(k => `<td>${row && row[k] !== undefined && row[k] !== null ? String(row[k]) : ''}</td>`).join('') + '</tr>';
+                });
+                html += '</tbody></table></div>';
+                return html;
+            }
+
+            // Se for objeto JS válido, renderizar de forma estruturada
+            if (parsed && typeof parsed === 'object') {
+                // Caso: payload com html já pronto
+                if (parsed.html && typeof parsed.html === 'string') {
+                    voiceResponse.innerHTML = parsed.html;
+                }
+                // Caso: tabela como array em `table` ou `tabela` ou payload é array diretamente
+                else if (Array.isArray(parsed)) {
+                    voiceResponse.innerHTML = buildTableFromArray(parsed);
+                } else if (Array.isArray(parsed.table) || Array.isArray(parsed.tabela) || Array.isArray(parsed.rows)) {
+                    const arr = parsed.table || parsed.tabela || parsed.rows;
+                    voiceResponse.innerHTML = buildTableFromArray(arr);
+                }
+                // Caso geral: mostrar JSON formatado com possibilidade de colapsar
+                else {
+                    const pretty = JSON.stringify(parsed, null, 2);
+                    voiceResponse.innerHTML = `<pre class="json">${escapeHtml(pretty)}</pre>`;
+                }
+            }
+            // Se a resposta contém HTML (tabelas/markup), renderiza como HTML
+            else if (/</.test(respostaRaw)) {
+                voiceResponse.innerHTML = respostaRaw;
+            }
+            // Caso padrão: tratar como Markdown/Texto
+            else {
+                // usa a biblioteca marked para renderizar markdown (já incluída)
+                try {
+                    const md = typeof marked !== 'undefined' ? marked.parse(respostaRaw) : respostaRaw.replace(/\n/g, '<br>');
+                    voiceResponse.innerHTML = md;
+                } catch (e) {
+                    voiceResponse.innerHTML = respostaRaw.replace(/\n/g, '<br>');
+                }
+            }
+
+            // Após renderizar, garantir que tabelas fiquem responsivas e aplicar gráficos
+            // Wrap any plain table elements in a responsive container if not already wrapped
+            voiceResponse.querySelectorAll('table').forEach((tbl) => {
+                if (tbl.parentElement && tbl.parentElement.classList && tbl.parentElement.classList.contains('table-responsive')) return;
+                const wrapper = document.createElement('div');
+                wrapper.className = 'table-responsive';
+                tbl.parentNode.insertBefore(wrapper, tbl);
+                wrapper.appendChild(tbl);
+            });
+
+            // Inicializa possíveis gráficos declarados como containers com classe .grafico-ia-render
+            const graficos = voiceResponse.querySelectorAll('.grafico-ia-render');
+            graficos.forEach((container) => {
+                const periodo = container.getAttribute('data-periodo') || '30_dias';
+                const tipoRaw = container.getAttribute('data-tipo') || 'linha';
+                const metricasRaw = container.getAttribute('data-metricas') || 'faturamento,lucro';
+                const title = container.getAttribute('data-titulo') || 'Gráfico';
+                const tipo = tipoRaw === 'pizza' ? 'pie' : tipoRaw === 'barras' ? 'bar' : 'line';
+                if (typeof ApexCharts !== 'undefined') {
+                    fetch(`/api/graficos?periodo=${periodo}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            let chartData = null;
+                            let options = null;
+                            if (tipo === 'pie') chartData = data.grafico_pizza;
+                            else if (tipo === 'bar') chartData = data.grafico_barras;
+                            else chartData = data.grafico_linha;
+                            if (!chartData || !chartData.labels) return;
+                            options = {
+                                chart: { type, height: 220, toolbar: { show: false }, background: 'transparent' },
+                                series: chartData.series,
+                                labels: chartData.labels,
+                                xaxis: { categories: chartData.labels },
+                                legend: { show: true },
+                                title: { text: title }
+                            };
+                            container.innerHTML = '';
+                            const chart = new ApexCharts(container, options);
+                            chart.render();
+                        }).catch(() => {});
+                }
+            });
+
+            // Pequena função utilitária para escapar HTML em JSON pretty-print
+            function escapeHtml(str) {
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/\"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+        }
+
+        async function enviarMensagem(texto) {
+            const textoLimpo = (texto || input.value || '').trim();
+            if (!textoLimpo) return;
+
+            // Intercepta comandos de fechamento por voz
+            if (processVoiceClose(textoLimpo)) return;
+
+            // Cancelar requisição anterior e parar áudio em andamento
+            if (currentAbortController) {
+                currentAbortController.abort();
+                currentAbortController = null;
+            }
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
+            if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+
+            latestRequestId = ++currentRequestId;
+            const requestId = latestRequestId;
+
+            adicionarMensagem(textoLimpo, 'user');
+            if (input) input.value = '';
+            document.querySelectorAll('.message.bot.typing').forEach(el => el.remove());
+
             const divDigitando = document.createElement('div');
             divDigitando.className = 'message bot typing';
             divDigitando.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
             messagesContainer.appendChild(divDigitando);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
+            const abortController = new AbortController();
+            currentAbortController = abortController;
+
             try {
+                pararMicrofoneParaFala();
+                console.log('Enviando texto para o chatbot:', textoLimpo, 'sessao_id=', currentSessionId);
                 const resposta = await fetch('/api/chatbot/perguntar', {
                     method: 'POST',
+                    credentials: 'same-origin',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ mensagem: texto })
+                    body: JSON.stringify({ mensagem: textoLimpo, sessao_id: currentSessionId }),
+                    signal: abortController.signal
                 });
 
-                const dados = await resposta.json();
-                
-                // Remove indicador de carregamento
-                messagesContainer.removeChild(divDigitando);
-                
-                adicionarMensagem(dados.resposta, 'bot');
-            } catch (erro) {
-                if (messagesContainer.contains(divDigitando)) {
-                    messagesContainer.removeChild(divDigitando);
+                const dados = await resposta.json().catch(() => null);
+                if (!resposta.ok || !dados) {
+                    const erroMsg = dados && dados.erro ? dados.erro : `Erro ${resposta.status}`;
+                    throw new Error(erroMsg);
                 }
+
+                // Se uma nova pergunta foi enviada enquanto esperávamos, descarta esta resposta
+                if (requestId !== latestRequestId) {
+                    if (messagesContainer.contains(divDigitando)) messagesContainer.removeChild(divDigitando);
+                    return;
+                }
+
+                if (messagesContainer.contains(divDigitando)) messagesContainer.removeChild(divDigitando);
+                adicionarMensagem(dados.resposta, 'bot');
+                exibirRespostaNoPainel(dados.resposta);
+
+                if (voiceStatus) voiceStatus.textContent = 'Resposta pronta.';
+
+                // Reproduzir áudio da resposta com proteção de microfone
+                const reproduzirAudio = () => {
+                    if (requestId !== latestRequestId) {
+                        reativarMicrofoneAposFala();
+                        return;
+                    }
+                    if (dados.resposta_voz_base64) {
+                        const audio = new Audio(`data:${dados.resposta_voz_mimetype};base64,${dados.resposta_voz_base64}`);
+                        currentAudio = audio;
+                        audio.onended = () => { currentAudio = null; reativarMicrofoneAposFala(); };
+                        audio.onerror = () => {
+                            currentAudio = null;
+                            console.warn('Falha ao reproduzir áudio Kokoro, usando TTS fallback.');
+                            falarTexto(dados.resposta);
+                        };
+                        audio.play().catch(() => {
+                            currentAudio = null;
+                            falarTexto(dados.resposta);
+                        });
+                    } else if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+                        falarTexto(dados.resposta);
+                    } else {
+                        reativarMicrofoneAposFala();
+                    }
+                };
+                reproduzirAudio();
+
+            } catch (erro) {
+                if (erro.name === 'AbortError') {
+                    // Requisição cancelada por nova pergunta – não exibir erro
+                    if (messagesContainer.contains(divDigitando)) messagesContainer.removeChild(divDigitando);
+                    return;
+                }
+                if (messagesContainer.contains(divDigitando)) messagesContainer.removeChild(divDigitando);
+                reativarMicrofoneAposFala();
                 adicionarMensagem("Desculpe, estou com dificuldades para me conectar agora. Verifique sua conexão.", 'bot');
+                exibirRespostaNoPainel('Erro ao processar a resposta.');
+                if (voiceStatus) voiceStatus.textContent = 'Erro ao processar a resposta.';
             }
         }
 
-        sendBtn.addEventListener('click', enviarMensagem);
+        sendBtn.addEventListener('click', () => enviarMensagem(input.value));
         input.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') enviarMensagem();
+            if (e.key === 'Enter') enviarMensagem(input.value);
         });
+
+        if (vozAtiva && vozAtivaNoBrowser) {
+            ativarReconhecimentoContinuo();
+        }
+
+        window.addEventListener('storage', (event) => {
+            if (event.key !== 'vozAtiva') return;
+            vozAtiva = event.newValue !== 'false';
+            if (vozAtiva && vozAtivaNoBrowser) {
+                ativarReconhecimentoContinuo();
+            } else if (!vozAtiva && recognition) {
+                try { recognition.stop(); } catch (e) { console.warn('Falha ao parar reconhecimento após alteração de configuração:', e); }
+                recognition = null;
+            }
+        });
+
     }
 
     if (document.readyState === 'loading') {
@@ -385,6 +1969,109 @@ body.tema-escuro .chatbot-input-area input {
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+(function() {
+    const STORAGE_KEY = 'DataInsight_IA_ModalState';
+    const modal = document.getElementById('ia-modal');
+    const modalWindow = document.querySelector('.ia-modal-window');
+    const modalCloseBtn = document.getElementById('ia-modal-close');
+    if (!modal || !modalWindow || !modalCloseBtn) return;
+
+    function clamp(values) {
+        const minWidth = 360;
+        const minHeight = 280;
+        const maxWidth = window.innerWidth - 40;
+        const maxHeight = window.innerHeight - 40;
+        return {
+            top: Math.min(Math.max(10, values.top), Math.max(10, window.innerHeight - minHeight - 10)),
+            left: Math.min(Math.max(10, values.left), Math.max(10, window.innerWidth - minWidth - 10)),
+            width: Math.min(Math.max(minWidth, values.width), maxWidth),
+            height: Math.min(Math.max(minHeight, values.height), maxHeight)
+        };
+    }
+
+    function saveState(state) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function loadState() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) return null;
+        try {
+            const state = JSON.parse(saved);
+            if (!state || typeof state !== 'object') return null;
+            return state;
+        } catch (err) {
+            console.warn('Falha ao carregar estado do modal IA:', err);
+            return null;
+        }
+    }
+
+    function applyState(state) {
+        modalWindow.style.top = `${state.top}px`;
+        modalWindow.style.left = `${state.left}px`;
+        modalWindow.style.width = `${state.width}px`;
+        modalWindow.style.height = `${state.height}px`;
+    }
+
+    function playBubbleSound(type = 'open') {
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+            const context = new AudioContext();
+            const oscillator = context.createOscillator();
+            const gain = context.createGain();
+            const filter = context.createBiquadFilter();
+            oscillator.type = 'triangle';
+            oscillator.frequency.value = type === 'open' ? 920 : 520;
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(type === 'open' ? 1600 : 1000, context.currentTime);
+            gain.gain.setValueAtTime(type === 'open' ? 0.22 : 0.16, context.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.24);
+            oscillator.connect(filter);
+            filter.connect(gain);
+            gain.connect(context.destination);
+            oscillator.start(context.currentTime);
+            oscillator.stop(context.currentTime + 0.24);
+            oscillator.onended = () => {
+                try { context.close(); } catch (e) {}
+            };
+        } catch (error) {
+            console.warn('Erro ao reproduzir som de bolha:', error);
+        }
+    }
+
+    function showModal() {
+        const lastState = loadState();
+        if (lastState && lastState.top !== undefined) {
+            applyState(clamp(lastState));
+        } else {
+            const defaultState = clamp({ top: 40, left: 40, width: Math.min(1040, window.innerWidth - 80), height: Math.min(700, window.innerHeight - 80) });
+            applyState(defaultState);
+        }
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
+        playBubbleSound('open');
+        saveState({ visible: true, top: parseInt(modalWindow.style.top, 10), left: parseInt(modalWindow.style.left, 10), width: parseInt(modalWindow.style.width, 10), height: parseInt(modalWindow.style.height, 10) });
+    }
+
+    function hideModal() {
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+        playBubbleSound('close');
+        const state = loadState() || { top: 40, left: 40, width: Math.min(1040, window.innerWidth - 80), height: Math.min(700, window.innerHeight - 80) };
+        saveState({ ...state, visible: false });
+    }
+
+    document.addEventListener('DataInsight_OpenIaModal', showModal);
+    document.addEventListener('DataInsight_CloseIaModal', hideModal);
+
+    const saved = loadState();
+    if (saved && saved.visible) {
+        showModal();
+    }
+})();
+</script>
 <style>
 /* CSS para garantir que tabelas e elementos do markdown fiquem bonitos no chat */
 .message table {
@@ -407,5 +2094,19 @@ body.tema-escuro .chatbot-input-area input {
 }
 .message p:last-child {
     margin-bottom: 0;
+}
+/* Responsividade para tabelas dentro das mensagens */
+.message .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.message .table-responsive table { width: 100%; border-collapse: collapse; }
+.message pre.json {
+    background: #f8fafc;
+    border: 1px solid #e6edf3;
+    padding: 10px;
+    border-radius: 6px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', 'Courier New', monospace;
+    font-size: 13px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin: 8px 0;
 }
 </style>

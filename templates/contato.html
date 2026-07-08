@@ -16,7 +16,12 @@
   <div class="layout">
     <aside class="sidebar" aria-label="Navegação principal">
       <div class="sidebar__header">
-   
+        <a class="marca" href="{{ url_for('pagina_landing') }}" aria-label="DataInsight - Início">
+          <span class="marca__simbolo" aria-hidden="true">
+            <i class="fa-solid fa-chart-column"></i>
+          </span>
+          DataInsight
+        </a>
       </div>
 
       <!-- Navegação lateral -->
@@ -40,7 +45,7 @@
         </div>
       </header>
 
-      <main id="conteudo" class="pagina" role="main">
+      <main id="conteudo" class="pagina" role="main" data-ia-help="page_contato">
         <div class="container">
           <header class="pagina__cabecalho">
             <div class="migalhas">Início &gt; Contato</div>
@@ -49,7 +54,7 @@
           </header>
 
           <section class="grade grade--2" aria-label="Formulário de contato e informações">
-            <article class="cartao">
+            <article class="cartao" data-ia-help="contato_formulario">
               <h2 class="h2">Envie uma mensagem</h2>
 
               <!-- Mensagem de feedback -->
@@ -85,7 +90,7 @@
               </form>
             </article>
 
-            <aside class="cartao">
+            <aside class="cartao" data-ia-help="contato_info">
               <h2 class="h2">Informações de contato</h2>
               <p class="p">📧 Email: DataInsight@gmail.com</p>
               <p class="p">📞 Telefone: (82) 99999-9999</p>

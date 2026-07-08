@@ -9,6 +9,52 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
   <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
+  
+  <style>
+    /* ========== EFEITO DE LUZ NOS KPIs - DASHBOARD ========== */
+    @keyframes shimmer-light {
+      0% {
+        left: -100%;
+      }
+      100% {
+        left: 100%;
+      }
+    }
+    
+    /* KPI Cards com efeito de luz nas cores de cada indicador */
+    .grade--4 .cartao {
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .grade--4 .cartao::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      animation: shimmer-light 2.5s linear infinite alternate;
+      pointer-events: none;
+    }
+    
+    /* Cores específicas para cada KPI */
+    .grade--4 .cartao:nth-child(1)::before {
+      background: linear-gradient(90deg, transparent, #3B82F6, transparent);
+    }
+    
+    .grade--4 .cartao:nth-child(2)::before {
+      background: linear-gradient(90deg, transparent, #16A34A, transparent);
+    }
+    
+    .grade--4 .cartao:nth-child(3)::before {
+      background: linear-gradient(90deg, transparent, #DC2626, transparent);
+    }
+    
+    .grade--4 .cartao:nth-child(4)::before {
+      background: linear-gradient(90deg, transparent, #6B7DEE, transparent);
+    }
+  </style>
 </head>
 <body>
   <a href="#conteudo" class="skip-link">Ir para conteúdo</a>
@@ -28,7 +74,7 @@
         </div>
       </header>
 
-      <main id="conteudo" class="pagina" role="main">
+      <main id="conteudo" class="pagina" role="main" data-ia-help="page_graficos_avancados">
         <div class="container">
           <header class="pagina__cabecalho">
             <div class="migalhas" aria-label="Você está em">Início &gt; Dashboard</div>
