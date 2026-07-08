@@ -11,5 +11,9 @@ Flask-Mail
 agno
 google-generativeai
 google-genai
-openai
-gunicorn
+OpenAIChat
+ollama
+kokoro
+soundfile
+Kokoro
+gTTS
