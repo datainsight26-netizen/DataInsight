@@ -27,7 +27,8 @@ def converter_datas(df, col):
         return df
 
     df = df.copy()
-    df[col] = pd.to_datetime(df[col], errors='coerce', dayfirst=True)
+    # ISO (YYYY-MM-DD) e formatos BR (DD/MM/YYYY) sem forçar dayfirst
+    df[col] = pd.to_datetime(df[col], errors="coerce", format="mixed")
     return df
 
 
@@ -587,22 +588,23 @@ def obter_dados_graficos(periodo="30_dias"):
 # PROCESSAMENTO GRÁFICOS
 # ======================
 def filtrar_df(df, col, periodo):
-    if df.empty: return df
+    if df.empty:
+        return df.copy()
     fim = df[col].max()
 
     dias = {"7_dias": 7, "30_dias": 30, "90_dias": 90}
     if periodo in dias:
         inicio = fim - timedelta(days=dias[periodo])
-        return df[(df[col] >= inicio) & (df[col] <= fim)]
+        return df.loc[(df[col] >= inicio) & (df[col] <= fim)].copy()
     elif periodo == "ano_atual":
         inicio = datetime(fim.year, 1, 1)
-        return df[(df[col] >= inicio) & (df[col] <= fim)]
+        return df.loc[(df[col] >= inicio) & (df[col] <= fim)].copy()
     elif periodo.startswith("mes_"):
         try:
             mes = int(periodo.split("_")[1])
             ano = fim.year
-            return df[(df[col].dt.month == mes) & (df[col].dt.year == ano)]
-        except:
+            return df.loc[(df[col].dt.month == mes) & (df[col].dt.year == ano)].copy()
+        except Exception:
             pass
 
     return filtrar_df(df, col, "30_dias")
@@ -613,7 +615,7 @@ def grafico_linha(df, col, periodo, mapeamento):
     if df.empty:
         return empty_graph()
 
-    df["data_str"] = df[col].dt.strftime('%d/%m')
+    df["data_str"] = df[col].dt.strftime("%d/%m")
     grupos = df.groupby("data_str")
 
     labels_raw = list(grupos.groups.keys())
