@@ -3,6 +3,8 @@ import io
 import json
 import os
 import re
+import time
+import urllib.error
 import urllib.request
 from datetime import datetime
 from types import SimpleNamespace
@@ -12,6 +14,7 @@ import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
 from flask import jsonify, request, send_file, session
+import traceback
 
 from backend.db import chat_historico, dados_colecao, galeria
 from backend.home.home import (
@@ -80,53 +83,98 @@ class GeminiOrchestrator:
             method="POST",
         )
 
-        try:
-            with urllib.request.urlopen(req, timeout=60) as response:
-                body = json.loads(response.read().decode("utf-8"))
-                candidates = body.get("candidates", [])
-                if not candidates:
+        max_retries = 3
+        backoff = 1
+        last_error = None
+
+        for attempt in range(1, max_retries + 1):
+            try:
+                with urllib.request.urlopen(req, timeout=60) as response:
+                    body = json.loads(response.read().decode("utf-8"))
+                    candidates = body.get("candidates", [])
+                    if not candidates:
+                        return "Não foi possível extrair a resposta do modelo."
+
+                    candidate = candidates[0]
+                    if not isinstance(candidate, dict):
+                        return "Não foi possível extrair a resposta do modelo."
+
+                    content = candidate.get("content", {})
+                    if isinstance(content, dict):
+                        parts = content.get("parts", [])
+                        textos = [
+                            str(part.get("text", "")).strip()
+                            for part in parts
+                            if isinstance(part, dict) and part.get("text")
+                        ]
+                        if textos:
+                            return "\n".join(textos).strip()
+
+                    if "output" in candidate:
+                        return str(candidate.get("output", "")).strip()
+
                     return "Não foi possível extrair a resposta do modelo."
 
-                candidate = candidates[0]
-                if not isinstance(candidate, dict):
-                    return "Não foi possível extrair a resposta do modelo."
+            except urllib.error.HTTPError as err:
+                status = err.code
+                detalhe = err.read().decode('utf-8', errors='ignore')[:300]
+                print(f"[Erro Gemini API HTTP {status}]: {detalhe}")
+                last_error = err
+                if 500 <= status < 600 and attempt < max_retries:
+                    time.sleep(backoff)
+                    backoff *= 2
+                    continue
+                break
+            except urllib.error.URLError as err:
+                print(f"[Erro Gemini API URLError]: {err}")
+                last_error = err
+                if attempt < max_retries:
+                    time.sleep(backoff)
+                    backoff *= 2
+                    continue
+                break
+            except Exception as err:
+                detalhe = str(err)
+                print(f"[Erro Gemini API Exception]: {detalhe}")
+                last_error = err
+                if attempt < max_retries:
+                    time.sleep(backoff)
+                    backoff *= 2
+                    continue
+                break
 
-                content = candidate.get("content", {})
-                if isinstance(content, dict):
-                    parts = content.get("parts", [])
-                    textos = [
-                        str(part.get("text", "")).strip()
-                        for part in parts
-                        if isinstance(part, dict) and part.get("text")
-                    ]
-                    if textos:
-                        return "\n".join(textos).strip()
-
-                if "output" in candidate:
-                    return str(candidate.get("output", "")).strip()
-
-                return "Não foi possível extrair a resposta do modelo."
-
-        except Exception as err:
-            detalhe = str(err)
-            if hasattr(err, "read"):
+        if last_error is not None:
+            detalhe = str(last_error)
+            if hasattr(last_error, "read"):
                 try:
-                    detalhe = f"{err}: {err.read().decode('utf-8')[:300]}"
+                    detalhe = f"{last_error}: {last_error.read().decode('utf-8')[:300]}"
                 except Exception:
                     pass
-            print(f"[Erro Gemini API]: {detalhe}")
-            return (
-                "Desculpe — não consegui contatar a API Gemini no momento. "
-                "Por favor, verifique a chave de API e a conectividade de rede."
-            )
+            print(f"[Erro Gemini API final]: {detalhe}")
+
+        return (
+            "Desculpe — não consegui contatar a API Gemini no momento. "
+            "Por favor, verifique a chave de API e a conectividade de rede."
+        )
 
 
 # ==============================================================================
 # SÍNTESE DE VOZ (TTS)
 # ==============================================================================
 
+def _limpar_texto_para_voz(texto: str) -> str:
+    if not texto:
+        return ''
+    texto_limpo = re.sub(r'\*+', '', texto)
+    texto_limpo = re.sub(r'`+', '', texto_limpo)
+    texto_limpo = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', texto_limpo)
+    texto_limpo = re.sub(r' {2,}', ' ', texto_limpo)
+    return texto_limpo.strip()
+
+
 def sintetizar_resposta_voz(texto: str) -> Optional[Tuple[str, str]]:
     """Sintetiza o texto em áudio via Kokoro (WAV) ou gTTS (MP3) como fallback."""
+    texto = _limpar_texto_para_voz(texto)
     if not texto:
         return None
 
@@ -761,7 +809,11 @@ def ranquear_chunks_rag(chunks: List[Dict[str, Any]], pergunta: str, top_k: int 
 
 
 def montar_contexto_rag(usuario_id: str, pergunta: str, top_k: int = 5) -> str:
-    """Pipeline RAG: busca no banco → chunking → ranking → contexto textual."""
+    """Pipeline RAG: busca no banco → chunking → ranking → contexto textual.
+
+    Limita o tamanho de cada chunk e do contexto final para evitar prompts excessivamente grandes
+    que possam causar falhas no orquestrador de modelo. Retorna string já truncada.
+    """
     if not usuario_id:
         return "Usuário não autenticado — sem acesso aos dados do banco."
 
@@ -770,8 +822,26 @@ def montar_contexto_rag(usuario_id: str, pergunta: str, top_k: int = 5) -> str:
     fontes = [c["id"] for c in relevantes]
     print(f"[RAG] usuario={usuario_id} fontes={fontes}")
 
-    blocos = [f"[Fonte {i}: {chunk['titulo']}]\n{chunk['conteudo']}" for i, chunk in enumerate(relevantes, start=1)]
-    return "\n\n".join(blocos) if blocos else "Sem contexto recuperado do banco."
+    def _truncate(text: Optional[str], max_chars: int = 1200) -> str:
+        if not text:
+            return ''
+        t = str(text)
+        if len(t) <= max_chars:
+            return t
+        # try to cut at a line boundary for readability
+        cut = t[:max_chars]
+        if '\n' in cut:
+            return cut.rsplit('\n', 1)[0] + '\n...[truncado]'
+        return cut + '\n...[truncado]'
+
+    blocos = [f"[Fonte {i}: {chunk['titulo']}]\n{_truncate(chunk.get('conteudo'))}" for i, chunk in enumerate(relevantes, start=1)]
+    contexto_final = "\n\n".join(blocos) if blocos else "Sem contexto recuperado do banco."
+
+    # cap do contexto total para evitar prompts enormes
+    if len(contexto_final) > 8000:
+        contexto_final = contexto_final[:8000] + "\n...[contexto cortado]"
+
+    return contexto_final
 
 
 def montar_prompt_com_rag(mensagem_usuario: str, contexto_rag: str, historico_chat: str = "") -> str:
@@ -795,6 +865,61 @@ def montar_prompt_com_rag(mensagem_usuario: str, contexto_rag: str, historico_ch
 # ==============================================================================
 # ORQUESTRAÇÃO, HISTÓRICO E ROTAS CHATBOT
 # ==============================================================================
+
+def gerar_resposta_fallback(usuario_id: Optional[str], pergunta: str, contexto_rag: str) -> str:
+    """Gerador de resposta local quando o orquestrador externo falhar.
+
+    Usa dados já disponíveis no banco para gerar um texto mais rico com KPIs,
+    série mensal, categorias principais e detecção de anomalias.
+    """
+    try:
+        if not contexto_rag or contexto_rag.startswith("Usuário não autenticado"):
+            return (
+                "Desculpe — não há dados suficientes para responder com detalhes. "
+                "Verifique se você carregou seus dados e tente novamente."
+            )
+
+        documento = _carregar_documento_dados(usuario_id) if usuario_id else None
+        df = pd.DataFrame(documento["dados"]) if documento and documento.get("dados") else None
+        mapeamento = obter_colunas_mapeadas(usuario_id) if usuario_id else {}
+        periodo = _detectar_periodo_pergunta(pergunta)
+
+        kpis_text = _resumo_kpis_do_df(df, mapeamento, periodo) if df is not None else None
+        serie_text = _chunk_serie_mensal(df, mapeamento) if df is not None else None
+        categorias_text = _chunk_categorias(df, mapeamento) if df is not None else None
+        anomalia_text = detectar_anomalias_despesas() if df is not None else None
+
+        linhas = [
+            "Resposta automática (fallback):",
+            "",
+            "Resumo dos dados:",
+            kpis_text or "Dados insuficientes para calcular KPIs.",
+        ]
+
+        if serie_text:
+            linhas.extend(["", "Tendência mensal:", serie_text])
+
+        if categorias_text:
+            linhas.extend(["", "Categorias principais:", categorias_text])
+
+        if anomalia_text:
+            linhas.extend(["", "Análise de anomalias:", anomalia_text])
+
+        linhas.extend([
+            "",
+            "Recomendação:",
+            "Use os dados acima para verificar tendências e ajustar decisões. "
+            "Se quiser mais detalhes, carregue mais dados ou verifique o mapeamento de colunas.",
+            "",
+            f"Pergunta original: {pergunta}",
+        ])
+
+        resposta = "\n".join(linhas)
+        return resposta
+    except Exception:
+        print(traceback.format_exc())
+        return "Desculpe — não foi possível gerar uma resposta local no momento."
+
 
 def obter_time_agentes() -> GeminiOrchestrator:
     """Instancia o orquestrador configurado com o Gemini."""
@@ -918,8 +1043,24 @@ def perguntar_chatbot():
         prompt_final = montar_prompt_com_rag(mensagem_usuario, contexto_rag, contexto_str)
 
         orquestrador = obter_time_agentes()
-        resposta_obj = orquestrador.run(prompt_final)
-        resposta_texto = resposta_obj.content
+        try:
+            resposta_obj = orquestrador.run(prompt_final)
+            resposta_texto = resposta_obj.content
+            # Detect common failure messages from the orchestrator and fallback
+            if isinstance(resposta_texto, str) and any(s in resposta_texto.lower() for s in [
+                'integração com a api gemini não está configurada',
+                'não consegui contatar a api gemini',
+                'não foi possível',
+                'sem dados suficientes',
+                'não foi possível extrair',
+                'erro',
+            ]):
+                print('[Chatbot] Orquestrador externo indicou falha — usando fallback local')
+                resposta_texto = gerar_resposta_fallback(usuario_id, mensagem_usuario, contexto_rag)
+        except Exception as e:
+            print('[Erro Orquestrador]:', e)
+            traceback.print_exc()
+            resposta_texto = gerar_resposta_fallback(usuario_id, mensagem_usuario, contexto_rag)
 
         if usuario_id:
             div_matches = re.finditer(r"<div\s+class=['\"]grafico-ia-render['\"]([^>]*)>", resposta_texto)
@@ -985,13 +1126,59 @@ def gerar_insight_diario():
             f"=== CONTEXTO RAG ===\n{contexto_rag}\n=== FIM ==="
         )
 
-        resposta = orquestrador.run(prompt)
-        conteudo = resposta.content.strip()
+        try:
+            resposta = orquestrador.run(prompt)
+            conteudo = resposta.content.strip()
+            if isinstance(conteudo, str) and any(s in conteudo.lower() for s in [
+                'não foi possível', 'desculpe', 'erro', 'não consegui contatar', 'não consegui',
+                'sem dados suficientes', 'não foi possível extrair'
+            ]):
+                raise ValueError('Orquestrador externo retornou erro')
 
-        conteudo = re.sub(r"^```(html)?", "", conteudo, flags=re.IGNORECASE)
-        conteudo = re.sub(r"```$", "", conteudo).replace("*", "").strip()
+            conteudo = re.sub(r"^```(html)?", "", conteudo, flags=re.IGNORECASE)
+            conteudo = re.sub(r"```$", "", conteudo).replace("*", "").strip()
+            return jsonify({"html": conteudo})
+        except Exception as err:
+            print('[Erro Orquestrador Insight Diário]:', err)
+            traceback.print_exc()
 
-        return jsonify({"html": conteudo})
+            documento = _carregar_documento_dados(usuario_id)
+            df = pd.DataFrame(documento["dados"]) if documento and documento.get("dados") else None
+            mapeamento = obter_colunas_mapeadas(usuario_id) if usuario_id else {}
+            resumo = _resumo_kpis_do_df(df, mapeamento, periodo) if df is not None else 'Dados insuficientes.'
+            anomalia = detectar_anomalias_despesas() if df is not None else 'Dados insuficientes.'
+            categorias = _chunk_categorias(df, mapeamento) if df is not None else None
+
+            top_cats = []
+            if categorias:
+                for line in categorias.splitlines():
+                    if line.startswith('- '):
+                        top_cats.append(line[2:])
+                        if len(top_cats) >= 3:
+                            break
+
+            recomendacao = 'Considere revisar as categorias com maior custo e otimizar margens.'
+            if top_cats:
+                recomendacao = 'Principais categorias identificadas: ' + ', '.join(top_cats) + '.'
+
+            resumo_html = resumo.replace("\n", " | ") if isinstance(resumo, str) else str(resumo)
+            anomalia_html = anomalia.replace("\n", " | ") if isinstance(anomalia, str) else str(anomalia)
+
+            fallback_html = (
+                "<div class='p-3 rounded mb-2' style='background: var(--cartao);'>"
+                "<p class='p mb-0'><strong>Resumo:</strong> "
+                + resumo_html +
+                "</p></div>"
+                "<div class='p-3 rounded mb-2' style='background: var(--cartao);'>"
+                "<p class='p mb-0'><strong>Alerta:</strong> "
+                + anomalia_html +
+                "</p></div>"
+                "<div class='p-3 rounded mb-2' style='background: var(--cartao);'>"
+                "<p class='p mb-0'><strong>Estratégia:</strong> "
+                + recomendacao +
+                "</p></div>"
+            )
+            return jsonify({"html": fallback_html})
 
     except Exception as err:
         print(f"[Erro Insight Diário]: {err}")
