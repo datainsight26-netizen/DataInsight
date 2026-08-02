@@ -24,10 +24,9 @@ Nosso objetivo é **democratizar o acesso à análise de dados**, eliminando bar
 
 * Arthur Franco
 * Kevin Burgos
-* Pedro Gabriel
 * Pedro Henrique dos Santos
 * Felipe Torres
-* Vinicius Nascimento
+
 
 ---
 
