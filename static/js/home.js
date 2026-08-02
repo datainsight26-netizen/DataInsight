@@ -341,8 +341,19 @@ function carregarUltimaRespostaIA() {
   `;
 
   fetch('/api/chatbot/ultima-resposta')
-    .then(response => response.json())
+    .then(response => {
+      if (!response.ok) return response.text().then(t => { throw new Error(`HTTP ${response.status}: ${t.slice(0,200)}`); });
+      const ct = response.headers.get('content-type') || '';
+      if (ct.includes('application/json')) return response.json();
+      return response.text().then(t => ({ _rawText: t }));
+    })
     .then(data => {
+      if (data && data._rawText) {
+        container.innerHTML = `<div class='p-3 rounded' style='background: var(--cartao);'><p class='p mb-0 text-danger'>Resposta inválida (esperado JSON). Atualize a página e verifique a sessão.</p></div>`;
+        console.error('Resposta bruta da API /api/chatbot/ultima-resposta:', data._rawText);
+        return;
+      }
+
       if (data.resposta) {
         let texto = data.resposta.replace(/\*/g, '');
         const contemHtml = /<\/?(div|table|thead|tbody|tr|td|th|ul|ol|li|p|img|svg)[\s>]/i.test(texto);
@@ -373,7 +384,8 @@ function carregarUltimaRespostaIA() {
     })
     .catch(error => {
       console.error('Erro ao buscar última resposta IA:', error);
-      container.innerHTML = "<div class='p-3 rounded' style='background: var(--cartao);'><p class='p mb-0 text-danger'>Não foi possível carregar a última resposta da IA.</p></div>";
+      const msg = (error && error.message) ? error.message : 'Erro desconhecido';
+      container.innerHTML = `<div class='p-3 rounded' style='background: var(--cartao);'><p class='p mb-0 text-danger'>Falha ao buscar última resposta da IA: ${msg}</p></div>`;
     });
 }
 
