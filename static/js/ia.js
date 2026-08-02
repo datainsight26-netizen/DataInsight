@@ -328,13 +328,20 @@ document.addEventListener('DOMContentLoaded', () => {
             body: JSON.stringify({ mensagem: text, sessao_id: currentSessionId })
         })
             .then(res => {
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                return res.json();
+                if (!res.ok) return res.text().then(t => { throw new Error(`HTTP ${res.status}: ${t.slice(0,200)}`); });
+                const ct = res.headers.get('content-type') || '';
+                if (ct.includes('application/json')) return res.json();
+                return res.text().then(t => ({ _rawText: t }));
             })
             .then(data => {
-                messagesDiv.removeChild(typingDiv);
-                appendMessage(data.resposta || 'Resposta vazia do servidor', 'bot');
-                carregarSessoes();
+                if (messagesDiv.contains(typingDiv)) messagesDiv.removeChild(typingDiv);
+                if (data && data._rawText) {
+                    appendMessage('Resposta inválida do servidor (esperado JSON).', 'bot');
+                    console.error('Resposta bruta:', data._rawText);
+                } else {
+                    appendMessage((data && data.resposta) ? data.resposta : 'Resposta vazia do servidor', 'bot');
+                    carregarSessoes();
+                }
             })
             .catch(err => {
                 console.error('Erro ao chamar /api/chatbot/perguntar:', err);
@@ -367,7 +374,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ------------------ LÓGICA DO MODAL ------------------
     const modal = document.getElementById('ia-modal');
-    const modalWindow = document.querySelector('.ia-modal-window');
+    let modalWindow = document.querySelector('.ia-modal-window');
     const modalCloseBtn = document.getElementById('ia-modal-close');
     const modalHeaderActions = document.getElementById('modal-header-actions');
     const modalTitulo = document.getElementById('modal-titulo');
@@ -379,6 +386,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalResizeHandle = document.getElementById('modal-resize-handle');
     const IA_MODAL_STATE_KEY = 'DataInsight_IA_ModalState';
 
+    if (!modalWindow) {
+        modalWindow = {
+            style: {},
+            offsetWidth: 0,
+            offsetHeight: 0,
+            classList: { add: function(){}, remove: function(){} }
+        };
+    }
+
     const chatBox = document.getElementById('chat-box');
     const galleryBox = document.getElementById('gallery-box');
     const galleryTitle = document.getElementById('gallery-main-title');
@@ -389,14 +405,19 @@ document.addEventListener('DOMContentLoaded', () => {
     let modalResizeState = null;
 
     function salvarEstadoModal() {
-        const state = {
-            visible: modal.style.display === 'flex' || modal.style.display === 'block',
-            top: parseInt(modalWindow.style.top || '0', 10),
-            left: parseInt(modalWindow.style.left || '0', 10),
-            width: parseInt(modalWindow.style.width || modalWindow.offsetWidth, 10),
-            height: parseInt(modalWindow.style.height || modalWindow.offsetHeight, 10)
-        };
-        localStorage.setItem(IA_MODAL_STATE_KEY, JSON.stringify(state));
+        if (!modal || !modalWindow) return;
+        try {
+            const state = {
+                visible: modal.style.display === 'flex' || modal.style.display === 'block',
+                top: parseInt(modalWindow.style.top || '0', 10) || 0,
+                left: parseInt(modalWindow.style.left || '0', 10) || 0,
+                width: parseInt(modalWindow.style.width || modalWindow.offsetWidth, 10) || Math.min(800, window.innerWidth - 40),
+                height: parseInt(modalWindow.style.height || modalWindow.offsetHeight, 10) || Math.min(600, window.innerHeight - 40)
+            };
+            localStorage.setItem(IA_MODAL_STATE_KEY, JSON.stringify(state));
+        } catch (err) {
+            console.warn('Falha ao salvar estado do modal IA:', err);
+        }
     }
 
     function carregarEstadoModal() {
@@ -433,10 +454,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function aplicarPosicaoModal({ top, left, width, height }) {
-        modalWindow.style.top = `${top}px`;
-        modalWindow.style.left = `${left}px`;
-        modalWindow.style.width = `${width}px`;
-        modalWindow.style.height = `${height}px`;
+        if (!modalWindow || !modalWindow.style) return;
+        try {
+            modalWindow.style.top = `${top}px`;
+            modalWindow.style.left = `${left}px`;
+            modalWindow.style.width = `${width}px`;
+            modalWindow.style.height = `${height}px`;
+        } catch (e) {
+            console.warn('Falha ao aplicar posição do modal:', e);
+        }
     }
 
     function tocarBolhaModal(tipo) {
