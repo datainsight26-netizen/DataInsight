@@ -327,15 +327,19 @@ document.addEventListener('DOMContentLoaded', () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ mensagem: text, sessao_id: currentSessionId })
         })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+            })
             .then(data => {
                 messagesDiv.removeChild(typingDiv);
-                appendMessage(data.resposta, 'bot');
+                appendMessage(data.resposta || 'Resposta vazia do servidor', 'bot');
                 carregarSessoes();
             })
             .catch(err => {
-                messagesDiv.removeChild(typingDiv);
-                appendMessage("Erro ao contactar a IA.", "bot");
+                console.error('Erro ao chamar /api/chatbot/perguntar:', err);
+                if (messagesDiv.contains(typingDiv)) messagesDiv.removeChild(typingDiv);
+                appendMessage(`Erro ao contactar a IA (${err.message})`, 'bot');
             });
     }
 
@@ -548,9 +552,9 @@ document.addEventListener('DOMContentLoaded', () => {
         salvarEstadoModal();
     }
 
-    modalCloseBtn.addEventListener('click', fecharModal);
-    modalHeaderActions.addEventListener('mousedown', iniciarArrasteModal);
-    modalResizeHandle.addEventListener('mousedown', iniciarRedimensionamentoModal);
+    if (modalCloseBtn) modalCloseBtn.addEventListener('click', fecharModal);
+    if (modalHeaderActions) modalHeaderActions.addEventListener('mousedown', iniciarArrasteModal);
+    if (modalResizeHandle) modalResizeHandle.addEventListener('mousedown', iniciarRedimensionamentoModal);
     window.addEventListener('resize', () => {
         aplicarPosicaoModal(clampModalState({
             top: parseInt(modalWindow.style.top || '0', 10),
