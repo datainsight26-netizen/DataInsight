@@ -324,6 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         fetch('/api/chatbot/perguntar', {
             method: 'POST',
+            credentials: 'same-origin',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ mensagem: text, sessao_id: currentSessionId })
         })
