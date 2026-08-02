@@ -599,6 +599,8 @@ def filtrar_df(df, col, periodo):
     elif periodo == "ano_atual":
         inicio = datetime(fim.year, 1, 1)
         return df.loc[(df[col] >= inicio) & (df[col] <= fim)].copy()
+    elif periodo == "todos":
+        return df.copy()
     elif periodo.startswith("mes_"):
         try:
             mes = int(periodo.split("_")[1])
