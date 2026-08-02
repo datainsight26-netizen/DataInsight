@@ -31,7 +31,7 @@ from backend.dados.mapeamento import obter_mapeamento, salvar_mapeamento
 # Importação contato
 from backend.contato.contato import enviar_mensagem_contato
 # Chatbot Import
-from backend.chatbot.chatbot import perguntar_chatbot, sintetizar_texto_voz
+from backend.chatbot.chatbot import perguntar_chatbot, sintetizar_texto_voz, buscar_ultima_resposta_chatbot
 # Importação produtos
 from backend.produtos import (
     salvar_produto, buscar_produtos_por_nome, obter_produto_exato,
@@ -397,6 +397,11 @@ def api_sessoes_chatbot():
 def api_historico_chat():
     from backend.chatbot.chatbot import buscar_historico_chatbot
     return buscar_historico_chatbot()
+
+@app.route('/api/chatbot/ultima-resposta', methods=['GET'])
+@login_required
+def api_ultima_resposta_chatbot():
+    return buscar_ultima_resposta_chatbot()
 
 @app.route('/api/chatbot/historico/apagar', methods=['DELETE'])
 @login_required
