@@ -26,6 +26,10 @@ from backend.home.home import (
     calcular_total_dinamico,
     converter_datas,
     encontrar_coluna_data,
+    encontrar_coluna_produto,
+    encontrar_coluna_categoria,
+    encontrar_coluna_quantidade,
+    encontrar_coluna_estoque,
     filtrar_df,
     obter_colunas_mapeadas,
     obter_dados_graficos,
@@ -547,6 +551,8 @@ _STOPWORDS_PT = {
 
 def _detectar_periodo_pergunta(texto: str) -> str:
     t = (texto or "").lower()
+    if re.search(r"\b(todos?|tudo|geral|completo|consolidado|total|lista|listagem|dados\s+gerais|dados\s+completos)\b", t):
+        return "todos"
     if re.search(r"\b(7\s*dias|semana|ultimos?\s*7|últimos?\s*7)\b", t):
         return "7_dias"
     if re.search(r"\b(90\s*dias|trimestre|3\s*meses|ultimos?\s*90|últimos?\s*90)\b", t):
@@ -658,6 +664,43 @@ def _chunk_registros_recentes(df: pd.DataFrame, limite: int = 12) -> Optional[st
     return f"Últimos {len(amostra)} registros do banco:\n{texto}"
 
 
+def _chunk_dados_completos(df: pd.DataFrame, mapeamento: Dict[str, Any]) -> Optional[str]:
+    if df is None or df.empty:
+        return None
+
+    linhas = []
+    linhas.append(f"Total de registros: {len(df)}")
+    linhas.append(f"Colunas: {', '.join(map(str, df.columns.tolist()))}")
+
+    col_data = mapeamento.get("data") or encontrar_coluna_data(df)
+    if col_data and col_data in df.columns:
+        df_data = converter_datas(df.copy(), col_data)
+        inicio = df_data[col_data].min()
+        fim = df_data[col_data].max()
+        if pd.notnull(inicio) and pd.notnull(fim):
+            linhas.append(f"Período coberto: {inicio.strftime('%d/%m/%Y')} a {fim.strftime('%d/%m/%Y')}")
+
+    produto_col = encontrar_coluna_produto(df, mapeamento)
+    categoria_col = encontrar_coluna_categoria(df, mapeamento)
+    if produto_col:
+        linhas.append(f"Coluna de produto detectada: {produto_col}")
+        produtos = df[produto_col].dropna().astype(str).str.strip()
+        produtos = produtos[produtos != ''].head(10).unique().tolist()
+        if produtos:
+            linhas.append(f"Exemplos de produtos: {', '.join(produtos)}")
+    elif categoria_col:
+        linhas.append(f"Coluna de categoria detectada: {categoria_col}")
+
+    fat_total = calcular_total_dinamico(df, "faturamento", mapeamento, COL_FATURAMENTO)
+    desp_total = calcular_total_dinamico(df, "despesa", mapeamento, COL_DESPESA)
+    luc_total = calcular_total_dinamico(df, "lucro", mapeamento, COL_LUCRO) or (fat_total - desp_total)
+    linhas.append(f"Faturamento total: R$ {fat_total:,.2f}")
+    linhas.append(f"Despesa total: R$ {desp_total:,.2f}")
+    linhas.append(f"Lucro total: R$ {luc_total:,.2f}")
+
+    return "Dados gerais do conjunto completo de dados:\n" + "\n".join(linhas)
+
+
 def construir_chunks_rag(usuario_id: str, pergunta: str) -> List[Dict[str, Any]]:
     """Monta documentos/chunks recuperáveis a partir dos dados do usuário no MongoDB."""
     documento = _carregar_documento_dados(usuario_id)
@@ -690,6 +733,16 @@ def construir_chunks_rag(usuario_id: str, pergunta: str) -> List[Dict[str, Any]]
         "obrigatorio": True,
         "tags": {"planilha", "colunas", "metadados", "dataset", "banco"},
     })
+
+    dados_completos = _chunk_dados_completos(df, mapeamento)
+    if dados_completos:
+        chunks.append({
+            "id": "dados_completos",
+            "titulo": "Dados gerais do usuário",
+            "conteudo": dados_completos,
+            "obrigatorio": False,
+            "tags": {"dados", "completo", "geral", "total", "produtos", "consolidado"},
+        })
 
     chunks.append({
         "id": "kpis",
@@ -995,6 +1048,28 @@ def buscar_historico_chatbot():
         for doc in docs
     ]
     return jsonify({"historico": historico})
+
+
+def buscar_ultima_resposta_chatbot():
+    """Retorna a última resposta gerada pelo chatbot para o usuário logado."""
+    usuario_id = session.get("usuario_id")
+    if not usuario_id:
+        return jsonify({"erro": "Não autorizado"}), 401
+
+    doc = chat_historico.find({"usuario_id": usuario_id, "remetente": "bot"}).sort("data", -1).limit(1)
+    ultima = None
+    for item in doc:
+        ultima = item
+        break
+
+    if not ultima:
+        return jsonify({"resposta": "Ainda não há resposta da IA registrada."}), 200
+
+    return jsonify({
+        "resposta": ultima.get("mensagem", ""),
+        "sessao_id": ultima.get("sessao_id"),
+        "data": ultima.get("data").strftime("%d/%m %H:%M") if ultima.get("data") else None,
+    })
 
 
 def limpar_historico_chatbot():
