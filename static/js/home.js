@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
   atualizarTudo();
   carregarStatus();
   carregarInsight();
+  carregarUltimaRespostaIA();
 });
 
 // ======================
@@ -253,6 +254,126 @@ function carregarInsight() {
     .catch(error => {
       console.error('Erro ao buscar insight:', error);
       containerInsights.innerHTML = "<div class='p-3 rounded' style='background: var(--cartao);'><p class='p mb-0 text-danger'>Erro de conexão com a IA.</p></div>";
+    });
+}
+
+function _converterTabelaMarkdownParaHtml(texto) {
+  const linhas = texto.replace(/\r\n/g, '\n').split('\n');
+  let html = '';
+  let buffer = [];
+  let i = 0;
+
+  const flushBuffer = () => {
+    if (!buffer.length) return;
+    const paragraph = buffer.join('\n').trim();
+    if (paragraph.length) {
+      html += `<p style="white-space: pre-wrap; margin: 0 0 12px;">${paragraph}</p>`;
+    }
+    buffer = [];
+  };
+
+  const isHeader = line => /^\s*\|.*\|.*$/.test(line);
+  const isSeparator = line => /^\s*\|?\s*[:\-\s]+\|.*$/.test(line);
+
+  while (i < linhas.length) {
+    const line = linhas[i];
+    const next = linhas[i + 1] || '';
+
+    if (isHeader(line) && isSeparator(next)) {
+      flushBuffer();
+      const header = line.replace(/^\||\|$/g, '').split('|').map(col => col.trim()).filter(col => col.length);
+      const rows = [];
+      i += 2;
+      while (i < linhas.length && /^\s*\|.*\|.*$/.test(linhas[i])) {
+        const row = linhas[i].replace(/^\||\|$/g, '').split('|').map(cell => cell.trim());
+        if (row.length) rows.push(row);
+        i += 1;
+      }
+
+      if (!header.length || !rows.length) {
+        html += `<pre style="white-space: pre-wrap; margin: 0 0 12px;">${line}</pre>`;
+        continue;
+      }
+
+      html += '<div style="overflow-x:auto; margin-bottom: 12px;"><table style="width:100%; border-collapse: collapse;">';
+      html += '<thead><tr>' + header.map(col => `<th style="border:1px solid var(--borda); padding:10px; text-align:left; background: rgba(59,130,246,0.06);">${col}</th>`).join('') + '</tr></thead>';
+      html += '<tbody>' + rows.map(row => `<tr>${row.map(cell => `<td style="border:1px solid var(--borda); padding:10px;">${cell}</td>`).join('')}</tr>`).join('') + '</tbody>';
+      html += '</table></div>';
+      continue;
+    }
+
+    buffer.push(line);
+    i += 1;
+  }
+
+  flushBuffer();
+  return html || texto;
+}
+
+function _renderizarHtmlSeguro(container, html) {
+  const marcador = document.createElement('div');
+  marcador.innerHTML = html;
+  const tagsPermitidas = ['DIV','SPAN','P','TABLE','THEAD','TBODY','TR','TD','TH','UL','OL','LI','B','STRONG','I','EM','BR','HR','A','IMG','SECTION','ARTICLE'];
+  const scripts = marcador.querySelectorAll('script,iframe,object,embed');
+  scripts.forEach(el => el.remove());
+  for (const node of Array.from(marcador.querySelectorAll('*'))) {
+    if (!tagsPermitidas.includes(node.tagName)) {
+      node.replaceWith(document.createTextNode(node.innerText));
+      continue;
+    }
+    if (node.tagName === 'A') {
+      node.setAttribute('rel', 'nofollow noopener noreferrer');
+      node.setAttribute('target', '_blank');
+    }
+  }
+  container.innerHTML = '';
+  container.appendChild(marcador);
+}
+
+function carregarUltimaRespostaIA() {
+  const container = document.getElementById('container-ultima-resposta-ia');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="p-3 rounded" style="background: var(--cartao); animation: pulse 2s infinite;">
+      <p class="p mb-0" style="color: var(--texto-secundario);">Buscando a última resposta gerada pela IA...</p>
+    </div>
+  `;
+
+  fetch('/api/chatbot/ultima-resposta')
+    .then(response => response.json())
+    .then(data => {
+      if (data.resposta) {
+        let texto = data.resposta.replace(/\*/g, '');
+        const contemHtml = /<\/?(div|table|thead|tbody|tr|td|th|ul|ol|li|p|img|svg)[\s>]/i.test(texto);
+        const contemTabelaMarkdown = /\n\s*\|.+\|\s*\n\s*\|?\s*[:-]+\s*\|/.test(texto);
+
+        if (contemHtml || contemTabelaMarkdown) {
+          const wrapper = document.createElement('div');
+          wrapper.className = 'p-3 rounded';
+          wrapper.style.background = 'var(--cartao)';
+          container.innerHTML = '';
+          container.appendChild(wrapper);
+
+          const htmlConteudo = contemTabelaMarkdown
+            ? _converterTabelaMarkdownParaHtml(texto)
+            : texto;
+
+          _renderizarHtmlSeguro(wrapper, htmlConteudo);
+        } else {
+          container.innerHTML = `
+            <div class="p-3 rounded" style="background: var(--cartao);">
+              <pre style="white-space: pre-wrap; margin: 0; font-family: inherit; line-height: 1.6;">${texto}</pre>
+            </div>
+          `;
+        }
+      } else {
+        container.innerHTML = "<div class='p-3 rounded' style='background: var(--cartao);'><p class='p mb-0'>Nenhuma resposta da IA encontrada ainda.</p></div>";
+      }
+    })
+    .catch(error => {
+      console.error('Erro ao buscar última resposta IA:', error);
+      container.innerHTML = "<div class='p-3 rounded' style='background: var(--cartao);'><p class='p mb-0 text-danger'>Não foi possível carregar a última resposta da IA.</p></div>";
     });
 }
 
