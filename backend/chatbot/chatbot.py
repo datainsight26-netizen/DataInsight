@@ -1,310 +1,403 @@
-import os
-import importlib.util
-from dotenv import load_dotenv
 import base64
-from agno.agent import Agent
-from agno.team import Team
-from agno.models.ollama import Ollama
-from backend.home.home import calcular_desempenho, converter_datas, encontrar_coluna_data, obter_colunas_mapeadas, COL_FATURAMENTO, COL_DESPESA, calcular_total_dinamico
-from backend.db import dados_colecao, chat_historico
-from datetime import datetime
-import pandas as pd
-import numpy as np
-from flask import session, jsonify, request, send_file
 import io
-import subprocess
+import json
+import os
+import re
+import urllib.request
+from datetime import datetime
+from types import SimpleNamespace
+from typing import Any, Dict, List, Optional, Tuple
 
-# Carrega as variáveis do arquivo .env
+import numpy as np
+import pandas as pd
+from dotenv import load_dotenv
+from flask import jsonify, request, send_file, session
+
+from backend.db import chat_historico, dados_colecao, galeria
+from backend.home.home import (
+    COL_CATEGORIA,
+    COL_DESPESA,
+    COL_FATURAMENTO,
+    COL_LUCRO,
+    calcular_desempenho,
+    calcular_total_dinamico,
+    converter_datas,
+    encontrar_coluna_data,
+    filtrar_df,
+    obter_colunas_mapeadas,
+    obter_dados_graficos,
+)
+
 load_dotenv()
 
-# Cache global do Kokoro para evitar reinicialização a cada chamada (principal causa do atraso)
-_kokoro_pipelines = {}
+_KOKORO_PIPELINES: Dict[str, Any] = {}
 
-def selecionar_modelo_ollama() -> str:
-    """Escolhe automaticamente um modelo Ollama compatível com ferramentas."""
-    modelos_preferidos = []
 
-    modelo_env = os.getenv("OLLAMA_MODEL", "").strip()
-    if modelo_env:
-        modelos_preferidos.append(modelo_env)
+# ==============================================================================
+# ORQUESTRADOR GEMINI API
+# ==============================================================================
 
-    modelos_preferidos.extend(["llama3.2:3b", "phi3:mini"])
+class GeminiOrchestrator:
+    """Wrapper para integração com a API Google Gemini via REST."""
 
-    modelos_instalados = set()
-    try:
-        resultado = subprocess.run(["ollama", "list"], capture_output=True, text=True, timeout=20)
-        if resultado.returncode == 0:
-            for linha in resultado.stdout.splitlines()[1:]:
-                partes = linha.split()
-                if partes:
-                    modelos_instalados.add(partes[0])
-    except Exception:
-        modelos_instalados = set()
+    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
+        self.api_key = api_key or os.getenv("GOOGLE_API_KEY")
+        self.model = model or os.getenv("GOOGLE_GEMINI_MODEL", "gemini-2.5-flash")
 
-    for modelo in modelos_preferidos:
-        if not modelos_instalados or modelo in modelos_instalados:
-            return modelo
+    def run(self, prompt: str) -> SimpleNamespace:
+        return SimpleNamespace(content=self._gerar_resposta(prompt))
 
-    return modelos_preferidos[0] if modelos_preferidos else "llama3.2:3b"
+    def _gerar_resposta(self, prompt: str) -> str:
+        if not self.api_key:
+            return (
+                "Desculpe — a integração com a API Gemini não está configurada. "
+                "Defina a variável de ambiente `GOOGLE_API_KEY`."
+            )
 
-def sintetizar_resposta_voz(texto: str):
-    """Tenta sintetizar resposta em áudio usando Kokoro, se disponível."""
+        endpoint = (
+            f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
+            f"?key={self.api_key}"
+        )
+
+        payload = {
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [{"text": prompt}],
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.2,
+                "maxOutputTokens": 1024,
+            },
+        }
+
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            endpoint,
+            data=data,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+
+        try:
+            with urllib.request.urlopen(req, timeout=60) as response:
+                body = json.loads(response.read().decode("utf-8"))
+                candidates = body.get("candidates", [])
+                if not candidates:
+                    return "Não foi possível extrair a resposta do modelo."
+
+                candidate = candidates[0]
+                if not isinstance(candidate, dict):
+                    return "Não foi possível extrair a resposta do modelo."
+
+                content = candidate.get("content", {})
+                if isinstance(content, dict):
+                    parts = content.get("parts", [])
+                    textos = [
+                        str(part.get("text", "")).strip()
+                        for part in parts
+                        if isinstance(part, dict) and part.get("text")
+                    ]
+                    if textos:
+                        return "\n".join(textos).strip()
+
+                if "output" in candidate:
+                    return str(candidate.get("output", "")).strip()
+
+                return "Não foi possível extrair a resposta do modelo."
+
+        except Exception as err:
+            detalhe = str(err)
+            if hasattr(err, "read"):
+                try:
+                    detalhe = f"{err}: {err.read().decode('utf-8')[:300]}"
+                except Exception:
+                    pass
+            print(f"[Erro Gemini API]: {detalhe}")
+            return (
+                "Desculpe — não consegui contatar a API Gemini no momento. "
+                "Por favor, verifique a chave de API e a conectividade de rede."
+            )
+
+
+# ==============================================================================
+# SÍNTESE DE VOZ (TTS)
+# ==============================================================================
+
+def sintetizar_resposta_voz(texto: str) -> Optional[Tuple[str, str]]:
+    """Sintetiza o texto em áudio via Kokoro (WAV) ou gTTS (MP3) como fallback."""
     if not texto:
         return None
+
     try:
-        # Prefer Kokoro if installed
+        import importlib.util
         if importlib.util.find_spec("kokoro") is not None:
             from kokoro import KPipeline
 
             resultado = None
             for lang_code in ["pt-BR", "pt_br", "pt", "a"]:
                 try:
-                    if lang_code not in _kokoro_pipelines:
-                        _kokoro_pipelines[lang_code] = KPipeline(lang_code=lang_code)
-                    pipeline = _kokoro_pipelines[lang_code]
+                    if lang_code not in _KOKORO_PIPELINES:
+                        _KOKORO_PIPELINES[lang_code] = KPipeline(lang_code=lang_code)
+                    pipeline = _KOKORO_PIPELINES[lang_code]
                     resultado = pipeline(texto)
                     break
                 except Exception:
-                    _kokoro_pipelines.pop(lang_code, None)
-                    resultado = None
+                    _KOKORO_PIPELINES.pop(lang_code, None)
+
             if resultado is not None:
                 audio_bytes = None
                 if isinstance(resultado, (bytes, bytearray)):
                     audio_bytes = bytes(resultado)
-                elif hasattr(resultado, 'audio'):
-                    audio_bytes = resultado.audio if isinstance(resultado.audio, (bytes, bytearray)) else None
-                elif isinstance(resultado, dict) and resultado.get('audio') is not None:
-                    if isinstance(resultado['audio'], (bytes, bytearray)):
-                        audio_bytes = bytes(resultado['audio'])
-                    elif isinstance(resultado['audio'], str):
+                elif hasattr(resultado, "audio") and isinstance(resultado.audio, (bytes, bytearray)):
+                    audio_bytes = bytes(resultado.audio)
+                elif isinstance(resultado, dict) and resultado.get("audio"):
+                    raw = resultado["audio"]
+                    if isinstance(raw, (bytes, bytearray)):
+                        audio_bytes = bytes(raw)
+                    elif isinstance(raw, str):
                         try:
-                            audio_bytes = base64.b64decode(resultado['audio'])
+                            audio_bytes = base64.b64decode(raw)
                         except Exception:
-                            audio_bytes = resultado['audio'].encode('utf-8')
+                            audio_bytes = raw.encode("utf-8")
 
-                if audio_bytes is not None:
-                    return (base64.b64encode(audio_bytes).decode('utf-8'), 'audio/wav')
+                if audio_bytes:
+                    return base64.b64encode(audio_bytes).decode("utf-8"), "audio/wav"
+    except Exception as err:
+        print(f"[Kokoro TTS fallback]: {err}")
 
-        # Fallback: try gTTS if available (returns mp3)
-        if importlib.util.find_spec('gtts') is not None:
-            try:
-                from gtts import gTTS
-                import io
-                bio = io.BytesIO()
-                tts = gTTS(text=texto, lang='pt')
-                tts.write_to_fp(bio)
-                mp3_bytes = bio.getvalue()
-                return (base64.b64encode(mp3_bytes).decode('utf-8'), 'audio/mpeg')
-            except Exception as e:
-                print(f"Erro ao sintetizar com gTTS: {e}")
+    try:
+        from gtts import gTTS
 
-        # No TTS available
-        return None
-    except Exception as erro:
-        print(f"Erro ao sintetizar voz: {erro}")
+        buffer = io.BytesIO()
+        gTTS(text=texto, lang="pt").write_to_fp(buffer)
+        buffer.seek(0)
+        return base64.b64encode(buffer.read()).decode("utf-8"), "audio/mpeg"
+    except Exception as err:
+        print(f"[gTTS erro]: {err}")
         return None
 
 
-def sintetizar_texto_voz(texto: str):
-    """Gera áudio via Kokoro para qualquer texto fornecido."""
+def sintetizar_texto_voz(texto: str) -> Optional[Tuple[str, str]]:
+    """Função legada/alias para sintetizar áudio."""
     return sintetizar_resposta_voz(texto)
 
-# ==========================
-# FERRAMENTAS DO ANALISTA
-# ==========================
-def obter_resumo_financeiro(periodo: str = "30_dias", *args, **kwargs) -> str:
-    """Busca o resumo financeiro (faturamento, lucro, despesa). O período pode ser '7_dias', '30_dias', '90_dias' ou 'ano_atual'."""
-    if not periodo and kwargs.get("periodo"):
-        periodo = kwargs.get("periodo")
+
+# ==============================================================================
+# FERRAMENTAS ANALÍTICAS E DE NEGÓCIO
+# ==============================================================================
+
+def obter_resumo_financeiro(periodo: str = "30_dias", **kwargs) -> str:
+    """Retorna o resumo financeiro (faturamento, lucro, despesa) para o período."""
+    periodo = kwargs.get("periodo", periodo)
     try:
         resposta, status = calcular_desempenho(periodo)
         if status != 200:
-            return "Não foi possível recuperar os dados agora."
-        
-        dados = resposta.get_json()
-        if "faturamento" not in dados:
-            return "Dados insuficientes ou vazios."
-            
-        resumo = (
-            f"Resumo do período ({periodo}):\n"
-            f"- Faturamento: R$ {dados['faturamento']['valor']:,.2f} ({dados['faturamento']['percentual']}%)\n"
-            f"- Lucro: R$ {dados['lucro']['valor']:,.2f} ({dados['lucro']['percentual']}%)\n"
-            f"- Despesas: R$ {dados['despesa']['valor']:,.2f} ({dados['despesa']['percentual']}%)\n"
-            f"- Crescimento: {dados['crescimento']['valor']}%"
-        )
-        return resumo
-    except Exception as erro:
-        return f"Erro ao calcular resumo: {str(erro)}"
+            return "Não foi possível recuperar os dados financeiros no momento."
 
-def obter_transacoes_recentes(limite: int = 5, *args, **kwargs) -> str:
-    """Retorna as últimas transações registradas para dar contexto detalhado à IA."""
-    if not limite and kwargs.get("limite"):
-        limite = kwargs.get("limite")
-    usuario_id = session.get('usuario_id')
+        dados = resposta.get_json() if hasattr(resposta, "get_json") else resposta
+        if not dados or "faturamento" not in dados:
+            return "Dados financeiros insuficientes ou inexistentes."
+
+        fat = dados["faturamento"]
+        luc = dados["lucro"]
+        desp = dados["despesa"]
+        cres = dados["crescimento"]
+
+        return (
+            f"Resumo do período ({periodo}):\n"
+            f"- Faturamento: R$ {fat.get('valor', 0):,.2f} ({fat.get('percentual', 0)}%)\n"
+            f"- Lucro: R$ {luc.get('valor', 0):,.2f} ({luc.get('percentual', 0)}%)\n"
+            f"- Despesas: R$ {desp.get('valor', 0):,.2f} ({desp.get('percentual', 0)}%)\n"
+            f"- Crescimento: {cres.get('valor', 0)}%"
+        )
+    except Exception as err:
+        return f"Erro ao processar resumo financeiro: {err}"
+
+
+def obter_transacoes_recentes(limite: int = 5, **kwargs) -> str:
+    """Retorna as transações mais recentes registradas pelo usuário."""
+    limite = kwargs.get("limite", limite)
+    usuario_id = session.get("usuario_id")
     if not usuario_id:
         return "Usuário não autenticado."
-    
+
     try:
         documento = dados_colecao.find_one({"usuario_id": usuario_id}, sort=[("criado_em", -1)])
         if not documento or not documento.get("dados"):
-            return "Nenhum dado encontrado."
-        
+            return "Nenhum dado financeiro encontrado."
+
         df = pd.DataFrame(documento["dados"])
         recentes = df.tail(limite).to_string(index=False)
         return f"Últimos registros encontrados:\n{recentes}"
-    except Exception as erro:
-        return f"Erro ao buscar transações: {str(erro)}"
+    except Exception as err:
+        return f"Erro ao buscar transações: {err}"
 
-# ==========================
-# FERRAMENTAS DO CIENTISTA
-# ==========================
-def prever_receita_mes_seguinte(*args, **kwargs) -> str:
-    """Prevê o faturamento do próximo mês usando regressão linear simples com base no histórico."""
-    usuario_id = session.get('usuario_id')
+
+def prever_receita_mes_seguinte(**kwargs) -> str:
+    """Realiza uma previsão de faturamento para o próximo mês via regressão linear."""
+    usuario_id = session.get("usuario_id")
     if not usuario_id:
         return "Usuário não autenticado."
-    
+
     try:
         documento = dados_colecao.find_one({"usuario_id": usuario_id}, sort=[("criado_em", -1)])
         if not documento or not documento.get("dados"):
-            return "Nenhum dado encontrado para previsão."
-        
+            return "Dados insuficientes para realizar a previsão."
+
         df = pd.DataFrame(documento["dados"])
         mapeamento = obter_colunas_mapeadas(usuario_id)
         col_data = mapeamento.get("data") or encontrar_coluna_data(df)
+
         if not col_data:
-            return "Coluna de data não encontrada. Não é possível prever."
-            
+            return "Coluna de data não identificada no histórico de dados."
+
         df = converter_datas(df, col_data).dropna(subset=[col_data])
-        df['mes_ano'] = df[col_data].dt.to_period('M')
-        
-        mensal = df.groupby('mes_ano').apply(lambda g: calcular_total_dinamico(g, "faturamento", mapeamento, COL_FATURAMENTO)).reset_index(name='faturamento')
-        
+        df["mes_ano"] = df[col_data].dt.to_period("M")
+
+        mensal = (
+            df.groupby("mes_ano")
+            .apply(lambda g: calcular_total_dinamico(g, "faturamento", mapeamento, COL_FATURAMENTO))
+            .reset_index(name="faturamento")
+        )
+
         if len(mensal) < 2:
-            return "Dados insuficientes (preciso de pelo menos 2 meses) para criar uma previsão matemática."
-        
-        y = mensal['faturamento'].values
+            return "Mínimo de 2 meses de dados históricos necessários para gerar uma previsão confiável."
+
+        y = mensal["faturamento"].values
         x = np.arange(len(y))
-        
-        # Regressão linear simples (y = mx + c)
         coef = np.polyfit(x, y, 1)
-        poly1d_fn = np.poly1d(coef)
-        
-        proximo_mes_idx = len(y)
-        previsao = poly1d_fn(proximo_mes_idx)
+        poly = np.poly1d(coef)
+        previsao = poly(len(y))
         tendencia = "crescimento" if coef[0] > 0 else "queda"
-        
-        return f"A Previsão Matemática para o próximo mês é faturar aproximadamente R$ {previsao:,.2f}. A tendência detectada é de {tendencia}."
-    except Exception as erro:
-        return f"Erro ao prever receita: {str(erro)}"
 
-def detectar_anomalias_despesas(*args, **kwargs) -> str:
-    """Verifica se há picos de despesas no último mês em comparação com a média histórica."""
-    usuario_id = session.get('usuario_id')
+        return (
+            f"Previsão Matemática para o próximo mês: R$ {previsao:,.2f}.\n"
+            f"Tendência identificada: {tendencia}."
+        )
+    except Exception as err:
+        return f"Erro na previsão de receita: {err}"
+
+
+def detectar_anomalias_despesas(**kwargs) -> str:
+    """Verifica picos atípicos de despesas no histórico recente."""
+    usuario_id = session.get("usuario_id")
     if not usuario_id:
         return "Usuário não autenticado."
-    
+
     try:
         documento = dados_colecao.find_one({"usuario_id": usuario_id}, sort=[("criado_em", -1)])
         if not documento or not documento.get("dados"):
-            return "Nenhum dado encontrado."
-        
+            return "Nenhum dado para analisar anomalias."
+
         df = pd.DataFrame(documento["dados"])
         mapeamento = obter_colunas_mapeadas(usuario_id)
         col_data = mapeamento.get("data") or encontrar_coluna_data(df)
-        if not col_data:
-            return "Coluna de data não encontrada."
-            
-        df = converter_datas(df, col_data).dropna(subset=[col_data])
-        df['mes_ano'] = df[col_data].dt.to_period('M')
-        
-        mensal = df.groupby('mes_ano').apply(lambda g: calcular_total_dinamico(g, "despesa", mapeamento, COL_DESPESA)).reset_index(name='despesa')
-        
-        if len(mensal) < 2:
-            return "Histórico insuficiente para detectar anomalias."
-        
-        media_historica = mensal['despesa'][:-1].mean()
-        ultimo_mes = mensal['despesa'].iloc[-1]
-        
-        if media_historica > 0 and ultimo_mes > (media_historica * 1.3): # 30% acima da média
-            return f"⚠️ ANOMALIA DETECTADA: As despesas do último mês (R$ {ultimo_mes:,.2f}) estão {((ultimo_mes/media_historica)-1)*100:.1f}% acima da média histórica (R$ {media_historica:,.2f})."
-        else:
-            return f"As despesas do último mês (R$ {ultimo_mes:,.2f}) estão dentro da normalidade (média: R$ {media_historica:,.2f}). Não há anomalias graves."
-    except Exception as erro:
-        return f"Erro na detecção de anomalias: {str(erro)}"
 
-# ==========================
-# FERRAMENTAS DO CONSULTOR
-# ==========================
-def calcular_ponto_equilibrio(*args, **kwargs) -> str:
-    """Calcula o Ponto de Equilíbrio baseado nas médias de despesas e faturamento."""
-    usuario_id = session.get('usuario_id')
+        if not col_data:
+            return "Coluna de data não identificada."
+
+        df = converter_datas(df, col_data).dropna(subset=[col_data])
+        df["mes_ano"] = df[col_data].dt.to_period("M")
+
+        mensal = (
+            df.groupby("mes_ano")
+            .apply(lambda g: calcular_total_dinamico(g, "despesa", mapeamento, COL_DESPESA))
+            .reset_index(name="despesa")
+        )
+
+        if len(mensal) < 2:
+            return "Histórico insuficiente para cálculo de anomalias."
+
+        media_historica = mensal["despesa"][:-1].mean()
+        ultimo_mes = mensal["despesa"].iloc[-1]
+
+        if media_historica > 0 and ultimo_mes > (media_historica * 1.3):
+            percentual = ((ultimo_mes / media_historica) - 1) * 100
+            return (
+                f"⚠️ ANOMALIA DETECTADA: As despesas do último mês (R$ {ultimo_mes:,.2f}) estão "
+                f"{percentual:.1f}% acima da média histórica (R$ {media_historica:,.2f})."
+            )
+
+        return (
+            f"As despesas recentes (R$ {ultimo_mes:,.2f}) mantêm-se dentro do padrão normal "
+            f"(Média histórica: R$ {media_historica:,.2f})."
+        )
+    except Exception as err:
+        return f"Erro na análise de anomalias: {err}"
+
+
+def calcular_ponto_equilibrio(**kwargs) -> str:
+    """Calcula a estimativa de ponto de equilíbrio (Break-even Point)."""
+    usuario_id = session.get("usuario_id")
     if not usuario_id:
         return "Usuário não autenticado."
-    
+
     try:
         documento = dados_colecao.find_one({"usuario_id": usuario_id}, sort=[("criado_em", -1)])
         if not documento or not documento.get("dados"):
-            return "Nenhum dado."
-            
+            return "Dados inexistentes."
+
         df = pd.DataFrame(documento["dados"])
         mapeamento = obter_colunas_mapeadas(usuario_id)
-        
+
         fat_total = calcular_total_dinamico(df, "faturamento", mapeamento, COL_FATURAMENTO)
         desp_total = calcular_total_dinamico(df, "despesa", mapeamento, COL_DESPESA)
-        
-        if fat_total == 0:
-            return "Sem faturamento registrado para calcular margem."
-            
-        lucro = fat_total - desp_total
-        margem = lucro / fat_total if fat_total > 0 else 0
-        
-        if margem <= 0:
-            return "A margem de lucro histórica é negativa ou zero. Ponto de equilíbrio inatingível com a estrutura atual. Você está operando no vermelho."
-            
-        # Ponto de Equilíbrio (simplificado) = Despesas / Margem
-        pe = desp_total / margem
-        return f"Estimativa de Ponto de Equilíbrio: Você precisa faturar aproximadamente R$ {pe:,.2f} no total para cobrir os custos, baseado na sua margem histórica de {margem*100:.1f}%."
-    except Exception as erro:
-        return f"Erro ao calcular PE: {str(erro)}"
 
-# ==========================
-# FERRAMENTAS DO ASSISTENTE
-# ==========================
-def gerar_arquivo_download(tipo: str = '', periodo: str = '30_dias', *args, **kwargs) -> str:
-    """Gera um link para download dos dados financeiros do usuário. O tipo pode ser 'csv' ou 'excel' ou 'pdf'. O periodo pode ser '7_dias', '30_dias', '90_dias', 'ano_atual' ou 'mes_XX'."""
-    if not tipo and kwargs.get('tipo'):
-        tipo = kwargs.get('tipo')
-    if not periodo and kwargs.get('periodo'):
-        periodo = kwargs.get('periodo')
-    if tipo:
-        tipo = str(tipo).lower()
-    if tipo == 'pdf':
+        if fat_total <= 0:
+            return "Faturamento nulo ou insuficiente para cálculo do ponto de equilíbrio."
+
+        lucro = fat_total - desp_total
+        margem = lucro / fat_total
+
+        if margem <= 0:
+            return (
+                "A margem de lucro histórica é negativa/nula. "
+                "O ponto de equilíbrio é inatingível na estrutura atual."
+            )
+
+        pe = desp_total / margem
+        return (
+            f"Ponto de Equilíbrio Estimado: É necessário faturar ~R$ {pe:,.2f} "
+            f"para cobrir os custos totais (Margem histórica: {margem * 100:.1f}%)."
+        )
+    except Exception as err:
+        return f"Erro no cálculo do Ponto de Equilíbrio: {err}"
+
+
+# ==============================================================================
+# GERAÇÃO E EXPORTAÇÃO DE RELATÓRIOS
+# ==============================================================================
+
+def gerar_arquivo_download(tipo: str = "pdf", periodo: str = "30_dias", **kwargs) -> str:
+    """Gera metadados e links dinâmicos para download de relatórios (PDF, CSV, Excel)."""
+    tipo = str(kwargs.get("tipo", tipo)).lower()
+    periodo = str(kwargs.get("periodo", periodo))
+
+    if tipo == "pdf":
         try:
-            from backend.home.home import calcular_desempenho, obter_dados_graficos
-            from datetime import datetime
-            
             resp_kpi = calcular_desempenho(periodo)
             resp_kpi_obj = resp_kpi[0] if isinstance(resp_kpi, tuple) else resp_kpi
-            kpis_response = resp_kpi_obj.get_json() if hasattr(resp_kpi_obj, 'get_json') else resp_kpi_obj
-            
-            # Garantir que kpis é um dict com os dados formatados
-            if isinstance(kpis_response, dict):
+            kpis_data = resp_kpi_obj.get_json() if hasattr(resp_kpi_obj, "get_json") else resp_kpi_obj
+
+            if isinstance(kpis_data, dict):
                 kpis = {
-                    'faturamento': f"{kpis_response.get('faturamento', {}).get('valor', 0):,.2f}",
-                    'lucro': f"{kpis_response.get('lucro', {}).get('valor', 0):,.2f}",
-                    'despesas': f"{kpis_response.get('despesa', {}).get('valor', 0):,.2f}",
-                    'crescimento': f"{kpis_response.get('crescimento', {}).get('valor', 0):.1f}%"
+                    "faturamento": f"{kpis_data.get('faturamento', {}).get('valor', 0):,.2f}",
+                    "lucro": f"{kpis_data.get('lucro', {}).get('valor', 0):,.2f}",
+                    "despesas": f"{kpis_data.get('despesa', {}).get('valor', 0):,.2f}",
+                    "crescimento": f"{kpis_data.get('crescimento', {}).get('valor', 0):.1f}%",
                 }
             else:
-                kpis = {'faturamento': '0,00', 'lucro': '0,00', 'despesas': '0,00', 'crescimento': '0%'}
-            
+                kpis = {"faturamento": "0,00", "lucro": "0,00", "despesas": "0,00", "crescimento": "0%"}
+
             resp_graf = obter_dados_graficos(periodo)
             resp_graf_obj = resp_graf[0] if isinstance(resp_graf, tuple) else resp_graf
-            graficos_data = resp_graf_obj.get_json() if hasattr(resp_graf_obj, 'get_json') else resp_graf_obj
-            
+            graficos_data = resp_graf_obj.get_json() if hasattr(resp_graf_obj, "get_json") else resp_graf_obj
+
             tabela_pdf = []
             barras = graficos_data.get("grafico_barras", {}) if isinstance(graficos_data, dict) else {}
+
             if barras and "labels" in barras:
                 for i, label in enumerate(barras["labels"]):
                     try:
@@ -313,323 +406,598 @@ def gerar_arquivo_download(tipo: str = '', periodo: str = '30_dias', *args, **kw
                         luc = barras["series"][2]["data"][i]
                         margem = f"{(luc / fat * 100):.1f}%" if fat > 0 else "0%"
                         tabela_pdf.append({
-                            "mes": label, "fat": f"{fat:,.2f}", "luc": f"{luc:,.2f}", "desp": f"{desp:,.2f}", "margem": margem
+                            "mes": label,
+                            "fat": f"{fat:,.2f}",
+                            "luc": f"{luc:,.2f}",
+                            "desp": f"{desp:,.2f}",
+                            "margem": margem,
                         })
-                    except:
+                    except Exception:
                         pass
-            
-            session['relatorio_dados'] = {
-                'nome': f"Relatório Gerado por IA",
-                'periodo': periodo.replace('_', ' ').title(),
-                'data': datetime.now().strftime("%d/%m/%Y"),
-                'kpis': kpis,
-                'grafico': True,
-                'tendencias': True,
-                'margem': True,
-                'dadosDetalhados': True,
-                'tabela': tabela_pdf,
-                'insights': ["Análise rápida gerada automaticamente pela IA com base no período solicitado."]
+
+            session["relatorio_dados"] = {
+                "nome": "Relatório Gerado por IA",
+                "periodo": periodo.replace("_", " ").title(),
+                "data": datetime.now().strftime("%d/%m/%Y"),
+                "kpis": kpis,
+                "grafico": True,
+                "tendencias": True,
+                "margem": True,
+                "dadosDetalhados": True,
+                "tabela": tabela_pdf,
+                "insights": ["Relatório automatizado gerado a partir do histórico disponível."],
             }
         except Exception as e:
-            print("Erro ao preparar PDF pela IA:", e)
-            
-        return "Pronto! Já preparei seu arquivo em PDF. Forneça o seguinte link para o usuário baixar o PDF:\n\n[Clique aqui para baixar seu relatório em PDF](/api/gerar-pdf-ia?periodo=" + periodo + ")"
-    elif tipo in ['csv', 'excel', 'xlsx']:
-        tipo_url = 'excel' if 'excel' in tipo or 'xlsx' in tipo else 'csv'
-        return f"Pronto! Já preparei seu arquivo. Forneça o seguinte link para o usuário baixar o arquivo:\n\n[Clique aqui para baixar seu relatório em {tipo.upper()}](/api/download/{tipo_url})"
-    else:
-        return "Desculpe, só consigo gerar links para PDF, Excel ou CSV."
+            print(f"[Erro PDF Session]: {e}")
 
-def exportar_dados_usuario(tipo):
-    """Lógica do endpoint para gerar e retornar o arquivo real."""
-    usuario_id = session.get('usuario_id')
+        return (
+            "Seu relatório PDF foi preparado com sucesso!\n\n"
+            f"[Clique aqui para baixar seu relatório em PDF](/api/gerar-pdf-ia?periodo={periodo})"
+        )
+
+    if tipo in ["csv", "excel", "xlsx"]:
+        formato_url = "excel" if "excel" in tipo or "xlsx" in tipo else "csv"
+        return (
+            f"Relatório exportado com sucesso!\n\n"
+            f"[Clique aqui para baixar seu arquivo {tipo.upper()}](/api/download/{formato_url})"
+        )
+
+    return "Tipo de arquivo inválido. Formatos suportados: PDF, Excel ou CSV."
+
+
+def exportar_dados_usuario(tipo: str):
+    """Endpoint que efetivamente envia o arquivo (CSV/Excel) ao cliente."""
+    usuario_id = session.get("usuario_id")
     if not usuario_id:
         return "Não autorizado", 401
-        
+
     try:
         documento = dados_colecao.find_one({"usuario_id": usuario_id}, sort=[("criado_em", -1)])
         if not documento or not documento.get("dados"):
             return "Nenhum dado encontrado", 404
-            
+
         df = pd.DataFrame(documento["dados"])
-        
-        if tipo == 'csv':
-            csv_buffer = io.StringIO()
-            df.to_csv(csv_buffer, index=False, encoding='utf-8')
-            mem = io.BytesIO()
-            mem.write(csv_buffer.getvalue().encode('utf-8'))
-            mem.seek(0)
-            return send_file(mem, mimetype='text/csv', as_attachment=True, download_name='relatorio_datainsight.csv')
-            
-        elif tipo == 'excel':
+
+        if tipo == "csv":
+            buffer = io.BytesIO(df.to_csv(index=False, encoding="utf-8").encode("utf-8"))
+            return send_file(
+                buffer,
+                mimetype="text/csv",
+                as_attachment=True,
+                download_name="relatorio_datainsight.csv",
+            )
+
+        if tipo == "excel":
             excel_buffer = io.BytesIO()
-            with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
-                df.to_excel(writer, index=False, sheet_name='Dados Financeiros')
+            with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer:
+                df.to_excel(writer, index=False, sheet_name="Dados Financeiros")
             excel_buffer.seek(0)
-            return send_file(excel_buffer, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', as_attachment=True, download_name='relatorio_datainsight.xlsx')
-            
-    except Exception as e:
-        print(f"Erro ao exportar: {e}")
-        return "Erro ao exportar dados", 500
+            return send_file(
+                excel_buffer,
+                mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                as_attachment=True,
+                download_name="relatorio_datainsight.xlsx",
+            )
 
-# ==========================
-# AGENTES E ORQUESTRAÇÃO
-# ==========================
-def obter_time_agentes():
-    """Configura o Time de Agentes e o Orquestrador."""
+    except Exception as err:
+        print(f"[Erro Exportação]: {err}")
+        return "Erro interno ao gerar exportação", 500
 
-    modelo_selecionado = selecionar_modelo_ollama()
-    modelo_ia = Ollama(
-        id=modelo_selecionado,
-        host=os.getenv("OLLAMA_HOST", "http://localhost:11434")
-    )
-    
-    analista = Agent(
-        name="Analista de Dados",
-        role="Especialista em extração de dados reais, resumos financeiros e transações.",
-        model=modelo_ia,
-        tools=[obter_resumo_financeiro, obter_transacoes_recentes],
-        instructions=["Sempre busque os dados reais no banco antes de responder.", "Foque em explicar o que aconteceu e os números exatos."]
-    )
-    
-    cientista = Agent(
-        name="Cientista de Dados",
-        role="Especialista em previsões matemáticas, modelos e detecção de anomalias.",
-        model=modelo_ia,
-        tools=[prever_receita_mes_seguinte, detectar_anomalias_despesas],
-        instructions=["Use modelos para olhar o futuro do negócio.", "Alerte sobre comportamentos anormais nos gastos e na receita."]
-    )
-    
-    consultor = Agent(
-        name="Consultor Financeiro",
-        role="Especialista em estratégia, conselhos e cálculo de ponto de equilíbrio.",
-        model=modelo_ia,
-        tools=[calcular_ponto_equilibrio],
-        instructions=["Forneça dicas táticas para melhorar os números e calcule o ponto de equilíbrio para ajudar na tomada de decisão.", "Seja propositivo."]
-    )
-    
-    assistente_executivo = Agent(
-        name="Assistente Executivo",
-        role="Especialista em gerar arquivos e relatórios para download.",
-        model=modelo_ia,
-        tools=[gerar_arquivo_download],
-        instructions=["Se o usuário pedir para baixar, exportar ou gerar PDF, Excel ou CSV dos dados, use sua ferramenta para gerar o link de download correspondente.", "Se o usuário especificar um período (ex: 7 dias, mês de abril), repasse esse período no parâmetro 'periodo' (ex: '7_dias', 'mes_04').", "Retorne o link de download formatado em Markdown."]
-    )
-    
-    # Orquestrador (Team Leader)
-    orquestrador = Team(
-        name="Assistente Inteligente DataInsight",
-        model=modelo_ia,
-        members=[analista, cientista, consultor, assistente_executivo],
-        instructions=[
-            "Você é o líder do time virtual do DataInsight.",
-            "Deleque perguntas sobre dados passados e faturamento para o Analista de Dados.",
-            "Deleque perguntas sobre previsões e anomalias para o Cientista de Dados.",
-            "Deleque perguntas sobre estratégia e ponto de equilíbrio para o Consultor Financeiro.",
-            "Delegue pedidos de gerar, baixar ou exportar arquivos (PDF, Excel, CSV) para o Assistente Executivo.",
-            "INSTRUÇÃO CRÍTICA SOBRE GRÁFICOS: Para gerar gráficos, o systema já possui os dados no banco. Apenas crie uma resposta dizendo 'Aqui está o gráfico solicitado:' e insira EXATAMENTE esta tag no final do texto: <div class='grafico-ia-render' data-periodo='30_dias' data-tipo='linha' data-metricas='faturamento,lucro' data-titulo='Faturamento Mensal'></div>. Troque '30_dias' por 7_dias, 30_dias, 90_dias, ano_atual ou mes_XX conforme pedido. Troque 'linha' por 'barras' ou 'pizza' conforme o tipo. E MUDANÇA IMPORTANTE: Em 'data-metricas', liste (separado por vírgula e sem espaços) APENAS as métricas que o usuário pedir (ex: 'faturamento', ou 'lucro,despesas', ou 'faturamento,lucro,despesas'). Se ele não especificar, coloque 'faturamento,lucro'. O 'data-titulo' deve descrever o gráfico gerado.",
-            "Após os agentes retornarem os dados, sintetize a resposta final para o usuário de forma clara, profissional e amigável.",
-            "Formate a resposta livremente com Markdown. Você DEVE usar **negrito** para destacar valores, datas e números importantes. Sempre que fizer sentido, organize comparações e finanças em pequenas tabelas Markdown para ficar bem visual. Não economize em usar tabelas ou listas estruturadas."
-        ],
-        markdown=False
-    )
-    
-    return orquestrador
 
-def salvar_mensagem_historico(usuario_id, remetente, mensagem, sessao_id):
+# ==============================================================================
+# RAG — RETRIEVAL DOS DADOS DO BANCO (MongoDB)
+# ==============================================================================
+
+_STOPWORDS_PT = {
+    "a", "o", "os", "as", "um", "uma", "de", "da", "do", "das", "dos", "e", "em",
+    "no", "na", "nos", "nas", "por", "para", "com", "sem", "que", "qual", "quais",
+    "meu", "minha", "meus", "minhas", "seu", "sua", "sobre", "como", "é", "seria",
+    "tem", "ter", "foi", "ser", "está", "estão", "isso", "este", "esta", "esse",
+    "essa", "ao", "à", "às", "ou", "mais", "menos", "muito",
+}
+
+
+def _detectar_periodo_pergunta(texto: str) -> str:
+    t = (texto or "").lower()
+    if re.search(r"\b(7\s*dias|semana|ultimos?\s*7|últimos?\s*7)\b", t):
+        return "7_dias"
+    if re.search(r"\b(90\s*dias|trimestre|3\s*meses|ultimos?\s*90|últimos?\s*90)\b", t):
+        return "90_dias"
+    if re.search(r"\b(ano\s*atual|este\s*ano|anual|no\s*ano|do\s*ano)\b", t) or re.search(r"\bano\b", t):
+        return "ano_atual"
+    return "30_dias"
+
+
+def _tokens_busca(texto: str) -> set:
+    tokens = set(re.findall(r"[a-zA-ZÀ-ÿ0-9_]+", (texto or "").lower()))
+    return {t for t in tokens if len(t) > 2 and t not in _STOPWORDS_PT}
+
+
+def _carregar_documento_dados(usuario_id: str) -> Optional[Dict[str, Any]]:
+    if not usuario_id:
+        return None
+    return dados_colecao.find_one({"usuario_id": usuario_id}, sort=[("criado_em", -1)])
+
+
+def _resumo_kpis_do_df(df: pd.DataFrame, mapeamento: Dict[str, Any], periodo: str) -> str:
+    if df.empty:
+        return "Sem registros para o período."
+
+    col_data = mapeamento.get("data") or encontrar_coluna_data(df)
+    trabalho = df.copy()
+    if col_data and col_data in trabalho.columns:
+        trabalho = converter_datas(trabalho, col_data)
+        trabalho = filtrar_df(trabalho, col_data, periodo)
+
+    if trabalho.empty:
+        return f"Nenhum registro encontrado no período {periodo}."
+
+    fat = calcular_total_dinamico(trabalho, "faturamento", mapeamento, COL_FATURAMENTO)
+    desp = calcular_total_dinamico(trabalho, "despesa", mapeamento, COL_DESPESA)
+    luc = calcular_total_dinamico(trabalho, "lucro", mapeamento, COL_LUCRO) or (fat - desp)
+    margem = (luc / fat * 100) if fat else 0.0
+
+    return (
+        f"Período: {periodo}\n"
+        f"Registros: {len(trabalho)}\n"
+        f"Faturamento: R$ {fat:,.2f}\n"
+        f"Despesas: R$ {desp:,.2f}\n"
+        f"Lucro: R$ {luc:,.2f}\n"
+        f"Margem: {margem:.1f}%"
+    )
+
+
+def _chunk_serie_mensal(df: pd.DataFrame, mapeamento: Dict[str, Any]) -> Optional[str]:
+    col_data = mapeamento.get("data") or encontrar_coluna_data(df)
+    if not col_data or col_data not in df.columns:
+        return None
+
+    trabalho = converter_datas(df.copy(), col_data).dropna(subset=[col_data])
+    if trabalho.empty:
+        return None
+
+    trabalho["mes_ano"] = trabalho[col_data].dt.to_period("M").astype(str)
+    linhas = []
+    for mes, grupo in trabalho.groupby("mes_ano"):
+        fat = calcular_total_dinamico(grupo, "faturamento", mapeamento, COL_FATURAMENTO)
+        desp = calcular_total_dinamico(grupo, "despesa", mapeamento, COL_DESPESA)
+        luc = calcular_total_dinamico(grupo, "lucro", mapeamento, COL_LUCRO) or (fat - desp)
+        linhas.append(f"- {mes}: fat R$ {fat:,.2f} | desp R$ {desp:,.2f} | lucro R$ {luc:,.2f}")
+
+    if not linhas:
+        return None
+    return "Série mensal (faturamento/despesa/lucro):\n" + "\n".join(linhas[-12:])
+
+
+def _chunk_categorias(df: pd.DataFrame, mapeamento: Dict[str, Any]) -> Optional[str]:
+    col_cat = mapeamento.get("categoria")
+    if not col_cat or col_cat not in df.columns:
+        col_cat = next(
+            (c for c in df.columns if any(a.lower() == c.lower() for a in COL_CATEGORIA)),
+            None,
+        )
+    if not col_cat:
+        return None
+
+    col_valor = mapeamento.get("despesa") or mapeamento.get("faturamento")
+    if not col_valor or col_valor not in df.columns:
+        for aliases in (COL_DESPESA, COL_FATURAMENTO):
+            col_valor = next(
+                (c for c in df.columns if any(a.lower() == c.lower() for a in aliases)),
+                None,
+            )
+            if col_valor:
+                break
+    if not col_valor:
+        return None
+
+    tmp = df[[col_cat, col_valor]].copy()
+    tmp[col_valor] = pd.to_numeric(tmp[col_valor], errors="coerce").fillna(0)
+    ranking = tmp.groupby(col_cat)[col_valor].sum().sort_values(ascending=False).head(8)
+    if ranking.empty:
+        return None
+
+    linhas = [f"- {idx}: R$ {val:,.2f}" for idx, val in ranking.items()]
+    return f"Ranking por categoria ({col_cat} x {col_valor}):\n" + "\n".join(linhas)
+
+
+def _chunk_registros_recentes(df: pd.DataFrame, limite: int = 12) -> Optional[str]:
+    if df.empty:
+        return None
+    amostra = df.tail(limite)
+    cols = list(amostra.columns[:10])
+    texto = amostra[cols].to_string(index=False, max_cols=10)
+    return f"Últimos {len(amostra)} registros do banco:\n{texto}"
+
+
+def construir_chunks_rag(usuario_id: str, pergunta: str) -> List[Dict[str, Any]]:
+    """Monta documentos/chunks recuperáveis a partir dos dados do usuário no MongoDB."""
+    documento = _carregar_documento_dados(usuario_id)
+    if not documento or not documento.get("dados"):
+        return [{
+            "id": "sem_dados",
+            "titulo": "Disponibilidade de dados",
+            "conteudo": "Nenhum dataset financeiro encontrado no banco para este usuário.",
+            "obrigatorio": True,
+            "tags": {"dados", "banco", "vazio"},
+        }]
+
+    df = pd.DataFrame(documento["dados"])
+    mapeamento = obter_colunas_mapeadas(usuario_id) or {}
+    periodo = _detectar_periodo_pergunta(pergunta)
+    chunks: List[Dict[str, Any]] = []
+
+    meta = (
+        f"Fonte: MongoDB (coleção dados)\n"
+        f"Planilha: {documento.get('nome_planilha', 'não informado')}\n"
+        f"Atualizado em: {documento.get('atualizado_em') or documento.get('criado_em')}\n"
+        f"Total de registros: {len(df)}\n"
+        f"Colunas: {', '.join(map(str, df.columns.tolist()))}\n"
+        f"Mapeamento: {json.dumps(mapeamento, ensure_ascii=False, default=str) if mapeamento else 'não definido'}"
+    )
+    chunks.append({
+        "id": "metadados",
+        "titulo": "Metadados do dataset",
+        "conteudo": meta,
+        "obrigatorio": True,
+        "tags": {"planilha", "colunas", "metadados", "dataset", "banco"},
+    })
+
+    chunks.append({
+        "id": "kpis",
+        "titulo": f"KPIs financeiros ({periodo})",
+        "conteudo": _resumo_kpis_do_df(df, mapeamento, periodo),
+        "obrigatorio": True,
+        "tags": {
+            "faturamento", "receita", "vendas", "despesa", "despesas", "gastos",
+            "lucro", "margem", "kpi", "resumo", "financeiro", "performance",
+        },
+    })
+
+    for p_extra in ("7_dias", "30_dias", "90_dias", "ano_atual"):
+        if p_extra == periodo:
+            continue
+        chunks.append({
+            "id": f"kpis_{p_extra}",
+            "titulo": f"KPIs financeiros ({p_extra})",
+            "conteudo": _resumo_kpis_do_df(df, mapeamento, p_extra),
+            "obrigatorio": False,
+            "tags": {"comparar", "comparação", "periodo", "histórico", "tendencia"},
+        })
+
+    serie = _chunk_serie_mensal(df, mapeamento)
+    if serie:
+        chunks.append({
+            "id": "serie_mensal",
+            "titulo": "Evolução mensal",
+            "conteudo": serie,
+            "obrigatorio": False,
+            "tags": {"mensal", "evolução", "tendencia", "histórico", "mês", "mes", "série", "serie"},
+        })
+
+    cats = _chunk_categorias(df, mapeamento)
+    if cats:
+        chunks.append({
+            "id": "categorias",
+            "titulo": "Distribuição por categoria",
+            "conteudo": cats,
+            "obrigatorio": False,
+            "tags": {"categoria", "categorias", "grupo", "tipo", "setor", "ranking"},
+        })
+
+    recentes = _chunk_registros_recentes(df)
+    if recentes:
+        chunks.append({
+            "id": "registros",
+            "titulo": "Registros recentes",
+            "conteudo": recentes,
+            "obrigatorio": False,
+            "tags": {"transação", "transacoes", "registro", "lançamento", "detalhe", "linha", "tabela"},
+        })
+
+    chunks.append({
+        "id": "anomalias",
+        "titulo": "Análise de anomalias de despesas",
+        "conteudo": detectar_anomalias_despesas(),
+        "obrigatorio": False,
+        "tags": {"anomalia", "alerta", "pico", "atípico", "despesa", "risco"},
+    })
+    chunks.append({
+        "id": "previsao",
+        "titulo": "Previsão de receita",
+        "conteudo": prever_receita_mes_seguinte(),
+        "obrigatorio": False,
+        "tags": {"previsão", "previsao", "próximo", "proximo", "forecast", "projecao", "projeção"},
+    })
+    chunks.append({
+        "id": "equilibrio",
+        "titulo": "Ponto de equilíbrio",
+        "conteudo": calcular_ponto_equilibrio(),
+        "obrigatorio": False,
+        "tags": {"equilibrio", "equilíbrio", "breakeven", "ponto", "custos"},
+    })
+
+    return chunks
+
+
+def ranquear_chunks_rag(chunks: List[Dict[str, Any]], pergunta: str, top_k: int = 5) -> List[Dict[str, Any]]:
+    """Seleciona os chunks mais relevantes para a pergunta."""
+    tokens = _tokens_busca(pergunta)
+    ranqueados: List[Tuple[float, Dict[str, Any]]] = []
+
+    for chunk in chunks:
+        score = 1000.0 if chunk.get("obrigatorio") else 0.0
+        blob = f"{chunk.get('titulo', '')} {chunk.get('conteudo', '')}".lower()
+        tags = {str(t).lower() for t in chunk.get("tags", set())}
+
+        for tok in tokens:
+            if tok in tags:
+                score += 4.0
+            if tok in blob:
+                score += 1.5
+            if any(tok in tag for tag in tags):
+                score += 1.0
+
+        ranqueados.append((score, chunk))
+
+    ranqueados.sort(key=lambda x: x[0], reverse=True)
+
+    selecionados: List[Dict[str, Any]] = []
+    vistos = set()
+    for score, chunk in ranqueados:
+        if chunk["id"] in vistos:
+            continue
+        if score <= 0 and not chunk.get("obrigatorio"):
+            continue
+        selecionados.append(chunk)
+        vistos.add(chunk["id"])
+        if len(selecionados) >= top_k:
+            break
+
+    if not selecionados:
+        selecionados = [c for c in chunks if c.get("obrigatorio")][:2]
+
+    return selecionados
+
+
+def montar_contexto_rag(usuario_id: str, pergunta: str, top_k: int = 5) -> str:
+    """Pipeline RAG: busca no banco → chunking → ranking → contexto textual."""
+    if not usuario_id:
+        return "Usuário não autenticado — sem acesso aos dados do banco."
+
+    chunks = construir_chunks_rag(usuario_id, pergunta)
+    relevantes = ranquear_chunks_rag(chunks, pergunta, top_k=top_k)
+    fontes = [c["id"] for c in relevantes]
+    print(f"[RAG] usuario={usuario_id} fontes={fontes}")
+
+    blocos = [f"[Fonte {i}: {chunk['titulo']}]\n{chunk['conteudo']}" for i, chunk in enumerate(relevantes, start=1)]
+    return "\n\n".join(blocos) if blocos else "Sem contexto recuperado do banco."
+
+
+def montar_prompt_com_rag(mensagem_usuario: str, contexto_rag: str, historico_chat: str = "") -> str:
+    historico_bloco = ""
+    if historico_chat:
+        historico_bloco = f"\nHistórico recente da conversa:\n{historico_chat}\n"
+
+    return (
+        "Você é o assistente financeiro DataInsight.\n"
+        "Use PRIORITARIAMENTE o contexto recuperado do banco de dados do usuário (RAG).\n"
+        "Se o contexto não tiver a informação, diga claramente que não encontrou nos dados.\n"
+        "Responda em português, de forma objetiva, com números quando disponíveis.\n"
+        "Não invente valores que não estejam no contexto.\n\n"
+        f"=== CONTEXTO RAG (dados do MongoDB) ===\n{contexto_rag}\n"
+        f"=== FIM DO CONTEXTO ===\n"
+        f"{historico_bloco}"
+        f"Pergunta do usuário: {mensagem_usuario}"
+    )
+
+
+# ==============================================================================
+# ORQUESTRAÇÃO, HISTÓRICO E ROTAS CHATBOT
+# ==============================================================================
+
+def obter_time_agentes() -> GeminiOrchestrator:
+    """Instancia o orquestrador configurado com o Gemini."""
+    return GeminiOrchestrator()
+
+
+def salvar_mensagem_historico(usuario_id: str, remetente: str, mensagem: str, sessao_id: str) -> None:
+    """Registra uma interação no histórico de conversas no MongoDB."""
     try:
         chat_historico.insert_one({
             "usuario_id": usuario_id,
             "sessao_id": sessao_id,
             "remetente": remetente,
             "mensagem": mensagem,
-            "data": datetime.now()
+            "data": datetime.now(),
         })
-    except Exception as e:
-        print(f"Erro ao salvar historico: {e}")
+    except Exception as err:
+        print(f"[Erro Historico DB]: {err}")
+
 
 def buscar_sessoes_chatbot():
-    usuario_id = session.get('usuario_id')
+    """Retorna as sessões de chat salvas do usuário logado."""
+    usuario_id = session.get("usuario_id")
     if not usuario_id:
         return jsonify({"erro": "Não autorizado"}), 401
-    
-    # Agrupa por sessao_id pegando a primeira mensagem (do user) como titulo
+
     pipeline = [
         {"$match": {"usuario_id": usuario_id}},
         {"$sort": {"data": 1}},
         {"$group": {
             "_id": "$sessao_id",
             "primeira_mensagem": {"$first": "$mensagem"},
-            "data_criacao": {"$first": "$data"}
+            "data_criacao": {"$first": "$data"},
         }},
-        {"$sort": {"data_criacao": -1}}
+        {"$sort": {"data_criacao": -1}},
     ]
-    
+
     sessoes = list(chat_historico.aggregate(pipeline))
     resultado = []
+
     for s in sessoes:
-        titulo = s["primeira_mensagem"][:30] + "..." if len(s["primeira_mensagem"]) > 30 else s["primeira_mensagem"]
-        if "Olá! Sou seu Time" in titulo: titulo = "Conversa Padrão"
+        msg = s.get("primeira_mensagem", "")
+        titulo = (msg[:30] + "...") if len(msg) > 30 else msg
+        if "Olá! Sou seu Time" in titulo:
+            titulo = "Conversa Padrão"
+
         resultado.append({
             "sessao_id": s["_id"],
-            "titulo": titulo
+            "titulo": titulo,
         })
-        
+
     return jsonify({"sessoes": resultado})
 
+
 def buscar_historico_chatbot():
-    usuario_id = session.get('usuario_id')
+    """Recupera as mensagens de uma sessão específica."""
+    usuario_id = session.get("usuario_id")
     if not usuario_id:
         return jsonify({"erro": "Não autorizado"}), 401
-    
-    sessao_id = request.args.get('sessao_id')
+
+    sessao_id = request.args.get("sessao_id")
     query = {"usuario_id": usuario_id}
     if sessao_id:
         query["sessao_id"] = sessao_id
-        
+
     docs = chat_historico.find(query).sort("data", 1)
-    historico = []
-    for doc in docs:
-        historico.append({
+    historico = [
+        {
             "remetente": doc["remetente"],
             "mensagem": doc["mensagem"],
-            "data": doc["data"].strftime("%d/%m %H:%M")
-        })
+            "data": doc["data"].strftime("%d/%m %H:%M"),
+        }
+        for doc in docs
+    ]
     return jsonify({"historico": historico})
 
+
 def limpar_historico_chatbot():
-    usuario_id = session.get('usuario_id')
+    """Exclui mensagens do histórico (de uma sessão ou de todas)."""
+    usuario_id = session.get("usuario_id")
     if not usuario_id:
         return jsonify({"erro": "Não autorizado"}), 401
-    
+
     try:
-        sessao_id = request.args.get('sessao_id')
+        sessao_id = request.args.get("sessao_id")
+        filtros = {"usuario_id": usuario_id}
         if sessao_id:
-            chat_historico.delete_many({"usuario_id": usuario_id, "sessao_id": sessao_id})
-        else:
-            chat_historico.delete_many({"usuario_id": usuario_id})
+            filtros["sessao_id"] = sessao_id
+
+        chat_historico.delete_many(filtros)
         return jsonify({"success": True})
-    except Exception as e:
-        return jsonify({"erro": str(e)}), 500
+    except Exception as err:
+        return jsonify({"erro": str(err)}), 500
+
 
 def perguntar_chatbot():
+    """Endpoint principal para processar perguntas no Chatbot (com RAG)."""
     try:
-        dados = request.get_json()
-        mensagem_usuario = dados.get('mensagem')
-        sessao_id = dados.get('sessao_id', 'default')
-        usuario_id = session.get('usuario_id')
-        
+        dados = request.get_json() or {}
+        mensagem_usuario = dados.get("mensagem")
+        sessao_id = dados.get("sessao_id", "default")
+        usuario_id = session.get("usuario_id")
+
         if not mensagem_usuario:
             return jsonify({"erro": "Mensagem não fornecida"}), 400
-            
-        # Puxa ultimas 6 mensagens da sessão atual para dar memória de curto prazo à IA
+
         contexto_str = ""
         if usuario_id:
-            ultimas_mensagens = chat_historico.find({"usuario_id": usuario_id, "sessao_id": sessao_id}).sort("data", -1).limit(6)
-            mensagens_ordenadas = list(ultimas_mensagens)[::-1] # Inverte para ordem cronológica
-            for m in mensagens_ordenadas:
+            ultimas = chat_historico.find(
+                {"usuario_id": usuario_id, "sessao_id": sessao_id}
+            ).sort("data", -1).limit(6)
+
+            for m in reversed(list(ultimas)):
                 papel = "Usuário" if m["remetente"] == "user" else "Assistente"
                 contexto_str += f"{papel}: {m['mensagem']}\n"
-                
-        # Salva a mensagem atual ANTES de montar o contexto final
-        if usuario_id:
-            salvar_mensagem_historico(usuario_id, 'user', mensagem_usuario, sessao_id)
-            
+
+            salvar_mensagem_historico(usuario_id, "user", mensagem_usuario, sessao_id)
+
+        # RAG: recupera dados relevantes do MongoDB e monta o prompt
+        contexto_rag = montar_contexto_rag(usuario_id, mensagem_usuario, top_k=5)
+        prompt_final = montar_prompt_com_rag(mensagem_usuario, contexto_rag, contexto_str)
+
         orquestrador = obter_time_agentes()
-        
-        # Envia a mensagem com o contexto da memória embutido
-        if contexto_str:
-            mensagem_com_memoria = f"Lembre-se do nosso histórico recente:\n{contexto_str}\n\nAgora responda à nova mensagem do Usuário: {mensagem_usuario}"
-            resposta = orquestrador.run(mensagem_com_memoria)
-        else:
-            resposta = orquestrador.run(mensagem_usuario)
-        
+        resposta_obj = orquestrador.run(prompt_final)
+        resposta_texto = resposta_obj.content
+
         if usuario_id:
-            # Verifica se gerou um gráfico e salva na galeria
-            import re
-            from backend.db import galeria
-            from datetime import datetime
-            
-            div_matches = re.finditer(r"<div\s+class=['\"]grafico-ia-render['\"]([^>]*)>", resposta.content)
+            div_matches = re.finditer(r"<div\s+class=['\"]grafico-ia-render['\"]([^>]*)>", resposta_texto)
             for div in div_matches:
                 attrs = div.group(1)
-                periodo_match = re.search(r"data-periodo=['\"]([^'\"]+)['\"]", attrs)
-                tipo_match = re.search(r"data-tipo=['\"]([^'\"]+)['\"]", attrs)
-                titulo_match = re.search(r"data-titulo=['\"]([^'\"]+)['\"]", attrs)
-                metricas_match = re.search(r"data-metricas=['\"]([^'\"]+)['\"]", attrs)
-                
-                periodo = periodo_match.group(1) if periodo_match else "30_dias"
-                tipo = tipo_match.group(1) if tipo_match else "linha"
-                titulo = titulo_match.group(1) if titulo_match else ("Gráfico de " + tipo.capitalize())
-                metricas = metricas_match.group(1) if metricas_match else "faturamento,lucro"
-                
+                p_match = re.search(r"data-periodo=['\"]([^'\"]+)['\"]", attrs)
+                t_match = re.search(r"data-tipo=['\"]([^'\"]+)['\"]", attrs)
+                tit_match = re.search(r"data-titulo=['\"]([^'\"]+)['\"]", attrs)
+                m_match = re.search(r"data-metricas=['\"]([^'\"]+)['\"]", attrs)
+
                 galeria.insert_one({
                     "usuario_id": usuario_id,
                     "sessao_id": sessao_id,
-                    "periodo": periodo,
-                    "tipo": tipo,
-                    "titulo": titulo,
-                    "metricas": metricas,
-                    "criado_em": datetime.now()
+                    "periodo": p_match.group(1) if p_match else "30_dias",
+                    "tipo": t_match.group(1) if t_match else "linha",
+                    "titulo": tit_match.group(1) if tit_match else "Gráfico Renderizado",
+                    "metricas": m_match.group(1) if m_match else "faturamento,lucro",
+                    "criado_em": datetime.now(),
                 })
 
-            # Salva apenas o conteudo da resposta limpa no historico
-            salvar_mensagem_historico(usuario_id, 'bot', resposta.content, sessao_id)
-        
-        resposta_texto = resposta.content
-        resposta_voz = sintetizar_resposta_voz(resposta_texto)
+            salvar_mensagem_historico(usuario_id, "bot", resposta_texto, sessao_id)
 
+        resposta_voz = sintetizar_resposta_voz(resposta_texto)
         payload = {
             "resposta": resposta_texto,
-            "resposta_voz": bool(resposta_voz)
+            "resposta_voz": bool(resposta_voz),
+            "rag": True,
         }
+
         if resposta_voz:
-            # resposta_voz is expected to be (base64_str, mimetype)
-            try:
-                b64, mimetype = resposta_voz
-            except Exception:
-                b64, mimetype = (resposta_voz, 'audio/wav')
+            b64, mimetype = resposta_voz
             payload["resposta_voz_base64"] = b64
             payload["resposta_voz_mimetype"] = mimetype
 
         return jsonify(payload)
-    except Exception as e:
-        print(f"Erro no chatbot: {str(e)}")
-        return jsonify({"resposta": "Desculpe, tive um problema técnico ao processar sua pergunta. Tente novamente em instantes."}), 500
+
+    except Exception as err:
+        print(f"[Erro Chatbot Endpoint]: {err}")
+        return jsonify({
+            "resposta": "Desculpe, ocorreu um erro interno ao processar sua requisição."
+        }), 500
+
 
 def gerar_insight_diario():
-    """Gera um pequeno HTML com insights de IA para injetar no dashboard."""
+    """Gera bloco HTML formatado com 3 insights dinâmicos para a Dashboard."""
     try:
-        periodo = request.args.get('periodo', '30_dias')
+        periodo = request.args.get("periodo", "30_dias")
+        usuario_id = session.get("usuario_id")
         orquestrador = obter_time_agentes()
-        
+
+        pergunta_rag = f"insights financeiros do período {periodo} com resumo alerta e estratégia"
+        contexto_rag = montar_contexto_rag(usuario_id, pergunta_rag, top_k=4)
+
         prompt = (
-            f"Gere exatamente 3 bullet points de insights diretos e curtos sobre os meus dados do período ({periodo}). "
-            "Use o Analista para buscar os dados, o Cientista para anomalias/previsão, e o Consultor para uma dica de ouro. "
-            "Formate a resposta EXATAMENTE com 3 divs HTML, sem markdown extra. "
-            "Exemplo: "
-            "<div class='p-3 rounded mb-2' style='background: var(--cartao);'><p class='p mb-0'><strong> Resumo:</strong> Seu faturamento...</p></div>"
-            "<div class='p-3 rounded mb-2' style='background: var(--cartao);'><p class='p mb-0'><strong> Alerta:</strong> Suas despesas...</p></div>"
-            "<div class='p-3 rounded mb-2' style='background: var(--cartao);'><p class='p mb-0'><strong> Estratégia:</strong> O ponto de...</p></div>"
+            f"Com base EXCLUSIVAMENTE no contexto RAG abaixo, gere exatamente 3 bullet points "
+            f"de insights diretos e curtos sobre os dados do período ({periodo}). "
+            "Forneça um resumo geral, um alerta de despesas/anomalias e uma recomendação estratégica. "
+            "Formate a resposta EXATAMENTE com 3 divs HTML, sem qualquer formatação em markdown (sem ``` ou *). "
+            "Exemplo:\n"
+            "<div class='p-3 rounded mb-2' style='background: var(--cartao);'><p class='p mb-0'><strong>Resumo:</strong> ...</p></div>\n"
+            "<div class='p-3 rounded mb-2' style='background: var(--cartao);'><p class='p mb-0'><strong>Alerta:</strong> ...</p></div>\n"
+            "<div class='p-3 rounded mb-2' style='background: var(--cartao);'><p class='p mb-0'><strong>Estratégia:</strong> ...</p></div>\n\n"
+            f"=== CONTEXTO RAG ===\n{contexto_rag}\n=== FIM ==="
         )
-        
+
         resposta = orquestrador.run(prompt)
-        conteudo = resposta.content
-        
-        # Limpar crases caso o modelo responda com ```html
-        if conteudo.startswith('```html'):
-            conteudo = conteudo[7:]
-        if conteudo.startswith('```'):
-            conteudo = conteudo[3:]
-        if conteudo.endswith('```'):
-            conteudo = conteudo[:-3]
-        
-        # Remover asteriscos (formatação markdown)
-        conteudo = conteudo.replace('*', '')
-            
-        return jsonify({"html": conteudo.strip()})
-        
-    except Exception as e:
-        print(f"Erro ao gerar insight diário: {str(e)}")
-        fallback = "<div class='p-3 rounded' style='background: var(--cartao);'><p class='p mb-0'><strong>⚠️ Aviso:</strong> Dados insuficientes ou erro ao gerar insight automático. Verifique seu painel de dados.</p></div>"
+        conteudo = resposta.content.strip()
+
+        conteudo = re.sub(r"^```(html)?", "", conteudo, flags=re.IGNORECASE)
+        conteudo = re.sub(r"```$", "", conteudo).replace("*", "").strip()
+
+        return jsonify({"html": conteudo})
+
+    except Exception as err:
+        print(f"[Erro Insight Diário]: {err}")
+        fallback = (
+            "<div class='p-3 rounded' style='background: var(--cartao);'>"
+            "<p class='p mb-0'><strong>⚠️ Aviso:</strong> Não foi possível carregar os insights automáticos no momento.</p>"
+            "</div>"
+        )
         return jsonify({"html": fallback})
