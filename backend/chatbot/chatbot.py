@@ -1093,16 +1093,9 @@ def limpar_historico_chatbot():
 def perguntar_chatbot():
     """Endpoint principal para processar perguntas no Chatbot (com RAG)."""
     try:
-        dados = request.get_json(silent=True)
-        if dados is None:
-            try:
-                raw = request.data.decode('utf-8', errors='ignore')
-                dados = json.loads(raw) if raw else {}
-            except Exception:
-                dados = {}
-
-        mensagem_usuario = (dados.get("mensagem") or "").strip()
-        sessao_id = str(dados.get("sessao_id", "default") or "default")
+        dados = request.get_json() or {}
+        mensagem_usuario = dados.get("mensagem")
+        sessao_id = dados.get("sessao_id", "default")
         usuario_id = session.get("usuario_id")
 
         if not mensagem_usuario:
@@ -1115,8 +1108,8 @@ def perguntar_chatbot():
             ).sort("data", -1).limit(6)
 
             for m in reversed(list(ultimas)):
-                papel = "Usuário" if m.get("remetente") == "user" else "Assistente"
-                contexto_str += f"{papel}: {m.get('mensagem', '')}\n"
+                papel = "Usuário" if m["remetente"] == "user" else "Assistente"
+                contexto_str += f"{papel}: {m['mensagem']}\n"
 
             salvar_mensagem_historico(usuario_id, "user", mensagem_usuario, sessao_id)
 
@@ -1124,15 +1117,12 @@ def perguntar_chatbot():
         contexto_rag = montar_contexto_rag(usuario_id, mensagem_usuario, top_k=5)
         prompt_final = montar_prompt_com_rag(mensagem_usuario, contexto_rag, contexto_str)
 
-        resposta_texto = None
+        orquestrador = obter_time_agentes()
         try:
-            orquestrador = obter_time_agentes()
             resposta_obj = orquestrador.run(prompt_final)
-            resposta_texto = getattr(resposta_obj, 'content', None)
-            if not isinstance(resposta_texto, str):
-                raise ValueError('Resposta do orquestrador inválida')
-
-            if any(s in resposta_texto.lower() for s in [
+            resposta_texto = resposta_obj.content
+            # Detect common failure messages from the orchestrator and fallback
+            if isinstance(resposta_texto, str) and any(s in resposta_texto.lower() for s in [
                 'integração com a api gemini não está configurada',
                 'não consegui contatar a api gemini',
                 'não foi possível',
@@ -1147,9 +1137,6 @@ def perguntar_chatbot():
             traceback.print_exc()
             resposta_texto = gerar_resposta_fallback(usuario_id, mensagem_usuario, contexto_rag)
 
-        if resposta_texto is None:
-            resposta_texto = gerar_resposta_fallback(usuario_id, mensagem_usuario, contexto_rag)
-
         if usuario_id:
             div_matches = re.finditer(r"<div\s+class=['\"]grafico-ia-render['\"]([^>]*)>", resposta_texto)
             for div in div_matches:
@@ -1159,28 +1146,19 @@ def perguntar_chatbot():
                 tit_match = re.search(r"data-titulo=['\"]([^'\"]+)['\"]", attrs)
                 m_match = re.search(r"data-metricas=['\"]([^'\"]+)['\"]", attrs)
 
-                try:
-                    galeria.insert_one({
-                        "usuario_id": usuario_id,
-                        "sessao_id": sessao_id,
-                        "periodo": p_match.group(1) if p_match else "30_dias",
-                        "tipo": t_match.group(1) if t_match else "linha",
-                        "titulo": tit_match.group(1) if tit_match else "Gráfico Renderizado",
-                        "metricas": m_match.group(1) if m_match else "faturamento,lucro",
-                        "criado_em": datetime.now(),
-                    })
-                except Exception as err:
-                    print(f"[Erro Galeria]: {err}")
+                galeria.insert_one({
+                    "usuario_id": usuario_id,
+                    "sessao_id": sessao_id,
+                    "periodo": p_match.group(1) if p_match else "30_dias",
+                    "tipo": t_match.group(1) if t_match else "linha",
+                    "titulo": tit_match.group(1) if tit_match else "Gráfico Renderizado",
+                    "metricas": m_match.group(1) if m_match else "faturamento,lucro",
+                    "criado_em": datetime.now(),
+                })
 
             salvar_mensagem_historico(usuario_id, "bot", resposta_texto, sessao_id)
 
-        resposta_voz = None
-        try:
-            resposta_voz = sintetizar_resposta_voz(resposta_texto)
-        except Exception as err:
-            print(f"[Erro TTS Chatbot]: {err}")
-            traceback.print_exc()
-
+        resposta_voz = sintetizar_resposta_voz(resposta_texto)
         payload = {
             "resposta": resposta_texto,
             "resposta_voz": bool(resposta_voz),
@@ -1192,15 +1170,11 @@ def perguntar_chatbot():
             payload["resposta_voz_base64"] = b64
             payload["resposta_voz_mimetype"] = mimetype
 
-        response = jsonify(payload)
-        response.status_code = 200
-        return response
+        return jsonify(payload)
 
     except Exception as err:
         print(f"[Erro Chatbot Endpoint]: {err}")
-        traceback.print_exc()
         return jsonify({
-            "erro": "Desculpe, ocorreu um erro interno ao processar sua requisição.",
             "resposta": "Desculpe, ocorreu um erro interno ao processar sua requisição."
         }), 500
 
