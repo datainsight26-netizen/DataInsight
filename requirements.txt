@@ -16,3 +16,4 @@ kokoro
 soundfile
 gTTS
 openai
+mercadopago
