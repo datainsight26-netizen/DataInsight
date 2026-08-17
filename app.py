@@ -4,6 +4,7 @@ from flask_mail import Mail
 from functools import wraps
 import os
 import traceback
+import mercadopago
 from dotenv import load_dotenv
 #------------------ IMPORTAÇÕES BACKEND ------------------
 # Importação user
@@ -30,6 +31,8 @@ from backend.DashBoard.dashboard_rotas import dashboard_page, dashboard_dados
 from backend.dados.mapeamento import obter_mapeamento, salvar_mapeamento
 # Importação contato
 from backend.contato.contato import enviar_mensagem_contato
+# Importação pagamento
+from backend.pagamento.criar_assinatura import criar_assinatura_mp
 # Chatbot Import
 from backend.chatbot.chatbot import perguntar_chatbot, sintetizar_texto_voz, buscar_ultima_resposta_chatbot
 # Importação produtos
@@ -83,10 +86,39 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# =================== LANDING ===================
+# =================== LANDING & ASSINATURAS ===================
 @app.route("/")
 def pagina_landing():
     return render_template("index.html")
+
+@app.route("/assinaturas", endpoint="pagina_assinaturas")
+def pagina_assinaturas():
+    return render_template("sistema_pagamento/assinaturas.html")
+
+@app.route("/criar-assinatura", methods=['POST'])
+@app.route("/criar-preferencia", methods=['POST'])
+def rota_criar_assinatura():
+    return criar_assinatura_mp()
+
+@app.route('/sucesso-pagamento', endpoint="sucesso_pagamento")
+def sucesso_pagamento():
+    preapproval_id = request.args.get('preapproval_id') or request.args.get('payment_id')
+    status = request.args.get('status') or 'Aprovado'
+    return render_template('sistema_pagamento/sucesso.html', preapproval_id=preapproval_id, status=status)
+
+@app.route('/falha-pagamento', endpoint="falha_pagamento")
+def falha_pagamento():
+    return render_template('sistema_pagamento/falha.html')
+
+@app.route('/webhook-pagamento', methods=['POST'])
+def webhook_pagamento():
+    data = request.get_json() or {}
+    if data.get("type") == "subscription_preapproval":
+        preapproval_id = data.get("data", {}).get("id")
+        info = sdk_mp.preapproval().get(preapproval_id)
+        status = info.get("response", {}).get("status")
+        print(f"Status da assinatura {preapproval_id}: {status}")
+    return jsonify({"status": "ok"}), 200
 
 # =================== LOGIN ===================
 @app.route("/login")
