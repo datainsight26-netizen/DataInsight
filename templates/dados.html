@@ -1151,18 +1151,7 @@
                   </div>
                 </div>
 
-                <!-- Barra de fórmulas -->
-                <div class="formula-bar">
-                  <span class="formula-bar-label">ƒx</span>
-                  <input type="text" class="formula-bar-input" id="formulaBarInput"
-                    placeholder="=SOMA(col) | =MÉDIA(col) | Valor fixo..." readonly>
-                  <button class="excel-toolbar-btn" onclick="aplicarFormula()" title="Aplicar fórmula">
-                    <i class="fa-solid fa-play" style="font-size:10px;"></i>
-                  </button>
-                  <button class="excel-toolbar-btn" title="Ajuda" onclick="mostrarAjudaFormulas()">
-                    <i class="fa-solid fa-circle-question"></i>
-                  </button>
-                </div>
+
 
                 <!-- Tabela -->
                 <div class="excel-table-wrapper" id="excel-table-wrapper" data-ia-help="dados_tabela">
@@ -1197,20 +1186,13 @@
                   </span>
                   <div style="display:flex; gap: 8px; align-items: center; flex-wrap:wrap;">
                     <button class="botao botao--primario" type="button" id="btnAdicionarLinha">+ Linha</button>
-                    <button class="excel-toolbar-btn" type="button" onclick="toggleTotais()" id="btnToggleTotais"
-                      title="Mostrar/ocultar linha de totais">
-                      <i class="fa-solid fa-sigma"></i> Totais
+
+                    <button class="botao botao--primario" type="button" id="btnSalvarDados"
+                      title="Salva todas as alterações no banco de dados"
+                      style="background: linear-gradient(135deg, #10b981, #059669); border-color: #059669; gap: 6px; display:flex; align-items:center;">
+                      <i class="fa-solid fa-floppy-disk"></i> Salvar Alterações
                     </button>
-                    <button class="botao botao--suave" type="button" id="btnSalvarDados">
-                      <i class="fa-solid fa-floppy-disk"></i> Salvar
-                    </button>
-                    <div style="display:flex; align-items:center; gap:6px;">
-                      <span style="font-size:13px; color:var(--suave); font-weight:500;">Auto-save</span>
-                      <label class="switch-toggle" title="Ativar/Desativar salvamento automático">
-                        <input type="checkbox" id="checkSalvarAutomatico">
-                        <span class="slider-toggle-round"></span>
-                      </label>
-                    </div>
+
                     <button class="botao botao--select-voltar" type="button" id="btnVoltar">← Voltar</button>
                     <button class="botao botao--select-proximo" type="button" id="btnProximo">Próximo →</button>
                   </div>
