@@ -351,3 +351,257 @@ function toggleCheck(id) {
 }
 
 document.addEventListener('DOMContentLoaded', carregarDadosRelatorios);
+
+ /* =============================================
+       SIDEBAR
+    ============================================= */
+    function abrirSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarOverlay').classList.add('active'); }
+    function fecharSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('active'); }
+
+    /* =============================================
+       TOGGLE CHECK — visual state
+    ============================================= */
+    function toggleCheck(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.checked = !el.checked;
+      const wrap = document.getElementById('wrap-' + id);
+      if (wrap) wrap.classList.toggle('selecionado', el.checked);
+    }
+
+    /* =============================================
+       TOAST SYSTEM
+    ============================================= */
+    function showToast(msg, tipo = 'success') {
+      const toast = document.getElementById('toast-rel');
+      const msgEl = document.getElementById('toast-msg');
+      const icon = toast.querySelector('i');
+      msgEl.textContent = msg;
+      toast.className = tipo;
+      icon.className = tipo === 'success'
+        ? 'fa-solid fa-circle-check'
+        : tipo === 'error'
+          ? 'fa-solid fa-circle-exclamation'
+          : 'fa-solid fa-circle-info';
+      toast.classList.add('visivel');
+      setTimeout(() => toast.classList.remove('visivel'), 3500);
+    }
+
+    /* =============================================
+       HISTÓRICO LOCAL (localStorage)
+    ============================================= */
+    const HISTORY_KEY = 'di_relatorios_hist';
+    let filtroAtivo = 'todos';
+
+    function carregarHistorico() {
+      try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }
+      catch (e) { return []; }
+    }
+    function salvarHistorico(lista) {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(lista));
+    }
+    function adicionarAoHistorico(nome, periodo, url) {
+      const lista = carregarHistorico();
+      lista.unshift({
+        id: Date.now(),
+        nome,
+        periodo,
+        data: new Date().toISOString(),
+        dataFormatada: new Date().toLocaleDateString('pt-BR', {
+          day: '2-digit', month: 'short', year: 'numeric',
+          hour: '2-digit', minute: '2-digit'
+        }),
+        url
+      });
+      salvarHistorico(lista.slice(0, 50));
+      renderHistorico();
+    }
+    function removerDoHistorico(id) {
+      const lista = carregarHistorico().filter(r => r.id !== Number(id));
+      salvarHistorico(lista);
+      renderHistorico();
+      showToast('Relatório removido do histórico', 'info');
+    }
+    function filtrarPorPilula(lista) {
+      const agora = new Date();
+      if (filtroAtivo === 'hoje') {
+        return lista.filter(r => new Date(r.data).toDateString() === agora.toDateString());
+      }
+      if (filtroAtivo === 'semana') {
+        const lim = new Date(agora); lim.setDate(agora.getDate() - 7);
+        return lista.filter(r => new Date(r.data) >= lim);
+      }
+      if (filtroAtivo === 'mes') {
+        return lista.filter(r => {
+          const d = new Date(r.data);
+          return d.getMonth() === agora.getMonth() && d.getFullYear() === agora.getFullYear();
+        });
+      }
+      return lista;
+    }
+    function renderHistorico(busca = '') {
+      const lista = carregarHistorico();
+      const filtradosPilula = filtrarPorPilula(lista);
+      const query = busca.trim().toLowerCase();
+      const filtrados = query
+        ? filtradosPilula.filter(r =>
+          r.nome.toLowerCase().includes(query) ||
+          r.dataFormatada.toLowerCase().includes(query) ||
+          (r.periodo || '').toLowerCase().includes(query))
+        : filtradosPilula;
+
+      const listEl = document.getElementById('history-list');
+      const emptyEl = document.getElementById('history-empty');
+      const noResEl = document.getElementById('history-no-results');
+      const countEl = document.getElementById('history-count');
+      const qDisplay = document.getElementById('search-query-display');
+
+      countEl.textContent = lista.length;
+      const listaVazia = lista.length === 0;
+      const semResultados = !listaVazia && filtrados.length === 0 && query.length > 0;
+
+      emptyEl.style.display = listaVazia ? 'block' : 'none';
+      noResEl.classList.toggle('visivel', semResultados);
+      if (qDisplay) qDisplay.textContent = '"' + busca + '"';
+
+      if (listaVazia || semResultados) { listEl.innerHTML = ''; return; }
+
+      listEl.innerHTML = filtrados.map(r => `
+        <div class="history-item" data-id="${r.id}">
+          <div class="history-item__icon"><i class="fa-solid fa-file-pdf"></i></div>
+          <div class="history-item__info">
+            <div class="history-item__name" title="${r.nome}">${r.nome}</div>
+            <div class="history-item__meta">
+              <span class="history-item__date"><i class="fa-regular fa-clock"></i> ${r.dataFormatada}</span>
+              ${r.periodo ? `<span class="history-item__period">${r.periodo}</span>` : ''}
+              <span class="status-tag status-tag--ok"><i class="fa-solid fa-circle-check"></i> Gerado</span>
+            </div>
+          </div>
+          <div class="history-item__actions">
+            <button class="history-btn" onclick="baixarRelatorio('${r.url || ''}', '${r.nome.replace(/'/g, "\\'")}\')" title="Baixar PDF" aria-label="Baixar ${r.nome}">
+              <i class="fa-solid fa-download"></i>
+            </button>
+            <button class="history-btn history-btn--danger" onclick="removerDoHistorico(${r.id})" title="Remover do histórico" aria-label="Remover ${r.nome}">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+    function baixarRelatorio(url, nome) {
+      if (!url) { showToast('URL do relatório não encontrada', 'error'); return; }
+      const a = document.createElement('a');
+      a.href = url; a.download = nome + '.pdf'; a.click();
+      showToast('Download iniciado!', 'success');
+    }
+    function filtrarHistorico() {
+      const busca = document.getElementById('search-historico').value;
+      document.getElementById('search-clear').classList.toggle('visivel', busca.length > 0);
+      renderHistorico(busca);
+    }
+    function limparBusca() {
+      const input = document.getElementById('search-historico');
+      input.value = '';
+      document.getElementById('search-clear').classList.remove('visivel');
+      renderHistorico();
+      input.focus();
+    }
+    function setPill(el, filtro) {
+      filtroAtivo = filtro;
+      document.querySelectorAll('.pill').forEach(p => p.classList.remove('ativo'));
+      el.classList.add('ativo');
+      renderHistorico(document.getElementById('search-historico').value);
+    }
+
+    /* =============================================
+       PREVIEW MELHORADO
+    ============================================= */
+    function gerarPreviewMelhorado() {
+      if (typeof gerarPreview === 'function') gerarPreview();
+      const preview = document.getElementById('preview');
+      const emptyState = document.getElementById('preview-empty-state');
+      const status = document.getElementById('preview-status');
+      setTimeout(() => {
+        if (preview && preview.innerHTML.trim()) {
+          preview.style.display = 'block';
+          if (emptyState) emptyState.style.display = 'none';
+          if (status) {
+            const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            status.textContent = 'Atualizado às ' + now;
+          }
+        }
+      }, 100);
+    }
+
+    /* =============================================
+       EXPORTAR PDF MELHORADO
+    ============================================= */
+    function exportarPDFMelhorado() {
+      const btn = document.getElementById('btn-pdf');
+      const loadingText = btn.querySelector('.btn-loading-text');
+      const spinner = btn.querySelector('.rel-spinner');
+      const btnText = btn.querySelector('.btn-text');
+      if (btn) {
+        btn.setAttribute('data-loading', 'true');
+        if (btnText) btnText.style.display = 'none';
+        if (spinner) spinner.style.display = 'inline-block';
+        if (loadingText) loadingText.style.display = 'inline';
+        btn.disabled = true;
+      }
+      const nome = document.getElementById('nomeRel').value || 'Relatório';
+      const periodo = document.getElementById('perRel').value || 'Últimos 6 meses';
+      function resetBtn() {
+        if (btn) {
+          btn.removeAttribute('data-loading');
+          if (btnText) btnText.style.display = '';
+          if (spinner) spinner.style.display = 'none';
+          if (loadingText) loadingText.style.display = 'none';
+          btn.disabled = false;
+        }
+      }
+      // Intercept fetch for this call
+      const origFetch = window.fetch;
+      window.fetch = function (url, opts) {
+        return origFetch(url, opts).then(async res => {
+          window.fetch = origFetch;
+          if (url && url.includes('gerar-relatorio')) {
+            const clone = res.clone();
+            try {
+              const json = await clone.json();
+              resetBtn();
+              if (json.success && json.redirect) {
+                adicionarAoHistorico(nome, periodo, json.redirect);
+                showToast('Relatório "' + nome + '" gerado!', 'success');
+                setTimeout(() => { window.location.href = json.redirect + '?auto=1'; }, 800);
+              } else {
+                showToast(json.mensagem || 'Erro ao gerar relatório', 'error');
+              }
+            } catch (e) { resetBtn(); }
+          }
+          return res;
+        }).catch(err => {
+          window.fetch = origFetch;
+          resetBtn();
+          showToast('Erro de conexão. Verifique o console.', 'error');
+          throw err;
+        });
+      };
+      if (typeof exportarPDF === 'function') {
+        exportarPDF();
+      } else {
+        resetBtn();
+        showToast('Função de exportação não encontrada', 'error');
+      }
+    }
+
+    /* =============================================
+       INIT
+    ============================================= */
+    document.addEventListener('DOMContentLoaded', () => {
+      renderHistorico();
+      // Init card visual states
+      document.querySelectorAll('.card-opcao input[type="checkbox"]').forEach(cb => {
+        const wrap = document.getElementById('wrap-' + cb.id);
+        if (wrap) wrap.classList.toggle('selecionado', cb.checked);
+      });
+    });
