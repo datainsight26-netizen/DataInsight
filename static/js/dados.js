@@ -1548,7 +1548,51 @@ async function salvarDados(silencioso = false) {
         return obj;
     });
 
+    // ── Animação do botão ──
+    const btn = document.getElementById('btnSalvarDados');
+    const _animarBotao = (estado_btn) => {
+        if (!btn) return;
+        btn.disabled = true;
+        if (estado_btn === 'loading') {
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Salvando...`;
+            btn.style.background = 'linear-gradient(135deg, #3b82f6, #2563eb)';
+            btn.style.borderColor = '#2563eb';
+            btn.style.transform = 'scale(0.97)';
+        } else if (estado_btn === 'success') {
+            btn.innerHTML = `<i class="fa-solid fa-circle-check"></i> Salvo!`;
+            btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+            btn.style.borderColor = '#059669';
+            btn.style.transform = 'scale(1.06)';
+            btn.style.boxShadow = '0 0 18px rgba(16,185,129,0.45)';
+            btn.style.transition = 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)';
+            setTimeout(() => {
+                btn.style.transform = 'scale(1)';
+                btn.style.boxShadow = '';
+            }, 300);
+            setTimeout(() => {
+                btn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Salvar Alterações`;
+                btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                btn.style.borderColor = '#059669';
+                btn.style.transform = '';
+                btn.style.boxShadow = '';
+                btn.disabled = false;
+            }, 2500);
+        } else if (estado_btn === 'error') {
+            btn.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> Erro ao salvar`;
+            btn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+            btn.style.borderColor = '#dc2626';
+            btn.style.transform = 'scale(1)';
+            setTimeout(() => {
+                btn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Salvar Alterações`;
+                btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                btn.style.borderColor = '#059669';
+                btn.disabled = false;
+            }, 2500);
+        }
+    };
+
     try {
+        _animarBotao('loading');
         if (silencioso) mostrarStatusAutomacao('💾 Salvando...', 'info');
         const r = await fetch('/salvar-dados', {
             method: 'POST',
@@ -1562,6 +1606,7 @@ async function salvarDados(silencioso = false) {
         const data = await r.json();
         if (!r.ok) throw new Error(data.mensagem || 'Erro');
 
+        _animarBotao('success');
         if (silencioso) {
             mostrarStatusAutomacao('✓ Salvo automaticamente!', 'success');
         } else {
@@ -1578,6 +1623,7 @@ async function salvarDados(silencioso = false) {
         }
         atualizarPaginacao();
     } catch (e) {
+        _animarBotao('error');
         if (silencioso) mostrarStatusAutomacao('✗ Erro ao salvar.', 'warning');
         else mostrarToast('✗ Erro ao salvar!', 'error');
     }
