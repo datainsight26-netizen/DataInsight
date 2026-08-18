@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="DataInsight — Gere relatórios em PDF e Excel com seus dados." />
+  <meta name="description" content="DataInsight — Gere e gerencie relatórios em PDF com seus dados de negócio." />
   <title>DataInsight • Relatórios</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
@@ -11,6 +12,831 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@latest" defer></script>
+
+  <style>
+    /* =============================================
+       RELATÓRIOS — Estilos Premium Locais
+       ============================================= */
+
+    /* PAGE HEADER */
+    .rel-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .rel-header__text .migalhas {
+      font-size: 0.78rem;
+      color: var(--suave);
+      margin-bottom: 6px;
+      letter-spacing: 0.03em;
+    }
+
+    .rel-header__text h1 {
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: var(--texto);
+      line-height: 1.2;
+    }
+
+    .rel-header__text p {
+      font-size: 0.9rem;
+      color: var(--suave);
+      margin-top: 4px;
+    }
+
+    .rel-header__badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #3B82F6 0%, #6366F1 100%);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 999px;
+      letter-spacing: 0.04em;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+    }
+
+    /* TWO-COLUMN LAYOUT */
+    .rel-grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 960px) {
+      .rel-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* WIZARD CARD */
+    .wizard-card {
+      background: var(--cartao);
+      border: 1px solid var(--borda);
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+      overflow: hidden;
+      position: sticky;
+      top: 24px;
+    }
+
+    .wizard-card__header {
+      background: linear-gradient(135deg, #3B82F6 0%, #6366F1 100%);
+      padding: 22px 24px;
+      color: #fff;
+    }
+
+    .wizard-card__header h2 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+
+    .wizard-card__header p {
+      font-size: 0.8rem;
+      opacity: 0.85;
+    }
+
+    .wizard-card__body {
+      padding: 24px;
+    }
+
+    /* STEP LABELS */
+    .step-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--primaria);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 14px;
+    }
+
+    .step-label__num {
+      width: 22px;
+      height: 22px;
+      background: var(--primaria);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .step-divider {
+      border: none;
+      border-top: 1px dashed var(--borda);
+      margin: 20px 0;
+    }
+
+    /* CAMPOS */
+    .campo-rel {
+      margin-bottom: 14px;
+    }
+
+    .campo-rel label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--suave);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .campo-rel .entrada,
+    .campo-rel .selecao {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid var(--borda);
+      border-radius: 10px;
+      background: var(--fundo);
+      color: var(--texto);
+      font-family: var(--fonte);
+      font-size: 0.9rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+
+    .campo-rel .entrada:focus,
+    .campo-rel .selecao:focus {
+      border-color: var(--primaria);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+    }
+
+    /* OPTION CARDS */
+    .opcoes-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .card-opcao {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 14px;
+      background: var(--fundo);
+      border: 1.5px solid var(--borda);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      user-select: none;
+      position: relative;
+    }
+
+    .card-opcao:hover {
+      border-color: var(--primaria);
+      background: rgba(59, 130, 246, 0.04);
+      transform: translateX(2px);
+    }
+
+    .card-opcao.selecionado {
+      border-color: var(--primaria);
+      background: rgba(59, 130, 246, 0.07);
+    }
+
+    .card-opcao input[type="checkbox"] {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .card-opcao__check {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--borda);
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s;
+      color: transparent;
+      font-size: 0.65rem;
+    }
+
+    .card-opcao.selecionado .card-opcao__check {
+      background: var(--primaria);
+      border-color: var(--primaria);
+      color: #fff;
+    }
+
+    .card-opcao-icon {
+      width: 34px;
+      height: 34px;
+      background: linear-gradient(135deg, #3B82F6, #6366F1);
+      color: #fff;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      flex-shrink: 0;
+    }
+
+    .card-opcao-text h3 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--texto);
+      margin-bottom: 1px;
+    }
+
+    .card-opcao-text p {
+      font-size: 0.73rem;
+      color: var(--suave);
+    }
+
+    /* ACTION BUTTONS */
+    .rel-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .rel-actions .botao-rel {
+      flex: 1;
+      justify-content: center;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      padding: 11px 14px;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      border: none;
+      font-family: var(--fonte);
+    }
+
+    .botao-primario-rel {
+      background: linear-gradient(135deg, #3B82F6, #6366F1);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .botao-primario-rel:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(99, 102, 241, 0.4);
+    }
+
+    .botao-suave-rel {
+      background: var(--fundo);
+      color: var(--texto);
+      border: 1.5px solid var(--borda) !important;
+    }
+
+    .botao-suave-rel:hover {
+      border-color: var(--primaria) !important;
+      color: var(--primaria);
+      background: rgba(59, 130, 246, 0.05);
+    }
+
+    /* RIGHT PANEL */
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* PREVIEW PANEL */
+    .preview-wrap {
+      background: var(--cartao);
+      border: 1px solid var(--borda);
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+      overflow: hidden;
+    }
+
+    .preview-wrap__header {
+      padding: 16px 22px;
+      border-bottom: 1px solid var(--borda);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .preview-wrap__title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--texto);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .preview-wrap__title i {
+      color: var(--primaria);
+    }
+
+    .preview-empty {
+      padding: 48px 24px;
+      text-align: center;
+      color: var(--suave);
+    }
+
+    .preview-empty i {
+      font-size: 2.5rem;
+      opacity: 0.25;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .preview-empty p {
+      font-size: 0.88rem;
+    }
+
+    #preview {
+      padding: 24px;
+      display: none;
+    }
+
+    .preview-secao {
+      margin-bottom: 24px;
+    }
+
+    .preview-titulo {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--texto);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--borda);
+    }
+
+    .preview-titulo i {
+      color: var(--primaria);
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .kpi-card {
+      background: var(--fundo);
+      border: 1px solid var(--borda);
+      border-radius: 10px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+
+    .kpi-val {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--primaria);
+    }
+
+    .kpi-lbl {
+      font-size: 0.73rem;
+      color: var(--suave);
+      margin-top: 3px;
+    }
+
+    #preview table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.83rem;
+    }
+
+    #preview th {
+      background: var(--fundo);
+      color: var(--suave);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 2px solid var(--borda);
+    }
+
+    #preview td {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--borda);
+      color: var(--texto);
+    }
+
+    #preview tr:last-child td {
+      border-bottom: none;
+    }
+
+    #preview tr:hover td {
+      background: rgba(59, 130, 246, 0.03);
+    }
+
+    /* HISTORY CARD */
+    .history-card {
+      background: var(--cartao);
+      border: 1px solid var(--borda);
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+      overflow: hidden;
+    }
+
+    .history-card__header {
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--borda);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .history-card__title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--texto);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .history-card__title i {
+      color: var(--primaria);
+    }
+
+    .history-count {
+      background: rgba(59, 130, 246, 0.1);
+      color: var(--primaria);
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+    }
+
+    /* SEARCH BAR */
+    .search-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 22px;
+      border-bottom: 1px solid var(--borda);
+      background: var(--fundo);
+    }
+
+    .search-bar__icon {
+      color: var(--suave);
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+
+    .search-bar__input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-family: var(--fonte);
+      font-size: 0.88rem;
+      color: var(--texto);
+      outline: none;
+    }
+
+    .search-bar__input::placeholder {
+      color: var(--suave);
+    }
+
+    .search-bar__clear {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--suave);
+      font-size: 0.78rem;
+      padding: 4px;
+      border-radius: 50%;
+      transition: color 0.2s, background 0.2s;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .search-bar__clear:hover {
+      color: var(--perigo);
+      background: rgba(220, 38, 38, 0.08);
+    }
+
+    .search-bar__clear.visivel {
+      display: flex;
+    }
+
+    /* FILTER PILLS */
+    .filter-pills {
+      display: flex;
+      gap: 8px;
+      padding: 10px 22px;
+      border-bottom: 1px solid var(--borda);
+      overflow-x: auto;
+    }
+
+    .filter-pills::-webkit-scrollbar {
+      display: none;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1.5px solid var(--borda);
+      background: var(--fundo);
+      color: var(--suave);
+      white-space: nowrap;
+      transition: all 0.2s;
+      font-family: var(--fonte);
+    }
+
+    .pill:hover,
+    .pill.ativo {
+      border-color: var(--primaria);
+      color: var(--primaria);
+      background: rgba(59, 130, 246, 0.08);
+    }
+
+    /* HISTORY LIST */
+    .history-list {
+      padding: 8px 0;
+    }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 22px;
+      border-bottom: 1px solid var(--borda);
+      transition: background 0.15s;
+    }
+
+    .history-item:last-child {
+      border-bottom: none;
+    }
+
+    .history-item:hover {
+      background: rgba(59, 130, 246, 0.03);
+    }
+
+    .history-item__icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+      background: rgba(59, 130, 246, 0.1);
+      color: var(--primaria);
+    }
+
+    .history-item__info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .history-item__name {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--texto);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .history-item__meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 3px;
+      flex-wrap: wrap;
+    }
+
+    .history-item__date {
+      font-size: 0.73rem;
+      color: var(--suave);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .history-item__period {
+      font-size: 0.7rem;
+      background: var(--fundo);
+      border: 1px solid var(--borda);
+      color: var(--suave);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-weight: 500;
+    }
+
+    .history-item__actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .history-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      border: 1.5px solid var(--borda);
+      background: var(--fundo);
+      color: var(--suave);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.8rem;
+    }
+
+    .history-btn:hover {
+      border-color: var(--primaria);
+      color: var(--primaria);
+      background: rgba(59, 130, 246, 0.06);
+      transform: scale(1.05);
+    }
+
+    .history-btn--danger:hover {
+      border-color: var(--perigo);
+      color: var(--perigo);
+      background: rgba(220, 38, 38, 0.06);
+    }
+
+    .status-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    .status-tag--ok {
+      background: rgba(22, 163, 74, 0.1);
+      color: #16A34A;
+    }
+
+    /* EMPTY STATES */
+    .history-empty {
+      padding: 40px 24px;
+      text-align: center;
+      color: var(--suave);
+    }
+
+    .history-empty i {
+      font-size: 2.2rem;
+      opacity: 0.2;
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    .history-empty p {
+      font-size: 0.85rem;
+    }
+
+    .history-empty small {
+      display: block;
+      margin-top: 4px;
+      font-size: 0.75rem;
+      color: var(--suave);
+      opacity: 0.7;
+    }
+
+    .history-no-results {
+      padding: 32px 24px;
+      text-align: center;
+      color: var(--suave);
+      display: none;
+    }
+
+    .history-no-results.visivel {
+      display: block;
+    }
+
+    .history-no-results i {
+      font-size: 1.6rem;
+      opacity: 0.25;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .history-no-results p {
+      font-size: 0.84rem;
+    }
+
+    /* LOADING & SPINNER */
+    @keyframes rel-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .rel-spinner {
+      width: 15px;
+      height: 15px;
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: rel-spin 0.7s linear infinite;
+      display: none;
+    }
+
+    .btn-gerar-pdf[data-loading="true"] .btn-text {
+      display: none;
+    }
+
+    .btn-gerar-pdf[data-loading="true"] .rel-spinner {
+      display: inline-block;
+    }
+
+    /* TOAST */
+    #toast-rel {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1E293B;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 9999;
+      max-width: 320px;
+      pointer-events: none;
+    }
+
+    #toast-rel.visivel {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #toast-rel.success i {
+      color: #4ADE80;
+    }
+
+    #toast-rel.error i {
+      color: #F87171;
+    }
+
+    #toast-rel.info i {
+      color: #60A5FA;
+    }
+
+    @media (max-width: 640px) {
+      .rel-actions {
+        flex-direction: column;
+      }
+
+      .history-item {
+        padding: 12px 16px;
+      }
+
+      .search-bar,
+      .filter-pills {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+
+      .history-card__header {
+        padding: 14px 16px;
+      }
+
+      .kpi-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
 </head>
 
 <body>
@@ -22,122 +848,232 @@
     <div class="main">
       <header class="topbar" role="banner">
         <div class="topbar__left">
-          <button class="topbar__btn topbar__mobile-toggle" onclick="abrirSidebar()" aria-label="Abrir menu"><i class="fa-solid fa-bars"></i></button>
+          <button class="topbar__btn topbar__mobile-toggle" onclick="abrirSidebar()" aria-label="Abrir menu"><i
+              class="fa-solid fa-bars"></i></button>
           <span class="topbar__greeting">Olá, <strong>{{ session.usuario_nome }}</strong></span>
         </div>
         <div class="topbar__actions">
-          <button class="topbar__btn" onclick="alternarTema()" aria-label="Alternar tema" id="btnTema"><i class="fa-solid fa-moon"></i></button>
-          <a class="topbar__btn" href="{{ url_for('pagina_configuracoes') }}" title="Configurações"><i class="fa-solid fa-gear"></i></a>
+          <button class="topbar__btn" onclick="alternarTema()" aria-label="Alternar tema" id="btnTema"><i
+              class="fa-solid fa-moon"></i></button>
+          <a class="topbar__btn" href="{{ url_for('pagina_configuracoes') }}" title="Configurações"><i
+              class="fa-solid fa-gear"></i></a>
         </div>
       </header>
 
       <main id="conteudo" class="pagina" role="main" data-ia-help="page_relatorios">
         <div class="container">
-          <header class="pagina__cabecalho">
-            <div class="migalhas">Início &gt; Relatórios</div>
-            <h1 class="h1">Gerar Relatório</h1>
-            <p class="p">Selecione o que deseja incluir e gere seu relatório em segundos.</p>
-          </header>
 
-          <section class="cartao" style="margin-top: 24px;">
-            <h2 class="h2" style="margin-bottom: 16px;">Passo 1: Configuração Básica</h2>
+          <!-- PAGE HEADER -->
+          <div class="rel-header">
+            <div class="rel-header__text">
+              <div class="migalhas">Início &rsaquo; Relatórios</div>
+              <h1>Relatórios</h1>
+              <p>Gere, visualize e gerencie seus relatórios de negócio em PDF.</p>
+            </div>
+            <span class="rel-header__badge">
+              <i class="fa-solid fa-file-chart-column"></i> Central de Relatórios
+            </span>
+          </div>
 
-            <div class="grade grade--2" style="margin-bottom: 24px;">
-              <div class="campo">
-                <label for="nomeRel">Nome do Relatório</label>
-                <input type="text" class="entrada" id="nomeRel" placeholder="Ex: Análise Março 2026"
-                  value="Meu Relatório">
+          <!-- MAIN GRID -->
+          <div class="rel-grid">
+
+            <!-- LEFT: WIZARD CARD -->
+            <div class="wizard-card">
+              <div class="wizard-card__header">
+                <h2> Criar Relatório</h2>
+                <p>Configure e gere seu relatório em segundos</p>
               </div>
-              <div class="campo">
-                <label for="perRel">Período</label>
-                <select class="selecao" id="perRel">
-                  <option>Últimos 7 dias</option>
-                  <option>Últimos 30 dias</option>
-                  <option selected>Últimos 6 meses</option>
-                  <option>Este ano</option>
-                </select>
+              <div class="wizard-card__body">
+
+                <!-- STEP 1 -->
+                <div class="step-label">
+                  <div class="step-label__num">1</div>
+                  Configuração Básica
+                </div>
+                <div class="campo-rel">
+                  <label for="nomeRel"><i class="fa-solid fa-tag" style="margin-right:4px;opacity:.6;"></i> Nome do
+                    Relatório</label>
+                  <input type="text" class="entrada" id="nomeRel" placeholder="Ex: Análise Março 2026"
+                    value="Meu Relatório">
+                </div>
+                <div class="campo-rel">
+                  <label for="perRel"><i class="fa-solid fa-calendar" style="margin-right:4px;opacity:.6;"></i> Período
+                    de Análise</label>
+                  <select class="selecao" id="perRel">
+                    <option>Últimos 7 dias</option>
+                    <option>Últimos 30 dias</option>
+                    <option selected>Últimos 6 meses</option>
+                    <option>Este ano</option>
+                  </select>
+                </div>
+
+                <hr class="step-divider">
+
+                <!-- STEP 2 -->
+                <div class="step-label">
+                  <div class="step-label__num">2</div>
+                  Conteúdo do Relatório
+                </div>
+
+                <div class="opcoes-grid">
+                  <div class="card-opcao selecionado" onclick="toggleCheck('opt-kpi')" id="wrap-opt-kpi">
+                    <input type="checkbox" id="opt-kpi" checked>
+                    <div class="card-opcao__check"><i class="fa-solid fa-check"></i></div>
+                    <div class="card-opcao-icon"><i class="fa-solid fa-chart-bar"></i></div>
+                    <div class="card-opcao-text">
+                      <h3>Indicadores de Desempenho</h3>
+                      <p>Faturamento, Lucro, Despesas</p>
+                    </div>
+                  </div>
+
+                  <div class="card-opcao selecionado" onclick="toggleCheck('opt-tendencias')" id="wrap-opt-tendencias">
+                    <input type="checkbox" id="opt-tendencias" checked>
+                    <div class="card-opcao__check"><i class="fa-solid fa-check"></i></div>
+                    <div class="card-opcao-icon"><i class="fa-solid fa-chart-line"></i></div>
+                    <div class="card-opcao-text">
+                      <h3>Tendências de Crescimento</h3>
+                      <p>Evolução mensal de faturamento</p>
+                    </div>
+                  </div>
+
+                  <div class="card-opcao selecionado" onclick="toggleCheck('opt-margem')" id="wrap-opt-margem">
+                    <input type="checkbox" id="opt-margem" checked>
+                    <div class="card-opcao__check"><i class="fa-solid fa-check"></i></div>
+                    <div class="card-opcao-icon"><i class="fa-solid fa-percent"></i></div>
+                    <div class="card-opcao-text">
+                      <h3>Análise de Margem</h3>
+                      <p>Taxa de margem e performance</p>
+                    </div>
+                  </div>
+
+                  <div class="card-opcao selecionado" onclick="toggleCheck('opt-dados')" id="wrap-opt-dados">
+                    <input type="checkbox" id="opt-dados" checked>
+                    <div class="card-opcao__check"><i class="fa-solid fa-check"></i></div>
+                    <div class="card-opcao-icon"><i class="fa-solid fa-table"></i></div>
+                    <div class="card-opcao-text">
+                      <h3>Tabela de Dados Detalhada</h3>
+                      <p>Informações completas mês a mês</p>
+                    </div>
+                  </div>
+
+                  <div class="card-opcao selecionado" onclick="toggleCheck('opt-grafico')" id="wrap-opt-grafico">
+                    <input type="checkbox" id="opt-grafico" checked>
+                    <div class="card-opcao__check"><i class="fa-solid fa-check"></i></div>
+                    <div class="card-opcao-icon"><i class="fa-solid fa-chart-simple"></i></div>
+                    <div class="card-opcao-text">
+                      <h3>Gráfico de Faturamento</h3>
+                      <p>Visualização de séries temporais</p>
+                    </div>
+                  </div>
+
+                  <div class="card-opcao selecionado" onclick="toggleCheck('opt-insights')" id="wrap-opt-insights">
+                    <input type="checkbox" id="opt-insights" checked>
+                    <div class="card-opcao__check"><i class="fa-solid fa-check"></i></div>
+                    <div class="card-opcao-icon"><i class="fa-solid fa-lightbulb"></i></div>
+                    <div class="card-opcao-text">
+                      <h3>Insights &amp; Recomendações</h3>
+                      <p>Principais achados e oportunidades</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ACTIONS -->
+                <div class="rel-actions">
+                  <button class="botao-rel botao-suave-rel" onclick="gerarPreviewMelhorado()" id="btn-preview">
+                    <i class="fa-solid fa-eye"></i> Visualizar
+                  </button>
+                  <button class="botao-rel botao-primario-rel btn-gerar-pdf" onclick="exportarPDFMelhorado()"
+                    id="btn-pdf">
+                    <span class="btn-text"><i class="fa-solid fa-file-pdf"></i> Gerar PDF</span>
+                    <span class="rel-spinner"></span>
+                    <span class="btn-loading-text" style="display:none;">Gerando…</span>
+                  </button>
+                </div>
               </div>
             </div>
 
-            <h2 class="h2" style="margin-bottom: 16px;">Passo 2: Selecione o Conteúdo</h2>
+            <!-- RIGHT PANEL -->
+            <div class="right-panel">
 
-            <!-- Indicador de desempenho -->
-            <div class="card-opcao" onclick="toggleCheck('opt-kpi')">
-              <input type="checkbox" id="opt-kpi" checked>
-              <div class="card-opcao-icon"><i class="fa-solid fa-chart-bar"></i></div>
-              <div class="card-opcao-text">
-                <h3>Indicador de desempenho</h3>
-                <p>Faturamento, Lucro, Despesas, Crescimento</p>
+              <!-- PREVIEW PANEL -->
+              <div class="preview-wrap">
+                <div class="preview-wrap__header">
+                  <div class="preview-wrap__title">
+                    <i class="fa-solid fa-eye"></i> Pré-visualização
+                  </div>
+                  <span id="preview-status" style="font-size:0.75rem;color:var(--suave);">Clique em "Visualizar" para
+                    gerar</span>
+                </div>
+                <div id="preview-empty-state" class="preview-empty">
+                  <i class="fa-solid fa-file-magnifying-glass"></i>
+
+
+                  <p>Configure as opções e clique em <strong>Visualizar</strong> para ver o resumo aqui.</p>
+                </div>
+                <div id="preview"></div>
               </div>
-            </div>
 
-            <!-- Tendências -->
-            <div class="card-opcao" onclick="toggleCheck('opt-tendencias')">
-              <input type="checkbox" id="opt-tendencias" checked>
-              <div class="card-opcao-icon"><i class="fa-solid fa-chart-line"></i></div>
-              <div class="card-opcao-text">
-                <h3>Tendências de Crescimento</h3>
-                <p>Evolução mensal de faturamento e lucro</p>
+              <!-- HISTORY PANEL -->
+              <div class="history-card">
+                <div class="history-card__header">
+                  <div class="history-card__title">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    Histórico de Relatórios
+                    <span class="history-count" id="history-count">0</span>
+                  </div>
+                </div>
+
+                <!-- SEARCH BAR -->
+                <div class="search-bar">
+                  <i class="fa-solid fa-magnifying-glass search-bar__icon"></i>
+                  <input type="search" class="search-bar__input" id="search-historico"
+                    placeholder="Buscar por nome ou data do relatório…" autocomplete="off" aria-label="Buscar relatório"
+                    oninput="filtrarHistorico()">
+                  <button class="search-bar__clear" id="search-clear" onclick="limparBusca()" title="Limpar busca"
+                    aria-label="Limpar busca">
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+
+                <!-- FILTER PILLS -->
+                <div class="filter-pills">
+                  <button class="pill ativo" data-filtro="todos" onclick="setPill(this, 'todos')">
+                    <i class="fa-solid fa-list"></i> Todos
+                  </button>
+                  <button class="pill" data-filtro="hoje" onclick="setPill(this, 'hoje')">
+                    <i class="fa-solid fa-calendar-day"></i> Hoje
+                  </button>
+                  <button class="pill" data-filtro="semana" onclick="setPill(this, 'semana')">
+                    <i class="fa-solid fa-calendar-week"></i> Esta semana
+                  </button>
+                  <button class="pill" data-filtro="mes" onclick="setPill(this, 'mes')">
+                    <i class="fa-solid fa-calendar"></i> Este mês
+                  </button>
+                </div>
+
+                <!-- HISTORY LIST -->
+                <div class="history-list" id="history-list"></div>
+
+                <!-- EMPTY STATE -->
+                <div class="history-empty" id="history-empty" style="display:block;">
+                  <i class="fa-solid fa-file-circle-xmark"></i>
+                  <p>Nenhum relatório gerado ainda</p>
+                  <small>Os relatórios criados aparecerão aqui para download</small>
+                </div>
+
+                <!-- NO RESULTS -->
+                <div class="history-no-results" id="history-no-results">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                  <p>Nenhum resultado para <strong id="search-query-display"></strong></p>
+                </div>
               </div>
-            </div>
 
-            <!-- Margem -->
-            <div class="card-opcao" onclick="toggleCheck('opt-margem')">
-              <input type="checkbox" id="opt-margem" checked>
-              <div class="card-opcao-icon"><i class="fa-solid fa-percent"></i></div>
-              <div class="card-opcao-text">
-                <h3>Análise de Margem</h3>
-                <p>Taxa de margem e performance</p>
-              </div>
-            </div>
-
-            <!-- Dados Detalhados -->
-            <div class="card-opcao" onclick="toggleCheck('opt-dados')">
-              <input type="checkbox" id="opt-dados" checked>
-              <div class="card-opcao-icon"><i class="fa-solid fa-table"></i></div>
-              <div class="card-opcao-text">
-                <h3>Tabela de Dados Detalhada</h3>
-                <p>Informações completas mês a mês</p>
-              </div>
-            </div>
-
-            <!-- Gráfico -->
-            <div class="card-opcao" onclick="toggleCheck('opt-grafico')">
-              <input type="checkbox" id="opt-grafico" checked>
-              <div class="card-opcao-icon"><i class="fa-solid fa-chart-simple"></i></div>
-              <div class="card-opcao-text">
-                <h3>Gráfico de Faturamento</h3>
-                <p>Visualização de séries temporais</p>
-              </div>
-            </div>
-
-            <!-- Insights -->
-            <div class="card-opcao" onclick="toggleCheck('opt-insights')">
-              <input type="checkbox" id="opt-insights" checked>
-              <div class="card-opcao-icon"><i class="fa-solid fa-lightbulb"></i></div>
-              <div class="card-opcao-text">
-                <h3>Insights & Recomendações</h3>
-                <p>Principais achados e oportunidades</p>
-              </div>
-            </div>
-
-            <!-- BOTÕES -->
-            <div class="btn-group">
-              <button class="botao botao--primario" onclick="gerarPreview()">
-                <i class="fa-solid fa-eye"></i> Ver Resumo
-              </button>
-              <button class="botao botao--suave" onclick="exportarPDF()">
-                <i class="fa-solid fa-file-pdf"></i> Baixar PDF
-              </button>
-            </div>
-          </section>
-
-          <!-- PREVIEW -->
-          <div id="preview" class="preview-box"></div>
+            </div><!-- /right-panel -->
+          </div><!-- /rel-grid -->
 
         </div><!-- /container -->
 
-        <!-- Footer Interno -->
         {% include 'partials/footer.html' %}
       </main>
     </div>
@@ -149,7 +1085,15 @@
 
   <div vw class="enabled" id="Vlibras">
     <div vw-access-button class="active"></div>
-    <div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div>
+    <div vw-plugin-wrapper>
+      <div class="vw-plugin-top-wrapper"></div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast-rel" role="status" aria-live="polite">
+    <i class="fa-solid fa-circle-check"></i>
+    <span id="toast-msg"></span>
   </div>
 
   <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
@@ -157,9 +1101,6 @@
   <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
   <script src="{{ url_for('static', filename='js/relatorios.js') }}"></script>
-  <script>
-    function abrirSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sidebarOverlay').classList.add('active');}
-    function fecharSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active');}
-  </script>
 </body>
+
 </html>
