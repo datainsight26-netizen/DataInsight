@@ -1259,11 +1259,11 @@ function renderizarAbasTabelas() {
     if (_tabelas.length === 0) { container.style.display = 'none'; return; }
     container.style.display = 'block';
     bar.innerHTML = _tabelas.map(t => `
-        <div class="table-tab ${t.id === _tabelaAtualId ? 'active' : ''}" onclick="ativarTabela('${t.id}')">
+        <div class="table-tab-pill ${t.id === _tabelaAtualId ? 'active' : ''}" onclick="ativarTabela('${t.id}')">
             <i class="fa-solid fa-table" style="font-size:11px;"></i>
-            ${escapeHtml(t.nome)}
-            <button class="tab-close" onclick="event.stopPropagation();fecharTabela('${t.id}')" title="Fechar tabela">✕</button>
-        </div>`).join('') + `<button class="table-tab-add" onclick="abrirModalNovaTabela()" title="Nova tabela">+</button>`;
+            <span>${escapeHtml(t.nome)}</span>
+            <button class="tab-close-btn" onclick="event.stopPropagation();fecharTabela('${t.id}')" title="Fechar tabela">✕</button>
+        </div>`).join('') + `<button class="btn-nova-tabela-tab" onclick="abrirModalNovaTabela()" title="Criar nova tabela"><i class="fa-solid fa-plus"></i> Nova Tabela</button>`;
 }
 
 function ativarTabela(id) {

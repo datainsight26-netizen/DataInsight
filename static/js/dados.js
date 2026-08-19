@@ -781,10 +781,11 @@ function renderizarColunas() {
     container.innerHTML = '';
     estado.colunasAtuais.forEach(nome => {
         const div = document.createElement('div');
-        div.style.cssText = 'display: flex; gap: 8px; min-width: 200px; max-width: 100%;';
+        div.className = 'column-chip-edit';
         div.innerHTML = `
-            <input type="text" class="entrada entrada-coluna" value="${escapeHtml(nome)}" style="flex: 1; min-width: 0;">
-            <button class="botao botao--delet botao-remover-coluna" type="button" style="padding: 10px 12px; flex-shrink: 0;" title="Remover">✕</button>
+            <i class="fa-solid fa-grip-vertical" style="color:var(--suave); font-size:11px; opacity:0.6;"></i>
+            <input type="text" class="entrada entrada-coluna" value="${escapeHtml(nome)}" placeholder="Nome da coluna">
+            <button class="btn-remover-col botao-remover-coluna" type="button" title="Remover coluna">✕</button>
         `;
         const input = div.querySelector('.entrada-coluna');
         if (input) {
@@ -1114,10 +1115,11 @@ function adicionarNovaColuna() {
     if (!container) return;
     salvarEstadoHistorico();
     const div = document.createElement('div');
-    div.style.cssText = 'display: flex; gap: 8px; min-width: 200px; max-width: 100%;';
+    div.className = 'column-chip-edit';
     div.innerHTML = `
-        <input type="text" class="entrada entrada-coluna" placeholder="Nova coluna" style="flex: 1; min-width: 0;">
-        <button class="botao botao--delet botao-remover-coluna" type="button" style="padding: 10px 12px; flex-shrink: 0;" title="Remover">✕</button>
+        <i class="fa-solid fa-grip-vertical" style="color:var(--suave); font-size:11px; opacity:0.6;"></i>
+        <input type="text" class="entrada entrada-coluna" placeholder="Nova coluna">
+        <button class="btn-remover-col botao-remover-coluna" type="button" title="Remover coluna">✕</button>
     `;
     container.appendChild(div);
     const input = div.querySelector('.entrada-coluna');
