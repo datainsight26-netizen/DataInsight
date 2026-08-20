@@ -1,17 +1,19 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DataInsight • Assinatura de Planos</title>
-  
+
   <!-- Fontes & Estilos Base -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-  
+
   <!-- CSS DataInsight -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/design-system.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
@@ -92,14 +94,54 @@
     }
 
     @keyframes pulse-border {
-      0%, 100% { border-color: rgba(59, 130, 246, 0.6); }
-      50% { border-color: rgba(96, 165, 250, 1); }
+
+      0%,
+      100% {
+        border-color: rgba(59, 130, 246, 0.6);
+      }
+
+      50% {
+        border-color: rgba(96, 165, 250, 1);
+      }
     }
+
     .popular-glow {
       animation: pulse-border 3s infinite ease-in-out;
     }
+
+    /* Locked / Em breve styles */
+    .locked {
+      filter: grayscale(100%) contrast(0.9) brightness(0.85);
+      opacity: 0.9;
+      pointer-events: none;
+    }
+
+    .coming-soon-overlay {
+      pointer-events: none;
+      /* allow underlying pointer locked state */
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.45);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.95rem;
+      border-radius: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .coming-soon-badge {
+      background: rgba(255, 255, 255, 0.06);
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
   </style>
 </head>
+
 <body>
 
   <!-- Header DataInsight -->
@@ -107,25 +149,30 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-16">
         <a href="/" class="flex items-center gap-3 group">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
+          <div
+            class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
             <i class="fa-solid fa-chart-column text-lg"></i>
           </div>
           <div class="flex flex-col">
             <span class="text-xl font-bold tracking-tight texto-titulo flex items-center gap-2">
               DataInsight
-              <span class="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30 font-medium">Assinatura</span>
+              <span
+                class="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30 font-medium">Assinatura</span>
             </span>
           </div>
         </a>
 
         <div class="flex items-center gap-3 text-xs sm:text-sm">
           <!-- Botão de Alternar Tema Padrão do Sistema -->
-          <button onclick="alternarTema()" type="button" class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all flex items-center gap-2 text-xs font-semibold shadow-sm" title="Alternar entre modo claro e escuro">
+          <button onclick="alternarTema()" type="button"
+            class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all flex items-center gap-2 text-xs font-semibold shadow-sm"
+            title="Alternar entre modo claro e escuro">
             <i class="fa-solid fa-moon text-blue-500 dark:text-blue-400"></i>
             <span class="hidden sm:inline">Alternar Tema</span>
           </button>
 
-          <span class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20 font-medium">
+          <span
+            class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20 font-medium">
             <i class="fa-solid fa-shield-halved"></i>
             SSL 256-bit
           </span>
@@ -136,22 +183,24 @@
 
   <!-- Principal -->
   <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
-    
+
     <!-- Hero / Headline -->
     <div class="text-center max-w-3xl mx-auto mb-12">
       <h1 class="text-3xl sm:text-4xl font-extrabold texto-titulo tracking-tight mb-4">
         Escolha o plano ideal para alavancar suas análises
       </h1>
       <p class="texto-sub text-base sm:text-lg">
-        Desbloqueie inteligência artificial avançada, geração automatizada de relatórios e dashboards interativos para a sua empresa.
+        Desbloqueie inteligência artificial avançada, geração automatizada de relatórios e dashboards interativos para a
+        sua empresa.
       </p>
     </div>
 
     <!-- Grid de Planos -->
     <div class="grid lg:grid-cols-3 gap-8 mb-12">
-      
+
       <!-- Plano MEI -->
-      <div id="card-mei" onclick="selecionarPlano('MEI', 150.00, 'card-mei')" class="plan-card card-plano p-6 flex flex-col justify-between">
+      <div id="card-mei" onclick="selecionarPlano('MEI', 150.00, 'card-mei')"
+        class="plan-card card-plano p-6 flex flex-col justify-between">
         <div>
           <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-bold texto-titulo">DataInsight MEI</h3>
@@ -177,22 +226,25 @@
             </li>
           </ul>
         </div>
-        <button type="button" class="w-full py-2.5 px-4 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 texto-titulo font-medium text-sm transition-colors flex items-center justify-center gap-2">
+        <button type="button"
+          class="w-full py-2.5 px-4 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 texto-titulo font-medium text-sm transition-colors flex items-center justify-center gap-2">
           <span>Selecionar MEI</span>
         </button>
       </div>
 
       <!-- Plano ME (Recomendado) -->
-      <div id="card-me" onclick="selecionarPlano('ME', 250.00, 'card-me')" class="plan-card card-plano p-6 flex flex-col justify-between selected popular-glow relative">
-        <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider text-white plan-badge shadow-md">
+      <div id="card-me" onclick="selecionarPlano('ME', 250.00, 'card-me')"
+        class="plan-card card-plano p-6 flex flex-col justify-between selected popular-glow relative">
+        <!-- <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider text-white plan-badge shadow-md">
           <i class="fa-solid fa-crown text-amber-300 mr-1"></i> Mais Escolhido
-        </div>
+        </div> -->
         <div>
           <div class="flex justify-between items-center mb-4 pt-2">
             <h3 class="text-lg font-bold texto-titulo flex items-center gap-2">
               DataInsight ME
             </h3>
-            <span class="p-2 rounded-lg bg-blue-500/20 text-blue-500 text-sm"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+            <span class="p-2 rounded-lg bg-blue-500/20 text-blue-500 text-sm"><i
+                class="fa-solid fa-wand-magic-sparkles"></i></span>
           </div>
           <p class="texto-sub text-xs mb-6">Para Microempresas (ME) em crescimento com IA e análises avançadas.</p>
           <div class="flex items-baseline gap-1 mb-6">
@@ -217,13 +269,15 @@
             </li>
           </ul>
         </div>
-        <button type="button" class="w-full py-2.5 px-4 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-colors shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2">
+        <button type="button"
+          class="w-full py-2.5 px-4 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-colors shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2">
           <span>Selecionado</span> <i class="fa-solid fa-circle-check text-xs"></i>
         </button>
       </div>
 
       <!-- Plano Empresas -->
-      <div id="card-empresas" onclick="selecionarPlano('Empresas', 400.00, 'card-empresas')" class="plan-card card-plano p-6 flex flex-col justify-between">
+      <div id="card-empresas" onclick="selecionarPlano('Empresas', 400.00, 'card-empresas')"
+        class="plan-card card-plano p-6 flex flex-col justify-between">
         <div>
           <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-bold texto-titulo">DataInsight Empresas</h3>
@@ -249,7 +303,8 @@
             </li>
           </ul>
         </div>
-        <button type="button" class="w-full py-2.5 px-4 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 texto-titulo font-medium text-sm transition-colors flex items-center justify-center gap-2">
+        <button type="button"
+          class="w-full py-2.5 px-4 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 texto-titulo font-medium text-sm transition-colors flex items-center justify-center gap-2">
           <span>Selecionar Empresas</span>
         </button>
       </div>
@@ -259,7 +314,8 @@
     <!-- Painel de Resumo do Checkout -->
     <div class="max-w-2xl mx-auto">
       <div class="card-plano p-8 shadow-xl">
-        <h3 class="text-xl font-bold texto-titulo mb-4 pb-3 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2">
+        <h3
+          class="text-xl font-bold texto-titulo mb-4 pb-3 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2">
           <i class="fa-solid fa-receipt text-blue-500"></i> Resumo da Assinatura
         </h3>
 
@@ -274,7 +330,8 @@
           </div>
           <div class="flex justify-between items-center">
             <span class="texto-sub">Acesso IA DataInsight:</span>
-            <span class="text-emerald-600 dark:text-emerald-400 font-medium"><i class="fa-solid fa-circle-check"></i> Incluído</span>
+            <span class="text-emerald-600 dark:text-emerald-400 font-medium"><i class="fa-solid fa-circle-check"></i>
+              Incluído</span>
           </div>
           <div class="flex justify-between items-center pt-3 border-t border-slate-200 dark:border-slate-800">
             <span class="texto-sub">Subtotal:</span>
@@ -291,12 +348,15 @@
         </div>
 
         <div>
-          <button id="btn-comprar" onclick="comprar()" class="w-full py-4 px-6 rounded-xl btn-checkout text-white font-bold text-base shadow-lg shadow-blue-600/30 flex items-center justify-center gap-3">
+          <button id="btn-comprar" onclick="comprar()"
+            class="w-full py-4 px-6 rounded-xl btn-checkout text-white font-bold text-base shadow-lg shadow-blue-600/30 flex items-center justify-center gap-3">
             <i class="fa-solid fa-lock"></i>
-            <span id="btn-texto">Assinar com Mercado Pago</span>
+            <span id="btn-texto">Assinar</span>
           </button>
 
-          <div id="erro-msg" class="hidden mt-3 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-500 text-xs text-center"></div>
+          <div id="erro-msg"
+            class="hidden mt-3 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-500 text-xs text-center">
+          </div>
         </div>
       </div>
     </div>
@@ -330,6 +390,9 @@
       setTema();
     }
 
+    // Flag controlada pelo servidor: se true, bloqueia os planos ME e Empresas
+    const LOCK_PLANS = {{ block_plans| tojson }};
+
     let planoAtual = {
       nome: 'ME',
       titulo: 'Assinatura DataInsight ME',
@@ -337,7 +400,35 @@
       cardId: 'card-me'
     };
 
+    // Aplica bloqueio visual e interativo quando LOCK_PLANS === true
+    function applyPlanLocks() {
+      if (!LOCK_PLANS) return;
+      const toLock = ['card-me', 'card-empresas'];
+      toLock.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        // add lock visual
+        el.classList.add('locked');
+        // disable onclick by removing attribute
+        el.removeAttribute('onclick');
+        // replace button with disabled 'Em breve'
+        const btn = el.querySelector('button');
+        if (btn) {
+          btn.className = 'w-full py-2.5 px-4 rounded-lg bg-slate-400 text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2';
+          btn.innerHTML = '<span class="coming-soon-badge">Em breve</span>';
+          btn.disabled = true;
+        }
+        // add overlay label
+        const overlay = document.createElement('div');
+        overlay.className = 'coming-soon-overlay';
+        overlay.innerHTML = '<div class="coming-soon-badge">Em breve</div>';
+        el.appendChild(overlay);
+      });
+    }
     function selecionarPlano(nome, preco, cardId) {
+      // Se o cartão está bloqueado, ignore seleção
+      const targetEl = document.getElementById(cardId);
+      if (targetEl && targetEl.classList.contains('locked')) return;
       planoAtual = {
         nome: nome,
         titulo: `Assinatura DataInsight ${nome}`,
@@ -370,17 +461,20 @@
       document.getElementById('resumo-subtotal').innerText = precoFormatado;
       document.getElementById('resumo-total').innerText = precoFormatado;
     }
-
     async function comprar() {
       const btn = document.getElementById('btn-comprar');
       const btnTexto = document.getElementById('btn-texto');
       const erroMsg = document.getElementById('erro-msg');
-      
+
       erroMsg.classList.add('hidden');
       btn.disabled = true;
       btnTexto.innerText = 'Processando...';
 
       try {
+        // Prevent buying a locked plan
+        if (document.getElementById(planoAtual.cardId).classList.contains('locked')) {
+          throw new Error('Plano indisponível no momento.');
+        }
         const resposta = await fetch('/criar-assinatura', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -407,6 +501,11 @@
         btnTexto.innerText = 'Assinar com Mercado Pago';
       }
     }
+    // Aplicar locks assim que o DOM estiver pronto
+    document.addEventListener('DOMContentLoaded', function () {
+      applyPlanLocks();
+    });
   </script>
 </body>
+
 </html>
