@@ -17,3 +17,4 @@ soundfile
 gTTS
 openai
 mercadopago
+stripe
