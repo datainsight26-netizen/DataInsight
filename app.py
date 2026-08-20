@@ -6,6 +6,10 @@ import os
 import traceback
 import mercadopago
 from dotenv import load_dotenv
+
+# Load environment variables early so backend modules can read them on import
+load_dotenv()
+
 #------------------ IMPORTAÇÕES BACKEND ------------------
 # Importação user
 from backend.user import tela_cadastro, login, esqueceu_senha, verificar_codigo, resetar_senha, reenviar_codigo
@@ -32,7 +36,7 @@ from backend.dados.mapeamento import obter_mapeamento, salvar_mapeamento
 # Importação contato
 from backend.contato.contato import enviar_mensagem_contato
 # Importação pagamento
-from backend.pagamento.criar_assinatura import criar_assinatura_mp
+from backend.pagamento.criar_assinatura import criar_assinatura_stripe, verificar_token_stripe
 # Chatbot Import
 from backend.chatbot.chatbot import perguntar_chatbot, sintetizar_texto_voz, buscar_ultima_resposta_chatbot
 # Importação produtos
@@ -40,7 +44,6 @@ from backend.produtos import (
     salvar_produto, buscar_produtos_por_nome, obter_produto_exato,
     listar_produtos, obter_categorias, deletar_produto, obter_estatisticas_produtos
 )
-load_dotenv()
 
 key = os.getenv('SECRET_KEY')
 
@@ -93,12 +96,15 @@ def pagina_landing():
 
 @app.route("/assinaturas", endpoint="pagina_assinaturas")
 def pagina_assinaturas():
-    return render_template("sistema_pagamento/assinaturas.html")
+    # Controle para bloquear temporariamente alguns planos (preto-e-branco com 'Em breve').
+    # Defina para False para reativar todos os planos.
+    block_plans = True
+    return render_template("sistema_pagamento/assinaturas.html", block_plans=block_plans)
 
 @app.route("/criar-assinatura", methods=['POST'])
 @app.route("/criar-preferencia", methods=['POST'])
 def rota_criar_assinatura():
-    return criar_assinatura_mp()
+    return criar_assinatura_stripe()
 
 @app.route('/sucesso-pagamento', endpoint="sucesso_pagamento")
 def sucesso_pagamento():
@@ -119,6 +125,12 @@ def webhook_pagamento():
         status = info.get("response", {}).get("status")
         print(f"Status da assinatura {preapproval_id}: {status}")
     return jsonify({"status": "ok"}), 200
+
+
+@app.route('/verificar-token-mp', methods=['GET'])
+def rota_verificar_token_mp():
+    """Rota de diagnóstico para checar se a chave Stripe está válida."""
+    return verificar_token_stripe()
 
 # =================== LOGIN ===================
 @app.route("/login")
@@ -363,11 +375,17 @@ def api_analise():
 def ultimo_periodo():
     return obter_ultimo_periodo()
 
-# =================== IA PAGE ===================
+# =================== IA PAGE & ASSISTENTE VIRTUAL ===================
 @app.route("/ia")
 @login_required
 def pagina_ia():
     return render_template("ia.html")
+
+@app.route("/assistente-virtual", endpoint="pagina_assistente_virtual")
+@app.route("/assistente", endpoint="pagina_assistente")
+@login_required
+def pagina_assistente_virtual():
+    return render_template("assistente_virtual.html")
 
 @app.route("/api/download/<tipo>")
 @login_required
