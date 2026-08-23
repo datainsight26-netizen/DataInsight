@@ -105,9 +105,52 @@ function montarDadosApp(dadosSalvos) {
   dadosApp.margem = margem;
 }
 
+let tabelaRelatorioAtualId = 'todas';
+
+async function configurarSeletorPlanilhaRelatorios() {
+  const select = document.getElementById('seletorPlanilhaRel');
+  if (!select) return;
+
+  try {
+    const resp = await fetch('/api/planilhas/sumario');
+    if (!resp.ok) return;
+    const json = await resp.json();
+    const planilhas = json.planilhas || [];
+
+    select.innerHTML = '';
+
+    const optTodas = document.createElement('option');
+    optTodas.value = 'todas';
+    optTodas.textContent = `🌐 Todas as Planilhas (Relatório Consolidado - ${planilhas.length})`;
+    select.appendChild(optTodas);
+
+    planilhas.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      const icone = p.tipo_fluxo === 'saida' ? '🔻' : (p.tipo_fluxo === 'entrada' ? '🟢' : '📁');
+      opt.textContent = `${icone} [${p.dominio_label}] ${p.nome} (${p.total_linhas} linhas)`;
+      select.appendChild(opt);
+    });
+
+    const salva = localStorage.getItem('DataInsight_DashboardPlanilha');
+    if (salva && (salva === 'todas' || planilhas.some(p => p.id === salva))) {
+      select.value = salva;
+      tabelaRelatorioAtualId = salva;
+    }
+
+    select.addEventListener('change', e => {
+      tabelaRelatorioAtualId = e.target.value;
+      localStorage.setItem('DataInsight_DashboardPlanilha', tabelaRelatorioAtualId);
+      carregarDadosRelatorios();
+    });
+  } catch (e) {
+    console.warn('Aviso ao carregar planilhas em relatórios:', e);
+  }
+}
+
 async function carregarDadosRelatorios() {
   try {
-    const resposta = await fetch('/carregar-dados');
+    const resposta = await fetch(`/carregar-dados?tabela_id=${tabelaRelatorioAtualId}`);
     const json = await resposta.json();
 
     if (Array.isArray(json.dados) && json.dados.length > 0) {
@@ -597,7 +640,9 @@ document.addEventListener('DOMContentLoaded', carregarDadosRelatorios);
     /* =============================================
        INIT
     ============================================= */
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
+      await configurarSeletorPlanilhaRelatorios();
+      await carregarDadosRelatorios();
       renderHistorico();
       // Init card visual states
       document.querySelectorAll('.card-opcao input[type="checkbox"]').forEach(cb => {

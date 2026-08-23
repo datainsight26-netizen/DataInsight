@@ -210,6 +210,77 @@ function atualizarGrafico() {
 }
 
 // =============================
+// SELETOR DE MULTI-PLANILHAS
+// =============================
+let tabelaAnaliseAtualId = 'todas';
+
+async function configurarSeletorPlanilhaAnalise() {
+    const select = document.getElementById('seletorPlanilhaAnalise');
+    if (!select) return;
+
+    try {
+        const resp = await fetch('/api/planilhas/sumario');
+        if (!resp.ok) return;
+        const json = await resp.json();
+        const planilhas = json.planilhas || [];
+
+        select.innerHTML = '';
+
+        const optTodas = document.createElement('option');
+        optTodas.value = 'todas';
+        optTodas.textContent = `🌐 Todas as Planilhas (Visão Consolidada - ${planilhas.length})`;
+        select.appendChild(optTodas);
+
+        planilhas.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            const icone = p.tipo_fluxo === 'saida' ? '🔻' : (p.tipo_fluxo === 'entrada' ? '🟢' : '📁');
+            opt.textContent = `${icone} [${p.dominio_label}] ${p.nome} (${p.total_linhas} linhas)`;
+            select.appendChild(opt);
+        });
+
+        const salva = localStorage.getItem('DataInsight_DashboardPlanilha');
+        if (salva && (salva === 'todas' || planilhas.some(p => p.id === salva))) {
+            select.value = salva;
+            tabelaAnaliseAtualId = salva;
+        }
+
+        select.addEventListener('change', e => {
+            tabelaAnaliseAtualId = e.target.value;
+            localStorage.setItem('DataInsight_DashboardPlanilha', tabelaAnaliseAtualId);
+            atualizarBadgeStatusAnalise(planilhas, tabelaAnaliseAtualId);
+            aplicarFiltros();
+        });
+
+        atualizarBadgeStatusAnalise(planilhas, tabelaAnaliseAtualId);
+    } catch (e) {
+        console.warn('Aviso ao carregar planilhas em análises:', e);
+    }
+}
+
+function atualizarBadgeStatusAnalise(planilhas, idSelecionado) {
+    const container = document.getElementById('analiseStatusFontesContainer');
+    if (!container) return;
+
+    if (idSelecionado === 'todas') {
+        container.innerHTML = `
+            <span class="badge" style="background:rgba(59,130,246,0.12); color:#3b82f6; border:1px solid rgba(59,130,246,0.25); padding:4px 10px; border-radius:14px; font-size:0.75rem; font-weight:600;">
+                <i class="fa-solid fa-layer-group"></i> ${planilhas.length} ${planilhas.length === 1 ? 'planilha consolidada' : 'planilhas consolidadas'}
+            </span>
+        `;
+    } else {
+        const p = planilhas.find(x => x.id === idSelecionado);
+        const nome = p ? p.nome : 'Planilha Individual';
+        const dom = p ? p.dominio_label : 'Individual';
+        container.innerHTML = `
+            <span class="badge" style="background:rgba(16,185,129,0.12); color:#10b981; border:1px solid rgba(16,185,129,0.25); padding:4px 10px; border-radius:14px; font-size:0.75rem; font-weight:600;">
+                <i class="fa-solid fa-file-invoice"></i> ${nome} (${dom})
+            </span>
+        `;
+    }
+}
+
+// =============================
 // FILTROS
 // =============================
 function aplicarFiltros() {
@@ -217,7 +288,6 @@ function aplicarFiltros() {
     const fim = document.getElementById('data-fim').value;
 
     if (!inicio || !fim) {
-        alert('Selecione as datas!');
         return;
     }
 
@@ -228,7 +298,7 @@ function aplicarFiltros() {
 
     localStorage.setItem('analise_periodo', JSON.stringify({ inicio, fim }));
 
-    fetch(`/api/analise?data_inicio=${inicio}&data_fim=${fim}`)
+    fetch(`/api/analise?data_inicio=${inicio}&data_fim=${fim}&tabela_id=${tabelaAnaliseAtualId}`)
         .then(r => {
             if (!r.ok) {
                 return r.json().then(err => {
@@ -247,7 +317,6 @@ function aplicarFiltros() {
         })
         .catch(err => {
             console.error(err);
-            alert("Atenção: Nenhum dado carregado");
         });
 }
 
@@ -512,7 +581,7 @@ function compartilharAnalise() {
 }
 
 // Inicializar quando a página carregar
-function iniciarAnalise() {
+async function iniciarAnalise() {
 
     if (typeof ApexCharts === 'undefined') {
         setTimeout(iniciarAnalise, 500);
@@ -526,6 +595,7 @@ function iniciarAnalise() {
 
     console.log('Sistema pronto');
 
+    await configurarSeletorPlanilhaAnalise();
     restaurarMetricasSelecionadas();
     carregarUltimoPeriodo();
 }

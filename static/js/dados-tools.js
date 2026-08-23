@@ -44,6 +44,10 @@ function persistirEstadoLocal() {
     
     try {
         localStorage.setItem('DataInsight_Estado', JSON.stringify(dadosParaSalvar));
+        // Salvar também o ID ativo em chave dedicada para recuperação rápida
+        if (_tabelaAtualId) {
+            localStorage.setItem('DataInsight_TabelaAtiva', _tabelaAtualId);
+        }
     } catch (e) {
         console.warn('Não foi possível salvar no localStorage (limite excedido?)', e);
     }
@@ -66,7 +70,12 @@ function clonarTabela(tabela) {
         id: tabela.id,
         nome: tabela.nome,
         dados: clonarDadosTabela(tabela.dados),
-        colunas: Array.isArray(tabela.colunas) ? [...tabela.colunas] : []
+        colunas: Array.isArray(tabela.colunas) ? [...tabela.colunas] : [],
+        tipo_dominio: tabela.tipo_dominio || null,
+        dominio_label: tabela.dominio_label || null,
+        dominio_icone: tabela.dominio_icone || null,
+        dominio_cor: tabela.dominio_cor || null,
+        tipo_fluxo: tabela.tipo_fluxo || null
     };
 }
 
@@ -1055,8 +1064,46 @@ function limparFormatacaoCondicional() {
 }
 
 // ───────────────────────────────
+// ───────────────────────────────
 // FERRAMENTAS DE LIMPEZA DE DADOS
 // ───────────────────────────────
+function _parsearNumeroLimpo(val) {
+    if (val === null || val === undefined) return NaN;
+    if (typeof val === 'number') return isNaN(val) ? NaN : val;
+    let s = String(val).trim();
+    if (!s || ['nan', 'none', 'null', 'n/a', 'na', '-', '--', 'nd', 'indefinido'].includes(s.toLowerCase())) return NaN;
+    s = s.replace(/^[R$\s€£\s]+/g, '').replace(/[%]/g, '').trim();
+    if (s.startsWith('(') && s.endsWith(')')) s = '-' + s.slice(1, -1).trim();
+    if (s.includes('.') && s.includes(',')) {
+        if (s.lastIndexOf('.') < s.lastIndexOf(',')) {
+            s = s.replace(/\./g, '').replace(',', '.');
+        } else {
+            s = s.replace(/,/g, '');
+        }
+    } else if (s.includes(',')) {
+        const parts = s.split(',');
+        if (parts.length === 2 && parts[1].length <= 2) {
+            s = s.replace(',', '.');
+        } else {
+            s = s.replace(/,/g, '');
+        }
+    } else if (s.includes('.')) {
+        const parts = s.split('.');
+        if (parts.length === 2 && parts[1].length === 3 && !s.startsWith('0.') && !s.startsWith('-0.')) {
+            s = s.replace(/\./g, '');
+        }
+    }
+    const n = parseFloat(s);
+    return isNaN(n) ? NaN : n;
+}
+
+function _ehColunaNumerica(col, dados) {
+    const vals = (dados || []).map(l => l[col]).filter(v => v !== null && v !== undefined && String(v).trim() !== '');
+    if (vals.length === 0) return false;
+    const numCount = vals.filter(v => !isNaN(_parsearNumeroLimpo(v))).length;
+    return (numCount / vals.length) >= 0.5;
+}
+
 function abrirModalLimpeza() {
     const sel = document.getElementById('substituirColuna');
     if (sel) {
@@ -1070,100 +1117,239 @@ function abrirModalLimpeza() {
 function removerDuplicatas() {
     const colunas = obterColunasValidas();
     const antes = (estado.todosDados || []).length;
+    if (antes === 0) {
+        mostrarToast('Nenhum dado disponível para remover duplicatas.', 'warning');
+        return;
+    }
     const visto = new Set();
     salvarEstadoHistorico();
+    const idsMantidos = new Set();
     estado.todosDados = (estado.todosDados || []).filter(linha => {
-        const key = colunas.map(c => String(linha[c] || '').trim()).join('|');
+        const key = colunas.map(c => String(linha[c] ?? '').trim().toLowerCase()).join('|');
         if (visto.has(key)) return false;
-        visto.add(key); return true;
+        visto.add(key);
+        idsMantidos.add(linha._id);
+        return true;
     });
+
+    // Limpar anomalias órfãs
+    if (window.estado && window.estado.anomalias) {
+        window.estado.anomalias = window.estado.anomalias.filter(a => idsMantidos.has(a._id));
+        window.estado.anomaliasIds = new Set(window.estado.anomalias.map(a => a._id));
+    }
+    if (estado.anomalias) {
+        estado.anomalias = estado.anomalias.filter(a => idsMantidos.has(a._id));
+        estado.anomaliasIds = new Set(estado.anomalias.map(a => a._id));
+    }
+
     const removidas = antes - estado.todosDados.length;
-    exibirPagina(); atualizarPaginacao();
+    sincronizarTabelaAtiva();
+    exibirPagina();
+    atualizarPaginacao();
+    renderizarAbasTabelas();
+    atualizarEstatisticas();
+    persistirTabelaAtualDebounced();
     registrarLog(`Limpeza: Removidas ${removidas} linhas duplicadas.`);
-    mostrarToast(`${removidas} linha(s) duplicada(s) removida(s).`, removidas > 0 ? 'success' : 'info');
+    mostrarToast(removidas > 0 ? `✓ ${removidas} linha(s) duplicada(s) removida(s) com sucesso!` : 'Nenhuma linha duplicada encontrada.', removidas > 0 ? 'success' : 'info');
 }
 
 function preencherVaziosComMedia() {
     const colunas = obterColunasValidas();
+    const dados = estado.todosDados || [];
+    if (!colunas.length || !dados.length) {
+        mostrarToast('Nenhum dado disponível para preenchimento.', 'warning');
+        return;
+    }
     salvarEstadoHistorico();
     let preenchidos = 0;
+
     colunas.forEach(col => {
-        const vals = (estado.todosDados || []).map(l => parseFloat(String(l[col] || '').replace(',', '.'))).filter(n => !isNaN(n));
-        if (!vals.length) return;
-        const media = vals.reduce((a, b) => a + b, 0) / vals.length;
-        (estado.todosDados || []).forEach(linha => {
-            const v = String(linha[col] || '').trim();
-            if (v === '' || isNaN(parseFloat(v))) { linha[col] = parseFloat(media.toFixed(2)); preenchidos++; }
-        });
+        const ehNum = _ehColunaNumerica(col, dados);
+        if (ehNum) {
+            const vals = dados.map(l => _parsearNumeroLimpo(l[col])).filter(n => !isNaN(n));
+            if (!vals.length) return;
+            const media = vals.reduce((a, b) => a + b, 0) / vals.length;
+            const mediaFormatada = Number.isInteger(media) ? media : parseFloat(media.toFixed(2));
+            dados.forEach(linha => {
+                const val = linha[col];
+                const vazio = val === null || val === undefined || String(val).trim() === '' || ['nan', 'none', 'null', 'n/a', '-', '--'].includes(String(val).trim().toLowerCase());
+                if (vazio) {
+                    linha[col] = mediaFormatada;
+                    preenchidos++;
+                }
+            });
+        } else {
+            // Preenchimento de texto com a moda
+            const freq = {};
+            dados.forEach(l => {
+                const s = String(l[col] ?? '').trim();
+                if (s && !['nan', 'none', 'null', 'n/a', '-', '--'].includes(s.toLowerCase())) {
+                    freq[s] = (freq[s] || 0) + 1;
+                }
+            });
+            let moda = null, maxCount = 0;
+            Object.entries(freq).forEach(([val, count]) => {
+                if (count > maxCount) { maxCount = count; moda = val; }
+            });
+            if (moda && maxCount >= 2) {
+                dados.forEach(linha => {
+                    const val = linha[col];
+                    const vazio = val === null || val === undefined || String(val).trim() === '' || ['nan', 'none', 'null', 'n/a', '-', '--'].includes(String(val).trim().toLowerCase());
+                    if (vazio) {
+                        linha[col] = moda;
+                        preenchidos++;
+                    }
+                });
+            }
+        }
     });
+
+    sincronizarTabelaAtiva();
     exibirPagina();
-    registrarLog(`Limpeza: Preenchidos ${preenchidos} valores em branco com a média.`);
-    mostrarToast(`${preenchidos} campo(s) preenchido(s) com média.`, 'success');
+    atualizarEstatisticas();
+    persistirTabelaAtualDebounced();
+    registrarLog(`Limpeza: Preenchidos ${preenchidos} campos em branco de forma inteligente.`);
+    mostrarToast(preenchidos > 0 ? `✓ ${preenchidos} campo(s) vazio(s) preenchido(s) com sucesso!` : 'Nenhum campo vazio para preencher.', preenchidos > 0 ? 'success' : 'info');
 }
 
 function _normalizarTextos(fn, tipo) {
     const colunas = obterColunasValidas();
+    const dados = estado.todosDados || [];
+    if (!colunas.length || !dados.length) {
+        mostrarToast('Nenhum dado disponível para normalização.', 'warning');
+        return;
+    }
     salvarEstadoHistorico();
-    (estado.todosDados || []).forEach(linha => colunas.forEach(col => {
-        if (typeof linha[col] === 'string') linha[col] = fn(linha[col]);
+    let alterados = 0;
+    dados.forEach(linha => colunas.forEach(col => {
+        const val = linha[col];
+        if (typeof val === 'string' && val.trim() !== '') {
+            const novo = fn(val);
+            if (novo !== val) {
+                linha[col] = novo;
+                alterados++;
+            }
+        }
     }));
+    sincronizarTabelaAtiva();
     exibirPagina();
-    registrarLog(`Limpeza: Normalizados textos em toda a planilha para ${tipo}.`);
-    mostrarToast('Normalização aplicada.', 'success');
+    atualizarEstatisticas();
+    persistirTabelaAtualDebounced();
+    registrarLog(`Limpeza: Normalizados textos em toda a planilha para ${tipo} (${alterados} células alteradas).`);
+    mostrarToast(`✓ Normalização para ${tipo} aplicada em ${alterados} célula(s)!`, 'success');
 }
 
 function normalizarTextoMinusculas() { _normalizarTextos(s => s.toLowerCase(), 'minúsculas'); }
 function normalizarTextoMaiusculas() { _normalizarTextos(s => s.toUpperCase(), 'maiúsculas'); }
-function normalizarTextoCapitalizado() { _normalizarTextos(s => s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()), 'capitalizado'); }
+function normalizarTextoCapitalizado() {
+    _normalizarTextos(s => {
+        return s.toLowerCase().replace(/(?:^|\s|\/|-)\S/g, c => c.toUpperCase());
+    }, 'capitalizado');
+}
 
 function trimEspacos() {
     const colunas = obterColunasValidas();
+    const dados = estado.todosDados || [];
+    if (!colunas.length || !dados.length) {
+        mostrarToast('Nenhum dado disponível para aplicar trim.', 'warning');
+        return;
+    }
     salvarEstadoHistorico();
     let trimados = 0;
-    (estado.todosDados || []).forEach(linha => colunas.forEach(col => {
+    dados.forEach(linha => colunas.forEach(col => {
         if (typeof linha[col] === 'string') {
             const novo = linha[col].replace(/\s+/g, ' ').trim();
-            if (novo !== linha[col]) { linha[col] = novo; trimados++; }
+            if (novo !== linha[col]) {
+                linha[col] = novo;
+                trimados++;
+            }
         }
     }));
+    sincronizarTabelaAtiva();
     exibirPagina();
+    atualizarEstatisticas();
+    persistirTabelaAtualDebounced();
     registrarLog(`Limpeza: Efetuado trim de espaços extras em ${trimados} células.`);
-    mostrarToast(`${trimados} campo(s) com espaços corrigidos.`, 'success');
+    mostrarToast(trimados > 0 ? `✓ Trim aplicado em ${trimados} célula(s) com espaços extras!` : 'Nenhum espaço extra encontrado.', trimados > 0 ? 'success' : 'info');
 }
 
 function removerLinhasVazias() {
     const colunas = obterColunasValidas();
     const antes = (estado.todosDados || []).length;
+    if (antes === 0) {
+        mostrarToast('Nenhum dado disponível.', 'warning');
+        return;
+    }
     salvarEstadoHistorico();
-    estado.todosDados = (estado.todosDados || []).filter(linha => colunas.some(col => String(linha[col] || '').trim() !== ''));
+    const idsMantidos = new Set();
+    estado.todosDados = (estado.todosDados || []).filter(linha => {
+        const temConteudo = colunas.some(col => {
+            const v = linha[col];
+            return v !== null && v !== undefined && String(v).trim() !== '';
+        });
+        if (temConteudo) idsMantidos.add(linha._id);
+        return temConteudo;
+    });
+
+    if (window.estado && window.estado.anomalias) {
+        window.estado.anomalias = window.estado.anomalias.filter(a => idsMantidos.has(a._id));
+        window.estado.anomaliasIds = new Set(window.estado.anomalias.map(a => a._id));
+    }
+
     const removidas = antes - estado.todosDados.length;
-    exibirPagina(); atualizarPaginacao();
+    sincronizarTabelaAtiva();
+    exibirPagina();
+    atualizarPaginacao();
+    renderizarAbasTabelas();
+    atualizarEstatisticas();
+    persistirTabelaAtualDebounced();
     registrarLog(`Limpeza: Removidas ${removidas} linhas totalmente vazias.`);
-    mostrarToast(`${removidas} linha(s) vazia(s) removida(s).`, removidas > 0 ? 'success' : 'info');
+    mostrarToast(removidas > 0 ? `✓ ${removidas} linha(s) totalmente vazia(s) removida(s)!` : 'Nenhuma linha vazia encontrada.', removidas > 0 ? 'success' : 'info');
 }
 
 function mostrarSubstituicaoMassa() {
     const panel = document.getElementById('substituicaoMassaPanel');
-    if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    if (panel) {
+        const aberto = panel.style.display !== 'none';
+        panel.style.display = aberto ? 'none' : 'block';
+        if (!aberto) {
+            const sel = document.getElementById('substituirColuna');
+            if (sel) {
+                const colunas = obterColunasValidas();
+                sel.innerHTML = '<option value="__todas__">Todas as colunas</option>'
+                    + colunas.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+            }
+        }
+    }
 }
 
 function executarSubstituicao() {
     const colSel = document.getElementById('substituirColuna')?.value;
-    const encontrar = document.getElementById('substituirEncontrar')?.value || '';
-    const por = document.getElementById('substituirPor')?.value || '';
-    if (!encontrar) { mostrarToast('Digite um valor para encontrar.', 'warning'); return; }
+    const encontrar = document.getElementById('substituirEncontrar')?.value;
+    const por = document.getElementById('substituirPor')?.value ?? '';
+    if (encontrar === undefined || encontrar === null || encontrar === '') {
+        mostrarToast('Digite o termo que deseja encontrar para substituir.', 'warning');
+        return;
+    }
     const colunas = obterColunasValidas();
     const colsAlvo = colSel === '__todas__' ? colunas : [colSel];
     salvarEstadoHistorico();
     let count = 0;
     (estado.todosDados || []).forEach(linha => colsAlvo.forEach(col => {
-        if (String(linha[col] || '').includes(encontrar)) {
-            linha[col] = String(linha[col]).replaceAll(encontrar, por); count++;
+        if (linha[col] !== null && linha[col] !== undefined) {
+            const strVal = String(linha[col]);
+            if (strVal.includes(encontrar)) {
+                linha[col] = strVal.replaceAll(encontrar, por);
+                count++;
+            }
         }
     }));
+    sincronizarTabelaAtiva();
     exibirPagina();
-    registrarLog(`Substituição: Trocados termos "${encontrar}" por "${por}" em ${count} locais.`);
-    mostrarToast(`${count} ocorrência(s) substituída(s).`, 'success');
+    atualizarEstatisticas();
+    persistirTabelaAtualDebounced();
+    registrarLog(`Substituição: Trocados termos "${encontrar}" por "${por}" em ${count} célula(s).`);
+    mostrarToast(count > 0 ? `✓ Substituição concluída! ${count} ocorrência(s) alterada(s).` : 'Nenhuma ocorrência encontrada com o termo buscado.', count > 0 ? 'success' : 'info');
 }
 
 // ───────────────────────────────
@@ -1200,9 +1386,349 @@ function exportarJSON() {
 let _tabelas = [];
 let _tabelaAtualId = null;
 
-function abrirModalNovaTabela() {
-    document.getElementById('modalNovaTabela').style.display = 'flex';
+/* ================================================================
+   CARREGAR TODAS AS TABELAS DO USUÁRIO
+   ================================================================ */
+async function carregarTodasTabelas() {
+    try {
+        const resp = await fetch('/api/tabelas');
+        const json = await resp.json();
+        if (resp.ok && json.tabelas && Array.isArray(json.tabelas) && json.tabelas.length > 0) {
+            _tabelas = json.tabelas.map(clonarTabela);
+
+            // Prioridade: tabela ativa retornada pelo backend (persistência real no banco)
+            let tabelaAtivaId = json.tabela_ativa_id || null;
+
+            // Se backend não devolveu, checar chave dedicada no localStorage
+            if (!tabelaAtivaId) {
+                const tabelaAtivaSalva = localStorage.getItem('DataInsight_TabelaAtiva');
+                if (tabelaAtivaSalva && _tabelas.some(t => t.id === tabelaAtivaSalva)) {
+                    tabelaAtivaId = tabelaAtivaSalva;
+                }
+            }
+
+            // Fallback: primeiro item
+            if (!tabelaAtivaId || !_tabelas.some(t => t.id === tabelaAtivaId)) {
+                tabelaAtivaId = _tabelas[0].id;
+            }
+
+            // Salvar preferência no localStorage para uso offline
+            localStorage.setItem('DataInsight_TabelaAtiva', tabelaAtivaId);
+
+            ativarTabela(tabelaAtivaId, false);
+            renderizarAbasTabelas();
+            return true;
+        }
+    } catch (e) {
+        console.warn('Não foi possível carregar tabelas do backend:', e);
+    }
+
+    // Fallback para LocalStorage
+    const carregouLocal = carregarEstadoLocal();
+    if (carregouLocal && _tabelas.length > 0) {
+        // Restaurar a tabela ativa pelo ID dedicado se disponível
+        const tabelaAtivaSalva = localStorage.getItem('DataInsight_TabelaAtiva');
+        const idParaAtivar = (tabelaAtivaSalva && _tabelas.some(t => t.id === tabelaAtivaSalva))
+            ? tabelaAtivaSalva
+            : (_tabelaAtualId || _tabelas[0].id);
+        ativarTabela(idParaAtivar, false);
+        renderizarAbasTabelas();
+        return true;
+    }
+
+    // Fallback para tabela padrão
+    if (typeof inicializarTabelaPadrao === 'function') {
+        inicializarTabelaPadrao();
+    }
+    const padraoCols = ['Faturamento', 'Despesas', 'Lucro', 'Período'];
+    const tabPadrao = {
+        id: `tab-${Date.now()}`,
+        nome: 'Planilha Principal',
+        colunas: [...padraoCols],
+        dados: clonarDadosTabela(estado.todosDados)
+    };
+    _tabelas = [tabPadrao];
+    _tabelaAtualId = tabPadrao.id;
+    renderizarAbasTabelas();
+    atualizarIndicadorTabelaAtiva();
+    return false;
 }
+window.carregarTodasTabelas = carregarTodasTabelas;
+
+/* ================================================================
+   ATUALIZAR INDICADOR VISUAL DA TABELA ATIVA NO TOPO
+   ================================================================ */
+function atualizarIndicadorTabelaAtiva() {
+    const tab = _tabelas.find(t => t.id === _tabelaAtualId) || _tabelas[0];
+    if (!tab) return;
+    const nameEl = document.getElementById('activeTableName');
+    const rowsEl = document.getElementById('activeTableRowsCount');
+    const totalLinhas = (estado.todosDados || []).length;
+    if (nameEl) nameEl.textContent = tab.nome;
+    if (rowsEl) rowsEl.textContent = `${totalLinhas} ${totalLinhas === 1 ? 'linha' : 'linhas'}${tab.dominio_label ? ' • ' + tab.dominio_label : ''}`;
+}
+window.atualizarIndicadorTabelaAtiva = atualizarIndicadorTabelaAtiva;
+
+/* ================================================================
+   RENDERIZAR ABAS DE TABELAS COM DOMÍNIO INTELIGENTE
+   ================================================================ */
+function renderizarAbasTabelas() {
+    const container = document.getElementById('tableTabsContainer');
+    const bar = document.getElementById('tableTabsBar');
+    if (!bar || !container) return;
+    if (_tabelas.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+    container.style.display = 'flex';
+    bar.innerHTML = _tabelas.map(t => {
+        const isActive = t.id === _tabelaAtualId;
+        const count = Array.isArray(t.dados) ? t.dados.length : 0;
+        
+        let domLabel = t.dominio_label || 'Geral';
+        let domCor = t.dominio_cor || '#0ea5e9';
+
+        return `
+        <div class="table-tab-pill ${isActive ? 'active' : ''}" onclick="ativarTabela('${t.id}')" title="Clique para ativar '${escapeHtml(t.nome)}' • Categoria: ${domLabel} (Duplo clique para renomear)" ondblclick="abrirModalRenomearTabela('${t.id}')">
+            <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${domCor}; margin-right:2px;" title="Categoria: ${domLabel}"></span>
+            <span class="tab-title-text">${escapeHtml(t.nome)}</span>
+            <span class="tab-badge-rows" title="${domLabel}">${count}</span>
+            <button type="button" class="tab-btn-action" onclick="event.stopPropagation(); abrirModalDominioTabela('${t.id}')" title="Alterar Domínio/Categoria da Planilha (Vendas, Aluguel, Custos, etc.)">
+                <i class="fa-solid fa-tags" style="font-size:10px; color:${domCor};"></i>
+            </button>
+            <button type="button" class="tab-btn-action" onclick="event.stopPropagation(); abrirModalRenomearTabela('${t.id}')" title="Renomear esta tabela">
+                <i class="fa-solid fa-pen"></i>
+            </button>
+            ${_tabelas.length > 1 ? `
+            <button type="button" class="tab-btn-action" onclick="event.stopPropagation(); fecharTabela('${t.id}')" title="Fechar / Excluir esta tabela">
+                ✕
+            </button>` : ''}
+        </div>`;
+    }).join('');
+    atualizarIndicadorTabelaAtiva();
+}
+window.renderizarAbasTabelas = renderizarAbasTabelas;
+
+/* ================================================================
+   MODAL DE DOMÍNIO/CATEGORIA DE PLANILHA
+   ================================================================ */
+function abrirModalDominioTabela(tabelaId) {
+    const tab = _tabelas.find(t => t.id === tabelaId);
+    if (!tab) return;
+
+    let domAtual = tab.tipo_dominio || 'MISTA_GERAL';
+
+    const modalId = 'modalConfigDominioPlanilha';
+    let modal = document.getElementById(modalId);
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = modalId;
+        modal.className = 'modal-backdrop';
+        modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; z-index:9999; backdrop-filter:blur(3px);';
+        document.body.appendChild(modal);
+    }
+
+    modal.innerHTML = `
+        <div class="modal-card cartao" style="width:460px; max-width:92vw; background:var(--cartao); padding:24px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.3); border:1px solid var(--borda);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <h3 class="h3" style="font-size:17px; margin:0; display:flex; align-items:center; gap:8px;">
+                    <i class="fa-solid fa-tags" style="color:var(--primaria);"></i> Categoria da Planilha
+                </h3>
+                <button type="button" onclick="document.getElementById('${modalId}').style.display='none'" style="background:none; border:none; font-size:18px; cursor:pointer; color:var(--texto-suave);">✕</button>
+            </div>
+            <p class="p" style="font-size:13px; margin-bottom:16px;">
+                Defina como o sistema e a IA devem interpretar os dados da planilha <strong>${escapeHtml(tab.nome)}</strong> no fluxo global:
+            </p>
+            <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;">
+                <label style="display:flex; align-items:center; gap:10px; padding:10px; border-radius:8px; border:1px solid var(--borda); cursor:pointer; background:var(--fundo-corpo);">
+                    <input type="radio" name="radioDominio" value="RECEITAS_VENDAS" ${domAtual === 'RECEITAS_VENDAS' ? 'checked' : ''}>
+                    <div>
+                        <strong style="color:#10b981; font-size:13.5px;">🛒 Vendas & Receitas</strong>
+                        <div style="font-size:11.5px; color:var(--texto-suave);">Faturamento de produtos, serviços e pedidos (Entrada no caixa).</div>
+                    </div>
+                </label>
+                <label style="display:flex; align-items:center; gap:10px; padding:10px; border-radius:8px; border:1px solid var(--borda); cursor:pointer; background:var(--fundo-corpo);">
+                    <input type="radio" name="radioDominio" value="DESPESAS_ALUGUEL" ${domAtual === 'DESPESAS_ALUGUEL' ? 'checked' : ''}>
+                    <div>
+                        <strong style="color:#f59e0b; font-size:13.5px;">🏢 Aluguéis & Imóveis</strong>
+                        <div style="font-size:11.5px; color:var(--texto-suave);">Locação, condomínio, IPTU e custos imobiliários (Saída fixa).</div>
+                    </div>
+                </label>
+                <label style="display:flex; align-items:center; gap:10px; padding:10px; border-radius:8px; border:1px solid var(--borda); cursor:pointer; background:var(--fundo-corpo);">
+                    <input type="radio" name="radioDominio" value="DESPESAS_GERAIS" ${domAtual === 'DESPESAS_GERAIS' ? 'checked' : ''}>
+                    <div>
+                        <strong style="color:#ef4444; font-size:13.5px;">🧾 Despesas & Custos Operacionais</strong>
+                        <div style="font-size:11.5px; color:var(--texto-suave);">Salários, fornecedores, contas de consumo e impostos (Saída).</div>
+                    </div>
+                </label>
+                <label style="display:flex; align-items:center; gap:10px; padding:10px; border-radius:8px; border:1px solid var(--borda); cursor:pointer; background:var(--fundo-corpo);">
+                    <input type="radio" name="radioDominio" value="ESTOQUE_PRODUTOS" ${domAtual === 'ESTOQUE_PRODUTOS' ? 'checked' : ''}>
+                    <div>
+                        <strong style="color:#8b5cf6; font-size:13.5px;">📦 Estoque & Catálogo de Produtos</strong>
+                        <div style="font-size:11.5px; color:var(--texto-suave);">Cadastro de mercadorias, SKUs e custos unitários.</div>
+                    </div>
+                </label>
+                <label style="display:flex; align-items:center; gap:10px; padding:10px; border-radius:8px; border:1px solid var(--borda); cursor:pointer; background:var(--fundo-corpo);">
+                    <input type="radio" name="radioDominio" value="MISTA_GERAL" ${domAtual === 'MISTA_GERAL' ? 'checked' : ''}>
+                    <div>
+                        <strong style="color:#0ea5e9; font-size:13.5px;">🌐 Geral / Fluxo Completo</strong>
+                        <div style="font-size:11.5px; color:var(--texto-suave);">Planilha ampla com colunas diretas de faturamento e despesas.</div>
+                    </div>
+                </label>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button type="button" class="botao botao--outline" onclick="document.getElementById('${modalId}').style.display='none'">Cancelar</button>
+                <button type="button" class="botao botao--primario" onclick="salvarDominioTabelaSelecionada('${tab.id}')">Salvar Categoria</button>
+            </div>
+        </div>
+    `;
+    modal.style.display = 'flex';
+}
+window.abrirModalDominioTabela = abrirModalDominioTabela;
+
+async function salvarDominioTabelaSelecionada(tabelaId) {
+    const sel = document.querySelector('input[name="radioDominio"]:checked');
+    if (!sel) return;
+    const novoDominio = sel.value;
+
+    const tab = _tabelas.find(t => t.id === tabelaId);
+    if (tab) {
+        tab.tipo_dominio = novoDominio;
+    }
+
+    try {
+        const resp = await fetch(`/api/tabelas/${tabelaId}/dominio`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                tipo_dominio: novoDominio,
+                nome: tab ? tab.nome : ''
+            })
+        });
+        const res = await resp.json();
+        if (resp.ok && tab) {
+            if (res.id && (!tab.id || String(tab.id).startsWith('tab-'))) {
+                const idAntigo = tab.id;
+                tab.id = res.id;
+                if (_tabelaAtualId === idAntigo) {
+                    _tabelaAtualId = res.id;
+                }
+            }
+            tab.tipo_dominio = res.tipo_dominio || novoDominio;
+            tab.dominio_label = res.dominio_label;
+            tab.dominio_cor = res.dominio_cor;
+            tab.dominio_icone = res.dominio_icone;
+            tab.tipo_fluxo = res.tipo_fluxo;
+            if (typeof mostrarToast === 'function') {
+                mostrarToast(`✓ Categoria da planilha alterada para '${res.dominio_label}'`, 'success');
+            }
+        }
+    } catch (e) {
+        console.warn('Erro ao salvar categoria no backend:', e);
+    }
+
+    document.getElementById('modalConfigDominioPlanilha').style.display = 'none';
+    persistirEstadoLocal();
+    renderizarAbasTabelas();
+}
+window.salvarDominioTabelaSelecionada = salvarDominioTabelaSelecionada;
+
+/* ================================================================
+   ATIVAR TABELA (MUDAR TABELA SELECIONADA)
+   ================================================================ */
+function ativarTabela(id, salvarAtual = true) {
+    if (salvarAtual && _tabelaAtualId) {
+        const anterior = _tabelas.find(t => t.id === _tabelaAtualId);
+        if (anterior) {
+            anterior.dados = clonarDadosTabela(estado.todosDados);
+            anterior.colunas = [...obterColunasValidas()];
+            
+            // Persistir alterações da tabela anterior no backend para salvar tudo no sistema
+            const tabelaAntigaId = (anterior.id && !String(anterior.id).startsWith('tab-local-') && !String(anterior.id).startsWith('tab-')) ? anterior.id : null;
+            if (anterior.colunas && anterior.colunas.length > 0 && anterior.dados && anterior.dados.length > 0) {
+                fetch('/api/tabelas', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: tabelaAntigaId,
+                        nome: anterior.nome || 'Planilha',
+                        colunas: anterior.colunas,
+                        dados: anterior.dados,
+                        tipo_dominio: anterior.tipo_dominio || null
+                    })
+                }).then(r => r.json()).then(data => {
+                    if (data && data.id) anterior.id = data.id;
+                    if (data && data.tipo_dominio) anterior.tipo_dominio = data.tipo_dominio;
+                }).catch(e => console.warn('Aviso ao salvar tabela anterior:', e));
+            }
+        }
+    }
+
+    const tab = _tabelas.find(t => t.id === id) || _tabelas[0];
+    if (!tab) return;
+
+    _tabelaAtualId = tab.id;
+    preencherTabela(tab.colunas, tab.dados);
+    renderizarAbasTabelas();
+    atualizarIndicadorTabelaAtiva();
+    registrarLog(`Trocou visualização para tabela "${tab.nome}".`);
+
+    // Persistir imediatamente a tabela ativa em chave dedicada (rápida recuperação offline)
+    try { localStorage.setItem('DataInsight_TabelaAtiva', tab.id); } catch(_) {}
+
+    persistirEstadoLocal();
+
+    // Notificar o backend para marcar a tabela ativada como a tabela ativa do usuário no MongoDB
+    if (tab.id && !String(tab.id).startsWith('tab-local-') && !String(tab.id).startsWith('tab-')) {
+        fetch(`/api/tabelas/${tab.id}/ativar`, { method: 'POST' }).catch(e => console.warn('Aviso ao ativar tabela no backend:', e));
+    } else if (tab.colunas && tab.colunas.length > 0 && tab.dados && tab.dados.length > 0) {
+        if (typeof salvarDados === 'function') {
+            salvarDados(true);
+        }
+    }
+
+    // Sincronizar painel financeiro com a nova tabela ativa
+    if (typeof window.finSincronizarComTabela === 'function') {
+        window.finSincronizarComTabela(tab);
+    } else if (typeof FinState !== 'undefined') {
+        FinState.colunas = [...tab.colunas];
+        FinState.dadosAmostra = (tab.dados || []).slice(0, 20);
+        if (typeof renderizarCategorias === 'function') renderizarCategorias();
+        if (typeof atualizarStatusCompleto === 'function') atualizarStatusCompleto();
+    }
+}
+window.ativarTabela = ativarTabela;
+
+/* ================================================================
+   MODAL CRIAR NOVA TABELA
+   ================================================================ */
+function abrirModalNovaTabela() {
+    const modal = document.getElementById('modalNovaTabela');
+    if (!modal) return;
+    const nomeInput = document.getElementById('nomesNovaTabela');
+    if (nomeInput) nomeInput.value = `Tabela ${_tabelas.length + 1}`;
+    const container = document.getElementById('novasTabelaColunas');
+    if (container) {
+        container.innerHTML = '';
+        ['Faturamento', 'Despesas', 'Lucro', 'Período'].forEach(col => {
+            const div = document.createElement('div');
+            div.className = 'nova-col-row';
+            div.innerHTML = `
+                <input type="text" class="entrada" style="flex:2; font-size:12.5px;" placeholder="Nome da coluna" value="${col}">
+                <select class="entrada" style="flex:1.2; font-size:12px;">
+                    <option value="moeda" ${['Faturamento', 'Despesas', 'Lucro'].includes(col) ? 'selected' : ''}>💰 Moeda</option>
+                    <option value="data" ${col === 'Período' ? 'selected' : ''}>📅 Data</option>
+                    <option value="numero">🔢 Número</option>
+                    <option value="texto">📝 Texto</option>
+                    <option value="percentual">% Percentual</option>
+                </select>
+                <button type="button" class="botao botao--delet" style="padding:6px 10px; font-size:12px;" onclick="this.parentElement.remove()">✕</button>`;
+            container.appendChild(div);
+        });
+    }
+    modal.style.display = 'flex';
+}
+window.abrirModalNovaTabela = abrirModalNovaTabela;
 
 function adicionarColunaNovaTabela() {
     const container = document.getElementById('novasTabelaColunas');
@@ -1210,90 +1736,213 @@ function adicionarColunaNovaTabela() {
     const div = document.createElement('div');
     div.className = 'nova-col-row';
     div.innerHTML = `
-        <input type="text" placeholder="Nome da coluna" value="Nova Coluna">
-        <select>
+        <input type="text" class="entrada" style="flex:2; font-size:12.5px;" placeholder="Nome da coluna" value="Nova Coluna">
+        <select class="entrada" style="flex:1.2; font-size:12px;">
+            <option value="moeda">💰 Moeda</option>
             <option value="texto">📝 Texto</option>
             <option value="numero">🔢 Número</option>
             <option value="data">📅 Data</option>
-            <option value="moeda">💰 Moeda</option>
             <option value="percentual">% Percentual</option>
         </select>
-        <button class="botao botao--delet" style="padding:6px 10px;" onclick="this.parentElement.remove()">✕</button>`;
+        <button type="button" class="botao botao--delet" style="padding:6px 10px; font-size:12px;" onclick="this.parentElement.remove()">✕</button>`;
     container.appendChild(div);
 }
+window.adicionarColunaNovaTabela = adicionarColunaNovaTabela;
 
-function criarNovaTabela() {
+async function criarNovaTabela() {
     const nome = document.getElementById('nomesNovaTabela')?.value.trim();
     if (!nome) { mostrarToast('Digite um nome para a tabela.', 'warning'); return; }
     const rows = document.getElementById('novasTabelaColunas')?.querySelectorAll('.nova-col-row') || [];
     const novasColunas = [];
-    rows.forEach(row => { const n = row.querySelector('input')?.value.trim(); if (n) novasColunas.push(n); });
+    rows.forEach(row => {
+        const n = row.querySelector('input')?.value.trim();
+        if (n && !novasColunas.includes(n)) novasColunas.push(n);
+    });
     if (!novasColunas.length) { mostrarToast('Adicione pelo menos uma coluna.', 'warning'); return; }
-    
-    // Salvar estado da tabela atual antes de criar nova
-    if (_tabelaAtualId) {
-        const tab = _tabelas.find(t => t.id === _tabelaAtualId);
-        if (tab) { tab.dados = clonarDadosTabela(estado.todosDados); tab.colunas = [...obterColunasValidas()]; }
-    } else if ((estado.todosDados || []).length > 0) {
-        const id = `tab-${Date.now()}`;
-        _tabelas.push({ id, nome: 'Planilha Principal', dados: clonarDadosTabela(estado.todosDados), colunas: [...obterColunasValidas()] });
-        _tabelaAtualId = id;
-    }
-    
-    const id = `tab-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    const linhaInicial = { _id: gerarIdLinha() };
+
+    // Salvar estado da tabela atual antes
+    sincronizarTabelaAtiva();
+
+    const linhaInicial = { _id: (typeof gerarIdLinha === 'function' ? gerarIdLinha() : `row-${Date.now()}`) };
     novasColunas.forEach(c => linhaInicial[c] = '');
-    _tabelas.push({ id, nome, dados: [linhaInicial], colunas: novasColunas });
-    document.getElementById('modalNovaTabela').style.display = 'none';
-    mostrarToast(`Tabela "${nome}" criada!`, 'success');
-    ativarTabela(id);
-    renderizarAbasTabelas();
-    registrarLog(`Criada nova aba de tabela: "${nome}".`);
-    persistirEstadoLocal(); // Salvar imediatamente após criar
-}
+    const novosDados = [linhaInicial];
 
-function renderizarAbasTabelas() {
-    const container = document.getElementById('tableTabsContainer');
-    const bar = document.getElementById('tableTabsBar');
-    if (!bar || !container) return;
-    if (_tabelas.length === 0) { container.style.display = 'none'; return; }
-    container.style.display = 'block';
-    bar.innerHTML = _tabelas.map(t => `
-        <div class="table-tab-pill ${t.id === _tabelaAtualId ? 'active' : ''}" onclick="ativarTabela('${t.id}')">
-            <i class="fa-solid fa-table" style="font-size:11px;"></i>
-            <span>${escapeHtml(t.nome)}</span>
-            <button class="tab-close-btn" onclick="event.stopPropagation();fecharTabela('${t.id}')" title="Fechar tabela">✕</button>
-        </div>`).join('') + `<button class="btn-nova-tabela-tab" onclick="abrirModalNovaTabela()" title="Criar nova tabela"><i class="fa-solid fa-plus"></i> Nova Tabela</button>`;
-}
+    let novoId = `tab-${Date.now()}`;
 
-function ativarTabela(id) {
-    if (_tabelaAtualId) {
-        const anterior = _tabelas.find(t => t.id === _tabelaAtualId);
-        if (anterior) { anterior.dados = clonarDadosTabela(estado.todosDados); anterior.colunas = [...obterColunasValidas()]; }
+    // Salvar no backend MongoDB
+    try {
+        const resp = await fetch('/api/tabelas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                nome: nome,
+                colunas: novasColunas,
+                dados: novosDados
+            })
+        });
+        const json = await resp.json();
+        if (resp.ok && json.id) {
+            novoId = json.id;
+        }
+    } catch (e) {
+        console.warn('Aviso ao salvar nova tabela no backend:', e);
     }
-    _tabelaAtualId = id;
-    const tab = _tabelas.find(t => t.id === id);
-    if (!tab) return;
-    preencherTabela(tab.colunas, tab.dados);
-    renderizarAbasTabelas();
-    registrarLog(`Trocou visualização para tabela "${tab.nome}".`);
-    persistirEstadoLocal(); // Salvar a troca de aba ativa
-}
 
-function fecharTabela(id) {
-    if (_tabelas.length <= 1) { mostrarToast('Não é possível fechar a única tabela.', 'warning'); return; }
-    if (!confirm('Fechar esta tabela? Os dados serão perdidos.')) return;
+    _tabelas.push({
+        id: novoId,
+        nome: nome,
+        dados: novosDados,
+        colunas: novasColunas
+    });
+
+    const modal = document.getElementById('modalNovaTabela');
+    if (modal) modal.style.display = 'none';
+
+    ativarTabela(novoId, false);
+    renderizarAbasTabelas();
+    registrarLog(`Criada nova tabela: "${nome}".`);
+    mostrarToast(`✓ Tabela "${nome}" criada e ativada com sucesso!`, 'success');
+}
+window.criarNovaTabela = criarNovaTabela;
+
+/* ================================================================
+   RENOMEAR TABELA
+   ================================================================ */
+function abrirModalRenomearTabela(id) {
+    const targetId = id || _tabelaAtualId;
+    const tab = _tabelas.find(t => t.id === targetId);
+    if (!tab) return;
+    const modal = document.getElementById('modalRenomearTabela');
+    const idInput = document.getElementById('inputRenomearTabelaId');
+    const nameInput = document.getElementById('inputRenomearTabelaNome');
+    if (!modal || !nameInput) return;
+    if (idInput) idInput.value = tab.id;
+    nameInput.value = tab.nome;
+    modal.style.display = 'flex';
+    setTimeout(() => {
+        nameInput.focus();
+        nameInput.select();
+    }, 50);
+}
+window.abrirModalRenomearTabela = abrirModalRenomearTabela;
+
+async function salvarRenomearTabela() {
+    const idInput = document.getElementById('inputRenomearTabelaId');
+    const nameInput = document.getElementById('inputRenomearTabelaNome');
+    const targetId = idInput?.value || _tabelaAtualId;
+    const novoNome = nameInput?.value.trim();
+    if (!novoNome) {
+        mostrarToast('Digite um nome válido para a tabela.', 'warning');
+        return;
+    }
+    const tab = _tabelas.find(t => t.id === targetId);
+    if (!tab) return;
+    const nomeAntigo = tab.nome;
+    tab.nome = novoNome;
+
+    // Atualizar no backend
+    try {
+        await fetch(`/api/tabelas/${targetId}/renomear`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome: novoNome })
+        });
+    } catch (e) {
+        console.warn('Aviso ao renomear no backend:', e);
+    }
+
+    const modal = document.getElementById('modalRenomearTabela');
+    if (modal) modal.style.display = 'none';
+
+    renderizarAbasTabelas();
+    atualizarIndicadorTabelaAtiva();
+    persistirEstadoLocal();
+    registrarLog(`Tabela "${nomeAntigo}" renomeada para "${novoNome}".`);
+    mostrarToast(`✓ Tabela renomeada para "${novoNome}"!`, 'success');
+}
+window.salvarRenomearTabela = salvarRenomearTabela;
+
+/* ================================================================
+   DUPLICAR TABELA
+   ================================================================ */
+async function duplicarTabelaAtual() {
+    return duplicarTabela(_tabelaAtualId);
+}
+window.duplicarTabelaAtual = duplicarTabelaAtual;
+
+async function duplicarTabela(id) {
+    const targetId = id || _tabelaAtualId;
+    const tab = _tabelas.find(t => t.id === targetId);
+    if (!tab) return;
+
+    // Sincronizar atual
+    sincronizarTabelaAtiva();
+
+    let novoId = `tab-${Date.now()}`;
+    const novoNome = `${tab.nome} (Cópia)`;
+    const novosDados = clonarDadosTabela(tab.dados);
+    const novasColunas = [...tab.colunas];
+
+    try {
+        const resp = await fetch(`/api/tabelas/${targetId}/duplicar`, { method: 'POST' });
+        const json = await resp.json();
+        if (resp.ok && json.id) {
+            novoId = json.id;
+        }
+    } catch (e) {
+        console.warn('Aviso ao duplicar no backend:', e);
+    }
+
+    _tabelas.push({
+        id: novoId,
+        nome: novoNome,
+        colunas: novasColunas,
+        dados: novosDados
+    });
+
+    ativarTabela(novoId, false);
+    renderizarAbasTabelas();
+    registrarLog(`Tabela "${tab.nome}" duplicada como "${novoNome}".`);
+    mostrarToast(`✓ Tabela duplicada como "${novoNome}"!`, 'success');
+}
+window.duplicarTabela = duplicarTabela;
+
+/* ================================================================
+   EXCLUIR / FECHAR TABELA
+   ================================================================ */
+async function fecharTabela(id) {
+    if (_tabelas.length <= 1) {
+        mostrarToast('Não é possível fechar a única tabela ativa.', 'warning');
+        return;
+    }
     const idx = _tabelas.findIndex(t => t.id === id);
+    if (idx === -1) return;
     const tabNome = _tabelas[idx].nome;
+
+    if (!confirm(`Deseja realmente excluir a tabela "${tabNome}"? Todos os dados desta planilha serão removidos.`)) {
+        return;
+    }
+
+    try {
+        await fetch(`/api/tabelas/${id}`, { method: 'DELETE' });
+    } catch (e) {
+        console.warn('Aviso ao excluir no backend:', e);
+    }
+
     _tabelas.splice(idx, 1);
     if (_tabelaAtualId === id) {
         const prox = _tabelas[Math.max(0, idx - 1)];
-        if (prox) ativarTabela(prox.id);
+        if (prox) ativarTabela(prox.id, false);
+    } else {
+        renderizarAbasTabelas();
+        atualizarIndicadorTabelaAtiva();
+        persistirEstadoLocal();
     }
-    renderizarAbasTabelas();
-    registrarLog(`Excluída tabela "${tabNome}".`);
-    persistirEstadoLocal(); // Salvar após fechar aba
+
+    registrarLog(`Tabela "${tabNome}" excluída.`);
+    mostrarToast(`✓ Tabela "${tabNome}" excluída com sucesso.`, 'info');
 }
+window.fecharTabela = fecharTabela;
 
 // ───────────────────────────────
 // HOOKS PÓS-RENDERIZAÇÃO — via MutationObserver e substituição dinâmica
@@ -1308,8 +1957,14 @@ function fecharTabela(id) {
         atualizarMetasUI();
     }
 
+    let _observerRunning = false;
     const observer = new MutationObserver(() => {
-        setTimeout(_runAfterRender, 30);
+        if (_observerRunning) return;
+        _observerRunning = true;
+        setTimeout(() => {
+            _runAfterRender();
+            _observerRunning = false;
+        }, 30);
     });
 
     function iniciarObservador() {
@@ -1384,3 +2039,16 @@ function fecharTabela(id) {
         instalarFormulaBarHook();
     }
 })();
+
+// Exposição Global de Funções de Limpeza e Tratamento
+window.abrirModalLimpeza = abrirModalLimpeza;
+window.removerDuplicatas = removerDuplicatas;
+window.preencherVaziosComMedia = preencherVaziosComMedia;
+window.normalizarTextoMinusculas = normalizarTextoMinusculas;
+window.normalizarTextoMaiusculas = normalizarTextoMaiusculas;
+window.normalizarTextoCapitalizado = normalizarTextoCapitalizado;
+window.trimEspacos = trimEspacos;
+window.removerLinhasVazias = removerLinhasVazias;
+window.mostrarSubstituicaoMassa = mostrarSubstituicaoMassa;
+window.executarSubstituicao = executarSubstituicao;
+

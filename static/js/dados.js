@@ -321,9 +321,12 @@ function configurarEventListeners() {
         estado.elementos.btnLimparUpload.addEventListener('click', handleLimparDados);
     }
 
-    // Cards de tipo de arquivo
-    document.querySelectorAll('.card-upload').forEach(card => {
-        card.addEventListener('click', () => selecionarTipoArquivo(card));
+    // Cards e botões de tipo de arquivo
+    document.querySelectorAll('.card-upload, .format-card-btn').forEach(card => {
+        card.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selecionarTipoArquivo(card);
+        });
         card.addEventListener('mouseenter', () => {
             card.style.transform = 'translateY(-3px)';
             card.style.boxShadow = '0 8px 20px rgba(0,0,0,0.25)';
@@ -549,7 +552,13 @@ function atualizarProgressoUpload(percent) {
 
 function selecionarTipoArquivo(card) {
     estado.tipoArquivo = card.dataset.type;
+    const exts = CONFIG.EXTENSOES_VALIDAS[estado.tipoArquivo] || [];
     if (estado.elementos.uploadArquivo) {
+        if (exts.length > 0) {
+            estado.elementos.uploadArquivo.accept = exts.join(',');
+        } else {
+            estado.elementos.uploadArquivo.accept = '.csv,.xlsx,.xls,.txt,.json';
+        }
         estado.elementos.uploadArquivo.value = '';
         estado.elementos.uploadArquivo.click();
     }
@@ -586,7 +595,7 @@ async function handleUpload(event) {
         if (data.colunas?.length > 0) {
             preencherTabela(data.colunas, data.dados);
             setTimeout(() => {
-                if (typeof abrirModalMapeamento === 'function') abrirModalMapeamento(data.colunas);
+                if (typeof mostrarPainelFinanceiro === 'function') mostrarPainelFinanceiro();
             }, 1000);
         }
 
@@ -597,13 +606,37 @@ async function handleUpload(event) {
 }
 
 function validarArquivo(file) {
+    const extensao = '.' + file.name.split('.').pop().toLowerCase();
+
+    // Se o tipo de arquivo não foi definido (ex: arrastar e soltar direto), detecta pela extensão:
     if (!estado.tipoArquivo) {
-        mostrarToast('Selecione um tipo de arquivo primeiro!', 'warning');
+        for (const [tipo, exts] of Object.entries(CONFIG.EXTENSOES_VALIDAS)) {
+            if (exts.includes(extensao)) {
+                estado.tipoArquivo = tipo;
+                break;
+            }
+        }
+    }
+
+    if (!estado.tipoArquivo) {
+        mostrarToast('Formato de arquivo não suportado! Use: Excel (.xlsx, .xls), CSV (.csv), JSON (.json) ou TXT (.txt)', 'warning');
         return false;
     }
+
     const extensoesValidas = CONFIG.EXTENSOES_VALIDAS[estado.tipoArquivo] || [];
-    const extensao = '.' + file.name.split('.').pop().toLowerCase();
     if (!extensoesValidas.includes(extensao)) {
+        // Tenta re-detectar caso tenha clicado em outro botão
+        let tipoDetectado = null;
+        for (const [tipo, exts] of Object.entries(CONFIG.EXTENSOES_VALIDAS)) {
+            if (exts.includes(extensao)) {
+                tipoDetectado = tipo;
+                break;
+            }
+        }
+        if (tipoDetectado) {
+            estado.tipoArquivo = tipoDetectado;
+            return true;
+        }
         mostrarToast(`Arquivo inválido! Esperado: ${extensoesValidas.map(e => e.toUpperCase()).join(', ')}`, 'error');
         return false;
     }
@@ -743,7 +776,7 @@ async function _uploadComAba(abaNome, todasAbas) {
         if (data.colunas?.length > 0) {
             preencherTabela(data.colunas, data.dados);
             setTimeout(() => {
-                if (typeof abrirModalMapeamento === 'function') abrirModalMapeamento(data.colunas);
+                if (typeof mostrarPainelFinanceiro === 'function') mostrarPainelFinanceiro();
             }, 1000);
         }
     } catch (e) {
@@ -773,6 +806,7 @@ function preencherTabela(colunas, dados) {
     atualizarPaginacao();
     if (typeof atualizarEstatisticas === 'function') atualizarEstatisticas();
     if (typeof atualizarMetasUI === 'function') atualizarMetasUI();
+    if (typeof atualizarIndicadorTabelaAtiva === 'function') atualizarIndicadorTabelaAtiva();
 }
 
 function renderizarColunas() {
@@ -1084,7 +1118,11 @@ function obterColunasValidas() {
 
 function obterDadosVisiveis() {
     if (estado.mostrarApenasAnomalias) {
-        return estado.todosDados.filter(l => estado.anomaliasIds.has(l._id));
+        if (!estado.anomaliasIds || estado.anomaliasIds.size === 0) {
+            estado.mostrarApenasAnomalias = false;
+        } else {
+            return estado.todosDados.filter(l => estado.anomaliasIds.has(l._id));
+        }
     }
     if (!estado.filtroAtual) return estado.todosDados;
     const colunas = obterColunasValidas();
@@ -1093,6 +1131,430 @@ function obterDadosVisiveis() {
         colunas.some(col => String(linha[col] || '').toLowerCase().includes(termo))
     );
 }
+
+
+function _calcularPercentilLocal(arr, q) {
+    if (!arr || !arr.length) return 0;
+    const sorted = [...arr].sort((a, b) => a - b);
+    const pos = (sorted.length - 1) * q;
+    const base = Math.floor(pos);
+    const rest = pos - base;
+    if (sorted[base + 1] !== undefined) {
+        return sorted[base] + rest * (sorted[base + 1] - sorted[base]);
+    }
+    return sorted[base];
+}
+
+function _analisarQualidadeLocal(colunas, dados) {
+    const total = dados.length;
+    const nulos = {};
+    const outliers = {};
+    const anomalias = [];
+    const anomaliasIds = new Set();
+
+    let totalNulosGeral = 0;
+    colunas.forEach(col => {
+        let nuloCount = 0;
+        dados.forEach(linha => {
+            const v = linha[col];
+            if (v === null || v === undefined || String(v).trim() === '' || ['nan', 'none', 'null', 'n/a', 'na', '-', '--', 'nd', 'nulo', 'vazio'].includes(String(v).trim().toLowerCase())) {
+                nuloCount++;
+            }
+        });
+        totalNulosGeral += nuloCount;
+        nulos[col] = {
+            nulos: nuloCount,
+            percentual: total > 0 ? Math.round((nuloCount / total) * 100) : 0
+        };
+    });
+
+    // Duplicatas
+    const vistos = new Set();
+    let dupCount = 0;
+    dados.forEach(linha => {
+        const key = colunas.map(c => String(linha[c] ?? '').trim().toLowerCase()).join('|');
+        if (vistos.has(key)) dupCount++;
+        else vistos.add(key);
+    });
+
+    // Outliers por IQR em colunas numéricas
+    colunas.forEach(col => {
+        const numVals = [];
+        const mapIdx = [];
+        dados.forEach((linha, idx) => {
+            const num = (typeof _parsearNumeroLimpo === 'function') ? _parsearNumeroLimpo(linha[col]) : parseFloat(String(linha[col] || '').replace(',', '.'));
+            if (!isNaN(num)) {
+                numVals.push(num);
+                mapIdx.push({ idx, rowId: linha._id, val: num, orig: linha[col] });
+            }
+        });
+
+        if (numVals.length >= 4) {
+            const q1 = _calcularPercentilLocal(numVals, 0.25);
+            const q3 = _calcularPercentilLocal(numVals, 0.75);
+            const iqr = q3 - q1;
+            if (iqr > 0) {
+                const lower = q1 - 1.5 * iqr;
+                const upper = q3 + 1.5 * iqr;
+                const outlierIndices = [];
+                mapIdx.forEach(item => {
+                    if (item.val < lower || item.val > upper) {
+                        outlierIndices.push(item.idx);
+                        const motivo = `Outlier estatístico (IQR): valor "${item.orig}" fora da faixa aceitável [${lower.toFixed(2)}, ${upper.toFixed(2)}]`;
+                        anomalias.push({ _id: item.rowId, coluna: col, valor: item.orig, motivo });
+                        anomaliasIds.add(item.rowId);
+                    }
+                });
+                if (outlierIndices.length > 0) {
+                    outliers[col] = {
+                        outliers: outlierIndices.length,
+                        limite_inferior: Number(lower.toFixed(2)),
+                        limite_superior: Number(upper.toFixed(2)),
+                        indices: outlierIndices
+                    };
+                }
+            }
+        }
+    });
+
+    let penalidade = 0;
+    if (total > 0) {
+        penalidade += (dupCount / total) * 35;
+        penalidade += (totalNulosGeral / (total * Math.max(1, colunas.length))) * 40;
+        penalidade += (anomaliasIds.size / total) * 25;
+    }
+    const score = Math.max(0, Math.min(100, Math.round(100 - penalidade)));
+
+    return {
+        score_qualidade: score,
+        nulos,
+        duplicatas: { duplicatas_exatas: dupCount },
+        outliers,
+        anomalias,
+        anomaliasIds
+    };
+}
+
+function _executarLimpezaCientificaLocal(colunas, dadosOriginais) {
+    if (!dadosOriginais || !dadosOriginais.length) return { colunas, dados: [], score: 100 };
+    
+    let dados = (typeof clonarDadosTabela === 'function') ? clonarDadosTabela(dadosOriginais) : JSON.parse(JSON.stringify(dadosOriginais));
+
+    // 1. Remover duplicatas exatas
+    const vistos = new Set();
+    dados = dados.filter(linha => {
+        const key = colunas.map(c => String(linha[c] ?? '').trim().toLowerCase()).join('|');
+        if (vistos.has(key)) return false;
+        vistos.add(key);
+        return true;
+    });
+
+    // 2. Remover linhas 100% vazias
+    dados = dados.filter(linha => {
+        return colunas.some(col => {
+            const v = linha[col];
+            return v !== null && v !== undefined && String(v).trim() !== '' && !['nan', 'none', 'null', 'n/a', '-', '--'].includes(String(v).trim().toLowerCase());
+        });
+    });
+
+    // 3. Tratar cada coluna (imputação e capping)
+    colunas.forEach(col => {
+        const ehNum = (typeof _ehColunaNumerica === 'function') ? _ehColunaNumerica(col, dados) : false;
+        if (ehNum) {
+            const nums = dados.map(l => (typeof _parsearNumeroLimpo === 'function') ? _parsearNumeroLimpo(l[col]) : parseFloat(l[col])).filter(n => !isNaN(n));
+            if (nums.length > 0) {
+                const media = nums.reduce((a, b) => a + b, 0) / nums.length;
+                const mediaFormatada = Number.isInteger(media) ? media : parseFloat(media.toFixed(2));
+                
+                let lower = -Infinity, upper = Infinity;
+                if (nums.length >= 4) {
+                    const q1 = _calcularPercentilLocal(nums, 0.25);
+                    const q3 = _calcularPercentilLocal(nums, 0.75);
+                    const iqr = q3 - q1;
+                    if (iqr > 0) {
+                        lower = q1 - 1.5 * iqr;
+                        upper = q3 + 1.5 * iqr;
+                    }
+                }
+
+                dados.forEach(linha => {
+                    const raw = linha[col];
+                    const num = (typeof _parsearNumeroLimpo === 'function') ? _parsearNumeroLimpo(raw) : parseFloat(raw);
+                    if (isNaN(num) || raw === null || raw === undefined || String(raw).trim() === '' || ['nan', 'none', 'null', 'n/a', '-', '--'].includes(String(raw).trim().toLowerCase())) {
+                        linha[col] = mediaFormatada;
+                    } else if (num < lower) {
+                        linha[col] = Number.isInteger(lower) ? lower : parseFloat(lower.toFixed(2));
+                    } else if (num > upper) {
+                        linha[col] = Number.isInteger(upper) ? upper : parseFloat(upper.toFixed(2));
+                    }
+                });
+            }
+        } else {
+            const freq = {};
+            dados.forEach(l => {
+                const s = String(l[col] ?? '').trim();
+                if (s && !['nan', 'none', 'null', 'n/a', '-', '--'].includes(s.toLowerCase())) {
+                    freq[s] = (freq[s] || 0) + 1;
+                }
+            });
+            let moda = null, maxCount = 0;
+            Object.entries(freq).forEach(([val, count]) => {
+                if (count > maxCount) { maxCount = count; moda = val; }
+            });
+
+            dados.forEach(linha => {
+                const val = linha[col];
+                if (val === null || val === undefined || String(val).trim() === '' || ['nan', 'none', 'null', 'n/a', '-', '--'].includes(String(val).trim().toLowerCase())) {
+                    if (moda && maxCount >= 2) linha[col] = moda;
+                    else linha[col] = '';
+                } else if (typeof val === 'string') {
+                    linha[col] = val.replace(/\s+/g, ' ').trim();
+                }
+            });
+        }
+    });
+
+    dados.forEach((linha, idx) => {
+        if (!linha._id) linha._id = (typeof gerarIdLinha === 'function') ? gerarIdLinha() : `r-${Date.now()}-${idx}`;
+    });
+
+    return { colunas, dados, score: 100 };
+}
+
+async function analisarQualidade(silencioso = false) {
+    const colunas = obterColunasValidas();
+    const dados = (estado.todosDados || []).map(linha => {
+        const obj = {};
+        colunas.forEach(col => obj[col] = linha[col] ?? '');
+        return obj;
+    });
+
+    if (!colunas.length || !dados.length) {
+        if (!silencioso) mostrarToast('Adicione colunas e dados para analisar a qualidade.', 'warning');
+        return;
+    }
+
+    try {
+        if (!silencioso) mostrarStatusAutomacao('🔬 Analisando qualidade dos dados...', 'info');
+
+        const tabAtual = (typeof _tabelas !== 'undefined' && Array.isArray(_tabelas))
+            ? _tabelas.find(t => t.id === _tabelaAtualId)
+            : null;
+        const tabelaId = (tabAtual && tabAtual.id && !String(tabAtual.id).startsWith('tab-local-')) ? tabAtual.id : null;
+
+        let rel = null;
+        try {
+            const resp = await fetch('/api/dados/analisar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ colunas, dados, tabela_id: tabelaId })
+            });
+            if (resp.ok) {
+                const json = await resp.json();
+                if (json.sucesso && json.relatorio) {
+                    rel = json.relatorio;
+                }
+            }
+        } catch (fetchErr) {
+            console.warn('Backend indisponível para diagnóstico. Usando motor local:', fetchErr);
+        }
+
+        // Fallback local caso backend não responda
+        if (!rel) {
+            rel = _analisarQualidadeLocal(colunas, estado.todosDados);
+        }
+
+        const score = rel.score_qualidade ?? 100;
+
+        // Atualizar KPI de qualidade
+        const elDup = document.getElementById('statDuplicatas');
+        if (elDup) {
+            elDup.textContent = `${score}%`;
+            elDup.style.color = score >= 80 ? '#10b981' : score >= 50 ? '#f59e0b' : '#ef4444';
+        }
+
+        // Marcar anomalias e outliers
+        if (!window.estado) window.estado = {};
+        window.estado.anomalias = [];
+        window.estado.anomaliasIds = new Set();
+        estado.anomalias = [];
+        estado.anomaliasIds = new Set();
+
+        const outliers = rel.outliers || {};
+        Object.entries(outliers).forEach(([col, info]) => {
+            if (info.indices && info.indices.length > 0) {
+                info.indices.forEach(idx => {
+                    if (estado.todosDados[idx]) {
+                        const rowId = estado.todosDados[idx]._id;
+                        const val = estado.todosDados[idx][col];
+                        const motivo = `Outlier estatístico (IQR): valor "${val}" fora da faixa [${info.limite_inferior}, ${info.limite_superior}]`;
+                        estado.anomalias.push({ _id: rowId, coluna: col, valor: val, motivo });
+                        estado.anomaliasIds.add(rowId);
+                        window.estado.anomalias = estado.anomalias;
+                        window.estado.anomaliasIds = estado.anomaliasIds;
+                    }
+                });
+            }
+        });
+
+        // Atualizar banner de qualidade
+        const banner = document.getElementById('dataQualityAlerts');
+        if (banner) {
+            const alertas = [];
+            const nulos = rel.nulos || {};
+            let totalNulos = 0;
+            Object.entries(nulos).forEach(([c, inf]) => {
+                if (inf.percentual > 10) alertas.push(`<span class="dqa-item dqa-warn"><i class="fa-solid fa-triangle-exclamation"></i> Coluna "${c}": ${inf.percentual}% de campos vazios/nulos.</span>`);
+                totalNulos += inf.nulos || 0;
+            });
+
+            const dup = rel.duplicatas || {};
+            if (dup.duplicatas_exatas > 0) {
+                alertas.push(`<span class="dqa-item dqa-warn"><i class="fa-solid fa-copy"></i> ${dup.duplicatas_exatas} linha(s) duplicada(s) detectada(s).</span>`);
+            }
+
+            if (estado.anomaliasIds.size > 0) {
+                alertas.push(`<span class="dqa-item dqa-err"><i class="fa-solid fa-chart-line"></i> ${estado.anomaliasIds.size} linha(s) com anomalias/outliers detectadas.</span>`);
+            }
+
+            if (alertas.length > 0) {
+                alertas.push(`<span class="dqa-item dqa-action">
+                    <button type="button" class="btn-small" onclick="mostrarAnomalias()">Ver anomalias (${estado.anomaliasIds.size})</button>
+                    <button type="button" class="btn-small btn-primary" onclick="executarLimpezaCientifica()" style="background:#10b981; color:#fff; border:none; font-weight:700;"><i class="fa-solid fa-wand-magic-sparkles"></i> Limpar & Sanitizar Tudo</button>
+                </span>`);
+                banner.innerHTML = alertas.join('');
+                banner.style.display = 'flex';
+            } else {
+                banner.innerHTML = `<span class="dqa-item dqa-ok"><i class="fa-solid fa-circle-check"></i> Análise de Dados: <strong>Score 100%</strong> — Dados limpos e consistentes!</span>`;
+                banner.style.display = 'flex';
+                setTimeout(() => { if (banner) banner.style.display = 'none'; }, 6000);
+            }
+        }
+
+        exibirPagina();
+        if (!silencioso) {
+            mostrarToast(`✓ Diagnóstico concluído! Score de qualidade dos dados: ${score}%`, score >= 80 ? 'success' : 'info');
+        }
+        return rel;
+    } catch (err) {
+        console.error('Erro na análise de qualidade:', err);
+        if (!silencioso) mostrarToast(`Erro ao analisar qualidade: ${err.message}`, 'error');
+    }
+}
+
+/**
+ * Executa a limpeza e sanitização científica dos dados via backend e salva no banco (com fallback local automático)
+ */
+async function executarLimpezaCientifica() {
+    const colunas = obterColunasValidas();
+    const dados = (estado.todosDados || []).map(linha => {
+        const obj = {};
+        colunas.forEach(col => obj[col] = linha[col] ?? '');
+        return obj;
+    });
+
+    if (!colunas.length || !dados.length) {
+        mostrarToast('Adicione colunas e dados para realizar a limpeza.', 'warning');
+        return;
+    }
+
+    try {
+        mostrarStatusAutomacao('🧹 Executando sanitização científica e salvando no banco...', 'info');
+
+        const tabAtual = (typeof _tabelas !== 'undefined' && Array.isArray(_tabelas))
+            ? _tabelas.find(t => t.id === _tabelaAtualId)
+            : null;
+        const tabelaId = (tabAtual && tabAtual.id && !String(tabAtual.id).startsWith('tab-local-')) ? tabAtual.id : null;
+
+        let limpoComSucesso = false;
+        let colunasResultado = colunas;
+        let dadosResultado = estado.todosDados;
+        let scoreFinal = 100;
+
+        try {
+            const resp = await fetch('/api/dados/limpar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    colunas,
+                    dados,
+                    tabela_id: tabelaId,
+                    salvar_no_banco: true,
+                    opcoes: {
+                        cap_outliers: true,
+                        remover_duplicatas: true,
+                        padronizar_texto: true
+                    }
+                })
+            });
+
+            if (resp.ok) {
+                const json = await resp.json();
+                if (json.sucesso && Array.isArray(json.dados)) {
+                    colunasResultado = json.colunas || colunas;
+                    dadosResultado = json.dados;
+                    scoreFinal = json.score_atual ?? 100;
+                    limpoComSucesso = true;
+                }
+            }
+        } catch (fetchErr) {
+            console.warn('Backend indisponível para limpeza. Executando motor local de limpeza científica:', fetchErr);
+        }
+
+        // Fallback local se backend estiver offline ou retornar erro
+        if (!limpoComSucesso) {
+            const resLocal = _executarLimpezaCientificaLocal(colunas, estado.todosDados);
+            colunasResultado = resLocal.colunas;
+            dadosResultado = resLocal.dados;
+            scoreFinal = resLocal.score;
+        }
+
+        // Atualizar estado com os dados limpos
+        salvarEstadoHistorico();
+        preencherTabela(colunasResultado, dadosResultado);
+        if (tabAtual) {
+            tabAtual.dados = (typeof clonarDadosTabela === 'function') ? clonarDadosTabela(estado.todosDados) : [...estado.todosDados];
+            tabAtual.colunas = [...colunasResultado];
+            if (typeof renderizarAbasTabelas === 'function') renderizarAbasTabelas();
+        }
+
+        // Limpar anomalias e restaurar visualização
+        window.estado.anomalias = [];
+        window.estado.anomaliasIds = new Set();
+        estado.anomalias = [];
+        estado.anomaliasIds = new Set();
+        estado.mostrarApenasAnomalias = false;
+
+        // Fechar modal de limpeza se aberto
+        const modalLimp = document.getElementById('modalLimpeza');
+        if (modalLimp) modalLimp.style.display = 'none';
+
+        // Atualizar KPI de qualidade
+        const elDup = document.getElementById('statDuplicatas');
+        if (elDup) {
+            elDup.textContent = `${scoreFinal}%`;
+            elDup.style.color = '#10b981';
+        }
+
+        // Atualizar banner comemorativo
+        const banner = document.getElementById('dataQualityAlerts');
+        if (banner) {
+            banner.innerHTML = `<span class="dqa-item dqa-ok"><i class="fa-solid fa-circle-check"></i> <strong>Limpeza Concluída com Sucesso!</strong> Dados sanitizados, duplicatas removidas, outliers tratados. Score de Qualidade: <strong>${scoreFinal}%</strong></span>`;
+            banner.style.display = 'flex';
+            setTimeout(() => { if (banner) banner.style.display = 'none'; }, 7000);
+        }
+
+        if (typeof atualizarEstatisticas === 'function') atualizarEstatisticas();
+        if (typeof persistirTabelaAtualDebounced === 'function') persistirTabelaAtualDebounced();
+        if (typeof registrarLog === 'function') registrarLog(`Limpeza Científica: Sanitização completa executada com Score de ${scoreFinal}%.`);
+
+        mostrarToast(`✓ Dados limpos e sanitizados com sucesso! (Score: ${scoreFinal}%)`, 'success');
+    } catch (err) {
+        console.error('Erro na limpeza:', err);
+        mostrarToast(`Erro ao limpar dados: ${err.message}`, 'error');
+    }
+}
+
 
 function criarLinhaVazia(colunas) {
     const linha = { _id: gerarIdLinha() };
@@ -1137,6 +1599,78 @@ function adicionarNovaColuna() {
     exibirPagina();
     if (typeof persistirTabelaAtualDebounced === 'function') persistirTabelaAtualDebounced();
 }
+
+/**
+ * Cria uma coluna com nome específico programaticamente e sincroniza tabela e banco
+ */
+function adicionarColunaComNome(nomeColuna, valorPadrao = '', autoSalvar = true) {
+    if (!nomeColuna || typeof nomeColuna !== 'string') return null;
+    const nomeLimpo = nomeColuna.trim();
+    if (!nomeLimpo) return null;
+
+    const colunasExistentes = obterColunasValidas();
+    if (colunasExistentes.includes(nomeLimpo)) {
+        return nomeLimpo;
+    }
+
+    const container = estado.elementos.colunasContainer || document.getElementById('colunas-container');
+    if (!container) return null;
+
+    salvarEstadoHistorico();
+
+    // Se a tabela não tiver dados/linhas, cria pelo menos 1 linha com as colunas
+    if (!estado.todosDados || estado.todosDados.length === 0) {
+        const colunasTodas = [...colunasExistentes, nomeLimpo];
+        estado.todosDados = [criarLinhaVazia(colunasTodas)];
+    } else {
+        // Preencher valor inicial nas linhas existentes
+        estado.todosDados = estado.todosDados.map(linha => {
+            const nova = { ...linha };
+            if (nova[nomeLimpo] === undefined || nova[nomeLimpo] === '') {
+                nova[nomeLimpo] = valorPadrao !== undefined ? valorPadrao : '';
+            }
+            return nova;
+        });
+    }
+
+    const div = document.createElement('div');
+    div.className = 'column-chip-edit';
+    div.innerHTML = `
+        <i class="fa-solid fa-grip-vertical" style="color:var(--suave); font-size:11px; opacity:0.6;"></i>
+        <input type="text" class="entrada entrada-coluna" value="${nomeLimpo}" placeholder="Nome da coluna">
+        <button class="btn-remover-col botao-remover-coluna" type="button" title="Remover coluna">✕</button>
+    `;
+    container.appendChild(div);
+
+    const input = div.querySelector('.entrada-coluna');
+    if (input) {
+        input.addEventListener('input', () => {
+            sincronizarColunas();
+            atualizarTabela();
+            exibirPagina();
+            if (typeof persistirTabelaAtualDebounced === 'function') persistirTabelaAtualDebounced();
+        });
+    }
+
+    sincronizarColunas();
+    atualizarTabela();
+    exibirPagina();
+
+    // Sincronizar imediatamente o objeto da tabela ativa (sem aguardar debounce de 800ms)
+    if (typeof sincronizarTabelaAtiva === 'function') sincronizarTabelaAtiva();
+
+    if (typeof persistirTabelaAtualDebounced === 'function') persistirTabelaAtualDebounced();
+
+    if (autoSalvar && typeof salvarDados === 'function') {
+        setTimeout(() => {
+            salvarDados(true);
+        }, 150);
+    }
+
+    return nomeLimpo;
+}
+window.adicionarColunaComNome = adicionarColunaComNome;
+
 
 function removerColuna(event) {
     const colunaDiv = event.target.closest('div');
@@ -1354,86 +1888,8 @@ function garantirColuna(nome, padrao = '') {
 }
 
 function aplicarAutomacaoDeIndicadores(editandoRowId, editandoColuna) {
-    const colunas = obterColunasValidas();
-    if (!colunas.length || !estado.todosDados.length) {
-        mostrarStatusAutomacao('Adicione colunas e linhas para ativar a automação.', 'info');
-        return;
-    }
-    const ind = mapearIndicadoresAutomaticos(colunas);
-    const criadas = [];
-
-    if ((ind.faturamento || (ind.preco && ind.quantidade)) && ind.despesa && !ind.lucro) {
-        if (garantirColuna('Lucro', '')) criadas.push('Lucro');
-        ind.lucro = 'Lucro';
-    }
-    if (ind.preco && ind.quantidade && !ind.faturamento) {
-        if (garantirColuna('Valor Total', '')) criadas.push('Valor Total');
-        ind.faturamento = 'Valor Total';
-    }
-    if (!ind.faturamento && !(ind.preco && ind.quantidade)) {
-        mostrarStatusAutomacao('Adicione colunas de Preço/Quantidade ou Faturamento/Receita.', 'warning');
-        return;
-    }
-
-    let calcFat = false, calcDesp = false, calcLuc = false;
-    const vazio = v => v === null || v === undefined || String(v).trim() === '';
-    const podeEscrever = (id, col) => !editandoRowId || !editandoColuna || !(id === editandoRowId && col === editandoColuna);
-
-    estado.todosDados = estado.todosDados.map(linha => {
-        const nl = { ...linha };
-        if (ind.preco && ind.quantidade && ind.faturamento) {
-            if (!vazio(nl[ind.preco]) && !vazio(nl[ind.quantidade]) && podeEscrever(linha._id, ind.faturamento)) {
-                const p = parseNumero(nl[ind.preco]);
-                const q = parseNumero(nl[ind.quantidade]);
-                let desc = 0;
-                if (ind.desconto && !vazio(nl[ind.desconto])) {
-                    const ds = String(nl[ind.desconto]).trim();
-                    if (ds.endsWith('%')) desc = p * (parseFloat(ds) / 100) * q;
-                    else { const dv = parseNumero(ds); desc = dv < p ? dv * q : dv; }
-                }
-                nl[ind.faturamento] = p * q - desc;
-                calcFat = true;
-            }
-        }
-        if (ind.custo && ind.quantidade && ind.despesa) {
-            if (!vazio(nl[ind.custo]) && !vazio(nl[ind.quantidade]) && podeEscrever(linha._id, ind.despesa)) {
-                nl[ind.despesa] = parseNumero(nl[ind.custo]) * parseNumero(nl[ind.quantidade]);
-                calcDesp = true;
-            }
-        }
-        if (ind.faturamento && ind.despesa && ind.lucro) {
-            const fv = vazio(nl[ind.faturamento]);
-            const dv = !ind.despesa || vazio(nl[ind.despesa]);
-            const lv = !ind.lucro || vazio(nl[ind.lucro]);
-            if (!fv && !dv && podeEscrever(linha._id, ind.lucro)) {
-                nl[ind.lucro] = parseNumero(nl[ind.faturamento]) - parseNumero(nl[ind.despesa]);
-                calcLuc = true;
-            } else if (!fv && !lv && podeEscrever(linha._id, ind.despesa)) {
-                nl[ind.despesa] = parseNumero(nl[ind.faturamento]) - parseNumero(nl[ind.lucro]);
-                calcDesp = true;
-            } else if (!dv && !lv && podeEscrever(linha._id, ind.faturamento)) {
-                nl[ind.faturamento] = parseNumero(nl[ind.lucro]) + parseNumero(nl[ind.despesa]);
-                calcFat = true;
-            }
-        }
-        return nl;
-    });
-
-    if (criadas.length || calcFat || calcDesp || calcLuc) {
-        const partes = [];
-        if (criadas.length) partes.push(`criou ${[...new Set(criadas)].join(' e ')}`);
-        if (calcFat) partes.push('calculou Faturamento');
-        if (calcDesp) partes.push('calculou Despesas');
-        if (calcLuc) partes.push('calculou Lucro');
-        mostrarStatusAutomacao(`✅ Automação ativa: ${partes.join(', ')}.`, 'success');
-    } else {
-        mostrarStatusAutomacao('Automação ativa: colunas detectadas automaticamente.', 'info');
-    }
-    if (estado.colunasAtuais.length !== colunas.length) {
-        renderizarColunas();
-        atualizarTabela();
-        exibirPagina();
-    }
+    // Automação de cálculo cruzado desativada para manter os valores digitados independentes
+    return;
 }
 
 // ───────────────────────────────
@@ -1596,23 +2052,54 @@ async function salvarDados(silencioso = false) {
     try {
         _animarBotao('loading');
         if (silencioso) mostrarStatusAutomacao('💾 Salvando...', 'info');
-        const r = await fetch('/salvar-dados', {
+
+        const tabAtual = (typeof _tabelas !== 'undefined' && Array.isArray(_tabelas))
+            ? _tabelas.find(t => t.id === _tabelaAtualId)
+            : null;
+        const nomePlanilha = (tabAtual && tabAtual.nome) ? tabAtual.nome : 'Planilha Principal';
+        const tabelaId = (tabAtual && tabAtual.id && !String(tabAtual.id).startsWith('tab-local-')) ? tabAtual.id : null;
+
+        const r = await fetch('/api/tabelas', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+                id: tabelaId,
+                nome: nomePlanilha,
                 colunas: obterColunasValidas(),
-                dados,
-                nome_planilha: `Planilha_${new Date().toISOString().split('T')[0]}`
+                dados: dados,
+                tipo_dominio: tabAtual ? tabAtual.tipo_dominio : null
             })
         });
         const data = await r.json();
         if (!r.ok) throw new Error(data.mensagem || 'Erro');
 
+        if (data && data.id && tabAtual) {
+            tabAtual.id = data.id;
+            _tabelaAtualId = data.id;
+            tabAtual.dados = clonarDadosTabela(estado.todosDados);
+            tabAtual.colunas = [...obterColunasValidas()];
+            if (data.tipo_dominio) tabAtual.tipo_dominio = data.tipo_dominio;
+            if (data.dominio_label) tabAtual.dominio_label = data.dominio_label;
+            if (data.dominio_cor) tabAtual.dominio_cor = data.dominio_cor;
+            if (data.dominio_icone) tabAtual.dominio_icone = data.dominio_icone;
+            if (data.tipo_fluxo) tabAtual.tipo_fluxo = data.tipo_fluxo;
+            if (typeof renderizarAbasTabelas === 'function') renderizarAbasTabelas();
+        }
+
         _animarBotao('success');
         if (silencioso) {
             mostrarStatusAutomacao('✓ Salvo automaticamente!', 'success');
         } else {
-            mostrarToast('✓ Dados salvos com sucesso!', 'success');
+            mostrarToast(`✓ Tabela "${nomePlanilha}" salva com sucesso!`, 'success');
+        }
+
+        // Salvar classificação financeira e mapeamentos associados
+        if (typeof salvarClassificacaoFinanceira === 'function') {
+            try {
+                await salvarClassificacaoFinanceira(true);
+            } catch (errFin) {
+                console.warn('[SalvarDados] Aviso ao sincronizar classificação financeira:', errFin);
+            }
         }
 
         // Salvar produtos no histórico de autocomplete
@@ -1620,7 +2107,7 @@ async function salvarDados(silencioso = false) {
 
         if (!silencioso && colunas.length > 0) {
             setTimeout(() => {
-                if (typeof abrirModalMapeamento === 'function') abrirModalMapeamento(colunas);
+                if (typeof mostrarPainelFinanceiro === 'function') mostrarPainelFinanceiro();
             }, 500);
         }
         atualizarPaginacao();
@@ -1842,6 +2329,11 @@ async function _salvarProdutosNoHistorico(colunas, dados) {
 // CARREGAR DADOS INICIAIS
 // ───────────────────────────────
 async function carregarDadosIniciais() {
+    if (typeof carregarTodasTabelas === 'function') {
+        const ok = await carregarTodasTabelas();
+        if (ok) return;
+    }
+
     try {
         const r = await fetch('/carregar-dados');
         const data = await r.json();
@@ -1865,7 +2357,7 @@ function inicializarTabelaPadrao() {
     exibirPagina();
     atualizarPaginacao();
     atualizarBotoesUndoRedo();
-    mostrarStatusAutomacao('Tabela pronta. Insira seus dados e a automação calculará automaticamente.', 'info');
+    mostrarStatusAutomacao('Tabela pronta para inserção e edição de dados.', 'info');
 }
 
 // ───────────────────────────────
@@ -1877,6 +2369,13 @@ function init() {
     atualizarBotoesUndoRedo();
     carregarDadosIniciais();
 }
+
+// Exposição Global de Funções
+window.analisarQualidade = analisarQualidade;
+window.executarLimpezaCientifica = executarLimpezaCientifica;
+window.mostrarAnomalias = mostrarAnomalias;
+window.removerTodasAnomalias = removerTodasAnomalias;
+window.limparFiltroAnomalias = limparFiltroAnomalias;
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);

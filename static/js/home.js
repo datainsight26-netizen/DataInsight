@@ -9,6 +9,7 @@ const PERIODOS = {
 };
 
 let periodoAtual = '30_dias';
+let tabelaAtualId = 'todas';
 let chartLinha = null;
 let chartBarras = null;
 let chartProdutosVendas = null;
@@ -17,14 +18,85 @@ let chartProdutosLucro = null;
 // ======================
 // INIT
 // ======================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   configurarPeriodo();
+  await configurarSeletorPlanilhaHome();
   renderizarStatusVazio();
   atualizarTudo();
   carregarStatus();
   carregarInsight();
   carregarUltimaRespostaIA();
 });
+
+// ======================
+// CONTROLE DE PLANILHA / ORIGEM
+// ======================
+async function configurarSeletorPlanilhaHome() {
+  const select = document.getElementById('seletorPlanilhaHome');
+  if (!select) return;
+
+  try {
+    const resp = await fetch('/api/planilhas/sumario');
+    if (!resp.ok) return;
+    const json = await resp.json();
+    const planilhas = json.planilhas || [];
+
+    select.innerHTML = '';
+
+    const optTodas = document.createElement('option');
+    optTodas.value = 'todas';
+    optTodas.textContent = `🌐 Todas as Planilhas (Visão Consolidada - ${planilhas.length})`;
+    select.appendChild(optTodas);
+
+    planilhas.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      const icone = p.tipo_fluxo === 'saida' ? '🔻' : (p.tipo_fluxo === 'entrada' ? '🟢' : '📁');
+      opt.textContent = `${icone} [${p.dominio_label}] ${p.nome} (${p.total_linhas} linhas)`;
+      select.appendChild(opt);
+    });
+
+    const salva = localStorage.getItem('DataInsight_DashboardPlanilha');
+    if (salva && (salva === 'todas' || planilhas.some(p => p.id === salva))) {
+      select.value = salva;
+      tabelaAtualId = salva;
+    }
+
+    select.addEventListener('change', e => {
+      tabelaAtualId = e.target.value;
+      localStorage.setItem('DataInsight_DashboardPlanilha', tabelaAtualId);
+      atualizarTudo();
+      carregarStatus();
+      carregarInsight();
+    });
+
+    atualizarBadgeStatusHome(planilhas, tabelaAtualId);
+  } catch (e) {
+    console.warn('Aviso ao carregar planilhas na Home:', e);
+  }
+}
+
+function atualizarBadgeStatusHome(planilhas, idSelecionado) {
+  const container = document.getElementById('homeStatusFontesContainer');
+  if (!container) return;
+
+  if (idSelecionado === 'todas') {
+    container.innerHTML = `
+      <span class="badge" style="background:rgba(59,130,246,0.12); color:#3b82f6; border:1px solid rgba(59,130,246,0.25); padding:4px 10px; border-radius:14px; font-size:0.75rem; font-weight:600;">
+        <i class="fa-solid fa-layer-group"></i> ${planilhas.length} ${planilhas.length === 1 ? 'planilha consolidada' : 'planilhas consolidadas'}
+      </span>
+    `;
+  } else {
+    const p = planilhas.find(x => x.id === idSelecionado);
+    const nome = p ? p.nome : 'Planilha Individual';
+    const dom = p ? p.dominio_label : 'Individual';
+    container.innerHTML = `
+      <span class="badge" style="background:rgba(16,185,129,0.12); color:#10b981; border:1px solid rgba(16,185,129,0.25); padding:4px 10px; border-radius:14px; font-size:0.75rem; font-weight:600;">
+        <i class="fa-solid fa-file-invoice"></i> ${nome} (${dom})
+      </span>
+    `;
+  }
+}
 
 // ======================
 // CONTROLE DE PERÍODO
@@ -59,7 +131,7 @@ function atualizarTudo() {
 // FETCH GENÉRICO
 // ======================
 function carregarDados(url, callback) {
-  fetch(`${url}?periodo=${periodoAtual}`)
+  fetch(`${url}?periodo=${periodoAtual}&tabela_id=${tabelaAtualId}`)
     .then(r => {
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       return r.json();
@@ -150,7 +222,7 @@ function atualizarGraficos(data) {
 // STATUS DO NEGÓCIO
 // ======================
 function carregarStatus() {
-  fetch(`/api/status_negocio?periodo=${periodoAtual}`)
+  fetch(`/api/status_negocio?periodo=${periodoAtual}&tabela_id=${tabelaAtualId}`)
     .then(r => {
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       return r.json();
@@ -240,7 +312,7 @@ function carregarInsight() {
     </div>
   `;
 
-  fetch(`/api/insight_diario?periodo=${periodoAtual}`)
+  fetch(`/api/insight_diario?periodo=${periodoAtual}&tabela_id=${tabelaAtualId}`)
     .then(response => response.json())
     .then(data => {
       if(data.html) {
@@ -567,7 +639,7 @@ async function abrirModalDetalhe(kpi) {
   body.innerHTML = '<p>Carregando detalhes...</p>';
 
   try {
-    const resposta = await fetch(`/api/desempenho/detalhe?kpi=${encodeURIComponent(kpi)}&periodo=${periodoAtual}`);
+    const resposta = await fetch(`/api/desempenho/detalhe?kpi=${encodeURIComponent(kpi)}&periodo=${periodoAtual}&tabela_id=${tabelaAtualId}`);
     if (!resposta.ok) {
       throw new Error(`HTTP ${resposta.status}`);
     }

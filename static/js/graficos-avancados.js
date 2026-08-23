@@ -239,40 +239,22 @@ function criarSeletorPeriodoRapido(chartId, chartInstance) {
       transition: all 0.2s;
     `;
 
-    btn.addEventListener('click', async () => {
-  const periodoSelect = document.getElementById('periodoDash');
-  if (periodoSelect) {
-    periodoSelect.value = periodo.dias;
-    periodoSelect.dispatchEvent(new Event('change'));
-
-    
-    document.querySelectorAll('.rapid-period-selector button').forEach(b => {
-      b.style.background = getThemeColors().fundo;
-      b.style.color = getThemeColors().texto; 
-      b.style.fontWeight = 'normal';
-    });
-
-    
-    btn.style.background = '#3B82F6';
-    btn.style.color = '#FFFFFF';
-    btn.style.fontWeight = 'bold';
-
-    btn.blur();
-  }
-});
-    btn.addEventListener('click', async () => {
+    btn.addEventListener('click', () => {
       const periodoSelect = document.getElementById('periodoDash');
       if (periodoSelect) {
         periodoSelect.value = periodo.dias;
         periodoSelect.dispatchEvent(new Event('change'));
 
-        document.querySelectorAll('.rapid-period-selector button').forEach(btn => {
-          btn.style.background = getThemeColors().fundo;
-          btn.style.fontWeight = 'normal';
+        // Destacar botão ativo
+        document.querySelectorAll('.rapid-period-selector button').forEach(b => {
+          b.style.background = getThemeColors().fundo;
+          b.style.color = getThemeColors().texto;
+          b.style.fontWeight = 'normal';
         });
         btn.style.background = '#3B82F6';
         btn.style.color = '#FFFFFF';
         btn.style.fontWeight = 'bold';
+        btn.blur();
       }
     });
 
@@ -329,27 +311,128 @@ function atualizarSubtitulosGraficos() {
 }
 
 // ==========================================
+// SELETOR E BADGES DE MULTI-PLANILHAS
+// ==========================================
+
+let _planilhasSumario = [];
+
+async function carregarOpcoesPlanilhas() {
+  const select = document.getElementById('seletorPlanilhaDash');
+  if (!select) return;
+
+  try {
+    const resp = await fetch('/api/planilhas/sumario');
+    if (!resp.ok) return;
+
+    const data = await resp.json();
+    _planilhasSumario = data.planilhas || [];
+
+    // Limpar e reconstruir opções
+    select.innerHTML = '';
+
+    // Opção Consolidada
+    const optTodas = document.createElement('option');
+    optTodas.value = 'todas';
+    optTodas.textContent = `🌐 Todas as Planilhas (Visão Consolidada - ${_planilhasSumario.length})`;
+    select.appendChild(optTodas);
+
+    // Opções individuais
+    _planilhasSumario.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      const icone = p.tipo_fluxo === 'saida' ? '🔻' : (p.tipo_fluxo === 'entrada' ? '🟢' : '📁');
+      opt.textContent = `${icone} [${p.dominio_label}] ${p.nome} (${p.total_linhas} linhas)`;
+      select.appendChild(opt);
+    });
+
+    // Recuperar preferência salva
+    const salva = localStorage.getItem('DataInsight_DashboardPlanilha');
+    if (salva && (salva === 'todas' || _planilhasSumario.some(p => p.id === salva))) {
+      select.value = salva;
+    }
+  } catch (e) {
+    console.warn('Não foi possível carregar sumário de planilhas:', e);
+  }
+}
+
+function atualizarBadgesFontes(contexto) {
+  const container = document.getElementById('badgeFontesContainer');
+  if (!container) return;
+
+  if (!contexto || !contexto.planilhas_envolvidas || contexto.planilhas_envolvidas.length === 0) {
+    container.innerHTML = `
+      <span class="badge" style="background: rgba(107, 114, 128, 0.15); color: #6b7280; border: 1px solid rgba(107, 114, 128, 0.3); padding: 4px 10px; border-radius: 20px; font-size: 12px;">
+        <i class="fa-solid fa-circle-info"></i> Nenhuma fonte vinculada
+      </span>
+    `;
+    return;
+  }
+
+  const badgesHtml = contexto.planilhas_envolvidas.map(p => {
+    let cor = '#3b82f6';
+    let bg = 'rgba(59, 130, 246, 0.12)';
+    let border = 'rgba(59, 130, 246, 0.3)';
+
+    if (p.dominio === 'RECEITAS_VENDAS') {
+      cor = '#10b981';
+      bg = 'rgba(16, 185, 129, 0.12)';
+      border = 'rgba(16, 185, 129, 0.3)';
+    } else if (p.dominio === 'DESPESAS_ALUGUEL') {
+      cor = '#f59e0b';
+      bg = 'rgba(245, 158, 11, 0.12)';
+      border = 'rgba(245, 158, 11, 0.3)';
+    } else if (p.dominio === 'DESPESAS_GERAIS') {
+      cor = '#ef4444';
+      bg = 'rgba(239, 68, 68, 0.12)';
+      border = 'rgba(239, 68, 68, 0.3)';
+    } else if (p.dominio === 'ESTOQUE_PRODUTOS') {
+      cor = '#8b5cf6';
+      bg = 'rgba(139, 92, 246, 0.12)';
+      border = 'rgba(139, 92, 246, 0.3)';
+    }
+
+    return `
+      <span class="badge" title="${p.total_linhas} linhas registradas" style="background: ${bg}; color: ${cor}; border: 1px solid ${border}; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px;">
+        <i class="fa-solid fa-file-invoice"></i> ${p.nome}
+      </span>
+    `;
+  }).join('');
+
+  container.innerHTML = badgesHtml;
+}
+
+// ==========================================
 // CARREGAMENTO DE DADOS
 // ==========================================
 
 async function atualizarGraficosComDados() {
   try {
     const periodoSelect = document.getElementById('periodoDash');
+    const planilhaSelect = document.getElementById('seletorPlanilhaDash');
     if (!periodoSelect) return;
 
     const periodo = periodoSelect.value || '30';
-    const resposta = await fetch(`/dashboard/dados?periodo=${periodo}`);
+    const tabelaId = planilhaSelect?.value || 'todas';
+
+    // Salvar preferência
+    localStorage.setItem('DataInsight_DashboardPlanilha', tabelaId);
+
+    const resposta = await fetch(`/dashboard/dados?periodo=${periodo}&tabela_id=${tabelaId}`);
 
     if (!resposta.ok) {
       const erro = resposta.status === 401 ? "Usuário não autenticado" : `HTTP ${resposta.status}`;
-      alert(`Erro ao carregar dados: ${erro}`);
+      console.error(`Erro ao carregar dados: ${erro}`);
       return;
     }
 
     const dados = await resposta.json();
-    if (dados.erro) {
-      alert(`Atenção: ${dados.erro}`);
+    if (dados.erro && !dados.contexto) {
+      console.warn(`Aviso: ${dados.erro}`);
       return;
+    }
+
+    if (dados.contexto) {
+      atualizarBadgesFontes(dados.contexto);
     }
 
     if (dados.kpis) atualizarKPIs(dados);
@@ -430,8 +513,10 @@ window.addEventListener('resize', () => {
 // ==========================================
 
 document.getElementById('periodoDash')?.addEventListener('change', () => atualizarGraficosComDados());
+document.getElementById('seletorPlanilhaDash')?.addEventListener('change', () => atualizarGraficosComDados());
 
 document.addEventListener("DOMContentLoaded", async () => {
   renderizarGraficos();
+  await carregarOpcoesPlanilhas();
   await atualizarGraficosComDados();
-});
+});

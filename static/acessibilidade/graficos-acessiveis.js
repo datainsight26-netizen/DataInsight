@@ -52,58 +52,6 @@ function criarGraficoVendasAcessivel() {
     })
   }
 
-  // 4. Adicionar descrição acessível
-  const descricao = document.createElement("div")
-  descricao.className = "desc-grafico"
-  descricao.innerHTML = `
-    <button class="btn-desc-grafico" aria-expanded="false">
-      📊 Descrição e Dados - Vendas Mensais
-    </button>
-    <div class="conteudo-desc" hidden>
-      <p>
-        <strong>Descrição:</strong> Este gráfico de linha mostra a 
-        evolução das vendas mensais de janeiro a junho. 
-        <strong>Tendência:</strong> Crescimento consistente, começando em 
-        R$ 5.000 em janeiro e chegando a R$ 11.000 em junho.
-      </p>
-      <table class="tabela-dados-grafico" role="table" aria-label="Dados de vendas">
-        <thead>
-          <tr>
-            <th scope="col">Mês</th>
-            <th scope="col">Vendas (R$)</th>
-            <th scope="col">Variação</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td>Janeiro</td><td>5.000</td><td>Base</td></tr>
-          <tr><td>Fevereiro</td><td>7.500</td><td>+50%</td></tr>
-          <tr><td>Março</td><td>6.200</td><td>-17%</td></tr>
-          <tr><td>Abril</td><td>8.900</td><td>+43%</td></tr>
-          <tr><td>Maio</td><td>9.200</td><td>+3%</td></tr>
-          <tr><td>Junho</td><td>11.000</td><td>+20%</td></tr>
-        </tbody>
-      </table>
-    </div>
-  `
-
-  container.appendChild(descricao)
-
-  // 5. Configurar toggle da descrição
-  const botao = descricao.querySelector(".btn-desc-grafico")
-  const conteudo = descricao.querySelector(".conteudo-desc")
-
-  botao.addEventListener("click", () => {
-    const expandido = botao.getAttribute("aria-expanded") === "true"
-    botao.setAttribute("aria-expanded", !expandido)
-    conteudo.hidden = expandido
-
-    // Anunciar para leitor de tela
-    if (window.acessibilidade) {
-      const msg = expandido ? "Descrição ocultada" : "Descrição mostrando dados de vendas"
-      window.acessibilidade.anunciarAos(msg)
-    }
-  })
-
   // 6. Chamar acessibilidade
   if (window.acessibilidade) {
     setTimeout(() => {
@@ -155,68 +103,6 @@ function criarGraficoPizzaAcessivel() {
     })
   }
 
-  // Descrição com sonorização
-  const descricao = document.createElement("div")
-  descricao.className = "desc-grafico"
-  descricao.innerHTML = `
-    <button class="btn-desc-grafico" aria-expanded="false">
-      🔊 Descrição Sonorada - Distribuição por Produto
-    </button>
-    <div class="conteudo-desc" hidden>
-      <p>
-        <strong>Distribuição de Vendas por Produto:</strong><br>
-        O Produto A representa 30% das vendas (maior parcela),
-        seguido por Produto B e D com 25% cada um,
-        e Produto C com 20% do total.
-      </p>
-      
-      <button class="btn-sonorizar" aria-label="Tocar descrição sonorada">
-        🎵 Sonorizar Dados
-      </button>
-      
-      <table class="tabela-dados-grafico" role="table" aria-label="Distribuição de vendas">
-        <thead>
-          <tr>
-            <th scope="col">Produto</th>
-            <th scope="col">Percentual</th>
-            <th scope="col">Valor</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td>Produto A</td><td>30%</td><td>R$ 45.000</td></tr>
-          <tr><td>Produto B</td><td>25%</td><td>R$ 37.500</td></tr>
-          <tr><td>Produto C</td><td>20%</td><td>R$ 30.000</td></tr>
-          <tr><td>Produto D</td><td>25%</td><td>R$ 37.500</td></tr>
-        </tbody>
-      </table>
-    </div>
-  `
-
-  container.appendChild(descricao)
-
-  // Toggle e sonorização
-  const botao = descricao.querySelector(".btn-desc-grafico")
-  const btnSonorizar = descricao.querySelector(".btn-sonorizar")
-  const conteudo = descricao.querySelector(".conteudo-desc")
-
-  botao.addEventListener("click", () => {
-    const expandido = botao.getAttribute("aria-expanded") === "true"
-    botao.setAttribute("aria-expanded", !expandido)
-    conteudo.hidden = expandido
-  })
-
-  btnSonorizar.addEventListener("click", () => {
-    if (window.speechSynthesis) {
-      const texto = "Produto A, trinta por cento. Produto B, vinte e cinco por cento. " +
-                    "Produto C, vinte por cento. Produto D, vinte e cinco por cento."
-      
-      const utterance = new SpeechSynthesisUtterance(texto)
-      utterance.lang = "pt-BR"
-      utterance.rate = 1
-      window.speechSynthesis.cancel()
-      window.speechSynthesis.speak(utterance)
-    }
-  })
 }
 
 // ========== EXEMPLO 3: Gráfico de Comparação com Cores Adaptáveis ==========
@@ -276,49 +162,6 @@ function criarGraficoComparativoAcessivel() {
       }
     })
   }
-
-  // Descrição
-  const descricao = document.createElement("div")
-  descricao.className = "desc-grafico"
-  descricao.innerHTML = `
-    <button class="btn-desc-grafico" aria-expanded="false">
-      📈 Comparação de Períodos
-    </button>
-    <div class="conteudo-desc" hidden>
-      <p>
-        Comparação entre o período anterior (laranja) e o período atual (cinza).
-        Nota-se crescimento em Categoria 3 (3 para 10) e Categoria 4 (5 para 9).
-      </p>
-      <table class="tabela-dados-grafico" role="table" aria-label="Dados comparativos">
-        <thead>
-          <tr>
-            <th scope="col">Categoria</th>
-            <th scope="col">Anterior</th>
-            <th scope="col">Atual</th>
-            <th scope="col">Diferença</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td>Categoria 1</td><td>12</td><td>8</td><td>-4</td></tr>
-          <tr><td>Categoria 2</td><td>19</td><td>15</td><td>-4</td></tr>
-          <tr><td>Categoria 3</td><td>3</td><td>10</td><td>+7</td></tr>
-          <tr><td>Categoria 4</td><td>5</td><td>9</td><td>+4</td></tr>
-        </tbody>
-      </table>
-    </div>
-  `
-
-  container.appendChild(descricao)
-
-  // Toggle
-  const botao = descricao.querySelector(".btn-desc-grafico")
-  const conteudo = descricao.querySelector(".conteudo-desc")
-
-  botao.addEventListener("click", () => {
-    const expandido = botao.getAttribute("aria-expanded") === "true"
-    botao.setAttribute("aria-expanded", !expandido)
-    conteudo.hidden = expandido
-  })
 }
 
 // ========== EXEMPLO 4: Análise Textual Completa ==========
@@ -368,15 +211,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // ========== API PÚBLICA PARA USAR EM OUTRAS PÁGINAS ==========
 window.GraficosAcessibilidade = {
-  /**
-   * Criar um gráfico genérico com suporte a acessibilidade
-   * @param {Object} config - Configuração do gráfico
-   * @param {string} config.container - ID do container
-   * @param {string} config.titulo - Título do gráfico
-   * @param {string} config.descricao - Descrição para leitura de tela
-   * @param {Array} config.dados - Dados do gráfico
-   * @param {Array} config.labels - Labels dos dados
-   */
   criar: function(config) {
     const container = document.getElementById(config.container)
     if (!container) return
@@ -388,38 +222,6 @@ window.GraficosAcessibilidade = {
     canvas.setAttribute("aria-label", config.descricao)
     container.appendChild(canvas)
 
-    // Descrição
-    const desc = document.createElement("div")
-    desc.className = "desc-grafico"
-    desc.innerHTML = `
-      <button class="btn-desc-grafico" aria-expanded="false">
-        📊 ${config.titulo} - Dados
-      </button>
-      <div class="conteudo-desc" hidden>
-        <p>${config.descricao}</p>
-        <table class="tabela-dados-grafico">
-          <thead>
-            <tr>
-              ${config.labels.map(l => `<th>${l}</th>`).join("")}
-            </tr>
-          </thead>
-          <tbody>
-            ${config.tabelaHTML || ""}
-          </tbody>
-        </table>
-      </div>
-    `
-    container.appendChild(desc)
-
-    // Toggle
-    const btn = desc.querySelector(".btn-desc-grafico")
-    const cont = desc.querySelector(".conteudo-desc")
-    btn.addEventListener("click", () => {
-      const exp = btn.getAttribute("aria-expanded") === "true"
-      btn.setAttribute("aria-expanded", !exp)
-      cont.hidden = exp
-    })
-
     // Configurar acessibilidade
     if (window.acessibilidade) {
       window.acessibilidade.configurarAcessibilidadeGraficos()
@@ -428,4 +230,3 @@ window.GraficosAcessibilidade = {
 }
 
 console.log("✅ Módulo de Gráficos Acessíveis carregado")
-console.log("💡 Use: window.GraficosAcessibilidade.criar(config)")

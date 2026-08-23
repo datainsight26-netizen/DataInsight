@@ -789,6 +789,9 @@ label { font-size: 0.8rem; font-weight: 600; color: var(--texto); }
 @media (max-width: 1024px) {
   .layout {
     flex-direction: column; /* No mobile, o fluxo é vertical se necessário */
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 
   .sidebar {
@@ -807,9 +810,12 @@ label { font-size: 0.8rem; font-weight: 600; color: var(--texto); }
   }
 
   .main {
-    height: 100vh;
+    margin-left: 0;
+    min-height: 100vh;
     width: 100%;
-    padding-bottom: 60px; /* Espaço para a navbar-bottom */
+    max-width: 100%;
+    padding-bottom: 0;
+    overflow-x: hidden;
   }
 
   .topbar__mobile-toggle {
@@ -817,7 +823,11 @@ label { font-size: 0.8rem; font-weight: 600; color: var(--texto); }
   }
 
   .navbar-bottom {
-    display: flex; /* Mostra a navegação inferior */
+    display: none !important; /* Esconde a navegação inferior a pedido do usuário */
+  }
+
+  .grid-responsivo {
+    grid-template-columns: 1fr !important;
   }
 
   .grade--2, .grade--3, .grade--4 {
@@ -830,8 +840,16 @@ label { font-size: 0.8rem; font-weight: 600; color: var(--texto); }
 }
 
 @media (max-width: 640px) {
+  .pagina {
+    width: 100%;
+    max-width: 100%;
+  }
   .pagina > .container {
-    padding: 16px 12px;
+    padding: 16px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
   }
 
   .grade--2, .grade--3, .grade--4 {

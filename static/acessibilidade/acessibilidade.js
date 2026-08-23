@@ -495,71 +495,14 @@ class GerenciadorAcessibilidade {
 
   // ========== ACESSIBILIDADE EM GRÁFICOS ==========
   configurarAcessibilidadeGraficos() {
-    const graficos = document.querySelectorAll("canvas, [role='img'][data-chart], .chart-container")
+    const graficos = document.querySelectorAll("canvas:not(#avatar-canvas), [role='img'][data-chart], .chart-container")
 
     graficos.forEach((grafico, index) => {
       // Adicionar ARIA labels
       if (!grafico.getAttribute("aria-label")) {
         grafico.setAttribute("aria-label", `Gráfico ${index + 1}`)
       }
-
-      // Adicionar botão de descrição
-      if (this.prefs.obter("descricao_graficos")) {
-        this.adicionarDescricaoGrafico(grafico)
-      }
-
-      // Adicionar tabela de dados alternativa
-      this.adicionarTabelaDadosGrafico(grafico)
     })
-  }
-
-  adicionarDescricaoGrafico(grafico) {
-    if (grafico.nextElementSibling?.classList.contains("desc-grafico")) {
-      return // Já possui descrição
-    }
-
-    const desc = document.createElement("div")
-    desc.className = "desc-grafico"
-    desc.setAttribute("aria-label", "Descrição do gráfico")
-    desc.innerHTML = `
-      <button class="btn-desc-grafico" aria-expanded="false">
-        📊 Descrição e Dados do Gráfico
-      </button>
-      <div class="conteudo-desc" hidden>
-        <p>Use a visualização alternativa abaixo para dados detalhados</p>
-        <table class="tabela-dados-grafico" role="table">
-          <thead><tr><th>Categoria</th><th>Valor</th></tr></thead>
-          <tbody><tr><td colspan="2">Dados carregando...</td></tr></tbody>
-        </table>
-      </div>
-    `
-
-    grafico.parentNode.insertBefore(desc, grafico.nextSibling)
-
-    const botao = desc.querySelector(".btn-desc-grafico")
-    const conteudo = desc.querySelector(".conteudo-desc")
-
-    botao.addEventListener("click", () => {
-      const expandido = botao.getAttribute("aria-expanded") === "true"
-      botao.setAttribute("aria-expanded", !expandido)
-      conteudo.hidden = expandido
-    })
-  }
-
-  adicionarTabelaDadosGrafico(grafico) {
-    // Extrair dados se disponível (implementar conforme estrutura dos gráficos)
-    const tabela = grafico.parentNode.querySelector(".tabela-dados-grafico")
-    if (!tabela) return
-
-    // Placeholder - adaptar conforme dados reais do gráfico
-    const linhas = tabela.querySelector("tbody")
-    if (linhas) {
-      linhas.innerHTML = `
-        <tr><td>Jan</td><td>2.500</td></tr>
-        <tr><td>Fev</td><td>3.200</td></tr>
-        <tr><td>Mar</td><td>2.800</td></tr>
-      `
-    }
   }
 
   // ========== AVISOS PARA LEITOR DE TELA ==========

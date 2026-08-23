@@ -49,9 +49,9 @@ class AutocompleteProdutos {
             // Para fora de tabela, wrap em arrays
             this.inputsCategoria = this.inputCategoria ? [this.inputCategoria] : [];
             this.inputsPreco     = this.inputPreco     ? [this.inputPreco]     : [];
-            this.inputsEstoque   = this.inputsEstoque  ? [this.inputEstoque]   : [];
-            this.inputsSku       = this.inputsSku      ? [this.inputSku]       : [];
-            this.inputsDesconto  = this.inputsDesconto ? [this.inputDesconto]  : [];
+            this.inputsEstoque   = this.inputEstoque   ? [this.inputEstoque]   : [];
+            this.inputsSku       = this.inputSku       ? [this.inputSku]       : [];
+            this.inputsDesconto  = this.inputDesconto  ? [this.inputDesconto]  : [];
         }
         
         this.containerSugestoes = configuracao.containerSugestoes || this.criarContainerSugestoes();

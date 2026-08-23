@@ -7,6 +7,49 @@ document.addEventListener('DOMContentLoaded', () => {
     sessionStorage.setItem('chatbotSessionId', currentSessionId);
     localStorage.setItem('chatbotSessionId', currentSessionId);
 
+    let tabelaIaAtualId = 'todas';
+
+    async function configurarSeletorPlanilhaIa() {
+        const select = document.getElementById('seletorPlanilhaIa');
+        if (!select) return;
+
+        try {
+            const resp = await fetch('/api/planilhas/sumario');
+            if (!resp.ok) return;
+            const json = await resp.json();
+            const planilhas = json.planilhas || [];
+
+            select.innerHTML = '';
+
+            const optTodas = document.createElement('option');
+            optTodas.value = 'todas';
+            optTodas.textContent = `🌐 Todas as Planilhas (${planilhas.length})`;
+            select.appendChild(optTodas);
+
+            planilhas.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                const icone = p.tipo_fluxo === 'saida' ? '🔻' : (p.tipo_fluxo === 'entrada' ? '🟢' : '📁');
+                opt.textContent = `${icone} [${p.dominio_label}] ${p.nome}`;
+                select.appendChild(opt);
+            });
+
+            const salva = localStorage.getItem('DataInsight_DashboardPlanilha');
+            if (salva && (salva === 'todas' || planilhas.some(p => p.id === salva))) {
+                select.value = salva;
+                tabelaIaAtualId = salva;
+            }
+
+            select.addEventListener('change', e => {
+                tabelaIaAtualId = e.target.value;
+                localStorage.setItem('DataInsight_DashboardPlanilha', tabelaIaAtualId);
+            });
+        } catch (e) {
+            console.warn('Aviso ao carregar planilhas na IA:', e);
+        }
+    }
+    configurarSeletorPlanilhaIa();
+
     const CHATBOT_OPEN_KEY = 'chatbotOpen';
     const CHATBOT_MESSAGES_KEY = 'chatbotMessages';
     const CHATBOT_SESSION_KEY = 'chatbotSessionId';
@@ -326,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
             method: 'POST',
             credentials: 'same-origin',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ mensagem: text, sessao_id: currentSessionId })
+            body: JSON.stringify({ mensagem: text, sessao_id: currentSessionId, tabela_id: tabelaIaAtualId })
         })
             .then(res => {
                 if (!res.ok) return res.text().then(t => { throw new Error(`HTTP ${res.status}: ${t.slice(0,200)}`); });

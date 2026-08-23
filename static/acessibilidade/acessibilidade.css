@@ -349,43 +349,10 @@ tr:hover {
   border-radius: 8px;
 }
 
-.desc-grafico {
-  margin-top: 1rem;
-  padding: 1rem;
-  background-color: rgba(52, 152, 219, 0.05);
-  border-left: 4px solid #3498db;
-  border-radius: 4px;
-}
-
-.btn-desc-grafico {
-  background-color: #3498db;
-  color: white;
-  border: none;
-  padding: 10px 15px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 600;
-  width: 100%;
-  text-align: left;
-  transition: background-color 0.2s ease;
-}
-
-.btn-desc-grafico:hover,
-.btn-desc-grafico:focus {
-  background-color: #2980b9;
-}
-
-.btn-desc-grafico[aria-expanded="true"] {
-  background-color: #2980b9;
-  border-radius: 4px 4px 0 0;
-}
-
+.desc-grafico,
+.btn-desc-grafico,
 .conteudo-desc {
-  padding: 1rem;
-  background-color: white;
-  border: 1px solid #3498db;
-  border-top: none;
-  border-radius: 0 0 4px 4px;
+  display: none !important;
 }
 
 .tabela-dados-grafico {
