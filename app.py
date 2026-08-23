@@ -1,48 +1,119 @@
-from flask import Flask, render_template, session, redirect, url_for, request, flash, jsonify
-from datetime import timedelta
-from flask_mail import Mail
-from functools import wraps
 import os
 import traceback
+from datetime import timedelta
+from functools import wraps
+
 import mercadopago
 from dotenv import load_dotenv
+from flask import (
+    Flask,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
+from flask_mail import Mail
 
 # Load environment variables early so backend modules can read them on import
 load_dotenv()
 
-#------------------ IMPORTAÇÕES BACKEND ------------------
+# ------------------ IMPORTAÇÕES BACKEND ------------------
 # Importação user
-from backend.user import tela_cadastro, login, esqueceu_senha, verificar_codigo, resetar_senha, reenviar_codigo
+from backend.user import (
+    esqueceu_senha,
+    login,
+    reenviar_codigo,
+    resetar_senha,
+    tela_cadastro,
+    verificar_codigo,
+)
+
 # Importação dados
-from backend.dados.carregar_dados import carregar_dados
-from backend.dados.salvar_dados import salvar_dados_manuais
 from backend.dados.apagar_dados import apagar_dados_usuario
-from backend.dados.upload_arquivo import upload_arquivo, listar_abas_excel
-from backend.dados.exclusao_dados import solicitar_exclusao_dados, confirmar_exclusao_dados, pagina_confirmacao_exclusao
-#Importação analise
+from backend.dados.carregar_dados import carregar_dados
+from backend.dados.exclusao_dados import (
+    confirmar_exclusao_dados,
+    pagina_confirmacao_exclusao,
+    solicitar_exclusao_dados,
+)
+from backend.dados.salvar_dados import salvar_dados_manuais
+from backend.dados.upload_arquivo import listar_abas_excel, upload_arquivo
+from backend.dados.tabelas import (
+    listar_todas_tabelas,
+    obter_tabela,
+    salvar_tabela_especifica,
+    renomear_tabela_api,
+    duplicar_tabela_api,
+    excluir_tabela_api,
+    ativar_tabela_api,
+    definir_dominio_tabela,
+    obter_sumario_planilhas,
+)
+from backend.dados.quality import api_analisar_dados, api_limpar_dados
+
+# Importação analise
 from backend.analise.analise import analise_por_periodo, obter_ultimo_periodo
+
 # Importação relatorio
 from backend.relatorio.gerar_relatorio import gerar_relatorio
-from backend.relatorio.pagina_relatorio import pagina_relatorio_pdf as pagina_relatorio_pdf_backend
+from backend.relatorio.pagina_relatorio import (
+    pagina_relatorio_pdf as pagina_relatorio_pdf_backend,
+)
+
 # Importação perfil
 from backend.perfil.pagina_de_perfil import pagina_perfil as pagina_perfil_backend
-from backend.perfil.vizualizar_relatorio import vizualizar_relatorio
 from backend.perfil.visualizar_analise import visualizar_analise
+from backend.perfil.vizualizar_relatorio import vizualizar_relatorio
+
 # Importação home
-from backend.home.home import calcular_desempenho, obter_dados_graficos, gerar_status_negocio, obter_detalhes_kpi, obter_produtos_overview
-from backend.DashBoard.dashboard_rotas import dashboard_page, dashboard_dados
+from backend.DashBoard.dashboard_rotas import dashboard_dados, dashboard_page
+from backend.home.home import (
+    calcular_desempenho,
+    gerar_status_negocio,
+    obter_dados_graficos,
+    obter_detalhes_kpi,
+    obter_produtos_overview,
+)
+
 # Importação mapeamento
-from backend.dados.mapeamento import obter_mapeamento, salvar_mapeamento
+from backend.dados.mapeamento import (
+    obter_mapeamento,
+    salvar_mapeamento,
+    obter_mapeamento_financeiro,
+    salvar_mapeamento_financeiro,
+    analisar_colunas_financeiras,
+    preview_financeiro,
+    criar_coluna_financeira_api,
+)
+
 # Importação contato
 from backend.contato.contato import enviar_mensagem_contato
+
 # Importação pagamento
-from backend.pagamento.criar_assinatura import criar_assinatura_stripe, verificar_token_stripe
+from backend.pagamento.criar_assinatura import (
+    criar_assinatura_stripe,
+    verificar_token_stripe,
+)
+
 # Chatbot Import
-from backend.chatbot.chatbot import perguntar_chatbot, sintetizar_texto_voz, buscar_ultima_resposta_chatbot
+from backend.chatbot.chatbot import (
+    buscar_ultima_resposta_chatbot,
+    perguntar_chatbot,
+    sintetizar_texto_voz,
+)
+
 # Importação produtos
 from backend.produtos import (
-    salvar_produto, buscar_produtos_por_nome, obter_produto_exato,
-    listar_produtos, obter_categorias, deletar_produto, obter_estatisticas_produtos
+    buscar_produtos_por_nome,
+    deletar_produto,
+    listar_produtos,
+    obter_categorias,
+    obter_estatisticas_produtos,
+    obter_produto_exato,
+    salvar_produto,
 )
 
 key = os.getenv('SECRET_KEY')
@@ -66,12 +137,12 @@ app.config['TESTING'] = False  # Desativar modo teste
 # Inicializar Flask-Mail
 try:
     mail = Mail(app)
-    # Armazenar como atributo do app para acesso em context
     app.mail = mail
     print("Flask-Mail initialized successfully.\n")
 except Exception as e:
     print("Error initializing Flask-Mail: " + str(e) + "\n")
     mail = None
+
 # =================== UPLOAD ===================
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -80,6 +151,7 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 # Configuração de Sessão (Lembrar de mim)
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
+
 # =================== PROTEÇÃO ===================
 def login_required(f):
     @wraps(f)
@@ -87,43 +159,62 @@ def login_required(f):
         if 'usuario_nome' not in session:
             return redirect(url_for('pagina_login'))
         return f(*args, **kwargs)
+
     return decorated_function
+
 
 # =================== LANDING & ASSINATURAS ===================
 @app.route("/")
 def pagina_landing():
     return render_template("index.html")
 
+
 @app.route("/assinaturas", endpoint="pagina_assinaturas")
 def pagina_assinaturas():
-    # Controle para bloquear temporariamente alguns planos (preto-e-branco com 'Em breve').
-    # Defina para False para reativar todos os planos.
     block_plans = True
-    return render_template("sistema_pagamento/assinaturas.html", block_plans=block_plans)
+    return render_template(
+        "sistema_pagamento/assinaturas.html", block_plans=block_plans
+    )
+
 
 @app.route("/criar-assinatura", methods=['POST'])
 @app.route("/criar-preferencia", methods=['POST'])
 def rota_criar_assinatura():
     return criar_assinatura_stripe()
 
+
 @app.route('/sucesso-pagamento', endpoint="sucesso_pagamento")
 def sucesso_pagamento():
-    preapproval_id = request.args.get('preapproval_id') or request.args.get('payment_id')
+    preapproval_id = request.args.get('preapproval_id') or request.args.get(
+        'payment_id'
+    )
     status = request.args.get('status') or 'Aprovado'
-    return render_template('sistema_pagamento/sucesso.html', preapproval_id=preapproval_id, status=status)
+    return render_template(
+        'sistema_pagamento/sucesso.html',
+        preapproval_id=preapproval_id,
+        status=status,
+    )
+
 
 @app.route('/falha-pagamento', endpoint="falha_pagamento")
 def falha_pagamento():
     return render_template('sistema_pagamento/falha.html')
+
 
 @app.route('/webhook-pagamento', methods=['POST'])
 def webhook_pagamento():
     data = request.get_json() or {}
     if data.get("type") == "subscription_preapproval":
         preapproval_id = data.get("data", {}).get("id")
-        info = sdk_mp.preapproval().get(preapproval_id)
-        status = info.get("response", {}).get("status")
-        print(f"Status da assinatura {preapproval_id}: {status}")
+        mp_token = os.getenv('MP_ACCESS_TOKEN') or os.getenv('MERCADOPAGO_ACCESS_TOKEN')
+        if mp_token and preapproval_id:
+            try:
+                sdk = mercadopago.SDK(mp_token)
+                info = sdk.preapproval().get(preapproval_id)
+                status = info.get("response", {}).get("status")
+                print(f"Status da assinatura {preapproval_id}: {status}")
+            except Exception as e:
+                print(f"Erro ao consultar assinatura no webhook: {e}")
     return jsonify({"status": "ok"}), 200
 
 
@@ -132,6 +223,7 @@ def rota_verificar_token_mp():
     """Rota de diagnóstico para checar se a chave Stripe está válida."""
     return verificar_token_stripe()
 
+
 # =================== LOGIN ===================
 @app.route("/login")
 def pagina_login():
@@ -139,31 +231,37 @@ def pagina_login():
         return redirect(url_for('pagina_home'))
     return render_template("login.html")
 
+
 # =================== ROTAS ===================
 @app.route("/home")
 @login_required
 def pagina_home():
     return render_template("home.html")
 
+
 @app.route("/analises")
 @login_required
 def pagina_analise():
     return render_template("analises.html")
+
 
 @app.route("/graficos-avancados")
 @login_required
 def pagina_graficoAvancado():
     return render_template("graficos-avancados.html")
 
+
 @app.route("/config")
 @login_required
 def pagina_configuracoes():
     return render_template("configuracoes.html")
 
+
 @app.route("/dados")
 @login_required
 def pagina_dados():
     return render_template("dados.html")
+
 
 @app.route("/relatorios")
 @login_required
@@ -176,34 +274,47 @@ def pagina_relatorio():
 def pagina_contato():
     return render_template("contato.html")
 
+
+@app.route("/contato2")
+@login_required
+def pagina_contato2():
+    return render_template("sistema_pagamento/pagina_contato2.html")
+
+
 @app.route("/enviar-contato", methods=["POST"])
 @login_required
 def enviar_contato():
     """Envia a mensagem de contato"""
     return enviar_mensagem_contato()
 
+
 @app.route("/termos/termos_de_uso")
 def pagina_termos_uso():
     return render_template("termos/termos_de_uso.html")
+
 
 # =================== AÇÕES Cadastro ===================
 @app.route("/cadastro", methods=["GET", "POST"])
 def pg_cadastro():
     return tela_cadastro()
 
+
 @app.route("/login", methods=["POST"])
 def pg_login():
     return login()
+
 
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect(url_for('pagina_login'))
 
+
 # =================== ESQUECEU SENHA ===================
 @app.route("/esqueceu-senha", methods=["GET", "POST"])
 def esqueceu_senha_route():
     return esqueceu_senha()
+
 
 # =================== CARREGAR DADOS ===================
 @app.route("/carregar-dados", methods=["GET"])
@@ -212,12 +323,14 @@ def carregar_dados_usuario():
     """Carrega os últimos dados salvos do usuário"""
     return carregar_dados()
 
+
 # =================== SALVAR DADOS MANUAIS ===================
 @app.route("/salvar-dados", methods=["POST"])
 @login_required
 def salvar_dados_usuario():
     """Salva os dados enviados pelo usuário"""
     return salvar_dados_manuais()
+
 
 # =================== APAGAR DADOS ===================
 @app.route("/apagar-dados", methods=["DELETE"])
@@ -226,12 +339,14 @@ def apagar_dados():
     """Deleta os últimos dados salvos do usuário"""
     return apagar_dados_usuario()
 
+
 # =================== SOLICITAR EXCLUSÃO DE DADOS ===================
 @app.route("/solicitar-exclusao-dados", methods=["POST"])
 @login_required
 def solicitar_exclusao():
     """Solicita a exclusão de dados enviando email de confirmação"""
     return solicitar_exclusao_dados()
+
 
 # =================== CONFIRMAR EXCLUSÃO DE DADOS ===================
 @app.route("/confirmar-exclusao", methods=["GET"])
@@ -240,11 +355,13 @@ def confirmar_exclusao():
     """Página de confirmação de exclusão de dados"""
     return pagina_confirmacao_exclusao()
 
+
 @app.route("/processar-exclusao", methods=["POST"])
 @login_required
 def processar_exclusao():
     """Processa a confirmação de exclusão de dados"""
     return confirmar_exclusao_dados()
+
 
 # =================== UPLOAD ARQUIVO ===================
 @app.route("/upload", methods=["POST"])
@@ -253,11 +370,91 @@ def upload():
     """Faz upload do arquivo e salva os dados no banco de dados"""
     return upload_arquivo()
 
+
 @app.route("/upload/abas", methods=["POST"])
 @login_required
 def upload_listar_abas():
     """Lista as abas de um arquivo Excel sem importar os dados"""
     return listar_abas_excel()
+
+
+# =================== MÚLTIPLAS TABELAS (SISTEMA DE ABAS) ===================
+@app.route("/api/tabelas", methods=["GET"])
+@login_required
+def api_listar_tabelas():
+    """Retorna todas as tabelas do usuário"""
+    return listar_todas_tabelas()
+
+
+@app.route("/api/tabelas/<tabela_id>", methods=["GET"])
+@login_required
+def api_obter_tabela(tabela_id):
+    """Retorna os dados de uma tabela específica"""
+    return obter_tabela(tabela_id)
+
+
+@app.route("/api/tabelas", methods=["POST"])
+@login_required
+def api_salvar_tabela():
+    """Cria ou atualiza uma tabela específica"""
+    return salvar_tabela_especifica()
+
+
+@app.route("/api/tabelas/<tabela_id>/renomear", methods=["PUT"])
+@login_required
+def api_renomear_tabela(tabela_id):
+    """Renomeia uma tabela específica"""
+    return renomear_tabela_api(tabela_id)
+
+
+@app.route("/api/tabelas/<tabela_id>/duplicar", methods=["POST"])
+@login_required
+def api_duplicar_tabela(tabela_id):
+    """Duplica uma tabela específica"""
+    return duplicar_tabela_api(tabela_id)
+
+
+@app.route("/api/tabelas/<tabela_id>", methods=["DELETE"])
+@login_required
+def api_excluir_tabela(tabela_id):
+    """Exclui uma tabela específica"""
+    return excluir_tabela_api(tabela_id)
+
+
+@app.route("/api/tabelas/<tabela_id>/ativar", methods=["POST"])
+@login_required
+def api_ativar_tabela(tabela_id):
+    """Marca uma tabela específica como ativa no MongoDB"""
+    return ativar_tabela_api(tabela_id)
+
+
+@app.route("/api/planilhas/sumario", methods=["GET"])
+@login_required
+def api_obter_sumario_planilhas():
+    """Retorna lista sumária de todas as planilhas do usuário para seletores de contexto"""
+    return obter_sumario_planilhas()
+
+
+@app.route("/api/tabelas/<tabela_id>/dominio", methods=["PUT"])
+@login_required
+def api_definir_dominio_tabela(tabela_id):
+    """Atualiza o domínio/categoria de uma planilha salva"""
+    return definir_dominio_tabela(tabela_id)
+
+
+# =================== QUALIDADE E LIMPEZA DE DADOS ===================
+@app.route("/api/dados/analisar", methods=["POST"])
+@login_required
+def rota_analisar_dados():
+    """Analisa a qualidade e detecta problemas nos dados"""
+    return api_analisar_dados()
+
+
+@app.route("/api/dados/limpar", methods=["POST"])
+@login_required
+def rota_limpar_dados():
+    """Aplica limpeza e sanitização científica dos dados e persiste no banco"""
+    return api_limpar_dados()
 
 
 # =================== MAPEAMENTO ===================
@@ -266,10 +463,49 @@ def upload_listar_abas():
 def get_mapeamento():
     return obter_mapeamento()
 
+
 @app.route("/api/mapeamento", methods=["POST"])
 @login_required
 def set_mapeamento():
     return salvar_mapeamento()
+
+
+# =================== MAPEAMENTO FINANCEIRO ===================
+@app.route("/api/mapeamento-financeiro", methods=["GET"])
+@login_required
+def get_mapeamento_financeiro():
+    """Retorna mapeamento financeiro + completude + recomendações"""
+    return obter_mapeamento_financeiro()
+
+
+@app.route("/api/mapeamento-financeiro", methods=["POST"])
+@login_required
+def set_mapeamento_financeiro():
+    """Salva mapeamento financeiro expandido"""
+    return salvar_mapeamento_financeiro()
+
+
+@app.route("/api/mapeamento-financeiro/analisar", methods=["POST"])
+@login_required
+def api_analisar_colunas_financeiras():
+    """Analisa automaticamente as colunas e sugere categorias financeiras"""
+    return analisar_colunas_financeiras()
+
+
+@app.route("/api/mapeamento-financeiro/preview", methods=["POST"])
+@login_required
+def api_preview_financeiro():
+    """Calcula preview de indicadores financeiros com o mapeamento atual"""
+    return preview_financeiro()
+
+
+@app.route("/api/mapeamento-financeiro/criar-coluna", methods=["POST"])
+@login_required
+def api_criar_coluna_financeira():
+    """Cria uma coluna na base e atualiza o mapeamento financeiro"""
+    return criar_coluna_financeira_api()
+
+
 
 # =================== Relatorio ===================
 @app.route('/gerar-relatorio', methods=['POST'])
@@ -283,17 +519,21 @@ def gerar_relatorio_endpoint():
 def pagina_relatorio_pdf():
     return pagina_relatorio_pdf_backend()
 
-# ===============DashBoard======================
+
+# =============== DashBoard ======================
+
 
 @app.route("/dashboard")
 @login_required
 def pagina_dashboard():
     return dashboard_page()
 
+
 @app.route("/dashboard/dados", methods=["GET"])
 @login_required
 def api_dashboard_dados():
     return dashboard_dados()
+
 
 # =================== Perfil ===================
 @app.route("/perfil")
@@ -301,15 +541,18 @@ def api_dashboard_dados():
 def pagina_perfil():
     return pagina_perfil_backend()
 
-@app.route('/relatorio/visualizar/<int:index>' )
+
+@app.route('/relatorio/visualizar/<int:index>')
 @login_required
 def visualizar_relatorio(index):
     return vizualizar_relatorio(index)
 
-@app.route('/analise/visualizar/<int:index>' )
+
+@app.route('/analise/visualizar/<int:index>')
 @login_required
 def visualizar_analise_route(index):
     return visualizar_analise(index)
+
 
 # =================== Desempenho ===================
 @app.route('/api/desempenho', methods=['GET'])
@@ -317,7 +560,8 @@ def visualizar_analise_route(index):
 def api_desempenho():
     """Retorna os indicadores de desempenho"""
     periodo = request.args.get('periodo', '30_dias')
-    return calcular_desempenho(periodo)
+    tabela_id = request.args.get('tabela_id', 'todas')
+    return calcular_desempenho(periodo, tabela_id)
 
 
 @app.route('/api/desempenho/detalhe', methods=['GET'])
@@ -326,7 +570,8 @@ def api_desempenho_detalhe():
     """Retorna detalhamento dos KPIs para modal"""
     periodo = request.args.get('periodo', '30_dias')
     kpi = request.args.get('kpi', 'faturamento')
-    return obter_detalhes_kpi(periodo, kpi)
+    tabela_id = request.args.get('tabela_id', 'todas')
+    return obter_detalhes_kpi(periodo, kpi, tabela_id)
 
 
 @app.route('/api/graficos', methods=['GET'])
@@ -334,46 +579,56 @@ def api_desempenho_detalhe():
 def api_graficos():
     """Retorna dados para os gráficos"""
     periodo = request.args.get('periodo', '30_dias')
-    return obter_dados_graficos(periodo)
+    tabela_id = request.args.get('tabela_id', 'todas')
+    return obter_dados_graficos(periodo, tabela_id)
+
 
 @app.route('/api/produtos/overview', methods=['GET'])
 @login_required
 def api_produtos_overview():
     periodo = request.args.get('periodo', '30_dias')
-    return obter_produtos_overview(periodo)
+    tabela_id = request.args.get('tabela_id', 'todas')
+    return obter_produtos_overview(periodo, tabela_id)
+
 
 @app.route('/api/status_negocio', methods=['GET'])
 @login_required
 def api_status_negocio():
     """Retorna o status do negócio analisado"""
     periodo = request.args.get('periodo', '30_dias')
-    return gerar_status_negocio(periodo)
+    tabela_id = request.args.get('tabela_id', 'todas')
+    return gerar_status_negocio(periodo, tabela_id)
+
 
 @app.route('/api/galeria/listar', methods=['GET'])
 @login_required
 def api_galeria_listar():
     from backend.db import galeria
+
     user_id = session.get('usuario_id')
     periodo_filtro = request.args.get('periodo', None)
-    
+
     query = {"usuario_id": user_id}
     if periodo_filtro and periodo_filtro != 'todos':
         query["periodo"] = periodo_filtro
-        
+
     graficos = list(galeria.find(query).sort("criado_em", -1).limit(50))
     for g in graficos:
         g['_id'] = str(g['_id'])
     return jsonify(graficos)
+
 
 @app.route('/api/analise', methods=['GET'])
 @login_required
 def api_analise():
     return analise_por_periodo()
 
+
 @app.route('/api/ultimo-periodo', methods=['GET'])
 @login_required
 def ultimo_periodo():
     return obter_ultimo_periodo()
+
 
 # =================== IA PAGE & ASSISTENTE VIRTUAL ===================
 @app.route("/ia")
@@ -381,23 +636,28 @@ def ultimo_periodo():
 def pagina_ia():
     return render_template("ia.html")
 
+
 @app.route("/assistente-virtual", endpoint="pagina_assistente_virtual")
 @app.route("/assistente", endpoint="pagina_assistente")
 @login_required
 def pagina_assistente_virtual():
     return render_template("assistente_virtual.html")
 
+
 @app.route("/api/download/<tipo>")
 @login_required
 def api_download_arquivo(tipo):
     from backend.chatbot.chatbot import exportar_dados_usuario
+
     return exportar_dados_usuario(tipo)
+
 
 # =================== Chatbot API ===================
 @app.route('/api/chatbot/perguntar', methods=['POST'])
 @login_required
 def perguntar():
     return perguntar_chatbot()
+
 
 @app.route('/api/chatbot/sintetizar', methods=['POST'])
 @login_required
@@ -415,59 +675,64 @@ def api_chatbot_sintetizar():
         return jsonify({
             "resposta_voz_base64": None,
             "resposta_voz_mimetype": None,
-            "erro": "Falha interna ao sintetizar áudio"
+            "erro": "Falha interna ao sintetizar áudio",
         }), 200
 
     if not resposta_voz:
         return jsonify({
             "resposta_voz_base64": None,
             "resposta_voz_mimetype": None,
-            "erro": "TTS indisponível"
+            "erro": "TTS indisponível",
         }), 200
 
-    # resposta_voz can be (base64, mimetype) or a raw base64 string
     try:
         b64, mimetype = resposta_voz
     except Exception:
         b64, mimetype = (resposta_voz, 'audio/wav')
 
-    return jsonify({
-        "resposta_voz_base64": b64,
-        "resposta_voz_mimetype": mimetype
-    }), 200
+    return jsonify({"resposta_voz_base64": b64, "resposta_voz_mimetype": mimetype}), 200
+
 
 @app.route('/api/chatbot/sessoes', methods=['GET'])
 @login_required
 def api_sessoes_chatbot():
     from backend.chatbot.chatbot import buscar_sessoes_chatbot
+
     return buscar_sessoes_chatbot()
+
 
 @app.route('/api/chatbot/historico', methods=['GET'])
 @login_required
 def api_historico_chat():
     from backend.chatbot.chatbot import buscar_historico_chatbot
+
     return buscar_historico_chatbot()
+
 
 @app.route('/api/chatbot/ultima-resposta', methods=['GET'])
 @login_required
 def api_ultima_resposta_chatbot():
     return buscar_ultima_resposta_chatbot()
 
+
 @app.route('/api/chatbot/historico/apagar', methods=['DELETE'])
 @login_required
 def api_apagar_historico():
     from backend.chatbot.chatbot import limpar_historico_chatbot
+
     return limpar_historico_chatbot()
+
 
 @app.route('/api/insight_diario', methods=['GET'])
 @login_required
 def api_insight_diario():
     from backend.chatbot.chatbot import gerar_insight_diario
+
     return gerar_insight_diario()
 
-# Rota /api/download/<tipo> já registrada acima (linha 332)
 
 # =================== PRODUTOS - AUTOCOMPLETE ===================
+
 
 @app.route('/api/produtos/buscar', methods=['GET'])
 @login_required
@@ -476,10 +741,10 @@ def api_buscar_produtos():
     termo = request.args.get('termo', '').strip()
     limite = request.args.get('limite', 10, type=int)
     user_id = session.get('usuario_id')
-    
+
     if not termo:
         return jsonify({"erro": "Termo de busca obrigatório"}), 400
-    
+
     try:
         produtos = buscar_produtos_por_nome(user_id, termo, limite)
         return jsonify({"sucesso": True, "produtos": produtos})
@@ -492,13 +757,16 @@ def api_buscar_produtos():
 def api_obter_produto(nome_produto):
     """Obtém dados completos de um produto específico"""
     user_id = session.get('usuario_id')
-    
+
     try:
         produto = obter_produto_exato(user_id, nome_produto)
         if produto:
             return jsonify({"sucesso": True, "produto": produto})
         else:
-            return jsonify({"sucesso": False, "erro": "Produto não encontrado"}), 404
+            return (
+                jsonify({"sucesso": False, "erro": "Produto não encontrado"}),
+                404,
+            )
     except Exception as e:
         return jsonify({"erro": str(e)}), 500
 
@@ -509,10 +777,10 @@ def api_salvar_produto():
     """Salva ou atualiza um produto no histórico"""
     user_id = session.get('usuario_id')
     dados = request.get_json()
-    
+
     if not dados or not dados.get('nome_produto'):
         return jsonify({"erro": "nome_produto obrigatório"}), 400
-    
+
     try:
         produto_id = salvar_produto(
             usuario_id=user_id,
@@ -521,7 +789,7 @@ def api_salvar_produto():
             preco=dados.get('preco'),
             estoque=dados.get('estoque'),
             sku=dados.get('sku'),
-            descricao=dados.get('descricao')
+            descricao=dados.get('descricao'),
         )
         return jsonify({"sucesso": True, "produto_id": produto_id})
     except Exception as e:
@@ -535,9 +803,9 @@ def api_listar_produtos():
     user_id = session.get('usuario_id')
     pagina = request.args.get('pagina', 1, type=int)
     limite = request.args.get('limite', 50, type=int)
-    
+
     skip = (pagina - 1) * limite
-    
+
     try:
         produtos = listar_produtos(user_id, limite=limite, skip=skip)
         total = obter_estatisticas_produtos(user_id)["total"]
@@ -545,7 +813,7 @@ def api_listar_produtos():
             "sucesso": True,
             "produtos": produtos,
             "total": total,
-            "pagina": pagina
+            "pagina": pagina,
         })
     except Exception as e:
         return jsonify({"erro": str(e)}), 500
@@ -556,7 +824,7 @@ def api_listar_produtos():
 def api_obter_categorias():
     """Obtém lista de categorias cadastradas"""
     user_id = session.get('usuario_id')
-    
+
     try:
         categorias = obter_categorias(user_id)
         return jsonify({"sucesso": True, "categorias": categorias})
@@ -569,12 +837,15 @@ def api_obter_categorias():
 def api_deletar_produto(produto_id):
     """Deleta um produto do histórico"""
     user_id = session.get('usuario_id')
-    
+
     try:
         if deletar_produto(user_id, produto_id):
             return jsonify({"sucesso": True})
         else:
-            return jsonify({"sucesso": False, "erro": "Produto não encontrado"}), 404
+            return (
+                jsonify({"sucesso": False, "erro": "Produto não encontrado"}),
+                404,
+            )
     except Exception as e:
         return jsonify({"erro": str(e)}), 500
 
@@ -584,12 +855,13 @@ def api_deletar_produto(produto_id):
 def api_estatisticas_produtos():
     """Retorna estatísticas dos produtos"""
     user_id = session.get('usuario_id')
-    
+
     try:
         stats = obter_estatisticas_produtos(user_id)
         return jsonify({"sucesso": True, "estatisticas": stats})
     except Exception as e:
         return jsonify({"erro": str(e)}), 500
+
 
 # ============ Verificar Senha =================
 @app.route('/verificar_codigo', methods=['GET', 'POST'])
@@ -601,6 +873,7 @@ def verificar_codigo_route():
 @app.route('/resetar_senha', methods=['GET', 'POST'])
 def resetar_senha_route():
     return resetar_senha()
+
 
 # ============ reenviar codigo =================
 @app.route('/reenviar-codigo')
