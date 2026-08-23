@@ -80,20 +80,42 @@
             <p class="p">Indicadores de desempenho e oportunidades identificadas pela IA.</p>
           </header>
 
-          <!-- FILTRO DE PERÍODO -->
+          <!-- FILTRO DE PERÍODO E ORIGEM DOS DADOS -->
           <section class="cartao anim-fade-up anim-fade-up-d1" style="margin-bottom:20px;" aria-label="Filtros">
-            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-              <label for="periodo" style="font-size:0.8rem; font-weight:600; white-space:nowrap;">
-                <i class="fa-solid fa-calendar-days" style="color:var(--primaria); margin-right:4px;"></i>
-                Período
-              </label>
-              <select class="selecao" id="periodo" aria-label="Selecionar período"
-                      style="width:auto; padding:7px 12px; font-size:0.8rem;">
-                <option value="7_dias">Últimos 7 dias</option>
-                <option value="30_dias" selected>Últimos 30 dias</option>
-                <option value="90_dias">Últimos 90 dias</option>
-                <option value="ano_atual">Este ano</option>
-              </select>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+              <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <label for="seletorPlanilhaHome" style="font-size:0.8rem; font-weight:600; white-space:nowrap; display:flex; align-items:center; gap:5px;">
+                    <i class="fa-solid fa-table-list" style="color:var(--primaria);"></i>
+                    Origem dos Dados:
+                  </label>
+                  <select class="selecao" id="seletorPlanilhaHome" aria-label="Selecionar planilha ou consolidado"
+                          style="min-width:220px; padding:7px 12px; font-size:0.8rem; font-weight:600;">
+                    <option value="todas">🌐 Todas as Planilhas (Visão Consolidada)</option>
+                  </select>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <label for="periodo" style="font-size:0.8rem; font-weight:600; white-space:nowrap; display:flex; align-items:center; gap:5px;">
+                    <i class="fa-solid fa-calendar-days" style="color:var(--primaria);"></i>
+                    Período:
+                  </label>
+                  <select class="selecao" id="periodo" aria-label="Selecionar período"
+                          style="width:auto; padding:7px 12px; font-size:0.8rem; font-weight:600;">
+                    <option value="7_dias">Últimos 7 dias</option>
+                    <option value="30_dias" selected>Últimos 30 dias</option>
+                    <option value="90_dias">Últimos 90 dias</option>
+                    <option value="ano_atual">Este ano</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Indicador de Status das Fontes -->
+              <div id="homeStatusFontesContainer" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                <span class="badge" style="background:rgba(59,130,246,0.1); color:#3b82f6; border:1px solid rgba(59,130,246,0.25); padding:3px 8px; border-radius:12px; font-size:0.75rem;">
+                  <i class="fa-solid fa-layer-group"></i> Analisando dados
+                </span>
+              </div>
             </div>
           </section>
 

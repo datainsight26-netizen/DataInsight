@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DataInsight • Contato</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+
+
+  <div class="layout">
+    <aside class="sidebar" aria-label="Navegação principal">
+      <div class="sidebar__header">
+        <a class="marca" href="{{ url_for('pagina_landing') }}" aria-label="DataInsight - Início">
+          <span class="marca__simbolo" aria-hidden="true">
+            <i class="fa-solid fa-chart-column"></i>
+          </span>
+          DataInsight
+        </a>
+      </div>
+
+
+    </aside>
+
+
+
+    <div class="main">
+      <header class="topbar">
+        <div class="topbar__actions">
+          <button class="botao botao--suave" type="button" onclick="alternarTema()" aria-label="Alternar tema">
+            <i class="fa-solid fa-moon"></i>
+          </button>
+   
+        </div>
+      </header>
+
+      <main id="conteudo" class="pagina" role="main" data-ia-help="page_contato">
+        <div class="container">
+          <header class="pagina__cabecalho">
+            <div class="migalhas">Início &gt; Contato</div>
+            <h1 class="h1">Contato</h1>
+            <p class="p">Entre em contato conosco para dúvidas, sugestões ou suporte sobre a plataforma DataInsight.</p>
+          </header>
+
+          <section class="grade grade--2" aria-label="Formulário de contato e informações">
+            <article class="cartao" data-ia-help="contato_formulario">
+              <h2 class="h2">Envie uma mensagem</h2>
+
+              <!-- Mensagem de feedback -->
+              <div id="mensagem-feedback-contato" role="alert" aria-live="polite" aria-atomic="true"
+                style="display: none; padding: 12px; border-radius: 4px; margin-bottom: 16px;">
+              </div>
+
+              <form id="formulario-contato">
+                <div class="campo">
+                  <label for="nome" class="obrigatorio">Nome</label>
+                  <input id="nome" class="entrada" type="text" placeholder="Digite seu nome" required />
+                </div>
+
+                <div class="campo">
+                  <label for="email" class="obrigatorio">Email</label>
+                  <input id="email" class="entrada" type="email" placeholder="Digite seu email" required />
+                </div>
+
+                <div class="campo">
+                  <label for="mensagem" class="obrigatorio">Mensagem</label>
+                  <textarea id="mensagem" class="area-texto" placeholder="Digite sua mensagem" required></textarea>
+                </div>
+
+                <div style="display:flex; gap: 12px; flex-wrap: wrap; margin-top: 16px;">
+                  <button class="botao botao--primario" type="submit" id="botao-enviar-contato">
+                    <span id="texto-botao-contato">Enviar Mensagem</span>
+                    <span id="spinner-botao-contato" style="display: none; margin-left: 8px;">
+                      <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                    </span>
+                  </button>
+                  <button class="botao botao--delet" type="reset">Limpar</button>
+                </div>
+              </form>
+            </article>
+
+            <aside class="cartao" data-ia-help="contato_info">
+              <h2 class="h2">Informações de contato</h2>
+              <p class="p">📧 Email: DataInsight@gmail.com</p>
+              <p class="p">📞 Telefone: (82) 99999-9999</p>
+              <p class="p">📍 Localização: Maceió - AL</p>
+              <p class="p">Nosso sistema ajuda usuários a interpretar dados com mais facilidade através de dashboards e
+                análises inteligentes.</p>
+            </aside>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+  
+  <!-- Footer -->
+  {% include 'partials/footer.html' %}
+
+  <!-- Painel Acessibilidae -->
+  {% include 'partials/painel_acessibilidade.html' %}
+
+  <!-- Chatbot Flutuante -->
+  {% include 'partials/chatbot.html' %}
+
+  <div vw class="enabled" id="Vlibras">
+    <div vw-access-button class="active"></div>
+    <div vw-plugin-wrapper>
+      <div class="vw-plugin-top-wrapper"></div>
+    </div>
+  </div>
+
+  <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+  <script>
+    new window.VLibras.Widget('https://vlibras.gov.br/app');
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+  <script>
+    // ===============================
+    // MANIPULADOR DE FORMULÁRIO DE CONTATO
+    // ===============================
+    document.addEventListener('DOMContentLoaded', function() {
+      const formulario = document.getElementById('formulario-contato');
+      
+      if (formulario) {
+        formulario.addEventListener('submit', async function(e) {
+          e.preventDefault();
+          await enviarMensagemContato();
+        });
+      }
+    });
+
+    async function enviarMensagemContato() {
+      const formulario = document.getElementById('formulario-contato');
+      const nome = document.getElementById('nome').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const mensagem = document.getElementById('mensagem').value.trim();
+      const botao = document.getElementById('botao-enviar-contato');
+      const textoBotao = document.getElementById('texto-botao-contato');
+      const spinnerBotao = document.getElementById('spinner-botao-contato');
+      const feedback = document.getElementById('mensagem-feedback-contato');
+
+      // Validações básicas
+      if (!nome || !email || !mensagem) {
+        mostrarFeedback(feedback, 'erro', 'Por favor, preencha todos os campos');
+        return;
+      }
+
+      try {
+        // Desabilitar botão e mostrar spinner
+        botao.disabled = true;
+        textoBotao.style.display = 'none';
+        spinnerBotao.style.display = 'inline';
+
+        const response = await fetch('/enviar-contato', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            nome: nome,
+            email: email,
+            mensagem: mensagem
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.sucesso) {
+          mostrarFeedback(feedback, 'sucesso', data.mensagem || 'Mensagem enviada com sucesso!');
+          formulario.reset();
+          
+          // Limpar feedback após 5 segundos
+          setTimeout(() => {
+            feedback.style.display = 'none';
+          }, 5000);
+        } else {
+          mostrarFeedback(feedback, 'erro', data.mensagem || 'Erro ao enviar a mensagem');
+        }
+      } catch (error) {
+        mostrarFeedback(feedback, 'erro', 'Erro ao processar a solicitação. Tente novamente.');
+      } finally {
+        // Reabilitar botão e ocultar spinner
+        botao.disabled = false;
+        textoBotao.style.display = 'inline';
+        spinnerBotao.style.display = 'none';
+      }
+    }
+
+    function mostrarFeedback(elemento, tipo, mensagem) {
+      const isError = tipo === 'erro';
+      const color = isError ? '#dc2626' : '#16a34a';
+      const bgColor = isError ? 'rgba(220, 38, 38, 0.1)' : 'rgba(22, 163, 74, 0.1)';
+      const icon = isError ? '✗' : '✓';
+
+      elemento.style.display = 'block';
+      elemento.style.backgroundColor = bgColor;
+      elemento.style.borderLeft = `4px solid ${color}`;
+      elemento.style.color = color;
+      elemento.innerHTML = `<strong>${icon} ${isError ? 'Erro' : 'Sucesso'}:</strong> ${mensagem}`;
+    }
+  </script>
+</body>
+
+</html>

@@ -75,18 +75,7 @@
               </div>
             </article>
 
-            <article class="cartao">
-              <h2 class="h2">Assistente por voz</h2>
-              <p class="p" style="margin-top:6px;">Ative o modo voz para falar com o agente em qualquer página. Fale a palavra "Data" para ativar.</p>
 
-              <div style="display:flex; align-items:center; gap: 12px; margin-top: 16px;">
-                <span>Ativar assistente por voz</span>
-                <label class="switch">
-                  <input type="checkbox" id="toggleVoz" checked>
-                  <span class="slider"></span>
-                </label>
-              </div>
-            </article>
 
             <article class="cartao">
               <h2 class="h2">Leitura</h2>
@@ -151,10 +140,9 @@
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 
   <script>
-    // Controle de escala de fonte
+    // Controle de configurações e acessibilidade
     document.addEventListener('DOMContentLoaded', function() {
       const checkboxAcessibilidade = document.getElementById('toggleAcessibilidade');
-      const checkboxVoz = document.getElementById('toggleVoz');
       const botaoAumentar = document.getElementById('botaoAumentar');
       const botaoDiminuir = document.getElementById('botaoDiminuir');
       
@@ -166,13 +154,6 @@
         });
       }
 
-      const vozAtiva = localStorage.getItem('vozAtiva') !== 'false';
-      if (checkboxVoz) {
-        checkboxVoz.checked = vozAtiva;
-        checkboxVoz.addEventListener('change', function() {
-          localStorage.setItem('vozAtiva', this.checked ? 'true' : 'false');
-        });
-      }
 
       const obterEscalaFonte = () => {
         const escala = document.documentElement.style.getPropertyValue('--escala-fonte') || '1';

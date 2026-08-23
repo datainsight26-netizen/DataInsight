@@ -32,7 +32,8 @@
       --ds-cell-focus-bg: rgba(59, 130, 246, 0.05);
     }
 
-    [data-tema="escuro"] {
+    [data-tema="escuro"],
+    body.tema-escuro {
       --ds-toolbar-bg: #0f172a;
       --ds-cell-focus-bg: rgba(59, 130, 246, 0.12);
     }
@@ -43,8 +44,15 @@
     }
 
     @keyframes fadeInDados {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     /* Badges de cabeçalho */
@@ -559,7 +567,8 @@
       color: var(--suave);
       padding: 0 6px;
       user-select: none;
-      display: none; /* Ativado em modo expandido se necessário */
+      display: none;
+      /* Ativado em modo expandido se necessário */
     }
 
     .ribbon-btn {
@@ -842,7 +851,7 @@
     }
 
     /* Destaques visuais */
-    .modern-table tr.row-selected > td {
+    .modern-table tr.row-selected>td {
       background: rgba(37, 99, 235, 0.05) !important;
     }
 
@@ -928,7 +937,10 @@
     .toggle-slider-sm {
       position: absolute;
       cursor: pointer;
-      top: 0; left: 0; right: 0; bottom: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       background-color: #cbd5e1;
       transition: .3s;
       border-radius: 18px;
@@ -946,11 +958,11 @@
       border-radius: 50%;
     }
 
-    .toggle-switch-sm input:checked + .toggle-slider-sm {
+    .toggle-switch-sm input:checked+.toggle-slider-sm {
       background-color: var(--primaria);
     }
 
-    .toggle-switch-sm input:checked + .toggle-slider-sm:before {
+    .toggle-switch-sm input:checked+.toggle-slider-sm:before {
       transform: translateX(14px);
     }
 
@@ -982,8 +994,15 @@
     }
 
     @keyframes modalPopIn {
-      from { opacity: 0; transform: scale(0.96) translateY(10px); }
-      to { opacity: 1; transform: scale(1) translateY(0); }
+      from {
+        opacity: 0;
+        transform: scale(0.96) translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
     }
 
     .modal-abas-title {
@@ -1022,6 +1041,970 @@
       background: rgba(239, 68, 68, 0.1);
       color: var(--perigo);
     }
+
+    /* =====================================================================
+       CARDS E GRID DE LIMPEZA E PADRONIZAÇÃO DE DADOS
+       ===================================================================== */
+    .limpeza-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    @media (max-width: 600px) {
+      .limpeza-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .limpeza-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      background: var(--fundo);
+      border: 1px solid var(--borda);
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      user-select: none;
+      text-align: left;
+    }
+
+    .limpeza-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--primaria);
+      background: var(--cartao);
+      box-shadow: 0 8px 22px -4px rgba(37, 99, 235, 0.14);
+    }
+
+    .limpeza-card:active {
+      transform: scale(0.98);
+    }
+
+    .limpeza-card-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+      transition: transform 0.2s ease;
+    }
+
+    .limpeza-card:hover .limpeza-card-icon {
+      transform: scale(1.08);
+    }
+
+    .limpeza-card-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .limpeza-card-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--texto);
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .limpeza-card-desc {
+      font-size: 11.5px;
+      color: var(--suave);
+      line-height: 1.35;
+    }
+
+    .limpeza-card-arrow {
+      font-size: 11px;
+      color: var(--suave);
+      opacity: 0;
+      transform: translateX(-4px);
+      transition: all 0.2s ease;
+    }
+
+    .limpeza-card:hover .limpeza-card-arrow {
+      opacity: 1;
+      transform: translateX(0);
+      color: var(--primaria);
+    }
+
+    /* =====================================================================
+       PAINEL DE CLASSIFICAÇÃO FINANCEIRA — ESTILOS
+       ===================================================================== */
+
+    .fin-panel {
+      background: var(--cartao);
+      border: 1px solid var(--borda);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px -8px rgba(0, 0, 0, 0.08);
+      margin-top: 28px;
+      animation: fadeInDados 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .fin-panel-header {
+      background: var(--cartao);
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    [data-tema="claro"] .fin-panel-header {
+      background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%);
+    }
+
+    .fin-panel-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--texto);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      letter-spacing: -0.01em;
+    }
+
+    .fin-panel-subtitle {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.55);
+      margin-top: 3px;
+    }
+
+    .fin-panel-badge {
+      background: var(--primaria);
+      color: white;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    /* Tabs do painel financeiro */
+    .fin-tabs {
+      display: flex;
+      gap: 0;
+      background: var(--fundo);
+      border-bottom: 1px solid var(--borda);
+      overflow-x: auto;
+    }
+
+    .fin-tab {
+      padding: 12px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--suave);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      font-family: inherit;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .fin-tab:hover {
+      color: var(--primaria);
+    }
+
+    .fin-tab.active {
+      color: var(--primaria);
+      border-bottom-color: var(--primaria);
+      background: rgba(37, 99, 235, 0.04);
+    }
+
+    .fin-tab-count {
+      background: var(--primaria);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 1px 6px;
+      border-radius: 999px;
+      min-width: 18px;
+      text-align: center;
+    }
+
+    .fin-tab-content {
+      display: none;
+      padding: 20px 24px;
+    }
+
+    .fin-tab-content.active {
+      display: block;
+    }
+
+    /* Grupo de categorias */
+    .fin-grupo-label {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--suave);
+      margin: 0 0 10px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .fin-grupo-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--borda);
+    }
+
+    /* Cards de categoria */
+    .fin-categorias-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .fin-cat-card {
+      background: var(--fundo);
+      border: 1.5px solid var(--borda);
+      border-radius: 12px;
+      padding: 14px 16px;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .fin-cat-card::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--fin-cat-cor, var(--primaria));
+      border-radius: 12px 0 0 12px;
+    }
+
+    .fin-cat-card:hover {
+      border-color: var(--fin-cat-cor, var(--primaria));
+      box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.1);
+      transform: translateY(-1px);
+    }
+
+    .fin-cat-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .fin-cat-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .fin-cat-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--texto);
+    }
+
+    .fin-cat-grupo {
+      font-size: 10.5px;
+      color: var(--suave);
+      margin-top: 1px;
+    }
+
+    .fin-cat-status {
+      margin-left: auto;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .fin-cat-status.mapeado {
+      background: rgba(16, 185, 129, 0.12);
+      color: #059669;
+    }
+
+    .fin-cat-status.sugerido {
+      background: rgba(245, 158, 11, 0.12);
+      color: #b45309;
+    }
+
+    .fin-cat-status.ausente {
+      background: rgba(239, 68, 68, 0.10);
+      color: #dc2626;
+    }
+
+    .fin-info-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 1px solid var(--borda);
+      background: var(--cartao);
+      color: var(--primaria);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 11px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      padding: 0;
+      z-index: 2;
+    }
+
+    .fin-info-btn:hover {
+      background: var(--primaria);
+      color: #fff;
+      border-color: var(--primaria);
+      transform: scale(1.2);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28);
+    }
+
+    .fin-cat-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .fin-cat-select {
+      width: 100%;
+      padding: 7px 10px;
+      font-size: 12.5px;
+      border: 1px solid var(--borda);
+      border-radius: 8px;
+      background: var(--cartao);
+      color: var(--texto);
+      font-family: inherit;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .fin-cat-select:focus {
+      outline: none;
+      border-color: var(--fin-cat-cor, var(--primaria));
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+    }
+
+    .fin-cat-manual-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .fin-cat-manual-label {
+      font-size: 11.5px;
+      color: var(--suave);
+      white-space: nowrap;
+      font-weight: 500;
+    }
+
+    .fin-cat-manual-input {
+      flex: 1;
+      padding: 5px 8px;
+      font-size: 12.5px;
+      border: 1px solid var(--borda);
+      border-radius: 6px;
+      background: var(--cartao);
+      color: var(--texto);
+      font-family: inherit;
+    }
+
+    .fin-cat-manual-input:focus {
+      outline: none;
+      border-color: var(--fin-cat-cor, var(--primaria));
+    }
+
+    .fin-confidence-bar {
+      height: 4px;
+      border-radius: 4px;
+      background: var(--borda);
+      margin-top: 8px;
+      overflow: hidden;
+    }
+
+    .fin-confidence-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+
+    .fin-confidence-label {
+      font-size: 10px;
+      color: var(--suave);
+      margin-top: 3px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* Recomendações */
+    .fin-rec-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .fin-rec-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      transition: all 0.15s;
+    }
+
+    .fin-rec-item.aviso {
+      background: rgba(245, 158, 11, 0.06);
+      border-color: rgba(245, 158, 11, 0.25);
+    }
+
+    .fin-rec-item.erro {
+      background: rgba(239, 68, 68, 0.06);
+      border-color: rgba(239, 68, 68, 0.2);
+    }
+
+    .fin-rec-item.ok {
+      background: rgba(16, 185, 129, 0.06);
+      border-color: rgba(16, 185, 129, 0.2);
+    }
+
+    .fin-rec-icon {
+      font-size: 16px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .fin-rec-item.aviso .fin-rec-icon {
+      color: #b45309;
+    }
+
+    .fin-rec-item.erro .fin-rec-icon {
+      color: #dc2626;
+    }
+
+    .fin-rec-item.ok .fin-rec-icon {
+      color: #059669;
+    }
+
+    .fin-rec-content {
+      flex: 1;
+    }
+
+    .fin-rec-msg {
+      font-size: 13px;
+      color: var(--texto);
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    .fin-rec-acao {
+      margin-top: 6px;
+    }
+
+    .btn-fin-acao {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      font-size: 11.5px;
+      font-weight: 700;
+      border-radius: 6px;
+      border: 1px solid;
+      background: transparent;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+
+    .fin-rec-item.aviso .btn-fin-acao {
+      color: #b45309;
+      border-color: rgba(245, 158, 11, 0.4);
+    }
+
+    .fin-rec-item.aviso .btn-fin-acao:hover {
+      background: rgba(245, 158, 11, 0.1);
+    }
+
+    .fin-rec-item.erro .btn-fin-acao {
+      color: #dc2626;
+      border-color: rgba(239, 68, 68, 0.35);
+    }
+
+    .fin-rec-item.erro .btn-fin-acao:hover {
+      background: rgba(239, 68, 68, 0.08);
+    }
+
+    /* Status de prontidão por ferramenta */
+    .fin-status-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .fin-status-card {
+      background: var(--fundo);
+      border: 1px solid var(--borda);
+      border-radius: 12px;
+      padding: 16px;
+      transition: all 0.2s;
+    }
+
+    .fin-status-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px -4px rgba(0, 0, 0, 0.08);
+    }
+
+    .fin-status-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .fin-status-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+    }
+
+    .fin-status-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--texto);
+    }
+
+    .fin-status-pct {
+      margin-left: auto;
+      font-size: 1.1rem;
+      font-weight: 800;
+    }
+
+    .fin-status-bar {
+      height: 6px;
+      background: var(--borda);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .fin-status-fill {
+      height: 100%;
+      border-radius: 6px;
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .fin-status-faltando {
+      font-size: 11px;
+      color: var(--suave);
+      line-height: 1.5;
+    }
+
+    .fin-status-faltando span {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(239, 68, 68, 0.08);
+      color: #dc2626;
+      padding: 2px 7px;
+      border-radius: 4px;
+      margin: 2px;
+      font-weight: 600;
+    }
+
+    .fin-status-pronto {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #059669;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* Preview de indicadores */
+    .fin-preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 10px;
+    }
+
+    .fin-preview-card {
+      background: var(--fundo);
+      border: 1px solid var(--borda);
+      border-radius: 10px;
+      padding: 14px;
+      text-align: center;
+    }
+
+    .fin-preview-label {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--suave);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+
+    .fin-preview-value {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--texto);
+      letter-spacing: -0.02em;
+    }
+
+    .fin-preview-value.positivo {
+      color: #10b981;
+    }
+
+    .fin-preview-value.negativo {
+      color: #ef4444;
+    }
+
+    /* Rodapé do painel */
+    .fin-panel-footer {
+      padding: 16px 24px;
+      background: var(--fundo);
+      border-top: 1px solid var(--borda);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .fin-salvar-status {
+      font-size: 12.5px;
+      color: var(--suave);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Animação de pulso para botão de analisar */
+    @keyframes pulseBlue {
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.25);
+      }
+
+      50% {
+        box-shadow: 0 0 0 8px rgba(37, 99, 235, 0);
+      }
+    }
+
+    .btn-analisar-pulse {
+      animation: pulseBlue 1.8s ease-in-out infinite;
+    }
+
+    /* ===== SUGESTÃO DE CRIAÇÃO AUTOMÁTICA DE COLUNAS ===== */
+    .fin-sugestao-criar-coluna {
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px dashed var(--borda);
+    }
+
+    .btn-sugestao-criar-col {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 6px 10px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--primaria);
+      background: rgba(37, 99, 235, 0.08);
+      border: 1px dashed rgba(37, 99, 235, 0.35);
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .btn-sugestao-criar-col:hover {
+      background: var(--primaria);
+      color: #fff;
+      border-style: solid;
+      border-color: var(--primaria);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    }
+
+    .btn-sugestao-criar-col:active {
+      transform: scale(0.98);
+    }
+
+    .btn-fin-acao--criar {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.25)) !important;
+      color: #059669 !important;
+      border-color: rgba(16, 185, 129, 0.45) !important;
+      font-weight: 700 !important;
+    }
+
+    .btn-fin-acao--criar:hover {
+      background: linear-gradient(135deg, #10b981, #059669) !important;
+      color: #fff !important;
+      border-color: #059669 !important;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
+    }
+
+    .fin-missing-badge-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      font-size: 10.5px;
+      font-weight: 700;
+      border-radius: 6px;
+      border: 1px dashed rgba(239, 68, 68, 0.4);
+      background: rgba(239, 68, 68, 0.08);
+      color: #dc2626;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.18s ease;
+    }
+
+    .fin-missing-badge-btn:hover {
+      background: #dc2626;
+      color: #fff;
+      border-style: solid;
+      border-color: #dc2626;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(220, 38, 38, 0.25);
+    }
+
+    .fin-bulk-create-banner {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(99, 102, 241, 0.08));
+      border: 1.5px dashed rgba(37, 99, 235, 0.3);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .fin-bulk-create-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .fin-bulk-create-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.38);
+      filter: brightness(1.06);
+    }
+
+    .fin-bulk-create-btn:active {
+      transform: scale(0.98);
+    }
+
+    /* ===== MÚLTIPLAS TABELAS / SISTEMA DE ABAS ===== */
+    .table-tabs-wrapper {
+      background: var(--ds-toolbar-bg, #f8fafc);
+      border-bottom: 1.5px solid var(--borda);
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .table-tabs-container {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: thin;
+      padding: 2px 0;
+      flex: 1;
+      min-width: 260px;
+    }
+
+    [data-tema="escuro"] .table-tabs-wrapper,
+    body.tema-escuro .table-tabs-wrapper {
+      background: #0f172a;
+    }
+
+    .table-tab-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 14px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--suave);
+      background: var(--cartao);
+      border: 1.5px solid var(--borda);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+      position: relative;
+    }
+
+    .table-tab-pill:hover {
+      color: var(--primaria);
+      border-color: rgba(37, 99, 235, 0.45);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    .table-tab-pill.active {
+      color: #fff;
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      border-color: #1d4ed8;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+    }
+
+    .table-tab-pill .tab-badge-rows {
+      font-size: 10.5px;
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.08);
+      color: currentColor;
+      font-weight: 700;
+    }
+
+    .table-tab-pill.active .tab-badge-rows {
+      background: rgba(255, 255, 255, 0.25);
+      color: #fff;
+    }
+
+    .tab-btn-action {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: transparent;
+      color: currentColor;
+      opacity: 0.65;
+      cursor: pointer;
+      font-size: 9.5px;
+      padding: 0;
+      transition: all 0.15s;
+    }
+
+    .tab-btn-action:hover {
+      opacity: 1;
+      background: rgba(0, 0, 0, 0.15);
+      transform: scale(1.18);
+    }
+
+    .table-tab-pill.active .tab-btn-action:hover {
+      background: rgba(255, 255, 255, 0.28);
+    }
+
+    .btn-nova-tabela-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--primaria);
+      background: rgba(37, 99, 235, 0.08);
+      border: 1px dashed rgba(37, 99, 235, 0.35);
+      cursor: pointer;
+      white-space: nowrap;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .btn-nova-tabela-tab:hover {
+      background: var(--primaria);
+      color: #fff;
+      border-style: solid;
+      border-color: var(--primaria);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    }
+
+    .active-table-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 12px;
+      background: rgba(37, 99, 235, 0.08);
+      border: 1px solid rgba(37, 99, 235, 0.25);
+      border-radius: 8px;
+      font-size: 12.5px;
+      color: var(--texto);
+    }
+
+    .active-table-badge i {
+      color: var(--primaria);
+    }
+
+    .active-table-badge strong {
+      color: var(--primaria);
+      font-weight: 800;
+    }
+
+    .active-table-rows {
+      font-size: 11px;
+      padding: 1px 7px;
+      border-radius: 999px;
+      background: var(--cartao);
+      border: 1px solid var(--borda);
+      color: var(--suave);
+      font-weight: 700;
+    }
+
+    .nova-col-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
   </style>
 </head>
 
@@ -1042,8 +2025,8 @@
           <span class="topbar__greeting">Olá, <strong>{{ session.usuario_nome }}</strong></span>
         </div>
         <div class="topbar__actions">
-          <button class="topbar__btn" onclick="alternarTema()" aria-label="Alternar tema" id="btnTema" title="Alternar Modo Escuro / Claro"><i
-              class="fa-solid fa-moon"></i></button>
+          <button class="topbar__btn" onclick="alternarTema()" aria-label="Alternar tema" id="btnTema"
+            title="Alternar Modo Escuro / Claro"><i class="fa-solid fa-moon"></i></button>
           <a class="topbar__btn" href="{{ url_for('pagina_configuracoes') }}" title="Configurações"><i
               class="fa-solid fa-gear"></i></a>
         </div>
@@ -1055,15 +2038,17 @@
 
           <!-- ===== CABEÇALHO DA PÁGINA ===== -->
           <header class="pagina__cabecalho" style="margin-bottom: 24px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 8px;">
-              <div class="migalhas">Início &gt; <span style="color:var(--primaria); font-weight:600;">Dados &amp; Planilhas</span></div>
-              <span class="header-badge"><i class="fa-solid fa-shield-halved"></i> Governança Corporativa Ativa</span>
+            <div
+              style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 8px;">
+              <div class="migalhas">Início &gt; <span  font-weight:600;">Dados</span></div>
+
             </div>
             <h1 class="h1" style="font-size: 1.85rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 6px;">
-              Painel de Gerenciamento e Governança de Dados
+              Painel de Gerenciamento  de Dados
             </h1>
             <p class="p" style="max-width: 820px; font-size: 0.95rem; color: var(--suave);">
-              Ambiente de dados de alta precisão com suporte a planilhas multi-abas, fórmulas inteligentes, validação de schema em tempo real, monitoramento de metas corporativas e exportação flexível.
+              Ambiente de dados com suporte a planilhas multi-abas, fórmulas inteligentes, validação de
+              schema em tempo real, monitoramento de metas e exportação flexível.
             </p>
           </header>
 
@@ -1101,24 +2086,24 @@
               </div>
 
               <!-- KPI 4: Soma -->
-              <div class="kpi-card" style="--kpi-accent: #8b5cf6; --kpi-icon-bg: rgba(139, 92, 246, 0.1);">
+              <!-- <div class="kpi-card" style="--kpi-accent: #8b5cf6; --kpi-icon-bg: rgba(139, 92, 246, 0.1);">
                 <div class="kpi-card-header">
                   <span class="kpi-card-label">Soma (1ª Num.)</span>
                   <div class="kpi-card-icon"><i class="fa-solid fa-calculator"></i></div>
                 </div>
                 <div class="kpi-card-value" id="statSomaNum" style="font-size: 1.35rem;">—</div>
                 <div class="kpi-card-subtitle">Total acumulado</div>
-              </div>
+              </div> -->
 
               <!-- KPI 5: Média -->
-              <div class="kpi-card" style="--kpi-accent: #f59e0b; --kpi-icon-bg: rgba(245, 158, 11, 0.1);">
+              <!-- <div class="kpi-card" style="--kpi-accent: #f59e0b; --kpi-icon-bg: rgba(245, 158, 11, 0.1);">
                 <div class="kpi-card-header">
                   <span class="kpi-card-label">Média (1ª Num.)</span>
                   <div class="kpi-card-icon"><i class="fa-solid fa-chart-simple"></i></div>
                 </div>
                 <div class="kpi-card-value" id="statMediaNum" style="font-size: 1.35rem;">—</div>
                 <div class="kpi-card-subtitle">Valor médio por linha</div>
-              </div>
+              </div> -->
 
               <!-- KPI 6: Anomalias / Duplicatas -->
               <div class="kpi-card" style="--kpi-accent: #ef4444; --kpi-icon-bg: rgba(239, 68, 68, 0.1);">
@@ -1136,15 +2121,20 @@
           </section>
 
           <!-- ===== PAINEL DE METAS CORPORATIVAS ===== -->
-          <section id="goalsSection" class="goals-panel-box" style="display:none;" aria-label="Metas Financeiras Corporativas">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+          <section id="goalsSection" class="goals-panel-box" style="display:none;"
+            aria-label="Metas Financeiras Corporativas">
+            <div
+              style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
               <div style="display:flex; align-items:center; gap:10px;">
-                <div style="width:32px; height:32px; border-radius:8px; background:rgba(37,99,235,0.1); color:var(--primaria); display:flex; align-items:center; justify-content:center;">
+                <div
+                  style="width:32px; height:32px; border-radius:8px; background:rgba(37,99,235,0.1); color:var(--primaria); display:flex; align-items:center; justify-content:center;">
                   <i class="fa-solid fa-bullseye"></i>
                 </div>
-                <h3 style="font-size:15px; font-weight:700; margin:0; color:var(--texto);">Rastreamento de Metas Financeiras</h3>
+                <h3 style="font-size:15px; font-weight:700; margin:0; color:var(--texto);">Rastreamento de Metas
+                  Financeiras</h3>
               </div>
-              <button class="ribbon-btn btn-governance" onclick="abrirModalDefinirMetas()" style="border:1px solid var(--borda);">
+              <button class="ribbon-btn btn-governance" onclick="abrirModalDefinirMetas()"
+                style="border:1px solid var(--borda);">
                 <i class="fa-solid fa-pen-to-square"></i> Ajustar Metas
               </button>
             </div>
@@ -1175,7 +2165,8 @@
 
                   <div id="uploadDropZone" class="upload-zone-wrapper">
                     <div style="font-size: 13px; color: var(--suave); margin-bottom: 12px; font-weight: 500;">
-                      <i class="fa-solid fa-arrow-down" style="color:var(--primaria);"></i> Arraste e solte o arquivo aqui ou selecione o formato:
+                      <i class="fa-solid fa-arrow-down" style="color:var(--primaria);"></i> Arraste e solte o arquivo
+                      aqui ou selecione o formato:
                     </div>
                     <div style="display: flex; flex-wrap: wrap; gap: 12px;">
                       <button class="format-card-btn" data-type="excel" type="button"
@@ -1215,7 +2206,8 @@
 
               <!-- Governança & Exclusão Segura -->
               <div class="col-lg-4 col-md-12">
-                <article class="section-card" data-ia-help="dados_exclusao" style="height: 100%; border-color: rgba(239, 68, 68, 0.25);">
+                <article class="section-card" data-ia-help="dados_exclusao"
+                  style="height: 100%; border-color: rgba(239, 68, 68, 0.25);">
                   <div class="section-header">
                     <div class="section-title-group">
                       <div class="section-icon-badge" style="background: rgba(239, 68, 68, 0.1); color: var(--perigo);">
@@ -1228,9 +2220,11 @@
                     </div>
                   </div>
 
-                  <div style="background: rgba(220, 38, 38, 0.06); border: 1px solid rgba(220, 38, 38, 0.2); padding: 12px; border-radius: 10px; margin-bottom: 14px;">
+                  <div
+                    style="background: rgba(220, 38, 38, 0.06); border: 1px solid rgba(220, 38, 38, 0.2); padding: 12px; border-radius: 10px; margin-bottom: 14px;">
                     <p style="color: var(--perigo); margin: 0; font-size: 13px; font-weight: 500;">
-                      <i class="fa-solid fa-triangle-exclamation"></i> <strong>Ação Irreversível:</strong> Será enviado um e-mail de confirmação para autorizar a exclusão completa.
+                      <i class="fa-solid fa-triangle-exclamation"></i> <strong>Ação Irreversível:</strong> Será enviado
+                      um e-mail de confirmação para autorizar a exclusão completa.
                     </p>
                   </div>
 
@@ -1238,13 +2232,144 @@
                     Remove todos os registros e colunas associados à sua conta no banco de dados com segurança.
                   </p>
 
-                  <button class="botao botao--delet" type="button" style="width: 100%; justify-content: center; padding: 10px;"
-                    id="btnSolicitarExclusao">
+                  <button class="botao botao--delet" type="button"
+                    style="width: 100%; justify-content: center; padding: 10px;" id="btnSolicitarExclusao">
                     <i class="fa-solid fa-envelope-circle-check"></i> Solicitar Exclusão
                   </button>
                 </article>
               </div>
             </div>
+          </section>
+
+          <!-- ===== SEÇÃO 3: CLASSIFICAÇÃO FINANCEIRA ===== -->
+          <section id="secaoClassificacaoFinanceira" style="display:none;" aria-label="Classificação Financeira">
+            <div class="fin-panel" id="painelClassificacaoFinanceira">
+
+              <!-- Cabeçalho do Painel -->
+              <div class="fin-panel-header">
+                <div>
+                  <div class="fin-panel-title">
+                
+                    Classificação Financeira
+                  </div>
+                  <div class="fin-panel-subtitle">
+                  <p style="font-size:13px; color:var(--texto); margin:0 0 16px 0; line-height:1.5;">
+                    <i class="fa-solid fa-circle-info" style="color:var(--primaria);"></i>
+                    Para cada categoria financeira, selecione a <strong>coluna da sua tabela</strong> que corresponde a
+                    ela,
+                    ou informe um <strong>valor fixo mensal</strong>. O sistema detectou sugestões automaticamente.
+                  </p>
+                  </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                  <span class="fin-panel-badge" id="finBadgeMapeados">0 / 0 campos</span>
+                  <button class="botao botao--suave" id="btnCriarFaltantesLote"
+                    onclick="abrirModalCriarTodasFaltantes()" title="Cria todas as colunas essenciais faltantes automaticamente na tabela"
+                    style="font-size:13px; padding:8px 14px; gap:6px;">
+                    <i class="fa-solid fa-layer-group" style="color:var(--primaria);"></i> Estruturar Faltantes
+                  </button>
+                  <button class="botao botao--primario btn-analisar-pulse" id="btnAnalisarFinanceiro"
+                    onclick="analisarColunasFinanceiras()" style="font-size:13px; padding:8px 16px; gap:6px;">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Analisar Automaticamente
+                  </button>
+                  <button onclick="finTogglePanel()"
+                    style="background:transparent; border:none; color:var(--texto); font-size:16px; cursor:pointer; padding:5px; transition: color 0.3s ease;">
+                    <i class="fa-solid fa-chevron-up" id="finToggleIcon"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Wrapper for the rest of the panel to allow collapse -->
+              <div id="finPanelBody">
+
+                <!-- Tabs de Navegação -->
+                <div class="fin-tabs" role="tablist">
+                  <button class="fin-tab active" id="finTab-mapeamento" onclick="finMudarTab('mapeamento')" role="tab"
+                    aria-selected="true">
+                    <i class="fa-solid fa-tags"></i> Mapeamento
+                    <span class="fin-tab-count" id="finCountMapeados">0</span>
+                  </button>
+                  <button class="fin-tab" id="finTab-recomendacoes" onclick="finMudarTab('recomendacoes')" role="tab"
+                    aria-selected="false">
+                    <i class="fa-solid fa-lightbulb"></i> Recomendações
+                    <span class="fin-tab-count" id="finCountRecs" style="background:#ef4444;">0</span>
+                  </button>
+                  <button class="fin-tab" id="finTab-ferramentas" onclick="finMudarTab('ferramentas')" role="tab"
+                    aria-selected="false">
+                    <i class="fa-solid fa-rocket"></i> Prontidão das Ferramentas
+                  </button>
+                </div>
+
+                <!-- Tab 1: Mapeamento de Categorias -->
+                <div class="fin-tab-content active" id="finTabContent-mapeamento">
+                  
+                  <div id="finCategoriasContainer">
+                    <!-- Gerado dinamicamente via JS -->
+                    <div style="text-align:center; padding:40px; color:var(--suave);">
+                      <i class="fa-solid fa-wand-magic-sparkles"
+                        style="font-size:32px; opacity:0.3; display:block; margin-bottom:10px;"></i>
+                      Clique em <strong>"Analisar Automaticamente"</strong> para detectar as categorias financeiras
+                      ou <strong>carregue seus dados</strong> primeiro.
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Tab 2: Recomendações -->
+                <div class="fin-tab-content" id="finTabContent-recomendacoes">
+                  <p style="font-size:13px; color:var(--suave); margin:0 0 16px 0;">
+                    <i class="fa-solid fa-robot" style="color:var(--primaria);"></i>
+                    O sistema identificou os seguintes pontos de atenção com base nos seus dados:
+                  </p>
+                  <div class="fin-rec-list" id="finRecomendacoesContainer">
+                    <div style="text-align:center; padding:30px; color:var(--suave);">
+                      <i class="fa-solid fa-circle-check"
+                        style="font-size:28px; color:#10b981; display:block; margin-bottom:8px;"></i>
+                      Nenhuma recomendação pendente. Todos os campos necessários estão mapeados!
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Tab 3: Prontidão das Ferramentas -->
+                <div class="fin-tab-content" id="finTabContent-ferramentas">
+                  <p style="font-size:13px; color:var(--suave); margin:0 0 16px 0;">
+                    Veja o quanto cada ferramenta financeira já pode ser utilizada com os seus dados atuais:
+                  </p>
+                  <div class="fin-status-grid" id="finStatusFerramentasContainer">
+                    <!-- Gerado via JS -->
+                  </div>
+                </div>
+
+                <!-- Tab 4: Preview Financeiro -->
+                <div class="fin-tab-content" id="finTabContent-preview">
+                  <p style="font-size:13px; color:var(--suave); margin:0 0 16px 0;">
+                    <i class="fa-solid fa-circle-info" style="color:var(--primaria);"></i>
+                    Indicadores calculados com base no mapeamento atual. Confirme se os valores fazem sentido antes de
+                    acessar as ferramentas financeiras.
+                  </p>
+                  <div class="fin-preview-grid" id="finPreviewContainer">
+                    <!-- Gerado via JS -->
+                  </div>
+                  <div
+                    style="margin-top:16px; padding:12px 16px; background:rgba(37,99,235,0.05); border:1px solid rgba(37,99,235,0.15); border-radius:10px; font-size:12.5px; color:var(--suave);">
+                    <i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b;"></i>
+                    Os valores acima são <strong>estimativas baseadas nos dados carregados</strong>
+                  </div>
+                </div> <!-- Fim do #finTabContent-preview -->
+
+                <!-- Rodapé informativo e de recálculo -->
+                <div class="fin-panel-footer">
+                  <div class="fin-salvar-status" id="finSalvarStatus">
+                    <i class="fa-solid fa-cloud" style="opacity:0.4;"></i>
+                    <span>Alterações financeiras são sincronizadas ao salvar a página</span>
+                  </div>
+                  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                   
+                  </div>
+                </div>
+
+              </div> <!-- Fim do #finPanelBody -->
+
+            </div> <!-- Fim do .fin-panel -->
           </section>
 
           <!-- ===== SEÇÃO 2: ESTÚDIO DE PLANILHA CORPORATIVA ===== -->
@@ -1254,8 +2379,9 @@
               <!-- Top Bar da Planilha: Abas, Auto-save e Indicadores -->
               <div class="studio-header">
                 <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                  <h3 style="font-size: 1.1rem; font-weight: 800; margin: 0; color: var(--texto); display: flex; align-items: center; gap: 8px;">
-                    <i class="fa-solid fa-table-cells" style="color: var(--primaria);"></i> Estúdio de Planilha
+                  <h3
+                    style="font-size: 1.1rem; font-weight: 800; margin: 0; color: var(--texto); display: flex; align-items: center; gap: 8px;">
+                    Estúdio de Planilha
                   </h3>
 
                   <!-- Auto-save Switch -->
@@ -1266,37 +2392,52 @@
                     </label>
                     <span>Auto-Save</span>
                   </div>
+
+                  <!-- Indicador da Tabela Ativa -->
+                  <div class="active-table-badge" id="activeTableIndicator" title="Tabela atualmente ativa e sendo editada">
+                    <i class="fa-solid fa-table"></i>
+                    <span>Tabela: <strong id="activeTableName">Planilha Principal</strong></span>
+                    <span class="active-table-rows" id="activeTableRowsCount">0 linhas</span>
+                  </div>
                 </div>
 
-                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                  <!-- Botão Indicadores -->
-                  <button class="ribbon-btn btn-governance" type="button" onclick="recuperarColunasEMapear()"
-                    style="border: 1px solid var(--borda); background: var(--fundo);" title="Configurar Indicadores Mapeados">
-                    <i class="fa-solid fa-chart-pie" style="color: var(--primaria);"></i> Indicadores
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <!-- Botão Renomear Tabela Ativa -->
+                  <button class="ribbon-btn" type="button" onclick="abrirModalRenomearTabela()" style="border: 1px solid var(--borda); background: var(--cartao);" title="Renomear tabela ativa">
+                    <i class="fa-solid fa-pen" style="color: var(--primaria);"></i> Renomear Tabela
                   </button>
+                  <!-- Botão Duplicar Tabela Ativa -->
+                  <button class="ribbon-btn" type="button" onclick="duplicarTabelaAtual()" style="border: 1px solid var(--borda); background: var(--cartao);" title="Criar cópia desta tabela">
+                    <i class="fa-solid fa-copy" style="color: #6366f1;"></i> Duplicar Tabela
+                  </button>
+                  <!-- Botão Indicadores -->
+             
                 </div>
               </div>
 
-              <!-- Abas de Múltiplas Tabelas (Gerado via JS) -->
-              <div id="tableTabsContainer" style="display: none;">
+              <!-- Abas de Múltiplas Tabelas -->
+              <div id="tableTabsContainer" class="table-tabs-wrapper" style="display: flex;">
                 <div class="table-tabs-container" id="tableTabsBar">
-                  <!-- Abas geradas dinamicamente -->
+                  <!-- Abas geradas dinamicamente via JS -->
                 </div>
+                <button class="btn-nova-tabela-tab" type="button" onclick="abrirModalNovaTabela()" title="Criar nova tabela / planilha">
+                  <i class="fa-solid fa-plus"></i> Nova Tabela
+                </button>
               </div>
 
               <!-- Gerenciador Rápido de Schema e Colunas -->
               <div class="schema-columns-area">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                <div
+                  style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
                   <label style="font-weight: 700; font-size: 13px; color: var(--texto); margin: 0;">
-                    <i class="fa-solid fa-table-columns" style="color: var(--primaria); margin-right: 4px;"></i> Colunas Ativas da Tabela:
+                  Colunas Ativas da Tabela:
                   </label>
                   <div style="display: flex; gap: 8px; align-items: center;">
-                    <button class="ribbon-btn" type="button" id="btnAdicionarColuna" style="background: var(--cartao); border: 1px solid var(--borda); font-size: 12px; padding: 4px 10px;">
-                      <i class="fa-solid fa-plus" style="color: var(--primaria);"></i> + Coluna
+                    <button class="ribbon-btn" type="button" id="btnAdicionarColuna"
+                      style="background: var(--cartao); border: 1px solid var(--borda); font-size: 12px; padding: 4px 10px;">
+                      <i class="fa-solid fa-plus" style="color: var(--primaria);"></i> Coluna
                     </button>
-                    <button class="ribbon-btn" type="button" onclick="abrirModalNovaTabela()" style="background: var(--cartao); border: 1px solid var(--borda); font-size: 12px; padding: 4px 10px;">
-                      <i class="fa-solid fa-folder-plus"></i> Nova Tabela
-                    </button>
+              
                   </div>
                 </div>
 
@@ -1304,10 +2445,14 @@
                   <!-- Colunas geradas dinamicamente -->
                 </div>
 
-                <div id="autoDadosAviso" style="color: var(--suave); font-size: 0.84rem; display: flex; align-items: center; gap: 6px;">
-                  <i class="fa-solid fa-robot" style="color: var(--primaria);"></i> Automação inteligente: Faturamento, despesas, margens e lucro são calculados enquanto você digita.
+                <div id="autoDadosAviso"
+                  style="color: var(--suave); font-size: 0.84rem; display: flex; align-items: center; gap: 6px;">
+                  <i class="fa-solid fa-robot" style="color: var(--primaria);"></i> Automação inteligente: Faturamento,
+                  despesas, margens e lucro são calculados enquanto você digita.
                 </div>
-                <div id="autoDadosStatus" style="color: var(--texto); font-size: 0.86rem; min-height: 18px; margin-top: 4px; font-weight: 500;"></div>
+                <div id="autoDadosStatus"
+                  style="color: var(--texto); font-size: 0.86rem; min-height: 18px; margin-top: 4px; font-weight: 500;">
+                </div>
               </div>
 
               <!-- ===== BARRA DE FERRAMENTAS ORGANIZADA (RIBBON TOOLBAR) ===== -->
@@ -1347,13 +2492,16 @@
 
                 <!-- Grupo 3: Governança, Schema & Auditoria -->
                 <div class="toolbar-group" title="Governança e Qualidade">
-                  <button class="ribbon-btn btn-governance" onclick="abrirModalValidacao()" title="Definir Regras de Validação">
+                  <button class="ribbon-btn btn-governance" onclick="abrirModalValidacao()"
+                    title="Definir Regras de Validação">
                     <i class="fa-solid fa-shield-halved" style="color: var(--primaria);"></i> Validação
                   </button>
-                  <button class="ribbon-btn btn-governance" onclick="abrirModalAuditoria()" title="Log de Auditoria em Tempo Real">
+                  <button class="ribbon-btn btn-governance" onclick="abrirModalAuditoria()"
+                    title="Log de Auditoria em Tempo Real">
                     <i class="fa-solid fa-list-check" style="color: var(--primaria);"></i> Auditoria
                   </button>
-                  <button class="ribbon-btn btn-governance" onclick="abrirModalLimpeza()" title="Ferramentas de Limpeza de Dados">
+                  <button class="ribbon-btn btn-governance" onclick="abrirModalLimpeza()"
+                    title="Ferramentas de Limpeza de Dados">
                     <i class="fa-solid fa-broom" style="color: #d97706;"></i> Limpeza
                   </button>
                 </div>
@@ -1363,23 +2511,28 @@
                   <button class="ribbon-btn btn-calc" onclick="abrirModalPivot()" title="Tabela Dinâmica (Pivot)">
                     <i class="fa-solid fa-table-list" style="color: #d97706;"></i> Pivot
                   </button>
-                  <button class="ribbon-btn btn-calc" onclick="abrirModalReajusteMassa()" title="Reajuste Numérico em Massa">
+                  <button class="ribbon-btn btn-calc" onclick="abrirModalReajusteMassa()"
+                    title="Reajuste Numérico em Massa">
                     <i class="fa-solid fa-calculator" style="color: #d97706;"></i> Reajuste
                   </button>
-                  <button class="ribbon-btn btn-calc" onclick="toggleTotais()" title="Exibir Linha de Totais (Σ)" id="btnToggleTotais">
+                  <button class="ribbon-btn btn-calc" onclick="toggleTotais()" title="Exibir Linha de Totais (Σ)"
+                    id="btnToggleTotais">
                     <i class="fa-solid fa-sigma" style="color: #d97706;"></i> Totais
                   </button>
                 </div>
 
                 <!-- Grupo 5: Visualização & Filtros -->
                 <div class="toolbar-group" title="Visualização e Filtros">
-                  <button class="ribbon-btn btn-style" onclick="abrirModalFiltroAvancado()" title="Filtros Avançados" id="btnFiltroAvancado">
+                  <button class="ribbon-btn btn-style" onclick="abrirModalFiltroAvancado()" title="Filtros Avançados"
+                    id="btnFiltroAvancado">
                     <i class="fa-solid fa-filter" style="color: #7c3aed;"></i> Filtros
                   </button>
-                  <button class="ribbon-btn btn-style" onclick="abrirModalFormatacaoCondicional()" title="Formatação Condicional">
+                  <button class="ribbon-btn btn-style" onclick="abrirModalFormatacaoCondicional()"
+                    title="Formatação Condicional">
                     <i class="fa-solid fa-palette" style="color: #7c3aed;"></i> Cores
                   </button>
-                  <button class="ribbon-btn btn-style" onclick="abrirModalColunas()" title="Gerenciar Visibilidade de Colunas">
+                  <button class="ribbon-btn btn-style" onclick="abrirModalColunas()"
+                    title="Gerenciar Visibilidade de Colunas">
                     <i class="fa-solid fa-eye" style="color: #7c3aed;"></i> Colunas
                   </button>
                 </div>
@@ -1389,7 +2542,8 @@
                   <button class="ribbon-btn btn-export" onclick="exportarExcelSimples()" title="Exportar Excel (.xlsx)">
                     <i class="fa-solid fa-file-excel" style="color: #1f7e3d;"></i> Excel
                   </button>
-                  <button class="ribbon-btn btn-export" onclick="abrirModalExportMultiAbas()" title="Exportar Excel Multi-Abas">
+                  <button class="ribbon-btn btn-export" onclick="abrirModalExportMultiAbas()"
+                    title="Exportar Excel Multi-Abas">
                     <i class="fa-solid fa-layer-group" style="color: #1f7e3d;"></i> Multi-Abas
                   </button>
                   <button class="ribbon-btn btn-export" onclick="exportarCSV()" title="Exportar CSV">
@@ -1416,7 +2570,9 @@
               </div>
 
               <!-- Filtros Ativos (Chips) -->
-              <div id="filtrosAtivosContainer" class="filtros-ativos" style="display: none; padding: 6px 16px; background: var(--fundo); border-bottom: 1px solid var(--borda);"></div>
+              <div id="filtrosAtivosContainer" class="filtros-ativos"
+                style="display: none; padding: 6px 16px; background: var(--fundo); border-bottom: 1px solid var(--borda);">
+              </div>
 
               <!-- ===== TABELA DE DADOS ===== -->
               <div class="table-viewport" id="excel-table-wrapper" data-ia-help="dados_tabela">
@@ -1441,18 +2597,22 @@
               </div>
 
               <!-- ===== RODAPÉ DA TABELA & PAGINAÇÃO ===== -->
-              <div style="padding: 14px 20px; background: var(--cartao); border-top: 1px solid var(--borda); display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;">
+              <div
+                style="padding: 14px 20px; background: var(--cartao); border-top: 1px solid var(--borda); display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;">
                 <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
                   <span style="font-size: 13px; color: var(--suave); font-weight: 500;">
-                    Mostrando <strong id="inicio-pag" style="color:var(--texto);">1</strong>–<strong id="fim-pag" style="color:var(--texto);">10</strong>
+                    Mostrando <strong id="inicio-pag" style="color:var(--texto);">1</strong>–<strong id="fim-pag"
+                      style="color:var(--texto);">10</strong>
                     de <strong id="total-pag" style="color:var(--texto);">0</strong> linhas
-                    | Selecionadas: <strong id="linhas-selecionadas" style="color:var(--primaria);">0</strong>
+                    <!-- | Selecionadas: <strong id="linhas-selecionadas" style="color:var(--primaria);">0</strong> -->
                   </span>
 
                   <!-- Linhas por página -->
-                  <div class="excel-rows-per-page" style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--suave);">
+                  <div class="excel-rows-per-page"
+                    style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--suave);">
                     <span>Linhas/pág:</span>
-                    <select id="selectLinhasPorPagina" style="border: 1px solid var(--borda); border-radius: 6px; padding: 3px 8px; font-size: 12px; background: var(--cartao); color: var(--texto); cursor: pointer;">
+                    <select id="selectLinhasPorPagina"
+                      style="border: 1px solid var(--borda); border-radius: 6px; padding: 3px 8px; font-size: 12px; background: var(--cartao); color: var(--texto); cursor: pointer;">
                       <option value="10">10</option>
                       <option value="20">20</option>
                       <option value="50">50</option>
@@ -1462,23 +2622,29 @@
                 </div>
 
                 <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                  <button class="ribbon-btn" type="button" id="btnAdicionarLinha" style="background: var(--fundo); border: 1px solid var(--borda); padding: 7px 14px; font-weight: 700;">
-                    <i class="fa-solid fa-plus" style="color: var(--primaria);"></i> + Linha
+                  <button class="ribbon-btn" type="button" id="btnAdicionarLinha"
+                    style="background: var(--fundo); border: 1px solid var(--borda); padding: 7px 14px; font-weight: 700;">
+                    <i class="fa-solid fa-plus" style="color: var(--primaria);"></i> Linha
                   </button>
 
-                  <button class="btn-save-master" type="button" id="btnSalvarDados" title="Salva todas as alterações no banco de dados">
+                  <button class="btn-save-master" type="button" id="btnSalvarDados"
+                    title="Salva todas as alterações no banco de dados">
                     <i class="fa-solid fa-floppy-disk"></i> Salvar Alterações
                   </button>
 
                   <div style="display: flex; gap: 6px;">
-                    <button class="botao botao--select-voltar" type="button" id="btnVoltar" style="padding: 7px 14px; font-size: 13px;">← Anterior</button>
-                    <button class="botao botao--select-proximo" type="button" id="btnProximo" style="padding: 7px 14px; font-size: 13px;">Próximo →</button>
+                    <button class="botao botao--select-voltar" type="button" id="btnVoltar"
+                      style="padding: 7px 14px; font-size: 13px;">← Anterior</button>
+                    <button class="botao botao--select-proximo" type="button" id="btnProximo"
+                      style="padding: 7px 14px; font-size: 13px;">Próximo →</button>
                   </div>
                 </div>
               </div>
 
             </div>
           </section>
+
+
 
         </div><!-- /container -->
 
@@ -1526,12 +2692,14 @@
         <div class="modal-abas-title">
           <i class="fa-solid fa-layer-group" style="color:#1f7e3d;"></i> Exportar Excel com Múltiplas Abas
         </div>
-        <button class="modal-close-btn" onclick="document.getElementById('modalExportMulti').style.display='none'"><i class="fa-solid fa-xmark"></i></button>
+        <button class="modal-close-btn" onclick="document.getElementById('modalExportMulti').style.display='none'"><i
+            class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="modal-abas-subtitle">Configure e nomeie as abas do arquivo Excel consolidado:</div>
       <div id="exportAbasList" style="max-height:300px; overflow-y:auto; margin-bottom:16px;"></div>
       <div style="display:flex; gap:8px; margin-bottom:18px;">
-        <button class="ribbon-btn" type="button" onclick="adicionarAbaExport()" style="background: var(--fundo); border: 1px solid var(--borda);">
+        <button class="ribbon-btn" type="button" onclick="adicionarAbaExport()"
+          style="background: var(--fundo); border: 1px solid var(--borda);">
           <i class="fa-solid fa-plus" style="color: var(--primaria);"></i> + Adicionar Aba
         </button>
       </div>
@@ -1553,11 +2721,13 @@
         <div class="modal-abas-title">
           <i class="fa-solid fa-filter" style="color:var(--primaria);"></i> Filtros Avançados
         </div>
-        <button class="modal-close-btn" onclick="document.getElementById('modalFiltroAvancado').style.display='none'"><i class="fa-solid fa-xmark"></i></button>
+        <button class="modal-close-btn" onclick="document.getElementById('modalFiltroAvancado').style.display='none'"><i
+            class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="modal-abas-subtitle">Adicione condições lógicas para segmentar a visualização da tabela:</div>
       <div id="filtroAvancadoLista" style="margin-bottom:14px; max-height:280px; overflow-y:auto;"></div>
-      <button class="ribbon-btn" onclick="adicionarFiltroAvancado()" style="margin-bottom:20px; background: var(--fundo); border: 1px solid var(--borda);">
+      <button class="ribbon-btn" onclick="adicionarFiltroAvancado()"
+        style="margin-bottom:20px; background: var(--fundo); border: 1px solid var(--borda);">
         <i class="fa-solid fa-plus" style="color: var(--primaria);"></i> + Adicionar Condição
       </button>
       <div style="display:flex; gap:10px;">
@@ -1572,17 +2742,21 @@
   </div>
 
   <!-- ===== MODAL FORMATAÇÃO CONDICIONAL ===== -->
-  <div id="modalFormatacaoCondicional" class="modal-abas-backdrop" style="display:none;" role="dialog" aria-modal="true">
+  <div id="modalFormatacaoCondicional" class="modal-abas-backdrop" style="display:none;" role="dialog"
+    aria-modal="true">
     <div class="modal-abas-box" style="max-width:620px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
         <div class="modal-abas-title">
           <i class="fa-solid fa-palette" style="color:#7c3aed;"></i> Formatação Condicional
         </div>
-        <button class="modal-close-btn" onclick="document.getElementById('modalFormatacaoCondicional').style.display='none'"><i class="fa-solid fa-xmark"></i></button>
+        <button class="modal-close-btn"
+          onclick="document.getElementById('modalFormatacaoCondicional').style.display='none'"><i
+            class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="modal-abas-subtitle">Realce automaticamente células de acordo com regras de valores:</div>
       <div id="fcRegraLista" style="margin-bottom:14px; max-height:300px; overflow-y:auto;"></div>
-      <button class="ribbon-btn" onclick="adicionarRegraFC()" style="margin-bottom:20px; background: var(--fundo); border: 1px solid var(--borda);">
+      <button class="ribbon-btn" onclick="adicionarRegraFC()"
+        style="margin-bottom:20px; background: var(--fundo); border: 1px solid var(--borda);">
         <i class="fa-solid fa-plus" style="color: #7c3aed;"></i> + Nova Regra
       </button>
       <div style="display:flex; gap:10px;">
@@ -1603,11 +2777,13 @@
         <div class="modal-abas-title">
           <i class="fa-solid fa-shield-halved" style="color:var(--primaria);"></i> Validação de Schema
         </div>
-        <button class="modal-close-btn" onclick="document.getElementById('modalValidacao').style.display='none'"><i class="fa-solid fa-xmark"></i></button>
+        <button class="modal-close-btn" onclick="document.getElementById('modalValidacao').style.display='none'"><i
+            class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="modal-abas-subtitle">Defina regras de integridade e consistência para os dados da planilha:</div>
       <div id="validacoesLista" style="max-height:280px; overflow-y:auto; margin-bottom:16px;"></div>
-      <button class="ribbon-btn" onclick="adicionarRegraValidacao()" style="margin-bottom:20px; background: var(--fundo); border: 1px solid var(--borda);">
+      <button class="ribbon-btn" onclick="adicionarRegraValidacao()"
+        style="margin-bottom:20px; background: var(--fundo); border: 1px solid var(--borda);">
         <i class="fa-solid fa-plus" style="color: var(--primaria);"></i> + Nova Regra de Validação
       </button>
       <div style="display:flex; gap:10px;">
@@ -1628,7 +2804,8 @@
         <div class="modal-abas-title">
           <i class="fa-solid fa-bullseye" style="color:var(--primaria);"></i> Metas Financeiras
         </div>
-        <button class="modal-close-btn" onclick="document.getElementById('modalDefinirMetas').style.display='none'"><i class="fa-solid fa-xmark"></i></button>
+        <button class="modal-close-btn" onclick="document.getElementById('modalDefinirMetas').style.display='none'"><i
+            class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="modal-abas-subtitle">Insira o valor alvo corporativo para cada indicador financeiro:</div>
       <div id="metasListaInputs" style="max-height:280px; overflow-y:auto; margin-bottom:20px;"></div>
@@ -1650,10 +2827,13 @@
         <div class="modal-abas-title">
           <i class="fa-solid fa-list-check" style="color:var(--primaria);"></i> Log de Auditoria
         </div>
-        <button class="modal-close-btn" onclick="document.getElementById('modalAuditoria').style.display='none'"><i class="fa-solid fa-xmark"></i></button>
+        <button class="modal-close-btn" onclick="document.getElementById('modalAuditoria').style.display='none'"><i
+            class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="modal-abas-subtitle">Registro de todas as mutações e ações realizadas nesta sessão de trabalho:</div>
-      <div id="auditLogLista" style="max-height:320px; overflow-y:auto; margin-bottom:20px; border:1px solid var(--borda); border-radius:10px; background:var(--fundo);"></div>
+      <div id="auditLogLista"
+        style="max-height:320px; overflow-y:auto; margin-bottom:20px; border:1px solid var(--borda); border-radius:10px; background:var(--fundo);">
+      </div>
       <div style="display:flex; gap:10px;">
         <button class="botao botao--suave" onclick="limparAuditLog()" style="flex:1;">
           Limpar Logs
@@ -1672,56 +2852,143 @@
         <div class="modal-abas-title">
           <i class="fa-solid fa-broom" style="color:#d97706;"></i> Limpeza &amp; Padronização de Dados
         </div>
-        <button class="modal-close-btn" onclick="document.getElementById('modalLimpeza').style.display='none'"><i class="fa-solid fa-xmark"></i></button>
+        <button class="modal-close-btn" onclick="document.getElementById('modalLimpeza').style.display='none'"><i
+            class="fa-solid fa-xmark"></i></button>
       </div>
-      <div class="modal-abas-subtitle">Execute rotinas automatizadas para higienizar e enriquecer os dados:</div>
+      <div class="modal-abas-subtitle">Execute rotinas automatizadas para higienizar, validar e enriquecer os dados:</div>
+
+      <!-- Card Destaque: Sanitização Científica Completa -->
+      <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(5, 150, 105, 0.15)); border: 1.5px solid #10b981; border-radius: 14px; padding: 14px 18px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 44px; height: 44px; border-radius: 12px; background: #10b981; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+          </div>
+          <div>
+            <div style="font-weight: 800; font-size: 14.5px; color: var(--texto);">Limpeza &amp; Sanitização Científica (IA)</div>
+            <div style="font-size: 12px; color: var(--suave);">Remove duplicatas, trata nulos com média/moda, normaliza strings e salva os dados limpos no banco de dados.</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="botao botao--suave" type="button" onclick="analisarQualidade()" style="font-size: 12.5px; padding: 8px 12px;">
+            <i class="fa-solid fa-magnifying-glass-chart"></i> Diagnóstico
+          </button>
+          <button class="botao botao--primario" type="button" onclick="executarLimpezaCientifica()" style="background: linear-gradient(135deg, #10b981, #059669); border-color: #059669; font-size: 12.5px; padding: 8px 14px; font-weight: 700;">
+            <i class="fa-solid fa-broom"></i> Executar Limpeza
+          </button>
+        </div>
+      </div>
 
       <div class="limpeza-grid">
-        <div class="limpeza-card" onclick="removerDuplicatas()">
-          <i class="fa-solid fa-copy" style="color:#ef4444;"></i>
-          <div class="limpeza-card-title">Remover Duplicatas</div>
-          <div class="limpeza-card-desc">Elimina linhas com registros idênticos</div>
+        <div class="limpeza-card" onclick="removerDuplicatas()" role="button" tabindex="0">
+          <div class="limpeza-card-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">
+            <i class="fa-solid fa-copy"></i>
+          </div>
+          <div class="limpeza-card-body">
+            <div class="limpeza-card-title">
+              <span>Remover Duplicatas</span>
+              <i class="fa-solid fa-chevron-right limpeza-card-arrow"></i>
+            </div>
+            <div class="limpeza-card-desc">Elimina linhas com registros idênticos</div>
+          </div>
         </div>
-        <div class="limpeza-card" onclick="preencherVaziosComMedia()">
-          <i class="fa-solid fa-calculator" style="color:#2563eb;"></i>
-          <div class="limpeza-card-title">Preencher com Média</div>
-          <div class="limpeza-card-desc">Campos numéricos vazios recebem a média</div>
+
+        <div class="limpeza-card" onclick="preencherVaziosComMedia()" role="button" tabindex="0">
+          <div class="limpeza-card-icon" style="background: rgba(37, 99, 235, 0.1); color: #2563eb;">
+            <i class="fa-solid fa-calculator"></i>
+          </div>
+          <div class="limpeza-card-body">
+            <div class="limpeza-card-title">
+              <span>Preencher com Média</span>
+              <i class="fa-solid fa-chevron-right limpeza-card-arrow"></i>
+            </div>
+            <div class="limpeza-card-desc">Campos numéricos vazios recebem a média</div>
+          </div>
         </div>
-        <div class="limpeza-card" onclick="normalizarTextoMinusculas()">
-          <i class="fa-solid fa-font" style="color:#7c3aed;"></i>
-          <div class="limpeza-card-title">Minúsculas</div>
-          <div class="limpeza-card-desc">Converte textos para caixa baixa</div>
+
+        <div class="limpeza-card" onclick="normalizarTextoMinusculas()" role="button" tabindex="0">
+          <div class="limpeza-card-icon" style="background: rgba(124, 58, 237, 0.1); color: #7c3aed;">
+            <i class="fa-solid fa-font"></i>
+          </div>
+          <div class="limpeza-card-body">
+            <div class="limpeza-card-title">
+              <span>Minúsculas</span>
+              <i class="fa-solid fa-chevron-right limpeza-card-arrow"></i>
+            </div>
+            <div class="limpeza-card-desc">Converte textos para caixa baixa</div>
+          </div>
         </div>
-        <div class="limpeza-card" onclick="normalizarTextoMaiusculas()">
-          <i class="fa-solid fa-font" style="color:#d97706;"></i>
-          <div class="limpeza-card-title">MAIÚSCULAS</div>
-          <div class="limpeza-card-desc">Converte textos para caixa alta</div>
+
+        <div class="limpeza-card" onclick="normalizarTextoMaiusculas()" role="button" tabindex="0">
+          <div class="limpeza-card-icon" style="background: rgba(217, 119, 6, 0.1); color: #d97706;">
+            <i class="fa-solid fa-font"></i>
+          </div>
+          <div class="limpeza-card-body">
+            <div class="limpeza-card-title">
+              <span>MAIÚSCULAS</span>
+              <i class="fa-solid fa-chevron-right limpeza-card-arrow"></i>
+            </div>
+            <div class="limpeza-card-desc">Converte textos para caixa alta</div>
+          </div>
         </div>
-        <div class="limpeza-card" onclick="normalizarTextoCapitalizado()">
-          <i class="fa-solid fa-text-height" style="color:#16a34a;"></i>
-          <div class="limpeza-card-title">Capitalizar</div>
-          <div class="limpeza-card-desc">Primeira letra de cada palavra maiúscula</div>
+
+        <div class="limpeza-card" onclick="normalizarTextoCapitalizado()" role="button" tabindex="0">
+          <div class="limpeza-card-icon" style="background: rgba(22, 163, 74, 0.1); color: #16a34a;">
+            <i class="fa-solid fa-text-height"></i>
+          </div>
+          <div class="limpeza-card-body">
+            <div class="limpeza-card-title">
+              <span>Capitalizar</span>
+              <i class="fa-solid fa-chevron-right limpeza-card-arrow"></i>
+            </div>
+            <div class="limpeza-card-desc">Primeira letra de cada palavra maiúscula</div>
+          </div>
         </div>
-        <div class="limpeza-card" onclick="trimEspacos()">
-          <i class="fa-solid fa-scissors" style="color:#6b7280;"></i>
-          <div class="limpeza-card-title">Trim Espaços</div>
-          <div class="limpeza-card-desc">Remove espaços extras no início e fim</div>
+
+        <div class="limpeza-card" onclick="trimEspacos()" role="button" tabindex="0">
+          <div class="limpeza-card-icon" style="background: rgba(100, 116, 139, 0.1); color: #64748b;">
+            <i class="fa-solid fa-scissors"></i>
+          </div>
+          <div class="limpeza-card-body">
+            <div class="limpeza-card-title">
+              <span>Trim Espaços</span>
+              <i class="fa-solid fa-chevron-right limpeza-card-arrow"></i>
+            </div>
+            <div class="limpeza-card-desc">Remove espaços extras no início e fim</div>
+          </div>
         </div>
-        <div class="limpeza-card" onclick="removerLinhasVazias()">
-          <i class="fa-solid fa-trash-can" style="color:#ef4444;"></i>
-          <div class="limpeza-card-title">Remover Vazias</div>
-          <div class="limpeza-card-desc">Exclui linhas sem nenhum preenchimento</div>
+
+        <div class="limpeza-card" onclick="removerLinhasVazias()" role="button" tabindex="0">
+          <div class="limpeza-card-icon" style="background: rgba(220, 38, 38, 0.1); color: #dc2626;">
+            <i class="fa-solid fa-trash-can"></i>
+          </div>
+          <div class="limpeza-card-body">
+            <div class="limpeza-card-title">
+              <span>Remover Vazias</span>
+              <i class="fa-solid fa-chevron-right limpeza-card-arrow"></i>
+            </div>
+            <div class="limpeza-card-desc">Exclui linhas sem nenhum preenchimento</div>
+          </div>
         </div>
-        <div class="limpeza-card" onclick="mostrarSubstituicaoMassa()">
-          <i class="fa-solid fa-magnifying-glass-arrow-right" style="color:#2563eb;"></i>
-          <div class="limpeza-card-title">Substituição em Massa</div>
-          <div class="limpeza-card-desc">Encontrar e trocar termos em lote</div>
+
+        <div class="limpeza-card" onclick="mostrarSubstituicaoMassa()" role="button" tabindex="0">
+          <div class="limpeza-card-icon" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+            <i class="fa-solid fa-magnifying-glass-arrow-right"></i>
+          </div>
+          <div class="limpeza-card-body">
+            <div class="limpeza-card-title">
+              <span>Substituição em Massa</span>
+              <i class="fa-solid fa-chevron-right limpeza-card-arrow"></i>
+            </div>
+            <div class="limpeza-card-desc">Encontrar e trocar termos em lote</div>
+          </div>
         </div>
       </div>
 
       <!-- Substituição em massa (expansível) -->
-      <div id="substituicaoMassaPanel" style="display:none; margin-top:18px; padding:18px; border:1px solid var(--borda); border-radius:12px; background:var(--fundo);">
-        <label style="font-weight:700; margin-bottom:12px; display:block; font-size:14px;">Substituição em Massa:</label>
+      <div id="substituicaoMassaPanel"
+        style="display:none; margin-top:18px; padding:18px; border:1px solid var(--borda); border-radius:12px; background:var(--fundo);">
+        <label style="font-weight:700; margin-bottom:12px; display:block; font-size:14px;">Substituição em
+          Massa:</label>
         <div class="substituir-row">
           <label style="font-size:13px; color:var(--suave); min-width:80px;">Coluna:</label>
           <select id="substituirColuna" class="entrada" style="flex:1;">
@@ -1740,7 +3007,8 @@
           <button class="botao botao--primario" onclick="executarSubstituicao()" style="flex:1;">
             <i class="fa-solid fa-check"></i> Executar Substituição
           </button>
-          <button class="botao botao--suave" onclick="document.getElementById('substituicaoMassaPanel').style.display='none'">
+          <button class="botao botao--suave"
+            onclick="document.getElementById('substituicaoMassaPanel').style.display='none'">
             Cancelar
           </button>
         </div>
@@ -1755,7 +3023,8 @@
         <div class="modal-abas-title">
           <i class="fa-solid fa-eye" style="color:var(--primaria);"></i> Visibilidade de Colunas
         </div>
-        <button class="modal-close-btn" onclick="document.getElementById('modalColunas').style.display='none'"><i class="fa-solid fa-xmark"></i></button>
+        <button class="modal-close-btn" onclick="document.getElementById('modalColunas').style.display='none'"><i
+            class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="modal-abas-subtitle">Oculte ou exiba colunas específicas na tabela ativa:</div>
       <div id="colunasVisibilidadeLista" style="max-height:300px; overflow-y:auto; margin-bottom:20px;"></div>
@@ -1777,7 +3046,8 @@
         <div class="modal-abas-title">
           <i class="fa-solid fa-table" style="color:var(--primaria);"></i> Nova Aba de Tabela
         </div>
-        <button class="modal-close-btn" onclick="document.getElementById('modalNovaTabela').style.display='none'"><i class="fa-solid fa-xmark"></i></button>
+        <button class="modal-close-btn" onclick="document.getElementById('modalNovaTabela').style.display='none'"><i
+            class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="modal-abas-subtitle">Crie um novo conjunto de dados estruturado para a sua sessão:</div>
 
@@ -1791,14 +3061,17 @@
         <div id="novasTabelaColunas">
           <div class="nova-col-row" style="display:flex; gap:8px; margin-bottom:8px;">
             <input type="text" class="entrada" placeholder="Nome da coluna" value="Produto" style="flex:1;" />
-            <button class="botao botao--delet" style="padding:6px 10px;" onclick="this.parentElement.remove()">✕</button>
+            <button class="botao botao--delet" style="padding:6px 10px;"
+              onclick="this.parentElement.remove()">✕</button>
           </div>
           <div class="nova-col-row" style="display:flex; gap:8px; margin-bottom:8px;">
             <input type="text" class="entrada" placeholder="Nome da coluna" value="Valor" style="flex:1;" />
-            <button class="botao botao--delet" style="padding:6px 10px;" onclick="this.parentElement.remove()">✕</button>
+            <button class="botao botao--delet" style="padding:6px 10px;"
+              onclick="this.parentElement.remove()">✕</button>
           </div>
         </div>
-        <button class="ribbon-btn" onclick="adicionarColunaNovaTabela()" style="margin-top:6px; background: var(--fundo); border: 1px solid var(--borda);">
+        <button class="ribbon-btn" onclick="adicionarColunaNovaTabela()"
+          style="margin-top:6px; background: var(--fundo); border: 1px solid var(--borda);">
           <i class="fa-solid fa-plus" style="color: var(--primaria);"></i> + Adicionar Coluna
         </button>
       </div>
@@ -1821,7 +3094,8 @@
         <div class="modal-abas-title">
           <i class="fa-solid fa-circle-question" style="color:var(--primaria);"></i> Fórmulas da Planilha
         </div>
-        <button class="modal-close-btn" onclick="document.getElementById('modalAjudaFormulas').style.display='none'"><i class="fa-solid fa-xmark"></i></button>
+        <button class="modal-close-btn" onclick="document.getElementById('modalAjudaFormulas').style.display='none'"><i
+            class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="modal-abas-subtitle">Selecione uma célula e use a barra de fórmulas ou digite diretamente:</div>
 
@@ -1836,27 +3110,38 @@
           </thead>
           <tbody>
             <tr>
-              <td style="padding:8px 10px; border:1px solid var(--borda); font-family:monospace; color:var(--primaria); font-weight:700;">=SOMA(col)</td>
+              <td
+                style="padding:8px 10px; border:1px solid var(--borda); font-family:monospace; color:var(--primaria); font-weight:700;">
+                =SOMA(col)</td>
               <td style="padding:8px 10px; border:1px solid var(--borda);">Soma todos os números da coluna</td>
-              <td style="padding:8px 10px; border:1px solid var(--borda); font-family:monospace;">=SOMA(Faturamento)</td>
+              <td style="padding:8px 10px; border:1px solid var(--borda); font-family:monospace;">=SOMA(Faturamento)
+              </td>
             </tr>
             <tr>
-              <td style="padding:8px 10px; border:1px solid var(--borda); font-family:monospace; color:var(--primaria); font-weight:700;">=MÉDIA(col)</td>
+              <td
+                style="padding:8px 10px; border:1px solid var(--borda); font-family:monospace; color:var(--primaria); font-weight:700;">
+                =MÉDIA(col)</td>
               <td style="padding:8px 10px; border:1px solid var(--borda);">Calcula a média aritmética</td>
               <td style="padding:8px 10px; border:1px solid var(--borda); font-family:monospace;">=MÉDIA(Lucro)</td>
             </tr>
             <tr>
-              <td style="padding:8px 10px; border:1px solid var(--borda); font-family:monospace; color:var(--primaria); font-weight:700;">=MÁX(col)</td>
+              <td
+                style="padding:8px 10px; border:1px solid var(--borda); font-family:monospace; color:var(--primaria); font-weight:700;">
+                =MÁX(col)</td>
               <td style="padding:8px 10px; border:1px solid var(--borda);">Retorna o maior valor numérico</td>
               <td style="padding:8px 10px; border:1px solid var(--borda); font-family:monospace;">=MÁX(Preço)</td>
             </tr>
             <tr>
-              <td style="padding:8px 10px; border:1px solid var(--borda); font-family:monospace; color:var(--primaria); font-weight:700;">=MÍN(col)</td>
+              <td
+                style="padding:8px 10px; border:1px solid var(--borda); font-family:monospace; color:var(--primaria); font-weight:700;">
+                =MÍN(col)</td>
               <td style="padding:8px 10px; border:1px solid var(--borda);">Retorna o menor valor numérico</td>
               <td style="padding:8px 10px; border:1px solid var(--borda); font-family:monospace;">=MÍN(Despesas)</td>
             </tr>
             <tr>
-              <td style="padding:8px 10px; border:1px solid var(--borda); font-family:monospace; color:var(--primaria); font-weight:700;">=CONT(col)</td>
+              <td
+                style="padding:8px 10px; border:1px solid var(--borda); font-family:monospace; color:var(--primaria); font-weight:700;">
+                =CONT(col)</td>
               <td style="padding:8px 10px; border:1px solid var(--borda);">Contagem de células preenchidas</td>
               <td style="padding:8px 10px; border:1px solid var(--borda); font-family:monospace;">=CONT(Produto)</td>
             </tr>
@@ -1864,7 +3149,8 @@
         </table>
       </div>
 
-      <button class="botao botao--primario" onclick="document.getElementById('modalAjudaFormulas').style.display='none'" style="width:100%;">
+      <button class="botao botao--primario" onclick="document.getElementById('modalAjudaFormulas').style.display='none'"
+        style="width:100%;">
         Entendido
       </button>
     </div>
@@ -1874,24 +3160,29 @@
   <div class="modal-abas-backdrop" id="modalPivot" style="display:none;" role="dialog" aria-modal="true">
     <div class="modal-abas-box" style="max-width:620px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-        <h3 class="modal-abas-title"><i class="fa-solid fa-table-list" style="color:var(--aviso);"></i> Tabela Dinâmica (Pivot)</h3>
-        <button class="modal-close-btn" onclick="document.getElementById('modalPivot').style.display='none'"><i class="fa-solid fa-xmark"></i></button>
+        <h3 class="modal-abas-title"><i class="fa-solid fa-table-list" style="color:var(--aviso);"></i> Tabela Dinâmica
+          (Pivot)</h3>
+        <button class="modal-close-btn" onclick="document.getElementById('modalPivot').style.display='none'"><i
+            class="fa-solid fa-xmark"></i></button>
       </div>
       <p class="modal-abas-subtitle">Agrupe dados por categorias e calcule métricas consolidadas rapidamente:</p>
 
       <div style="display:flex; gap:14px; margin-bottom:16px; flex-wrap:wrap;">
         <div style="flex:1; min-width:180px;">
-          <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px; color:var(--texto);">Agrupar Por (Linhas):</label>
+          <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px; color:var(--texto);">Agrupar
+            Por (Linhas):</label>
           <select id="pivotAgrupar" class="entrada" style="width:100%;"></select>
         </div>
         <div style="flex:1; min-width:180px;">
-          <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px; color:var(--texto);">Calcular Valores:</label>
+          <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px; color:var(--texto);">Calcular
+            Valores:</label>
           <select id="pivotValor" class="entrada" style="width:100%;"></select>
         </div>
       </div>
 
       <div style="margin-bottom:20px;">
-        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px; color:var(--texto);">Operação Matemática:</label>
+        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px; color:var(--texto);">Operação
+          Matemática:</label>
         <select id="pivotOperacao" class="entrada" style="width:100%;">
           <option value="SOMA">Soma Total (Σ)</option>
           <option value="MEDIA">Média Aritmética (x̄)</option>
@@ -1901,19 +3192,24 @@
         </select>
       </div>
 
-      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--borda); padding-bottom:10px; margin-bottom:14px;">
+      <div
+        style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--borda); padding-bottom:10px; margin-bottom:14px;">
         <span style="font-weight:700; font-size:14px; color:var(--texto);">Resultado do Agrupamento:</span>
-        <button class="ribbon-btn btn-calc" onclick="gerarPivot()" style="border:1px solid var(--borda); background:var(--fundo);">
+        <button class="ribbon-btn btn-calc" onclick="gerarPivot()"
+          style="border:1px solid var(--borda); background:var(--fundo);">
           <i class="fa-solid fa-arrows-rotate"></i> Atualizar Pivot
         </button>
       </div>
 
-      <div id="pivotResultadoContainer" style="max-height: 240px; overflow: auto; background: var(--fundo); border: 1px solid var(--borda); border-radius: 10px; padding: 10px;">
-        <div style="text-align:center; color:var(--suave); font-size:13px; padding:20px;">Configure e clique em "Atualizar Pivot"</div>
+      <div id="pivotResultadoContainer"
+        style="max-height: 240px; overflow: auto; background: var(--fundo); border: 1px solid var(--borda); border-radius: 10px; padding: 10px;">
+        <div style="text-align:center; color:var(--suave); font-size:13px; padding:20px;">Configure e clique em
+          "Atualizar Pivot"</div>
       </div>
 
       <div style="display:flex; justify-content:flex-end; margin-top:20px;">
-        <button class="botao botao--suave" onclick="document.getElementById('modalPivot').style.display='none'">Fechar</button>
+        <button class="botao botao--suave"
+          onclick="document.getElementById('modalPivot').style.display='none'">Fechar</button>
       </div>
     </div>
   </div>
@@ -1922,19 +3218,23 @@
   <div class="modal-abas-backdrop" id="modalReajusteMassa" style="display:none;" role="dialog" aria-modal="true">
     <div class="modal-abas-box" style="max-width:500px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-        <h3 class="modal-abas-title"><i class="fa-solid fa-calculator" style="color:var(--primaria);"></i> Reajuste em Massa</h3>
-        <button class="modal-close-btn" onclick="document.getElementById('modalReajusteMassa').style.display='none'"><i class="fa-solid fa-xmark"></i></button>
+        <h3 class="modal-abas-title"><i class="fa-solid fa-calculator" style="color:var(--primaria);"></i> Reajuste em
+          Massa</h3>
+        <button class="modal-close-btn" onclick="document.getElementById('modalReajusteMassa').style.display='none'"><i
+            class="fa-solid fa-xmark"></i></button>
       </div>
       <p class="modal-abas-subtitle">Aplique correções, acréscimos ou descontos em uma coluna numérica inteira:</p>
 
       <div style="margin-bottom:16px;">
-        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px; color:var(--texto);">Coluna Numérica Alvo:</label>
+        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px; color:var(--texto);">Coluna
+          Numérica Alvo:</label>
         <select id="reajusteColuna" class="entrada" style="width:100%;"></select>
       </div>
 
       <div style="display:flex; gap:14px; margin-bottom:18px; flex-wrap:wrap;">
         <div style="flex:1; min-width:160px;">
-          <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px; color:var(--texto);">Tipo de Ajuste:</label>
+          <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px; color:var(--texto);">Tipo de
+            Ajuste:</label>
           <select id="reajusteTipo" class="entrada" style="width:100%;">
             <option value="percentual_aumento">Aumento Percentual (+%)</option>
             <option value="percentual_desconto">Desconto Percentual (-%)</option>
@@ -1944,24 +3244,230 @@
           </select>
         </div>
         <div style="flex:1; min-width:120px;">
-          <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px; color:var(--texto);">Valor / Taxa:</label>
-          <input type="number" id="reajusteValor" class="entrada" style="width:100%;" placeholder="Ex: 10" step="0.01" />
+          <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px; color:var(--texto);">Valor /
+            Taxa:</label>
+          <input type="number" id="reajusteValor" class="entrada" style="width:100%;" placeholder="Ex: 10"
+            step="0.01" />
         </div>
       </div>
 
-      <div style="background:rgba(245, 158, 11, 0.08); border-left: 4px solid var(--aviso); padding:10px 14px; border-radius:6px; margin-bottom:20px; font-size:12.5px; color:var(--texto);">
+      <div
+        style="background:rgba(245, 158, 11, 0.08); border-left: 4px solid var(--aviso); padding:10px 14px; border-radius:6px; margin-bottom:20px; font-size:12.5px; color:var(--texto);">
         <strong>Atenção:</strong> Essa operação modificará todos os registros da coluna selecionada de forma imediata.
       </div>
 
       <div style="display:flex; justify-content:flex-end; gap:10px;">
-        <button class="botao botao--suave" onclick="document.getElementById('modalReajusteMassa').style.display='none'">Cancelar</button>
+        <button class="botao botao--suave"
+          onclick="document.getElementById('modalReajusteMassa').style.display='none'">Cancelar</button>
         <button class="botao botao--primario" onclick="aplicarReajusteMassa()">Aplicar Reajuste</button>
       </div>
     </div>
   </div>
 
+  <!-- ===== MODAL GUIA EXPLICATIVO DO CAMPO FINANCEIRO ===== -->
+  <div id="modalFinInfo" class="modal-abas-backdrop" style="display:none;" role="dialog" aria-modal="true">
+    <div class="modal-abas-box" style="max-width:540px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <div class="modal-abas-title" id="finInfoModalTitle" style="font-size: 1.15rem; gap: 10px; margin: 0;">
+          <i class="fa-solid fa-circle-info" style="color:var(--primaria);"></i>
+          <span>Guia do Campo Financeiro</span>
+        </div>
+        <button class="modal-close-btn" onclick="document.getElementById('modalFinInfo').style.display='none'">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div id="finInfoModalContent">
+        <!-- Preenchido dinamicamente via JS -->
+      </div>
+
+      <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
+        <button class="botao botao--primario" type="button"
+          onclick="document.getElementById('modalFinInfo').style.display='none'"
+          style="min-width: 110px; justify-content: center;">
+          <i class="fa-solid fa-check"></i> Entendi
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL AUTORIZAÇÃO DE CRIAÇÃO AUTOMÁTICA DE COLUNA FINANCEIRA ===== -->
+  <div id="modalConfirmarCriarColunaFin" class="modal-abas-backdrop" style="display:none;" role="dialog" aria-modal="true">
+    <div class="modal-abas-box" style="max-width:520px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <div class="modal-abas-title" style="font-size: 1.15rem; gap: 10px; margin: 0; color:var(--texto);">
+          <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--primaria);"></i>
+          <span>Criar Campo na Tabela</span>
+        </div>
+        <button class="modal-close-btn" onclick="document.getElementById('modalConfirmarCriarColunaFin').style.display='none'">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div id="finModalCardHeader" style="background:rgba(37,99,235,0.06); border:1.5px solid rgba(37,99,235,0.2); border-radius:12px; padding:12px 14px; margin-bottom:16px; display:flex; align-items:center; gap:12px;">
+        <div id="finModalCatIcon" style="width:40px; height:40px; border-radius:10px; background:var(--primaria); color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;">
+          <i class="fa-solid fa-chart-line"></i>
+        </div>
+        <div>
+          <div id="finModalCatTitulo" style="font-weight:800; font-size:14.5px; color:var(--texto);">Faturamento / Receita Total</div>
+          <div id="finModalCatGrupo" style="font-size:11px; color:var(--suave); font-weight:600;">Indicadores Principais do Negócio</div>
+        </div>
+      </div>
+
+      <p style="font-size:13px; color:var(--suave); margin:0 0 14px 0; line-height:1.45;">
+        O sistema não identificou esta coluna nos seus dados. Deseja <strong>criar a coluna automaticamente na tabela</strong> e vinculá-la ao painel financeiro?
+      </p>
+
+      <input type="hidden" id="finModalCatId" value="" />
+
+      <div style="margin-bottom:12px;">
+        <label for="finModalNomeColuna" style="font-size:12.5px; font-weight:700; color:var(--texto); display:block; margin-bottom:5px;">
+             Nome da Coluna na Tabela:
+        </label>
+        <input type="text" id="finModalNomeColuna" class="entrada" style="width:100%; font-weight:600;" placeholder="Ex: Faturamento" />
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">
+        <div>
+          <label for="finModalTipoColuna" style="font-size:12px; font-weight:700; color:var(--texto); display:block; margin-bottom:4px;">
+            Tipo de Dado:
+          </label>
+          <select id="finModalTipoColuna" class="entrada" style="width:100%; font-size:12px;">
+            <option value="moeda">💰 Moeda (R$)</option>
+            <option value="data">📅 Data</option>
+            <option value="numero">🔢 Número</option>
+            <option value="percentual">% Percentual</option>
+            <option value="texto">📝 Texto</option>
+          </select>
+        </div>
+        <div>
+          <label for="finModalValorPadrao" style="font-size:12px; font-weight:700; color:var(--texto); display:block; margin-bottom:4px;">
+            Valor Inicial (Linhas):
+          </label>
+          <input type="text" id="finModalValorPadrao" class="entrada" style="width:100%; font-size:12px;" placeholder="0,00" value="0.0" />
+        </div>
+      </div>
+
+      <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25); border-radius:10px; padding:10px 14px; margin-bottom:18px; font-size:12px; color:var(--texto); display:flex; align-items:center; gap:8px;">
+        <i class="fa-solid fa-circle-check" style="color:#10b981; font-size:14px; flex-shrink:0;"></i>
+        <span>A coluna será adicionada à sua tabela, preenchida e salva automaticamente no banco de dados.</span>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button class="botao botao--suave" type="button" onclick="document.getElementById('modalConfirmarCriarColunaFin').style.display='none'">
+          Cancelar
+        </button>
+        <button class="botao botao--primario" type="button" id="btnConfirmarCriarColunaFin" onclick="executarCriacaoColunaFin()" style="background:linear-gradient(135deg, #10b981, #059669); border-color:#059669;">
+          <i class="fa-solid fa-plus"></i> Autorizar e Criar Coluna
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL CRIAÇÃO EM LOTE DE CAMPOS ESSENCIAIS FALTANTES ===== -->
+  <div id="modalCriarTodasFaltantes" class="modal-abas-backdrop" style="display:none;" role="dialog" aria-modal="true">
+    <div class="modal-abas-box" style="max-width:560px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <div class="modal-abas-title" style="font-size: 1.15rem; gap: 10px; margin: 0; color:var(--texto);">
+          <i class="fa-solid fa-bolt" style="color:#f59e0b;"></i>
+          <span>Estruturar Tabela Financeira</span>
+        </div>
+        <button class="modal-close-btn" onclick="document.getElementById('modalCriarTodasFaltantes').style.display='none'">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <p style="font-size:13px; color:var(--suave); margin:0 0 14px 0; line-height:1.45;">
+        As seguintes colunas financeiras essenciais não foram encontradas na sua tabela. Deseja <strong>criar todas de uma vez</strong> para habilitar 100% das ferramentas (Planejamento, DRE e Fluxo de Caixa)?
+      </p>
+
+      <div id="finListaColunasFaltantes" style="background:var(--fundo); border:1px solid var(--borda); border-radius:12px; padding:12px; margin-bottom:16px; max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;">
+        <!-- Preenchido dinamicamente via JS -->
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button class="botao botao--suave" type="button" onclick="document.getElementById('modalCriarTodasFaltantes').style.display='none'">
+          Cancelar
+        </button>
+        <button class="botao botao--primario" type="button" onclick="executarCriarTodasFaltantes()" style="background:linear-gradient(135deg, #3b82f6, #1d4ed8);">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Criar Todas as Colunas
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL CRIAR NOVA TABELA ===== -->
+  <div id="modalNovaTabela" class="modal-abas-backdrop" style="display:none;" role="dialog" aria-modal="true">
+    <div class="modal-abas-box" style="max-width:540px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 class="modal-abas-title" style="font-size:1.15rem; gap:10px; margin:0; color:var(--texto);">
+          <i class="fa-solid fa-folder-plus" style="color:var(--primaria);"></i>
+          <span>Criar Nova Tabela / Planilha</span>
+        </h3>
+        <button class="modal-close-btn" onclick="document.getElementById('modalNovaTabela').style.display='none'">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <p style="font-size:13px; color:var(--suave); margin:0 0 16px 0;">
+        Crie uma nova tabela independente na sua conta. Você poderá alternar entre elas facilmente através das abas.
+      </p>
+
+      <div style="margin-bottom:16px;">
+        <label style="font-size:13px; font-weight:700; display:block; margin-bottom:6px; color:var(--texto);">Nome da Tabela:</label>
+        <input type="text" id="nomesNovaTabela" class="entrada" style="width:100%; font-size:14px; font-weight:600;" placeholder="Ex: Vendas Filial 2, Custos 2024, Estoque..." value="Nova Tabela" />
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <label style="font-size:13px; font-weight:700; margin:0; color:var(--texto);">Colunas Iniciais:</label>
+        <button type="button" class="ribbon-btn" onclick="adicionarColunaNovaTabela()" style="font-size:12px; padding:3px 8px; border:1px solid var(--borda);">
+          <i class="fa-solid fa-plus" style="color:var(--primaria);"></i> + Coluna
+        </button>
+      </div>
+
+      <div id="novasTabelaColunas" style="max-height:180px; overflow-y:auto; margin-bottom:16px; display:flex; flex-direction:column; gap:6px; padding:4px;">
+        <!-- Preenchido dinamicamente via JS -->
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+        <button class="botao botao--suave" type="button" onclick="document.getElementById('modalNovaTabela').style.display='none'">
+          Cancelar
+        </button>
+        <button class="botao botao--primario" type="button" onclick="criarNovaTabela()" style="background:linear-gradient(135deg, #3b82f6, #1d4ed8);">
+          <i class="fa-solid fa-check"></i> Criar Tabela
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL RENOMEAR TABELA ===== -->
+  <div id="modalRenomearTabela" class="modal-abas-backdrop" style="display:none;" role="dialog" aria-modal="true">
+    <div class="modal-abas-box" style="max-width:440px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 class="modal-abas-title" style="font-size:1.15rem; gap:10px; margin:0; color:var(--texto);">
+          <i class="fa-solid fa-pen" style="color:var(--primaria);"></i>
+          <span>Renomear Tabela</span>
+        </h3>
+        <button class="modal-close-btn" onclick="document.getElementById('modalRenomearTabela').style.display='none'">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <input type="hidden" id="inputRenomearTabelaId" />
+      <div style="margin-bottom:18px;">
+        <label style="font-size:13px; font-weight:700; display:block; margin-bottom:6px; color:var(--texto);">Novo Nome:</label>
+        <input type="text" id="inputRenomearTabelaNome" class="entrada" style="width:100%; font-size:14px; font-weight:600;" placeholder="Nome da tabela" />
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button class="botao botao--suave" type="button" onclick="document.getElementById('modalRenomearTabela').style.display='none'">
+          Cancelar
+        </button>
+        <button class="botao botao--primario" type="button" onclick="salvarRenomearTabela()">
+          <i class="fa-solid fa-floppy-disk"></i> Salvar Nome
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Partials Globais do Sistema -->
-  {% include 'partials/mapeamento_colunas.html' %}
   {% include 'partials/painel_acessibilidade.html' %}
   {% include 'partials/chatbot.html' %}
 
@@ -1980,6 +3486,7 @@
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
   <script src="{{ url_for('static', filename='js/dados.js') }}"></script>
   <script src="{{ url_for('static', filename='js/dados-tools.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/dados-financeiro.js') }}"></script>
   <script>
     function abrirSidebar() {
       document.getElementById('sidebar').classList.add('open');
@@ -1998,13 +3505,13 @@
         mostrarToast('Por favor, carregue dados ou crie colunas primeiro.', 'warning');
         return;
       }
-      if (typeof abrirModalMapeamento === 'function') {
-        abrirModalMapeamento(colunas);
+      if (typeof mostrarPainelFinanceiro === 'function') {
+        mostrarPainelFinanceiro();
       }
     }
 
     // Fechar modais ao clicar no backdrop ou pressionar ESC
-    document.addEventListener('keydown', function(e) {
+    document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') {
         document.querySelectorAll('.modal-abas-backdrop').forEach(modal => {
           if (modal.style.display !== 'none') modal.style.display = 'none';
@@ -2013,7 +3520,7 @@
     });
 
     document.querySelectorAll('.modal-abas-backdrop').forEach(modal => {
-      modal.addEventListener('click', function(e) {
+      modal.addEventListener('click', function (e) {
         if (e.target === modal) {
           modal.style.display = 'none';
         }

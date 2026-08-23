@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="DataInsight — Gere relatórios em PDF e Excel com seus dados." />
+  <title>DataInsight • Relatórios</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@latest" defer></script>
+</head>
+
+<body>
+  <a href="#conteudo" class="skip-link">Ir para conteúdo</a>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Navegação principal">
+      {% include 'partials/navbar.html' %}
+    </aside>
+    <div class="main">
+      <header class="topbar" role="banner">
+        <div class="topbar__left">
+          <button class="topbar__btn topbar__mobile-toggle" onclick="abrirSidebar()" aria-label="Abrir menu"><i class="fa-solid fa-bars"></i></button>
+          <span class="topbar__greeting">Olá, <strong>{{ session.usuario_nome }}</strong></span>
+        </div>
+        <div class="topbar__actions">
+          <button class="topbar__btn" onclick="alternarTema()" aria-label="Alternar tema" id="btnTema"><i class="fa-solid fa-moon"></i></button>
+          <a class="topbar__btn" href="{{ url_for('pagina_configuracoes') }}" title="Configurações"><i class="fa-solid fa-gear"></i></a>
+        </div>
+      </header>
+
+      <main id="conteudo" class="pagina" role="main" data-ia-help="page_relatorios">
+        <div class="container">
+          <header class="pagina__cabecalho">
+            <div class="migalhas">Início &gt; Relatórios</div>
+            <h1 class="h1">Gerar Relatório</h1>
+            <p class="p">Selecione o que deseja incluir e gere seu relatório em segundos.</p>
+          </header>
+
+          <section class="cartao" style="margin-top: 24px;">
+            <h2 class="h2" style="margin-bottom: 16px;">Passo 1: Configuração Básica</h2>
+
+            <div class="grade grade--2" style="margin-bottom: 24px;">
+              <div class="campo">
+                <label for="nomeRel">Nome do Relatório</label>
+                <input type="text" class="entrada" id="nomeRel" placeholder="Ex: Análise Março 2026"
+                  value="Meu Relatório">
+              </div>
+              <div class="campo">
+                <label for="perRel">Período</label>
+                <select class="selecao" id="perRel">
+                  <option>Últimos 7 dias</option>
+                  <option>Últimos 30 dias</option>
+                  <option selected>Últimos 6 meses</option>
+                  <option>Este ano</option>
+                </select>
+              </div>
+            </div>
+
+            <h2 class="h2" style="margin-bottom: 16px;">Passo 2: Selecione o Conteúdo</h2>
+
+            <!-- Indicador de desempenho -->
+            <div class="card-opcao" onclick="toggleCheck('opt-kpi')">
+              <input type="checkbox" id="opt-kpi" checked>
+              <div class="card-opcao-icon"><i class="fa-solid fa-chart-bar"></i></div>
+              <div class="card-opcao-text">
+                <h3>Indicador de desempenho</h3>
+                <p>Faturamento, Lucro, Despesas, Crescimento</p>
+              </div>
+            </div>
+
+            <!-- Tendências -->
+            <div class="card-opcao" onclick="toggleCheck('opt-tendencias')">
+              <input type="checkbox" id="opt-tendencias" checked>
+              <div class="card-opcao-icon"><i class="fa-solid fa-chart-line"></i></div>
+              <div class="card-opcao-text">
+                <h3>Tendências de Crescimento</h3>
+                <p>Evolução mensal de faturamento e lucro</p>
+              </div>
+            </div>
+
+            <!-- Margem -->
+            <div class="card-opcao" onclick="toggleCheck('opt-margem')">
+              <input type="checkbox" id="opt-margem" checked>
+              <div class="card-opcao-icon"><i class="fa-solid fa-percent"></i></div>
+              <div class="card-opcao-text">
+                <h3>Análise de Margem</h3>
+                <p>Taxa de margem e performance</p>
+              </div>
+            </div>
+
+            <!-- Dados Detalhados -->
+            <div class="card-opcao" onclick="toggleCheck('opt-dados')">
+              <input type="checkbox" id="opt-dados" checked>
+              <div class="card-opcao-icon"><i class="fa-solid fa-table"></i></div>
+              <div class="card-opcao-text">
+                <h3>Tabela de Dados Detalhada</h3>
+                <p>Informações completas mês a mês</p>
+              </div>
+            </div>
+
+            <!-- Gráfico -->
+            <div class="card-opcao" onclick="toggleCheck('opt-grafico')">
+              <input type="checkbox" id="opt-grafico" checked>
+              <div class="card-opcao-icon"><i class="fa-solid fa-chart-simple"></i></div>
+              <div class="card-opcao-text">
+                <h3>Gráfico de Faturamento</h3>
+                <p>Visualização de séries temporais</p>
+              </div>
+            </div>
+
+            <!-- Insights -->
+            <div class="card-opcao" onclick="toggleCheck('opt-insights')">
+              <input type="checkbox" id="opt-insights" checked>
+              <div class="card-opcao-icon"><i class="fa-solid fa-lightbulb"></i></div>
+              <div class="card-opcao-text">
+                <h3>Insights & Recomendações</h3>
+                <p>Principais achados e oportunidades</p>
+              </div>
+            </div>
+
+            <!-- BOTÕES -->
+            <div class="btn-group">
+              <button class="botao botao--primario" onclick="gerarPreview()">
+                <i class="fa-solid fa-eye"></i> Ver Resumo
+              </button>
+              <button class="botao botao--suave" onclick="exportarPDF()">
+                <i class="fa-solid fa-file-pdf"></i> Baixar PDF
+              </button>
+            </div>
+          </section>
+
+          <!-- PREVIEW -->
+          <div id="preview" class="preview-box"></div>
+
+        </div><!-- /container -->
+
+        <!-- Footer Interno -->
+        {% include 'partials/footer.html' %}
+      </main>
+    </div>
+  </div>
+
+  {% include 'partials/navbar_mobile.html' %}
+  {% include 'partials/painel_acessibilidade.html' %}
+  {% include 'partials/chatbot.html' %}
+
+  <div vw class="enabled" id="Vlibras">
+    <div vw-access-button class="active"></div>
+    <div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div>
+  </div>
+
+  <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+  <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
+  <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/relatorios.js') }}"></script>
+  <script>
+    function abrirSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sidebarOverlay').classList.add('active');}
+    function fecharSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active');}
+  </script>
+</body>
+</html>

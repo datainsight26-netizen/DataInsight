@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description"
+    content="DataInsight — Assistente Virtual 3D. Converse por voz e texto com seu contador e consultor financeiro virtual." />
+  <title>DataInsight • Assistente Virtual 3D</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
+
+  <!-- Three.js para renderização 3D do Avatar -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Marked para renderização de markdown -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <style>
+    /* =============================================
+       ASSISTENTE VIRTUAL 3D — ESTILOS PREMIUM
+       ============================================= */
+
+    .assistente-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      position: relative;
+    }
+
+    /* Top Banner Header */
+    .assistente-hero {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(99, 102, 241, 0.15) 50%, rgba(168, 85, 247, 0.12) 100%);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: 20px;
+      padding: 24px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+    }
+
+    .assistente-hero__info h1 {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--texto);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0;
+    }
+
+    .assistente-hero__info p {
+      font-size: 0.92rem;
+      color: var(--suave);
+      margin: 6px 0 0 0;
+    }
+
+    .assistente-hero__badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(16, 185, 129, 0.15);
+      color: #10B981;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+
+    .assistente-hero__badge .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10B981;
+      animation: pulse-dot-anim 1.5s infinite;
+    }
+
+    @keyframes pulse-dot-anim {
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 1;
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6);
+      }
+
+      50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+        box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+      }
+    }
+
+    /* Main Workspace Grid */
+    .assistente-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    @media (max-width: 1040px) {
+      .assistente-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* 3D Stage Card */
+    .avatar-card {
+      background: var(--cartao);
+      border: 1px solid var(--borda);
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.06);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      min-height: 540px;
+    }
+
+    .avatar-card__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      z-index: 2;
+    }
+
+    .avatar-profile {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar-profile__avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #3B82F6, #6366F1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 20px;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+    }
+
+    .avatar-profile__name {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--texto);
+      margin: 0;
+    }
+
+    .avatar-profile__role {
+      font-size: 0.78rem;
+      color: var(--suave);
+      margin: 2px 0 0 0;
+    }
+
+    .avatar-controls {
+      display: flex;
+      gap: 8px;
+    }
+
+    .avatar-tool-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 1px solid var(--borda);
+      background: var(--fundo);
+      color: var(--texto);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+    }
+
+    .avatar-tool-btn:hover {
+      background: var(--primaria);
+      color: white;
+      border-color: var(--primaria);
+      transform: translateY(-1px);
+    }
+
+    .avatar-tool-btn.active {
+      background: var(--primaria);
+      color: white;
+      border-color: var(--primaria);
+    }
+
+    /* 3D Canvas Viewport */
+    .avatar-stage {
+      flex: 1;
+      min-height: 340px;
+      position: relative;
+      border-radius: 18px;
+      background: radial-gradient(circle at 50% 40%, rgba(59, 130, 246, 0.12) 0%, rgba(15, 23, 42, 0.03) 70%);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #avatar-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+    }
+
+    #avatar-canvas:active {
+      cursor: grabbing;
+    }
+
+    /* Avatar Status Overlay Indicator */
+    .avatar-status-pill {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(8px);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      z-index: 5;
+      transition: all 0.3s ease;
+    }
+
+    .avatar-status-pill.speaking {
+      background: rgba(99, 102, 241, 0.85);
+      border-color: rgba(99, 102, 241, 0.5);
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+    }
+
+    .avatar-status-pill.listening {
+      background: rgba(239, 68, 68, 0.85);
+      border-color: rgba(239, 68, 68, 0.5);
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+    }
+
+    /* Live Voice Equalizer Bars */
+    .voice-wave-container {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      height: 14px;
+    }
+
+    .voice-bar {
+      width: 3px;
+      height: 6px;
+      background: #fff;
+      border-radius: 2px;
+      transition: height 0.1s ease;
+    }
+
+    .voice-bar.animating {
+      animation: voice-bar-bounce 0.8s ease-in-out infinite alternate;
+    }
+
+    .voice-bar:nth-child(2) {
+      animation-delay: 0.15s;
+    }
+
+    .voice-bar:nth-child(3) {
+      animation-delay: 0.3s;
+    }
+
+    .voice-bar:nth-child(4) {
+      animation-delay: 0.45s;
+    }
+
+    @keyframes voice-bar-bounce {
+      0% {
+        height: 4px;
+      }
+
+      100% {
+        height: 14px;
+      }
+    }
+
+    /* Avatar Control Footer (Voice & Input) */
+    .avatar-card__footer {
+      margin-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 2;
+    }
+
+    /* Primary Voice Action Bar */
+    .voice-control-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 12px;
+      background: var(--fundo);
+      border: 1px solid var(--borda);
+      border-radius: 16px;
+    }
+
+    .btn-voice-record {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, #3B82F6, #6366F1);
+      color: white;
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+    }
+
+    .btn-voice-record:hover {
+      transform: scale(1.08);
+      box-shadow: 0 8px 25px rgba(59, 130, 246, 0.55);
+    }
+
+    .btn-voice-record.recording {
+      background: linear-gradient(135deg, #EF4444, #DC2626);
+      box-shadow: 0 0 0 8px rgba(239, 68, 68, 0.25), 0 8px 25px rgba(239, 68, 68, 0.5);
+      animation: record-pulse 1.4s infinite;
+    }
+
+    @keyframes record-pulse {
+
+      0%,
+      100% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.06);
+      }
+    }
+
+    .voice-hint-text {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--texto);
+    }
+
+    .voice-hint-sub {
+      font-size: 0.74rem;
+      color: var(--suave);
+    }
+
+    /* Text Input Area */
+    .interactive-input-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--fundo);
+      border: 1.5px solid var(--borda);
+      border-radius: 14px;
+      padding: 6px 8px 6px 16px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .interactive-input-box:focus-within {
+      border-color: var(--primaria);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+
+    .interactive-input-box input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-family: var(--fonte);
+      font-size: 0.92rem;
+      color: var(--texto);
+      outline: none;
+    }
+
+    .interactive-input-box input::placeholder {
+      color: var(--suave);
+    }
+
+    .btn-submit-msg {
+      background: var(--primaria);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-submit-msg:hover {
+      background: var(--color-primary-dark, #2563EB);
+      transform: translateY(-1px);
+    }
+
+    /* Right Column: Dialogue & Financial Analysis Hub */
+    .dialogue-card {
+      background: var(--cartao);
+      border: 1px solid var(--borda);
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.06);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 540px;
+    }
+
+    .dialogue-card__header {
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--borda);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .dialogue-card__header h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--texto);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+    }
+
+    .dialogue-card__header h3 i {
+      color: var(--primaria);
+    }
+
+    /* Dialogue Transcript Feed */
+    .dialogue-feed {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-height: 380px;
+      scroll-behavior: smooth;
+    }
+
+    .dialogue-feed::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .dialogue-feed::-webkit-scrollbar-thumb {
+      background: var(--borda);
+      border-radius: 999px;
+    }
+
+    .msg-bubble {
+      display: flex;
+      gap: 12px;
+      max-width: 92%;
+      animation: msg-fade-in 0.3s ease;
+    }
+
+    @keyframes msg-fade-in {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .msg-bubble.bot {
+      align-self: flex-start;
+    }
+
+    .msg-bubble.user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    .msg-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      flex-shrink: 0;
+    }
+
+    .msg-bubble.bot .msg-avatar {
+      background: linear-gradient(135deg, #3B82F6, #6366F1);
+      color: white;
+    }
+
+    .msg-bubble.user .msg-avatar {
+      background: var(--fundo);
+      border: 1px solid var(--borda);
+      color: var(--suave);
+    }
+
+    .msg-content {
+      background: var(--fundo);
+      border: 1px solid var(--borda);
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 0.88rem;
+      color: var(--texto);
+      line-height: 1.5;
+    }
+
+    .msg-bubble.bot .msg-content {
+      border-top-left-radius: 4px;
+      background: rgba(59, 130, 246, 0.05);
+      border-color: rgba(59, 130, 246, 0.2);
+    }
+
+    .msg-bubble.user .msg-content {
+      border-top-right-radius: 4px;
+      background: var(--primaria);
+      color: white;
+      border-color: var(--primaria);
+    }
+
+    .msg-content p {
+      margin: 0 0 8px 0;
+    }
+
+    .msg-content p:last-child {
+      margin-bottom: 0;
+    }
+
+    .msg-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0;
+      font-size: 0.8rem;
+    }
+
+    .msg-content th,
+    .msg-content td {
+      padding: 6px 10px;
+      border: 1px solid var(--borda);
+      text-align: left;
+    }
+
+    .msg-bubble.bot .msg-content strong {
+      color: var(--primaria);
+    }
+
+    .msg-bubble.user .msg-content strong {
+      color: #fff;
+    }
+
+    /* Quick Suggestions / Prompts */
+    .quick-chips-wrap {
+      padding-top: 14px;
+      border-top: 1px solid var(--borda);
+    }
+
+    .quick-chips-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--suave);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .quick-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .chip-btn {
+      background: var(--fundo);
+      border: 1px solid var(--borda);
+      color: var(--texto);
+      font-size: 0.78rem;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-family: var(--fonte);
+    }
+
+    .chip-btn:hover {
+      border-color: var(--primaria);
+      color: var(--primaria);
+      background: rgba(59, 130, 246, 0.08);
+      transform: translateY(-1px);
+    }
+
+    /* Live Financial Snapshot Banner */
+    .snapshot-cards {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    @media (max-width: 768px) {
+      .snapshot-cards {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .snap-card {
+      background: var(--cartao);
+      border: 1px solid var(--borda);
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .snap-card__icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+
+    .snap-card__icon--blue {
+      background: rgba(59, 130, 246, 0.12);
+      color: #3B82F6;
+    }
+
+    .snap-card__icon--green {
+      background: rgba(16, 185, 129, 0.12);
+      color: #10B981;
+    }
+
+    .snap-card__icon--red {
+      background: rgba(239, 68, 68, 0.12);
+      color: #EF4444;
+    }
+
+    .snap-card__icon--purple {
+      background: rgba(168, 85, 247, 0.12);
+      color: #A855F7;
+    }
+
+    .snap-card__val {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--texto);
+      line-height: 1.2;
+    }
+
+    .snap-card__lbl {
+      font-size: 0.72rem;
+      color: var(--suave);
+    }
+  </style>
+</head>
+
+<body>
+  <a href="#conteudo" class="skip-link">Ir para conteúdo</a>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Navegação principal">
+      {% include 'partials/navbar.html' %}
+    </aside>
+    <div class="main">
+      <header class="topbar" role="banner">
+        <div class="topbar__left">
+          <button class="topbar__btn topbar__mobile-toggle" onclick="abrirSidebar()" aria-label="Abrir menu"><i
+              class="fa-solid fa-bars"></i></button>
+          <span class="topbar__greeting">Olá, <strong>{{ session.usuario_nome }}</strong></span>
+        </div>
+        <div class="topbar__actions">
+          <button class="topbar__btn" onclick="alternarTema()" aria-label="Alternar tema" id="btnTema"><i
+              class="fa-solid fa-moon"></i></button>
+          <a class="topbar__btn" href="{{ url_for('pagina_configuracoes') }}" title="Configurações"><i
+              class="fa-solid fa-gear"></i></a>
+        </div>
+      </header>
+
+      <main id="conteudo" class="pagina" role="main" data-ia-help="page_assistente_virtual">
+        <div class="container assistente-container">
+
+          <!-- TOP HERO BANNER E CONTROLES -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+              <div>
+                  <h1 style="font-size: 1.5rem; color: var(--texto); margin-bottom: 4px;">Consultoria com Assistente Virtual 3D</h1>
+                  <p style="color: var(--suave); font-size: 0.9rem;">Receba orientações financeiras interativas e por voz.</p>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                  <label for="seletorPlanilhaIa3D" style="font-size: 0.8rem; font-weight: 700; color: var(--suave); text-transform: uppercase;">
+                      <i class="fa-solid fa-database" style="color: var(--primaria);"></i> Base de Dados:
+                  </label>
+                  <select id="seletorPlanilhaIa3D" class="entrada" style="font-size: 0.85rem; font-weight: 600; padding: 6px 10px; border-radius: 6px; width: 220px;">
+                      <option value="todas">🌐 Todas as Planilhas (Consolidado)</option>
+                  </select>
+              </div>
+          </div>
+
+          <!-- MAIN 3D WORKSPACE GRID -->
+          <div class="assistente-grid">
+
+            <!-- LEFT: 3D AVATAR & CONTROLS -->
+            <div class="avatar-card">
+              <div class="avatar-card__header">
+                <div class="avatar-profile">
+                  <div class="avatar-profile__avatar">
+                    <i class="fa-solid fa-user-tie"></i>
+                  </div>
+                  <div>
+                    <h2 class="avatar-profile__name">Dr. Arthur Valente</h2>
+                    <p class="avatar-profile__role">Contador & Especialista Financeiro IA</p>
+                  </div>
+                </div>
+                <div class="avatar-controls">
+                  <button class="avatar-tool-btn active" id="btn-toggle-audio" title="Alternar Resposta por Voz"
+                    onclick="toggleVoz()">
+                    <i class="fa-solid fa-volume-high" id="icon-audio-toggle"></i>
+                  </button>
+                  <button class="avatar-tool-btn" id="btn-reset-camera" title="Centralizar Personagem"
+                    onclick="resetarCamera()">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 3D STAGE VIEWPORT -->
+              <div class="avatar-stage" id="avatar-stage-container">
+                <div class="avatar-status-pill" id="avatar-status">
+                  <div class="voice-wave-container" id="avatar-voice-wave">
+                    <div class="voice-bar"></div>
+                    <div class="voice-bar"></div>
+                    <div class="voice-bar"></div>
+                    <div class="voice-bar"></div>
+                  </div>
+                  <span id="avatar-status-text">Pronto para conversar</span>
+                </div>
+
+                <!-- Three.js Canvas -->
+                <canvas id="avatar-canvas"></canvas>
+              </div>
+
+              <!-- CONTROLS FOOTER -->
+              <div class="avatar-card__footer">
+                <!-- VOICE COMM BAR -->
+                <div class="voice-control-bar">
+                  <button class="btn-voice-record" id="btn-voice-main" onclick="toggleMicrofone()"
+                    title="Clique para Falar">
+                    <i class="fa-solid fa-microphone" id="icon-mic-main"></i>
+                  </button>
+                  <div>
+                    <div class="voice-hint-text" id="voice-hint-title">Falar com o Contador</div>
+                    <div class="voice-hint-sub" id="voice-hint-subtitle">Clique no microfone e faça sua pergunta em voz
+                      alta</div>
+                  </div>
+                </div>
+
+                <!-- TEXT INPUT FORM -->
+                <form class="interactive-input-box" id="form-pergunta" onsubmit="enviarMensagemTexto(event)">
+                  <input type="text" id="input-pergunta"
+                    placeholder="Ou digite aqui sua dúvida financeira ou contábil..." autocomplete="off">
+                  <button type="submit" class="btn-submit-msg" id="btn-enviar-msg">
+                    <i class="fa-solid fa-paper-plane"></i> Enviar
+                  </button>
+                </form>
+              </div>
+            </div><!-- /avatar-card -->
+
+            <!-- RIGHT: DIALOGUE & ADVICE FEED -->
+            <div class="dialogue-card">
+              <div class="dialogue-card__header">
+                <h3><i class="fa-solid fa-comments"></i> Diálogo & Orientações</h3>
+                <button class="avatar-tool-btn" onclick="limparHistoricoTela()" title="Limpar conversa">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
+
+              <!-- Transcript Feed -->
+              <div class="dialogue-feed" id="dialogue-feed">
+                <div class="msg-bubble bot">
+                  <div class="msg-avatar"><i class="fa-solid fa-user-tie"></i></div>
+                  <div class="msg-content">
+                    <p><strong>Olá! Sou o Dr. Arthur Valente</strong>, seu contador e consultor financeiro virtual do
+                      DataInsight.</p>
+                    <p>Posso analisar seu faturamento, custos, margens, calcular ponto de equilíbrio e orientar o
+                      crescimento sustentável da sua empresa. Como posso te ajudar hoje?</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quick Prompts -->
+              <div class="quick-chips-wrap">
+                <div class="quick-chips-label">
+                  <i class="fa-solid fa-wand-magic-sparkles"></i> Sugestões de Perguntas
+                </div>
+                <div class="quick-chips">
+                  <button class="chip-btn"
+                    onclick="perguntarChip('Qual foi o faturamento total e como está meu lucro?')">
+                    📊 Faturamento & Lucro
+                  </button>
+                  <button class="chip-btn"
+                    onclick="perguntarChip('Quais são as principais despesas e como posso reduzi-las?')">
+                    💡 Onde cortar despesas?
+                  </button>
+                  <button class="chip-btn" onclick="perguntarChip('Qual a estimativa de receita para o próximo mês?')">
+                    📈 Previsão do próximo mês
+                  </button>
+                  <button class="chip-btn"
+                    onclick="perguntarChip('Faça uma auditoria contábil rápida com recomendações.')">
+                    ⚖️ Diagnóstico contábil
+                  </button>
+                </div>
+              </div>
+            </div><!-- /dialogue-card -->
+
+          </div><!-- /assistente-grid -->
+
+          <!-- FOOTER DENTRO DO SCROLL -->
+          {% include 'partials/footer.html' %}
+        </div>
+      </main>
+    </div>
+  </div>
+
+  {% include 'partials/navbar_mobile.html' %}
+  {% include 'partials/painel_acessibilidade.html' %}
+  {% include 'partials/chatbot.html' %}
+
+  <div vw class="enabled" id="Vlibras">
+    <div vw-access-button class="active"></div>
+    <div vw-plugin-wrapper>
+      <div class="vw-plugin-top-wrapper"></div>
+    </div>
+  </div>
+
+  <!-- Scripts base -->
+  <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+  <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
+  <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+  <!-- Script Principal do Assistente 3D -->
+  <script>
+    /* ==========================================================
+       1. CONTROLE DE SIDEBAR & LAYOUT
+       ========================================================== */
+    function abrirSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarOverlay').classList.add('active'); }
+    function fecharSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('active'); }
+
+    /* ==========================================================
+       2. CARREGAR DADOS FINANCEIROS NO SNAPSHOT
+       ========================================================== */
+    async function carregarSnapshotFinanceiro() {
+      try {
+        const resp = await fetch('/carregar-dados');
+        const json = await resp.json();
+        if (json && Array.isArray(json.dados) && json.dados.length > 0) {
+          let totalFat = 0, totalDesp = 0, totalLuc = 0;
+          json.dados.forEach(d => {
+            const fat = Number(String(d.faturamento || d.receita || d.Total || d.total || 0).replace(/[^0-9.-]/g, '')) || 0;
+            const desp = Number(String(d.despesa || d.despesas || d.custo || d.Custo || 0).replace(/[^0-9.-]/g, '')) || 0;
+            const luc = Number(String(d.lucro || d.Lucro || (fat - desp) || 0).replace(/[^0-9.-]/g, '')) || 0;
+            totalFat += fat; totalDesp += desp; totalLuc += luc;
+          });
+          const margem = totalFat > 0 ? ((totalLuc / totalFat) * 100).toFixed(1) : '0.0';
+
+          document.getElementById('snap-fat').textContent = 'R$ ' + totalFat.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          document.getElementById('snap-desp').textContent = 'R$ ' + totalDesp.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          document.getElementById('snap-luc').textContent = 'R$ ' + totalLuc.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          document.getElementById('snap-marg').textContent = margem + '%';
+        } else {
+          document.getElementById('snap-fat').textContent = 'R$ 0,00';
+          document.getElementById('snap-desp').textContent = 'R$ 0,00';
+          document.getElementById('snap-luc').textContent = 'R$ 0,00';
+          document.getElementById('snap-marg').textContent = '0%';
+        }
+      } catch (e) {
+        console.warn('Snapshot error:', e);
+      }
+    }
+
+    /* ==========================================================
+       3. MOTOR 3D DO PERSONAGEM (THREE.JS PROCEDURAL AVATAR)
+       ========================================================== */
+    let scene, camera, renderer;
+    let avatarGroup, headGroup, jawMesh, eyeLeft, eyeRight, glassesGroup, tieGroup, torsoMesh;
+    let targetHeadRot = { x: 0, y: 0 };
+    let currentHeadRot = { x: 0, y: 0 };
+    let isSpeaking = false;
+    let mouthOpenAmount = 0;
+    let blinkTimer = 0;
+    let isBlinking = false;
+    let mousePos = { x: 0, y: 0 };
+
+    function init3DAvatar() {
+      const container = document.getElementById('avatar-stage-container');
+      const canvas = document.getElementById('avatar-canvas');
+      if (!container || !canvas || typeof THREE === 'undefined') return;
+
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      // Scene
+      scene = new THREE.Scene();
+
+      // Camera
+      camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 1000);
+      camera.position.set(0, 0.65, 3.2);
+
+      // Renderer
+      renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+
+      // Lights
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+      scene.add(ambientLight);
+
+      const dirLight = new THREE.DirectionalLight(0xffffff, 1.1);
+      dirLight.position.set(3, 4, 3);
+      scene.add(dirLight);
+
+      const blueRimLight = new THREE.DirectionalLight(0x6366f1, 1.4);
+      blueRimLight.position.set(-3, 2, -2);
+      scene.add(blueRimLight);
+
+      const warmKeyLight = new THREE.PointLight(0x38bdf8, 1.2, 8);
+      warmKeyLight.position.set(0, -0.8, 2);
+      scene.add(warmKeyLight);
+
+      // Holographic Pedestal / Floor Ring
+      const ringGeo = new THREE.RingGeometry(0.7, 0.9, 32);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6, side: THREE.DoubleSide, transparent: true, opacity: 0.35 });
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.rotation.x = Math.PI / 2;
+      ringMesh.position.y = -0.95;
+      scene.add(ringMesh);
+
+      // Inner disc
+      const discGeo = new THREE.CircleGeometry(0.68, 32);
+      const discMat = new THREE.MeshBasicMaterial({ color: 0x6366f1, transparent: true, opacity: 0.12 });
+      const discMesh = new THREE.Mesh(discGeo, discMat);
+      discMesh.rotation.x = -Math.PI / 2;
+      discMesh.position.y = -0.95;
+      scene.add(discMesh);
+
+      // Avatar Hierarchy
+      avatarGroup = new THREE.Group();
+      scene.add(avatarGroup);
+
+      // Materials
+      const skinMat = new THREE.MeshStandardMaterial({
+        color: 0xf6c8a8,
+        roughness: 0.55,
+        metalness: 0.05
+      });
+
+      const darkSuitMat = new THREE.MeshStandardMaterial({
+        color: 0x1e293b,
+        roughness: 0.7,
+        metalness: 0.1
+      });
+
+      const shirtMat = new THREE.MeshStandardMaterial({
+        color: 0xf8fafc,
+        roughness: 0.4
+      });
+
+      const tieMat = new THREE.MeshStandardMaterial({
+        color: 0x3b82f6,
+        roughness: 0.35,
+        metalness: 0.15
+      });
+
+      const hairMat = new THREE.MeshStandardMaterial({
+        color: 0x2b201a,
+        roughness: 0.65
+      });
+
+      const glassesFrameMat = new THREE.MeshStandardMaterial({
+        color: 0x0f172a,
+        metalness: 0.8,
+        roughness: 0.2
+      });
+
+      const glassLensMat = new THREE.MeshPhysicalMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.25,
+        roughness: 0.05,
+        metalness: 0.1,
+        transmission: 0.9
+      });
+
+      // 1. Torso / Suit Jacket
+      const torsoGeo = new THREE.CylinderGeometry(0.42, 0.48, 0.95, 24);
+      torsoMesh = new THREE.Mesh(torsoGeo, darkSuitMat);
+      torsoMesh.position.y = -0.45;
+      avatarGroup.add(torsoMesh);
+
+      // Shirt collar
+      const collarGeo = new THREE.ConeGeometry(0.28, 0.35, 16);
+      const collarMesh = new THREE.Mesh(collarGeo, shirtMat);
+      collarMesh.position.set(0, 0.02, 0.22);
+      collarMesh.rotation.x = 0.2;
+      avatarGroup.add(collarMesh);
+
+      // Neck
+      const neckGeo = new THREE.CylinderGeometry(0.16, 0.17, 0.25, 16);
+      const neckMesh = new THREE.Mesh(neckGeo, skinMat);
+      neckMesh.position.y = 0.12;
+      avatarGroup.add(neckMesh);
+
+      // Tie
+      tieGroup = new THREE.Group();
+      const tieKnotGeo = new THREE.ConeGeometry(0.065, 0.09, 8);
+      const tieKnot = new THREE.Mesh(tieKnotGeo, tieMat);
+      tieKnot.rotation.x = Math.PI;
+      tieKnot.position.set(0, 0.02, 0.36);
+      tieGroup.add(tieKnot);
+
+      const tieBodyGeo = new THREE.BoxGeometry(0.09, 0.42, 0.02);
+      const tieBody = new THREE.Mesh(tieBodyGeo, tieMat);
+      tieBody.position.set(0, -0.22, 0.35);
+      tieGroup.add(tieBody);
+      avatarGroup.add(tieGroup);
+
+      // Accountant Badge
+      const badgeGeo = new THREE.BoxGeometry(0.14, 0.08, 0.02);
+      const badgeMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.5 });
+      const badge = new THREE.Mesh(badgeGeo, badgeMat);
+      badge.position.set(0.25, -0.2, 0.35);
+      badge.rotation.z = -0.08;
+      avatarGroup.add(badge);
+
+      // 2. Head Group
+      headGroup = new THREE.Group();
+      headGroup.position.set(0, 0.52, 0);
+      avatarGroup.add(headGroup);
+
+      // Main Head (Cranium & Face)
+      const headGeo = new THREE.SphereGeometry(0.34, 32, 24);
+      headGeo.scale(1, 1.15, 0.95);
+      const headMesh = new THREE.Mesh(headGeo, skinMat);
+      headGroup.add(headMesh);
+
+      // Jaw / Chin (for speaking animation)
+      const jawGeo = new THREE.SphereGeometry(0.2, 16, 16);
+      jawGeo.scale(0.9, 0.6, 0.85);
+      jawMesh = new THREE.Mesh(jawGeo, skinMat);
+      jawMesh.position.set(0, -0.26, 0.12);
+      headGroup.add(jawMesh);
+
+      // Mouth / Lips
+      const mouthGeo = new THREE.BoxGeometry(0.12, 0.03, 0.04);
+      const mouthMat = new THREE.MeshStandardMaterial({ color: 0x994d4d });
+      const mouthMesh = new THREE.Mesh(mouthGeo, mouthMat);
+      mouthMesh.position.set(0, -0.2, 0.31);
+      headGroup.add(mouthMesh);
+
+      // Nose
+      const noseGeo = new THREE.ConeGeometry(0.05, 0.12, 12);
+      const noseMesh = new THREE.Mesh(noseGeo, skinMat);
+      noseMesh.position.set(0, -0.06, 0.36);
+      noseMesh.rotation.x = -0.25;
+      headGroup.add(noseMesh);
+
+      // Eyes
+      const eyeGeo = new THREE.SphereGeometry(0.055, 16, 16);
+      const eyeWhiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+      const irisGeo = new THREE.SphereGeometry(0.028, 12, 12);
+      const irisMat = new THREE.MeshStandardMaterial({ color: 0x3b82f6 });
+      const pupilGeo = new THREE.SphereGeometry(0.014, 12, 12);
+      const pupilMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+
+      // Left Eye
+      eyeLeft = new THREE.Group();
+      const whiteL = new THREE.Mesh(eyeGeo, eyeWhiteMat);
+      const irisL = new THREE.Mesh(irisGeo, irisMat); irisL.position.z = 0.04;
+      const pupilL = new THREE.Mesh(pupilGeo, pupilMat); pupilL.position.z = 0.052;
+      eyeLeft.add(whiteL, irisL, pupilL);
+      eyeLeft.position.set(-0.115, 0.03, 0.28);
+      headGroup.add(eyeLeft);
+
+      // Right Eye
+      eyeRight = new THREE.Group();
+      const whiteR = new THREE.Mesh(eyeGeo, eyeWhiteMat);
+      const irisR = new THREE.Mesh(irisGeo, irisMat); irisR.position.z = 0.04;
+      const pupilR = new THREE.Mesh(pupilGeo, pupilMat); pupilR.position.z = 0.052;
+      eyeRight.add(whiteR, irisR, pupilR);
+      eyeRight.position.set(0.115, 0.03, 0.28);
+      headGroup.add(eyeRight);
+
+      // Eyebrows
+      const browGeo = new THREE.BoxGeometry(0.1, 0.02, 0.02);
+      const browL = new THREE.Mesh(browGeo, hairMat);
+      browL.position.set(-0.12, 0.12, 0.31);
+      browL.rotation.z = 0.08;
+      headGroup.add(browL);
+
+      const browR = new THREE.Mesh(browGeo, hairMat);
+      browR.position.set(0.12, 0.12, 0.31);
+      browR.rotation.z = -0.08;
+      headGroup.add(browR);
+
+      // Hair (Executive haircut)
+      const hairMainGeo = new THREE.SphereGeometry(0.36, 24, 20);
+      hairMainGeo.scale(1.02, 1.05, 1.02);
+      const hairMain = new THREE.Mesh(hairMainGeo, hairMat);
+      hairMain.position.set(0, 0.08, -0.04);
+      headGroup.add(hairMain);
+
+      // Glasses (Accountant glasses)
+      glassesGroup = new THREE.Group();
+      const frameRingL = new THREE.TorusGeometry(0.085, 0.012, 8, 24);
+      const fL = new THREE.Mesh(frameRingL, glassesFrameMat);
+      fL.position.set(-0.115, 0.03, 0.33);
+      glassesGroup.add(fL);
+
+      const lensL = new THREE.Mesh(new THREE.CircleGeometry(0.078, 20), glassLensMat);
+      lensL.position.set(-0.115, 0.03, 0.33);
+      glassesGroup.add(lensL);
+
+      const frameRingR = new THREE.TorusGeometry(0.085, 0.012, 8, 24);
+      const fR = new THREE.Mesh(frameRingR, glassesFrameMat);
+      fR.position.set(0.115, 0.03, 0.33);
+      glassesGroup.add(fR);
+
+      const lensR = new THREE.Mesh(new THREE.CircleGeometry(0.078, 20), glassLensMat);
+      lensR.position.set(0.115, 0.03, 0.33);
+      glassesGroup.add(lensR);
+
+      // Glasses bridge
+      const bridgeGeo = new THREE.CylinderGeometry(0.008, 0.008, 0.08, 8);
+      const bridge = new THREE.Mesh(bridgeGeo, glassesFrameMat);
+      bridge.rotation.z = Math.PI / 2;
+      bridge.position.set(0, 0.04, 0.34);
+      glassesGroup.add(bridge);
+
+      headGroup.add(glassesGroup);
+
+      // Ears
+      const earGeo = new THREE.SphereGeometry(0.08, 12, 12);
+      earGeo.scale(0.4, 0.9, 0.5);
+      const earL = new THREE.Mesh(earGeo, skinMat);
+      earL.position.set(-0.35, 0.02, 0);
+      headGroup.add(earL);
+
+      const earR = new THREE.Mesh(earGeo, skinMat);
+      earR.position.set(0.35, 0.02, 0);
+      headGroup.add(earR);
+
+      // Mouse Move Tracking
+      window.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width * 2 - 1;
+        const y = -(e.clientY - rect.top) / rect.height * 2 + 1;
+        mousePos.x = THREE.MathUtils.clamp(x, -1.2, 1.2);
+        mousePos.y = THREE.MathUtils.clamp(y, -1.2, 1.2);
+      });
+
+      // Click reaction on Avatar
+      canvas.addEventListener('click', () => {
+        nodHead();
+        falarTexto("Estou aqui à sua disposição! O que você gostaria de analisar nas suas finanças hoje?");
+      });
+
+      // Window Resize Listener
+      window.addEventListener('resize', onWindowResize);
+
+      // Start Render Loop
+      animate3D();
+    }
+
+    function onWindowResize() {
+      const container = document.getElementById('avatar-stage-container');
+      if (!container || !renderer || !camera) return;
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+    }
+
+    function nodHead() {
+      if (!headGroup) return;
+      let nodCount = 0;
+      const nodInterval = setInterval(() => {
+        nodCount++;
+        headGroup.rotation.x = Math.sin(nodCount * 0.4) * 0.12;
+        if (nodCount > 15) {
+          clearInterval(nodInterval);
+          headGroup.rotation.x = 0;
+        }
+      }, 30);
+    }
+
+    function resetarCamera() {
+      if (camera) camera.position.set(0, 0.65, 3.2);
+      targetHeadRot.x = 0;
+      targetHeadRot.y = 0;
+      nodHead();
+    }
+
+    // Animation Loop
+    let clock = new THREE.Clock();
+    function animate3D() {
+      requestAnimationFrame(animate3D);
+      const elapsedTime = clock.getElapsedTime();
+
+      // Smooth Head Tracking Following Mouse
+      targetHeadRot.y = mousePos.x * 0.45;
+      targetHeadRot.x = -mousePos.y * 0.35;
+
+      currentHeadRot.x += (targetHeadRot.x - currentHeadRot.x) * 0.08;
+      currentHeadRot.y += (targetHeadRot.y - currentHeadRot.y) * 0.08;
+
+      if (headGroup) {
+        headGroup.rotation.y = currentHeadRot.y;
+        headGroup.rotation.x = currentHeadRot.x;
+      }
+
+      // Gentle Idle Breathing & Sway
+      if (avatarGroup) {
+        avatarGroup.position.y = Math.sin(elapsedTime * 1.5) * 0.025;
+        avatarGroup.rotation.y = Math.sin(elapsedTime * 0.8) * 0.02;
+      }
+
+      // Eye Blinking Mechanism
+      blinkTimer += 0.016;
+      if (blinkTimer > 3.5 + Math.random() * 2) {
+        isBlinking = true;
+        blinkTimer = 0;
+      }
+      if (isBlinking) {
+        if (eyeLeft && eyeRight) {
+          eyeLeft.scale.y = 0.1;
+          eyeRight.scale.y = 0.1;
+        }
+        setTimeout(() => {
+          if (eyeLeft && eyeRight) {
+            eyeLeft.scale.y = 1;
+            eyeRight.scale.y = 1;
+          }
+          isBlinking = false;
+        }, 120);
+      }
+
+      // Speaking Mouth & Jaw Motion
+      if (isSpeaking && jawMesh) {
+        mouthOpenAmount = Math.abs(Math.sin(elapsedTime * 18)) * 0.08 + Math.random() * 0.04;
+        jawMesh.position.y = -0.26 - mouthOpenAmount;
+        headGroup.rotation.z = Math.sin(elapsedTime * 4) * 0.02;
+      } else if (jawMesh) {
+        jawMesh.position.y = -0.26;
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    /* ==========================================================
+       4. SISTEMA DE VOZ & SÍNTESE (TTS & SPEECH RECOGNITION)
+       ========================================================== */
+    let vozHabilitada = true;
+    let recognition = null;
+    let gravandoVoz = false;
+    let synth = window.speechSynthesis;
+
+    function toggleVoz() {
+      vozHabilitada = !vozHabilitada;
+      const btn = document.getElementById('btn-toggle-audio');
+      const icon = document.getElementById('icon-audio-toggle');
+      if (vozHabilitada) {
+        btn.classList.add('active');
+        icon.className = 'fa-solid fa-volume-high';
+        setAvatarStatus('Voz ativada', 'normal');
+      } else {
+        btn.classList.remove('active');
+        icon.className = 'fa-solid fa-volume-xmark';
+        if (synth && synth.speaking) synth.cancel();
+        pararAnimacaoFala();
+        setAvatarStatus('Voz desativada', 'normal');
+      }
+    }
+
+    function setAvatarStatus(texto, estado = 'normal') {
+      const statusEl = document.getElementById('avatar-status');
+      const statusTxt = document.getElementById('avatar-status-text');
+      const waveBars = document.querySelectorAll('.voice-bar');
+
+      statusTxt.textContent = texto;
+      statusEl.className = 'avatar-status-pill ' + estado;
+
+      waveBars.forEach(b => {
+        if (estado === 'speaking' || estado === 'listening') b.classList.add('animating');
+        else b.classList.remove('animating');
+      });
+    }
+
+    function iniciarAnimacaoFala() {
+      isSpeaking = true;
+      setAvatarStatus('Dr. Arthur explicando...', 'speaking');
+    }
+
+    function pararAnimacaoFala() {
+      isSpeaking = false;
+      setAvatarStatus('Pronto para conversar', 'normal');
+    }
+
+    // Speech Synthesis
+    function falarTexto(textoCompleto) {
+      if (!vozHabilitada || !synth) return;
+      synth.cancel();
+
+      // Limpar tags markdown e formatações para leitura fluida
+      const textoLimpo = textoCompleto
+        .replace(/<[^>]*>/g, '')
+        .replace(/\*\*([^*]+)\*\*/g, '$1')
+        .replace(/\*([^*]+)\*/g, '$1')
+        .replace(/`([^`]+)`/g, '$1')
+        .replace(/#+\s/g, '')
+        .replace(/\|/g, ' ')
+        .replace(/-{3,}/g, '')
+        .trim();
+
+      if (!textoLimpo) return;
+
+      const utterance = new SpeechSynthesisUtterance(textoLimpo);
+      utterance.lang = 'pt-BR';
+      utterance.rate = 1.05;
+      utterance.pitch = 0.98;
+
+      // Pegar voz em português se disponível
+      const voices = synth.getVoices();
+      const ptVoice = voices.find(v => v.lang.includes('pt-BR') || v.lang.includes('pt_BR') || v.lang.includes('pt'));
+      if (ptVoice) utterance.voice = ptVoice;
+
+      utterance.onstart = () => {
+        iniciarAnimacaoFala();
+      };
+
+      utterance.onend = () => {
+        pararAnimacaoFala();
+      };
+
+      utterance.onerror = () => {
+        pararAnimacaoFala();
+      };
+
+      synth.speak(utterance);
+    }
+
+    // Speech Recognition
+    function initSpeechRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        console.warn('SpeechRecognition API not supported.');
+        return null;
+      }
+
+      const rec = new SpeechRecognition();
+      rec.lang = 'pt-BR';
+      rec.continuous = false;
+      rec.interimResults = false;
+
+      rec.onstart = () => {
+        gravandoVoz = true;
+        document.getElementById('btn-voice-main').classList.add('recording');
+        document.getElementById('icon-mic-main').className = 'fa-solid fa-waveform-lines';
+        document.getElementById('voice-hint-title').textContent = 'Ouvindo sua pergunta...';
+        document.getElementById('voice-hint-subtitle').textContent = 'Fale claramente ao microfone';
+        setAvatarStatus('Ouvindo...', 'listening');
+      };
+
+      rec.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        if (transcript) {
+          document.getElementById('input-pergunta').value = transcript;
+          enviarPergunta(transcript);
+        }
+      };
+
+      rec.onerror = (event) => {
+        console.warn('Speech error:', event.error);
+        encerrarGravacao();
+      };
+
+      rec.onend = () => {
+        encerrarGravacao();
+      };
+
+      return rec;
+    }
+
+    function toggleMicrofone() {
+      if (!recognition) recognition = initSpeechRecognition();
+      if (!recognition) {
+        alert('Seu navegador não possui suporte a reconhecimento de voz. Por favor, utilize o campo de digitação.');
+        return;
+      }
+
+      if (gravandoVoz) {
+        recognition.stop();
+      } else {
+        if (synth && synth.speaking) synth.cancel();
+        try {
+          recognition.start();
+        } catch (e) {
+          console.warn(e);
+        }
+      }
+    }
+
+    function encerrarGravacao() {
+      gravandoVoz = false;
+      document.getElementById('btn-voice-main').classList.remove('recording');
+      document.getElementById('icon-mic-main').className = 'fa-solid fa-microphone';
+      document.getElementById('voice-hint-title').textContent = 'Falar com o Contador';
+      document.getElementById('voice-hint-subtitle').textContent = 'Clique no microfone e faça sua pergunta em voz alta';
+      setAvatarStatus('Processando resposta...', 'normal');
+    }
+
+    /* ==========================================================
+       5. ENVIO DE MENSAGENS & RESPOSTA INTELIGENTE
+       ========================================================== */
+    function adicionarBolha(remetente, textoHtml, ehMarkdown = false) {
+      const feed = document.getElementById('dialogue-feed');
+      const bolha = document.createElement('div');
+      bolha.className = 'msg-bubble ' + remetente;
+
+      const avatar = document.createElement('div');
+      avatar.className = 'msg-avatar';
+      avatar.innerHTML = remetente === 'bot' ? '<i class="fa-solid fa-user-tie"></i>' : '<i class="fa-solid fa-user"></i>';
+
+      const conteudo = document.createElement('div');
+      conteudo.className = 'msg-content';
+
+      if (ehMarkdown && typeof marked !== 'undefined') {
+        conteudo.innerHTML = marked.parse(textoHtml);
+      } else {
+        conteudo.innerHTML = textoHtml;
+      }
+
+      bolha.appendChild(avatar);
+      bolha.appendChild(conteudo);
+      feed.appendChild(bolha);
+      feed.scrollTop = feed.scrollHeight;
+    }
+
+    function limparHistoricoTela() {
+      const feed = document.getElementById('dialogue-feed');
+      feed.innerHTML = `
+        <div class="msg-bubble bot">
+          <div class="msg-avatar"><i class="fa-solid fa-user-tie"></i></div>
+          <div class="msg-content">
+            <p><strong>Conversa reiniciada.</strong> Como posso ajudar sua empresa agora?</p>
+          </div>
+        </div>
+      `;
+      if (synth && synth.speaking) synth.cancel();
+      pararAnimacaoFala();
+    }
+
+    function perguntarChip(texto) {
+      document.getElementById('input-pergunta').value = texto;
+      enviarPergunta(texto);
+    }
+
+    function enviarMensagemTexto(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById('input-pergunta');
+      const texto = input.value.trim();
+      if (!texto) return;
+      input.value = '';
+      enviarPergunta(texto);
+    }
+
+    async function enviarPergunta(perguntaTexto) {
+      adicionarBolha('user', perguntaTexto);
+
+      // Animação de pensamento
+      setAvatarStatus('Dr. Arthur pensando...', 'speaking');
+      nodHead();
+
+      // Indicador de digitação
+      const feed = document.getElementById('dialogue-feed');
+      const loadingBubble = document.createElement('div');
+      loadingBubble.className = 'msg-bubble bot';
+      loadingBubble.id = 'bubble-loading';
+      loadingBubble.innerHTML = `
+        <div class="msg-avatar"><i class="fa-solid fa-user-tie"></i></div>
+        <div class="msg-content"><p><i class="fa-solid fa-spinner fa-spin"></i> Consultando dados contábeis...</p></div>
+      `;
+      feed.appendChild(loadingBubble);
+      feed.scrollTop = feed.scrollHeight;
+
+      try {
+        const selectTabela = document.getElementById('seletorPlanilhaIa3D');
+        const tabelaId = selectTabela ? selectTabela.value : 'todas';
+
+        const resposta = await fetch('/api/chatbot/perguntar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mensagem: perguntaTexto,
+            origem: 'assistente_virtual_3d',
+            tabela_id: tabelaId
+          })
+        });
+
+        const json = await resposta.json();
+
+        // Remove loading
+        const lb = document.getElementById('bubble-loading');
+        if (lb) lb.remove();
+
+        const respostaTexto = json.resposta || json.mensagem || 'Analisando os registros da sua empresa, percebo que manter a consistência no controle diário de faturamento e despesas é essencial para otimizar suas margens.';
+
+        adicionarBolha('bot', respostaTexto, true);
+        falarTexto(respostaTexto);
+
+      } catch (err) {
+        console.error('Erro na requisição da IA:', err);
+        const lb = document.getElementById('bubble-loading');
+        if (lb) lb.remove();
+
+        const erroTexto = 'Tive uma oscilação na consulta direta, mas com base no perfil contábil padrão, recomendo manter a proporção de despesas operacionais abaixo de 60% da receita para garantir liquidez saudável.';
+        adicionarBolha('bot', erroTexto, false);
+        falarTexto(erroTexto);
+      }
+    }
+
+    /* ==========================================================
+       6. INICIALIZAÇÃO
+       ========================================================== */
+    async function configurarSeletorPlanilhaIa3D() {
+      const select = document.getElementById('seletorPlanilhaIa3D');
+      if (!select) return;
+      try {
+        const resp = await fetch('/api/planilhas/sumario');
+        if (!resp.ok) return;
+        const json = await resp.json();
+        const planilhas = json.planilhas || [];
+        
+        select.innerHTML = '';
+        const optTodas = document.createElement('option');
+        optTodas.value = 'todas';
+        optTodas.textContent = `🌐 Todas as Planilhas (${planilhas.length})`;
+        select.appendChild(optTodas);
+        
+        planilhas.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            const icone = p.tipo_fluxo === 'saida' ? '🔻' : (p.tipo_fluxo === 'entrada' ? '🟢' : '📁');
+            opt.textContent = `${icone} [${p.dominio_label}] ${p.nome}`;
+            select.appendChild(opt);
+        });
+
+        const salva = localStorage.getItem('DataInsight_DashboardPlanilha');
+        if (salva && (salva === 'todas' || planilhas.some(p => p.id === salva))) {
+            select.value = salva;
+        }
+
+        select.addEventListener('change', e => {
+            localStorage.setItem('DataInsight_DashboardPlanilha', e.target.value);
+        });
+      } catch (e) {
+        console.warn('Aviso ao carregar planilhas na IA 3D:', e);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      init3DAvatar();
+      carregarSnapshotFinanceiro();
+      configurarSeletorPlanilhaIa3D();
+
+      // Precarregar vozes do sintetizador
+      if (window.speechSynthesis) {
+        window.speechSynthesis.getVoices();
+      }
+    });
+  </script>
+</body>
+
+</html>

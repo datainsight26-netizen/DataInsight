@@ -218,8 +218,11 @@
                         <p class="p">Converse com seu Analista, Cientista de Dados e Consultor Virtual.</p>
                     </header>
 
+                
+
                     <!-- Container principal com cabeçalho de botões de tela cheia -->
-                    <div class="fullscreen-header">
+                    <div class="fullscreen-header" style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 12px;">
+                      
                         <button id="btn-fullscreen" class="fullscreen-btn" title="Tela Cheia">
                             <i class="fa-solid fa-expand"></i> Tela Cheia
                         </button>
@@ -227,7 +230,22 @@
 
                     <div class="page-ia-container" style="flex-direction: row; gap: 20px;">
                         <div class="chat-sidebar"
-                            style="width: 210px; background: var(--cartao); border-radius: 12px; border: 1px solid var(--borda); padding: 15px; display: flex; flex-direction: column; gap: 15px;">
+                            style="width: 220px; background: var(--cartao); border-radius: 12px; border: 1px solid var(--borda); padding: 15px; display: flex; flex-direction: column; gap: 12px;">
+                            
+                            <!-- SELETOR DE ESCOPO / PLANILHA DA IA -->
+                            <div>
+                                <label for="seletorPlanilhaIa" style="font-size: 11.5px; font-weight: 700; color: var(--suave); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; display: flex; align-items: center; gap: 5px;">
+                                    <i class="fa-solid fa-database" style="color: var(--primaria);"></i> Base de Dados:
+                                </label>
+                                <select id="seletorPlanilhaIa" class="entrada" style="width: 100%; font-size: 12px; font-weight: 600; padding: 6px 8px; border-radius: 6px;">
+                                    <option value="todas">🌐 Todas as Planilhas</option>
+                                </select>
+                            </div>
+
+                            <!-- <a href="{{ url_for('pagina_assistente_virtual') }}"
+                                style="background: linear-gradient(135deg, #3B82F6, #8B5CF6); color: white; border: none; padding: 10px; border-radius: 8px; width: 100%; cursor: pointer; text-align: center; text-decoration: none; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);"><i
+                                    class="fa-solid fa-user-tie"></i> Assistente 3D</a> -->
+
                             <button id="btn-nova-conversa"
                                 style="background: var(--primaria); color: white; border: none; padding: 10px; border-radius: 8px; width: 100%; cursor: pointer;"><i
                                     class="fa-solid fa-plus"></i> Nova Conversa</button>
@@ -237,9 +255,9 @@
                                 <i class="fa-solid fa-compress"></i> Sair da Tela Cheia
                             </button>
 
-                            <hr style="border-color: var(--borda);">
+                            <hr style="border-color: var(--borda); margin: 0;">
                             <div style="flex: 1; overflow-y: auto;">
-                                <p
+                                <!-- <p
                                     style="font-size: 13px; color: var(--muted); font-weight: bold; margin-bottom: 10px;">
                                     GALERIAS</p>
                                 <button id="btn-galeria-graficos"
@@ -247,7 +265,7 @@
                                         class="fa-solid fa-chart-area"></i> Gráficos</button>
                                 <button id="btn-galeria-arquivos"
                                     style="background: transparent; border: none; color: var(--texto); text-align: left; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 13px; width: 100%; transition: 0.2s;"><i
-                                        class="fa-solid fa-file-pdf"></i> Arquivos & PDFs</button>
+                                        class="fa-solid fa-file-pdf"></i> Arquivos & PDFs</button> -->
 
                                 <p
                                     style="font-size: 13px; color: var(--muted); font-weight: bold; margin-bottom: 10px; margin-top: 20px;">

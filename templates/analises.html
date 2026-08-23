@@ -86,22 +86,43 @@
                         <p class="p">Análise detalhada de desempenho com comparação entre períodos.</p>
                     </header>
 
-                    <!-- FILTROS AVANÇADOS -->
+                    <!-- FILTROS AVANÇADOS COM SELETOR MULTI-PLANILHA -->
                     <section class="cartao" aria-label="Filtros">
-                        <h2 class="h2">Filtros</h2>
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                            <h2 class="h2" style="margin:0;">Filtros & Origem dos Dados</h2>
+                            <div id="analiseStatusFontesContainer" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                                <span class="badge" style="background:rgba(59,130,246,0.12); color:#3b82f6; border:1px solid rgba(59,130,246,0.25); padding:4px 10px; border-radius:14px; font-size:0.75rem; font-weight:600;">
+                                    <i class="fa-solid fa-layer-group"></i> Analisando dados
+                                </span>
+                            </div>
+                        </div>
 
                         <div class="grade grade--3" style="margin-top:16px;">
                             <div class="campo">
-                                <label for="periodo-inicio">Período - Início</label>
+                                <label for="seletorPlanilhaAnalise">
+                                    <i class="fa-solid fa-table-list" style="color:var(--primaria); margin-right:4px;"></i>
+                                    Origem dos Dados
+                                </label>
+                                <select class="entrada" id="seletorPlanilhaAnalise" style="font-weight:600;">
+                                    <option value="todas">🌐 Todas as Planilhas (Visão Consolidada)</option>
+                                </select>
+                            </div>
+
+                            <div class="campo">
+                                <label for="data-inicio">
+                                    <i class="fa-solid fa-calendar-days" style="color:var(--primaria); margin-right:4px;"></i>
+                                    Período - Início
+                                </label>
                                 <input type="date" class="entrada" id="data-inicio" />
                             </div>
 
                             <div class="campo">
-                                <label for="periodo-fim">Período - Fim</label>
+                                <label for="data-fim">
+                                    <i class="fa-solid fa-calendar-days" style="color:var(--primaria); margin-right:4px;"></i>
+                                    Período - Fim
+                                </label>
                                 <input type="date" class="entrada" id="data-fim" />
                             </div>
-
-
                         </div>
 
                         <div style="display:flex; gap: 12px; flex-wrap: wrap; margin-top: 16px;">
@@ -412,39 +433,39 @@
             </div>
           </section>
 
-                    <!-- EXPLICAÇÃO DA MÉTRICA -->
+                    <!-- EXPLICAÇÃO DA MÉTRICA
                     <section class="cartao" aria-label="Explicação das métricas" style="margin-top: 24px;">
                         <h2 class="h2" style="margin-bottom: 16px;">O que significa cada métrica?</h2>
 
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
 
-                            <!-- Faturamento -->
-                            <div
+                            <!- Faturamento -->
+                            <!-- <div
                                 style="padding: 16px; border-left: 4px solid var(--primaria); background: rgba(59, 130, 246, 0.05);">
                                 <h3 class="h3" style="margin-top: 0; color: var(--primaria);">Faturamento</h3>
                                 <p class="p">A receita bruta total gerada pelas vendas ou serviços, antes de descontos
                                     fiscais e despesas. É o primeiro indicador de volume de negócios.</p>
-                            </div>
+                            </div> -->
 
                             <!-- Despesas -->
-                            <div
+                            <!-- <div
                                 style="padding: 16px; border-left: 4px solid var(--perigo); background: rgba(220, 38, 38, 0.05);">
                                 <h3 class="h3" style="margin-top: 0; color: var(--perigo);">Despesas</h3>
                                 <p class="p">Todos os custos operacionais necessários para manter o negócio funcionando
                                     (salários, fornecedores, aluguel, etc.). Reduzir despesas melhora a rentabilidade.
                                 </p>
-                            </div>
+                            </div> -->
 
                             <!-- Lucro -->
-                            <div
+                            <!-- <div
                                 style="padding: 16px; border-left: 4px solid var(--sucesso); background: rgba(22, 163, 74, 0.05);">
                                 <h3 class="h3" style="margin-top: 0; color: var(--sucesso);">Lucro</h3>
                                 <p class="p">O resultado positivo após subtrair todas as despesas do faturamento. É o
                                     objetivo final e indica se o negócio é rentável.</p>
-                            </div>
+                            </div> -->
 
                             <!-- Margem Líquida -->
-                            <div
+                            <!-- <div
                                 style="padding: 16px; border-left: 4px solid var(--aviso); background: rgba(217, 119, 6, 0.05);">
                                 <h3 class="h3" style="margin-top: 0; color: var(--aviso);">Margem Líquida</h3>
                                 <p class="p">Percentual do faturamento que se converte em lucro. Quanto maior, melhor a
@@ -452,47 +473,47 @@
                             </div>
 
                         </div>
-                    </section>
+                    </section> --> 
 
 
-                    <section class="cartao"
+                    <!-- <section class="cartao"
                         style="margin-top: 48px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05)); border-left: 4px solid var(--primaria);">
 
                         <h2 class="h2">Insights e Recomendações</h2>
 
                         <div style="margin-top: 16px;">
 
-                            <!-- Crescimento -->
-                            <div
+                            <!-Crescimento -->
+                            <!-- <div
                                 style="background: var(--cartao); padding: 16px; border-radius: var(--raio); margin-bottom: 12px; border-left: 3px solid var(--sucesso);">
                                 <p class="p">
                                     <strong>✓ Crescimento Sustentável:</strong> O faturamento cresceu 12.5% enquanto as
                                     despesas aumentaram apenas 8.3%, resultando em ganho real de eficiência e expansão
                                     do lucro.
                                 </p>
-                            </div>
+                            </div> -->
 
                             <!-- Margem -->
-                            <div
+                            <!-- <div
                                 style="background: var(--cartao); padding: 16px; border-radius: var(--raio); margin-bottom: 12px; border-left: 3px solid var(--sucesso);">
                                 <p class="p">
                                     <strong>✓ Melhoria de Margem:</strong> A margem líquida aumentou em 2.6 pontos
                                     percentuais, indicando maior controle operacional e melhor conversão de receita em
                                     lucro.
                                 </p>
-                            </div>
+                            </div> -->
 
                             <!-- Tendência -->
-                            <div
+                            <!-- <div
                                 style="background: var(--cartao); padding: 16px; border-radius: var(--raio); margin-bottom: 12px; border-left: 3px solid var(--info);">
                                 <p class="p">
                                     <strong>→ Tendência Positiva:</strong> O crescimento do lucro (15.2%) está acima do
                                     crescimento da receita, mostrando escalabilidade e eficiência no modelo de negócio.
                                 </p>
-                            </div>
+                            </div> -->
 
                             <!-- Atenção -->
-                            <div
+                            <!-- <div
                                 style="background: var(--cartao); padding: 16px; border-radius: var(--raio); border-left: 3px solid var(--aviso);">
                                 <p class="p">
                                     <strong>⚠ Ponto de Atenção:</strong> Apesar do crescimento controlado, o aumento
@@ -502,7 +523,7 @@
                             </div>
 
                         </div>
-                    </section>
+                    </section> -->
                     <!-- Footer -->
                     {% include 'partials/footer.html' %}
             </main>

@@ -5,11 +5,20 @@
     </button>
     <div id="chatbot-card" class="chatbot-card hidden">
         <div class="chatbot-header" id="chatbot-drag-handle">
-            <div class="chatbot-title">
-                <i class="fa-solid fa-robot"></i>
-                <span>Assistente DataInsight</span>
+            <div style="display:flex; flex-direction:column; gap:4px; width:100%;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div class="chatbot-title">
+                        <i class="fa-solid fa-robot"></i>
+                        <span>Assistente DataInsight</span>
+                    </div>
+                    <button id="chatbot-close" class="chatbot-close-btn" aria-label="Fechar">&times;</button>
+                </div>
+                <div style="padding-right: 20px;">
+                    <select id="chatbot-seletor-planilha" style="width: 100%; font-size: 0.75rem; padding: 4px; border-radius: 100px; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2);">
+                        <option value="todas" style="color: black;">🌐 Todas as Planilhas</option>
+                    </select>
+                </div>
             </div>
-            <button id="chatbot-close" class="chatbot-close-btn" aria-label="Fechar">&times;</button>
         </div>
         <div class="chatbot-messages" id="chatbot-messages">
             <div class="message bot">
@@ -839,7 +848,7 @@ body.tema-escuro .chatbot-input-area input {
         let iniciarAposFala = false;
         let currentRequestId = 0;
         let latestRequestId = 0;
-        let vozAtiva = localStorage.getItem('vozAtiva') !== 'false';
+        let vozAtiva = false;
         let vozAtivaNoBrowser = ('webkitSpeechRecognition' in window) || ('SpeechRecognition' in window);
         
         let currentAudio = null;
@@ -852,13 +861,53 @@ body.tema-escuro .chatbot-input-area input {
         const CHATBOT_STORAGE_OPEN = 'chatbotOpen';
         const CHATBOT_STORAGE_POSITION = 'chatbotPosition';
         const CHATBOT_STORAGE_SIZE = 'chatbotSize';
-        const CHATBOT_STORAGE_MESSAGES = 'chatbotMessages';
-        const CHATBOT_SESSION_ID = 'chatbotSessionId';
+        const CHATBOT_MESSAGES_KEY = 'chatbotMessages';
+        const CHATBOT_SESSION_KEY = 'chatbotSessionId';
+        const CHATBOT_SPEECH_ENABLED_KEY = 'chatbotSpeechEnabled';
+
+        // CARREGAR PLANILHAS
+        async function configurarSeletorPlanilhaChatbotFlutuante() {
+            const select = document.getElementById('chatbot-seletor-planilha');
+            if (!select) return;
+            try {
+                const resp = await fetch('/api/planilhas/sumario');
+                if (!resp.ok) return;
+                const json = await resp.json();
+                const planilhas = json.planilhas || [];
+                
+                select.innerHTML = '';
+                const optTodas = document.createElement('option');
+                optTodas.value = 'todas';
+                optTodas.style.color = 'black';
+                optTodas.textContent = `🌐 Todas as Planilhas (${planilhas.length})`;
+                select.appendChild(optTodas);
+                
+                planilhas.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.style.color = 'black';
+                    const icone = p.tipo_fluxo === 'saida' ? '🔻' : (p.tipo_fluxo === 'entrada' ? '🟢' : '📁');
+                    opt.textContent = `${icone} [${p.dominio_label}] ${p.nome}`;
+                    select.appendChild(opt);
+                });
+
+                const salva = localStorage.getItem('DataInsight_DashboardPlanilha');
+                if (salva && (salva === 'todas' || planilhas.some(p => p.id === salva))) {
+                    select.value = salva;
+                }
+
+                select.addEventListener('change', e => {
+                    localStorage.setItem('DataInsight_DashboardPlanilha', e.target.value);
+                });
+            } catch (e) {
+                console.warn('Aviso ao carregar planilhas no chatbot flutuante:', e);
+            }
+        }
+
         const CHATBOT_MIN_WIDTH = 300;
         const CHATBOT_MIN_HEIGHT = 320;
-
-        let currentSessionId = sessionStorage.getItem(CHATBOT_SESSION_ID) || Date.now().toString();
-        sessionStorage.setItem(CHATBOT_SESSION_ID, currentSessionId);
+        let currentSessionId = sessionStorage.getItem(CHATBOT_SESSION_KEY) || Date.now().toString();
+        sessionStorage.setItem(CHATBOT_SESSION_KEY, currentSessionId);
 
         function aplicarPosicaoSalva(pos) {
             if (!pos || typeof pos !== 'object') return;
@@ -1173,15 +1222,7 @@ body.tema-escuro .chatbot-input-area input {
         }
 
         function registrarAjudaContextual() {
-            document.body.addEventListener('dblclick', (event) => {
-                const elemento = event.target.closest('[data-ia-help]');
-                if (!elemento) return;
-                if (elemento.closest('.chatbot-wrapper')) return;
-                const chave = elemento.dataset.iaHelp;
-                const titulo = elemento.dataset.iaHelpTitle;
-                const descricao = elemento.dataset.iaHelpDescription;
-                mostrarAjudaChatbot(chave, elemento, titulo, descricao);
-            });
+            // Recurso de duplo clique para abrir a IA foi desativado
         }
 
         function abrirChatbot(comSom = true) {
@@ -1206,6 +1247,18 @@ body.tema-escuro .chatbot-input-area input {
             messagesContainer.innerHTML = '<div class="message bot">Olá! Sou o assistente inteligente do DataInsight. Como posso ajudar você hoje?</div>';
         }
 
+        function carregarSessoesAntigas(data) {
+            const savedSession = sessionStorage.getItem(CHATBOT_SESSION_KEY) || localStorage.getItem(CHATBOT_SESSION_KEY);
+            if (!savedSession && data && data.sessoes && data.sessoes.length > 0) {
+                currentSessionId = data.sessoes[0].sessao_id;
+                sessionStorage.setItem(CHATBOT_SESSION_KEY, currentSessionId);
+                localStorage.setItem(CHATBOT_SESSION_KEY, currentSessionId);
+            } else if (!savedSession) {
+                sessionStorage.setItem(CHATBOT_SESSION_KEY, currentSessionId);
+                localStorage.setItem(CHATBOT_SESSION_KEY, currentSessionId);
+            }
+        }
+
         function carregarEstadoChatbot() {
             const aberto = localStorage.getItem(CHATBOT_STORAGE_OPEN);
             const pos = JSON.parse(localStorage.getItem(CHATBOT_STORAGE_POSITION) || 'null');
@@ -1213,14 +1266,14 @@ body.tema-escuro .chatbot-input-area input {
             const isIaPage = window.location.pathname.endsWith('/ia');
             if (pos) aplicarPosicaoSalva(pos);
             if (size) aplicarTamanhoSalvo(size);
-            const savedSession = sessionStorage.getItem(CHATBOT_SESSION_ID) || localStorage.getItem(CHATBOT_SESSION_ID);
+            const savedSession = sessionStorage.getItem(CHATBOT_SESSION_KEY) || localStorage.getItem(CHATBOT_SESSION_KEY);
             if (savedSession) {
                 currentSessionId = savedSession;
-                sessionStorage.setItem(CHATBOT_SESSION_ID, currentSessionId);
-                localStorage.setItem(CHATBOT_SESSION_ID, currentSessionId);
+                sessionStorage.setItem(CHATBOT_SESSION_KEY, currentSessionId);
+                localStorage.setItem(CHATBOT_SESSION_KEY, currentSessionId);
             } else {
-                sessionStorage.setItem(CHATBOT_SESSION_ID, currentSessionId);
-                localStorage.setItem(CHATBOT_SESSION_ID, currentSessionId);
+                sessionStorage.setItem(CHATBOT_SESSION_KEY, currentSessionId);
+                localStorage.setItem(CHATBOT_SESSION_KEY, currentSessionId);
             }
             if (aberto === 'true') {
                 abrirChatbot(false);
@@ -1427,14 +1480,14 @@ body.tema-escuro .chatbot-input-area input {
                 });
             });
             const payload = JSON.stringify(messages);
-            sessionStorage.setItem(CHATBOT_STORAGE_MESSAGES, payload);
-            localStorage.setItem(CHATBOT_STORAGE_MESSAGES, payload);
+            sessionStorage.setItem(CHATBOT_MESSAGES_KEY, payload);
+            localStorage.setItem(CHATBOT_MESSAGES_KEY, payload);
         }
 
         function carregarMensagensSalvas() {
-            let saved = sessionStorage.getItem(CHATBOT_STORAGE_MESSAGES);
+            let saved = sessionStorage.getItem(CHATBOT_MESSAGES_KEY);
             if (!saved) {
-                saved = localStorage.getItem(CHATBOT_STORAGE_MESSAGES);
+                saved = localStorage.getItem(CHATBOT_MESSAGES_KEY);
             }
             if (!saved) return;
             try {
@@ -1872,11 +1925,15 @@ body.tema-escuro .chatbot-input-area input {
             try {
                 pararMicrofoneParaFala();
                 console.log('Enviando texto para o chatbot:', textoLimpo, 'sessao_id=', currentSessionId);
+                
+                const selectPlanilha = document.getElementById('chatbot-seletor-planilha');
+                const tabelaId = selectPlanilha ? selectPlanilha.value : 'todas';
+
                 const resposta = await fetch('/api/chatbot/perguntar', {
                     method: 'POST',
                     credentials: 'same-origin',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ mensagem: textoLimpo, sessao_id: currentSessionId }),
+                    body: JSON.stringify({ mensagem: textoLimpo, sessao_id: currentSessionId, tabela_id: tabelaId }),
                     signal: abortController.signal
                 });
 
@@ -1958,6 +2015,9 @@ body.tema-escuro .chatbot-input-area input {
                 recognition = null;
             }
         });
+
+        // Carregar opções de planilhas no seletor do chatbot
+        configurarSeletorPlanilhaChatbotFlutuante();
 
     }
 
