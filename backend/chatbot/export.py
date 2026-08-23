@@ -89,7 +89,7 @@ def exportar_dados_usuario(tipo: str):
         return "Não autorizado", 401
 
     try:
-        documento = dados_colecao.find_one({"usuario_id": usuario_id}, sort=[("criado_em", -1)])
+        documento = dados_colecao.find_one({"usuario_id": usuario_id}, sort=[("atualizado_em", -1), ("criado_em", -1)])
         if not documento or not documento.get("dados"):
             return "Nenhum dado encontrado", 404
 

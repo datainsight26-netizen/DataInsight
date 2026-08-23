@@ -16,41 +16,88 @@ def _normalizar(texto):
 
 def limpar_e_converter_numero(val):
     """Converte valores numéricos bagunçados (com símbolos monetários, vírgula como decimal) para float."""
-    if pd.isna(val) or val == "" or str(val).strip().lower() in ("nan", "none", "null"):
+    if pd.isna(val) or val == "" or str(val).strip().lower() in ("nan", "none", "null", "-", "n/a", "n.a."):
         return 0.0
     val_str = str(val).strip()
-    val_str = re.sub(r'[R\$\€\s]', '', val_str)
+    # Remove símbolos monetários, espaços e caracteres especiais comuns
+    val_str = re.sub(r'[R\$\€\£\s]', '', val_str)
     
     if not val_str:
         return 0.0
-        
+
+    # Detecta formato: 1.234,56 (PT-BR) vs 1,234.56 (EN)
     if '.' in val_str and ',' in val_str:
         if val_str.find('.') < val_str.find(','):
+            # Formato PT-BR: 1.234,56
             val_str = val_str.replace('.', '').replace(',', '.')
         else:
+            # Formato EN: 1,234.56
             val_str = val_str.replace(',', '')
     elif ',' in val_str:
         parts = val_str.split(',')
         if len(parts) == 2 and len(parts[1]) <= 2:
+            # Decimal com vírgula: 1234,56
             val_str = val_str.replace(',', '.')
         else:
+            # Separador de milhar: 1,234,567
             val_str = val_str.replace(',', '')
     elif '.' in val_str:
         parts = val_str.split('.')
         if len(parts) == 2 and len(parts[1]) == 3:
+            # Separador de milhar: 1.234
             val_str = val_str.replace('.', '')
-            
+        # else: decimal normal 1234.56, não altera
+
     try:
         num = float(pd.to_numeric(val_str, errors='coerce'))
         return num if not np.isnan(num) else 0.0
     except Exception:
         return 0.0
+
+
+def converter_para_tipos_nativos(registros):
+    """
+    Converte estruturas de dados com tipos numpy (int64, float64, bool_, NaN) 
+    para tipos Python puros compatíveis 100% com PyMongo BSON.
+    """
+    import math
+    if not isinstance(registros, list):
+        return registros
+    limpos = []
+    for reg in registros:
+        if not isinstance(reg, dict):
+            continue
+        novo = {}
+        for k, v in reg.items():
+            if v is None:
+                novo[str(k)] = ""
+            elif isinstance(v, (np.floating, float)):
+                if math.isnan(v) or math.isinf(v):
+                    novo[str(k)] = ""
+                else:
+                    novo[str(k)] = float(v)
+            elif isinstance(v, (np.integer, int)):
+                novo[str(k)] = int(v)
+            elif isinstance(v, (np.bool_, bool)):
+                novo[str(k)] = bool(v)
+            elif isinstance(v, str):
+                novo[str(k)] = v
+            else:
+                novo[str(k)] = str(v)
+        limpos.append(novo)
+    return limpos
+
+
 # =====================================================
 
 def encontrar_coluna_data(df: pd.DataFrame) -> Optional[str]:
     """Retorna o nome da coluna de data, se existir."""
-    colunas_possiveis = ["data", "date", "data_criacao", "data_nascimento"]
-    return next((col for col in df.columns if col.lower() in colunas_possiveis), None)
+    padroes_data = ['data', 'date', 'periodo', 'period', 'mes', 'month', 'ano', 'year', 'dia', 'day']
+    for col in df.columns:
+        col_norm = _normalizar(col)
+        if any(p == col_norm or col_norm.startswith(p) for p in padroes_data):
+            return col
+    return None
 
 
 def converter_datas(df: pd.DataFrame, coluna: str) -> pd.DataFrame:
@@ -69,24 +116,36 @@ def converter_datas(df: pd.DataFrame, coluna: str) -> pd.DataFrame:
 
 
 def detectar_tipo_coluna(serie: pd.Series) -> str:
-    """Identifica o tipo predominante da coluna."""
+    """
+    Identifica o tipo predominante da coluna com base em threshold:
+    - 'numerico': ≥60% dos valores são numéricos
+    - 'data': ≥60% dos valores são datas válidas
+    - 'texto': caso contrário
+    - 'vazio': coluna sem valores
+    """
     valores = serie.dropna()
+    # Também remover strings vazias
+    if hasattr(valores, 'str'):
+        valores = valores[valores.astype(str).str.strip() != '']
 
-    if valores.empty:
+    if len(valores) == 0:
         return "vazio"
 
-    # Teste numérico
-    try:
-        pd.to_numeric(valores)
-        return "numerico"
-    except:
-        pass
+    total = len(valores)
 
-    # Teste data
+    # Teste numérico: tenta converter e verifica percentual de sucesso
+    numericos = pd.to_numeric(valores, errors='coerce')
+    qtd_numericos = numericos.notna().sum()
+    if qtd_numericos / total >= 0.60:
+        return "numerico"
+
+    # Teste data: verifica percentual de datas válidas (sem contabilizar NaT como datas)
     try:
-        pd.to_datetime(valores, errors="coerce", dayfirst=True)
-        return "data"
-    except:
+        datas = pd.to_datetime(valores, errors='coerce', dayfirst=True)
+        qtd_datas = datas.notna().sum()
+        if qtd_datas / total >= 0.60:
+            return "data"
+    except Exception:
         pass
 
     return "texto"
@@ -109,152 +168,74 @@ def validar_completude_dados(df: pd.DataFrame) -> float:
 
 def preencher_inteligente(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Preenche valores vazios:
-    - Numéricos → média
-    - Texto → moda
+    Preenche valores vazios de forma conservadora:
+    - Numéricos com ≤20% de nulos → média
+    - Texto com ≤20% de nulos → moda
+    - Mais de 20%: não preenche para evitar distorção
     """
     df = df.copy()
 
     for col in df.columns:
-        vazios = df[col].isna() | (df[col] == "")
-        total_vazios = vazios.sum()
+        # Considera NaN e strings vazias como vazios
+        mascara_vazio = df[col].isna() | (df[col].astype(str).str.strip() == '')
+        total_vazios = mascara_vazio.sum()
 
         if total_vazios == 0:
             continue
 
         percentual = (total_vazios / len(df)) * 100
-        if percentual > 50:
-            continue  # evita distorção
+        if percentual > 20:
+            continue  # evita distorção significativa
 
         tipo = detectar_tipo_coluna(df[col])
 
-        # =========================
-        # NUMÉRICO → MÉDIA
-        # =========================
         if tipo == "numerico":
             valores = pd.to_numeric(df[col], errors="coerce")
             media = valores.mean()
 
             if not np.isnan(media):
-                df.loc[vazios, col] = media
-                print(f"[OK] {col}: {total_vazios} preenchidos com media ({media:.2f})")
+                df.loc[mascara_vazio, col] = round(media, 2)
+                print(f"[OK] {col}: {total_vazios} nulo(s) preenchido(s) com média ({media:.2f})")
 
-        # =========================
-        # TEXTO → MODA
-        # =========================
         elif tipo == "texto":
-            valores_validos = df.loc[~vazios, col]
+            valores_validos = df.loc[~mascara_vazio, col]
 
             if not valores_validos.empty:
                 moda = valores_validos.mode()
 
                 if not moda.empty:
                     valor = moda.iloc[0]
-                    df.loc[vazios, col] = valor
-                    print(f"[OK] {col}: {total_vazios} preenchidos com moda ('{valor}')")
+                    df.loc[mascara_vazio, col] = valor
+                    print(f"[OK] {col}: {total_vazios} nulo(s) preenchido(s) com moda ('{valor}')")
 
     return df
 
 
 # =====================================================
-# LIMPEZA PRINCIPAL
+# LIMPEZA CONSERVADORA (NÃO RENOMEIA COLUNAS)
 # =====================================================
 
-def limpar_dados(df: pd.DataFrame) -> pd.DataFrame:
+def limpar_dados_conservador(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Limpeza conservadora com melhoria estatística:
-    - Mapeia e alinha automaticamente colunas bagunçadas
-    - Calcula valores ausentes (Lucro = Faturamento - Despesas, etc.)
-    - Remove espaços e resolve duplicatas
-    - Remove linhas totalmente vazias
-    - Formata datas
-    - Preenche dados automaticamente
+    Limpeza conservadora que PRESERVA os nomes originais das colunas do usuário.
+    Realiza apenas:
+    1. Remove espaços extras em células de texto
+    2. Remove linhas completamente vazias
+    3. Converte datetime para string (evitar erros BSON)
+    4. Preenche nulos conservadoramente (≤20%)
+    5. Garante que numéricos e textos não fiquem com NaN no final
+    
+    NÃO renomeia colunas, NÃO calcula campos derivados.
     """
-
     if df.empty:
         return df
 
     df = df.copy()
 
-    # ============================================================
-    # 1. AUTO-MAPEAMENTO E ALINHAMENTO DE COLUNAS BAGUNÇADAS
-    # ============================================================
+    # 1. Remover espaços extras nos nomes de colunas
     df.columns = [str(col).strip() for col in df.columns]
 
-    # Dicionário de sinônimos/aliases normalizados para mapear para as colunas core
-    aliases_mapeamento = {
-        "Faturamento": [r'faturamento', r'receita', r'venda', r'total', r'entrada', r'faturado', r'revenue', r'sales', r'income', r'val.*faturado'],
-        "Despesas": [r'despesa', r'gasto', r'custo', r'saida', r'expense', r'cost', r'outgoing', r'val.*gasto', r'val.*despesa'],
-        "Lucro": [r'lucro', r'profit', r'ganho', r'net_profit', r'lucro_liquido', r'sobrou'],
-        "Período": [r'periodo', r'data', r'date', r'mes', r'ano', r'dia', r'time', r'timestamp'],
-        "Produto": [r'produto', r'product', r'item', r'mercadoria', r'sku', r'nome_produto', r'nome do produto']
-    }
-
-    mapeamento_encontrado = {}
-    colunas_usadas = set()
-
-    for padrao, aliases in aliases_mapeamento.items():
-        for col in df.columns:
-            if col in colunas_usadas:
-                continue
-            col_norm = _normalizar(col)
-            if any(re.search(alias, col_norm) for alias in aliases):
-                mapeamento_encontrado[col] = padrao
-                colunas_usadas.add(col)
-                break
-
-    if mapeamento_encontrado:
-        df = df.rename(columns=mapeamento_encontrado)
-        print(f"[AUTO-MAP] Mapeadas colunas por alias: {mapeamento_encontrado}")
-
-    # Fallback por tipo para colunas essenciais ausentes
-    colunas_financeiras = ["Faturamento", "Despesas", "Lucro"]
-    colunas_ausentes = [c for c in colunas_financeiras if c not in df.columns]
-
-    if colunas_ausentes:
-        colunas_restantes = [col for col in df.columns if col not in ["Faturamento", "Despesas", "Lucro", "Período", "Produto"]]
-        numericas_restantes = [col for col in colunas_restantes if detectar_tipo_coluna(df[col]) == "numerico"]
-        for col_ausente in colunas_ausentes:
-            if numericas_restantes:
-                col_para_mapear = numericas_restantes.pop(0)
-                df = df.rename(columns={col_para_mapear: col_ausente})
-                print(f"[AUTO-MAP] Coluna numérica '{col_para_mapear}' mapeada por tipo para '{col_ausente}'")
-
-    # Mapeamento do Período por tipo caso esteja ausente
-    if "Período" not in df.columns:
-        colunas_restantes = [col for col in df.columns if col not in ["Faturamento", "Despesas", "Lucro", "Período", "Produto"]]
-        datas_restantes = [col for col in colunas_restantes if detectar_tipo_coluna(df[col]) == "data"]
-        if datas_restantes:
-            col_para_mapear = datas_restantes[0]
-            df = df.rename(columns={col_para_mapear: "Período"})
-            print(f"[AUTO-MAP] Coluna de data '{col_para_mapear}' mapeada por tipo para 'Período'")
-        else:
-            from datetime import datetime
-            hoje = datetime.now().strftime("%Y-%m-%d")
-            df["Período"] = hoje
-            print(f"[AUTO-MAP] Criada coluna 'Período' com data padrão '{hoje}'")
-
-    # Garante que as três colunas financeiras existem no DataFrame
-    for col in ["Faturamento", "Despesas", "Lucro"]:
-        if col not in df.columns:
-            df[col] = 0.0
-            print(f"[AUTO-MAP] Criada coluna financeira vazia '{col}'")
-
-    # Limpar e converter dados das colunas financeiras para float
-    for col in ["Faturamento", "Despesas", "Lucro"]:
-        df[col] = df[col].apply(limpar_e_converter_numero).astype(float)
-
-    # Reconstruir/calcular dados cruzados ausentes (ex: Lucro = Faturamento - Despesas)
-    cond_lucro = (df["Lucro"] == 0) | df["Lucro"].isna()
-    df.loc[cond_lucro, "Lucro"] = df.loc[cond_lucro, "Faturamento"] - df.loc[cond_lucro, "Despesas"]
-
-    cond_despesas = (df["Despesas"] == 0) | df["Despesas"].isna()
-    df.loc[cond_despesas, "Despesas"] = df.loc[cond_despesas, "Faturamento"] - df.loc[cond_despesas, "Lucro"]
-
-    cond_faturamento = (df["Faturamento"] == 0) | df["Faturamento"].isna()
-    df.loc[cond_faturamento, "Faturamento"] = df.loc[cond_faturamento, "Despesas"] + df.loc[cond_faturamento, "Lucro"]
-
-    # Resolver colunas duplicadas após remoção de espaços em branco e mapeamento
+    # Resolver colunas duplicadas após remoção de espaços
     colunas_unicas = []
     contadores = {}
     for col in df.columns:
@@ -266,68 +247,69 @@ def limpar_dados(df: pd.DataFrame) -> pd.DataFrame:
             colunas_unicas.append(col)
     df.columns = colunas_unicas
 
+    # 2. Remover espaços extras em células de texto
     for col in df.columns:
         if df[col].dtype == "object":
             df[col] = df[col].apply(
-                lambda x: " ".join(x.strip().split()) if isinstance(x, str) else x
+                lambda x: " ".join(str(x).strip().split()) if isinstance(x, str) else x
             )
 
-    print("[OK] Espacos tratados e colunas duplicadas resolvidas")
+    print("[OK] Espaços tratados e colunas duplicadas resolvidas")
 
-    # =========================
-    # 2. REMOVER LINHAS VAZIAS
-    # =========================
+    # 3. Remover linhas totalmente vazias
     antes = len(df)
     df = df.dropna(how="all")
+    # Também remover linhas onde todos os valores são string vazia
+    mask_todos_vazios = df.apply(lambda row: all(str(v).strip() == '' for v in row), axis=1)
+    df = df[~mask_todos_vazios]
     removidas = antes - len(df)
 
-    print(
-        f"[OK] {removidas} linhas vazias removidas"
-        if removidas > 0 else
-        "[OK] Nenhuma linha vazia encontrada"
-    )
+    if removidas > 0:
+        print(f"[OK] {removidas} linha(s) vazia(s) removida(s)")
+    else:
+        print("[OK] Nenhuma linha vazia encontrada")
 
-    # =========================
-    # 3. TRATAR DATAS
-    # =========================
-    # Converter colunas do tipo datetime para strings para evitar erros de BSON/serialização com NaT/NaTType
+    # 4. Converter colunas datetime para strings (evitar erro BSON/MongoDB)
     for col in df.columns:
         if pd.api.types.is_datetime64_any_dtype(df[col]):
             non_null = df[col].dropna()
-            has_time = (non_null.dt.hour != 0).any() or (non_null.dt.minute != 0).any() or (non_null.dt.second != 0).any() if not non_null.empty else False
+            has_time = (non_null.dt.hour != 0).any() or (non_null.dt.minute != 0).any() if not non_null.empty else False
             fmt = "%Y-%m-%d %H:%M:%S" if has_time else "%Y-%m-%d"
             df[col] = df[col].dt.strftime(fmt).fillna("")
             print(f"[OK] Coluna datetime formatada: {col}")
 
-    col_data = encontrar_coluna_data(df)
+    # 5. Converter colunas financeiras conhecidas para numérico (apenas as que já são numéricas)
+    for col in df.columns:
+        tipo = detectar_tipo_coluna(df[col])
+        if tipo == "numerico":
+            df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    if col_data:
-        df = converter_datas(df, col_data)
-        print(f"[OK] Data formatada: {col_data}")
-    else:
-        print("[OK] Nenhuma coluna de data")
-
-    # =========================
-    # 4. PREENCHIMENTO INTELIGENTE
-    # =========================
+    # 6. Preenchimento conservador de nulos
     df = preencher_inteligente(df)
 
-    # =========================
-    # 5. PADRÃO FINAL
-    # =========================
+    # 7. Garantir que não haja NaN no resultado final (MongoDB não aceita NaN/NaT)
     for col in df.columns:
         if df[col].dtype in ["float64", "int64"]:
             df[col] = df[col].fillna(0)
         else:
             df[col] = df[col].fillna("")
 
-    # =========================
-    # 6. RESULTADO FINAL
-    # =========================
     completude = validar_completude_dados(df)
-
-    print(f"\n[OK] Limpeza concluida")
-    print(f"[OK] Linhas: {df.shape[0]}")
-    print(f"[OK] Completude: {completude:.2f}%")
+    print(f"\n[OK] Limpeza conservadora concluída")
+    print(f"[OK] Linhas: {df.shape[0]} | Completude: {completude:.2f}%")
 
     return df
+
+
+# =====================================================
+# LIMPEZA PRINCIPAL (LEGADO — mantida para compatibilidade)
+# =====================================================
+
+def limpar_dados(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    ATENÇÃO: Esta função foi atualizada para NÃO renomear colunas do usuário.
+    Delega para limpar_dados_conservador().
+    
+    Mantida por compatibilidade com código existente que a importa.
+    """
+    return limpar_dados_conservador(df)

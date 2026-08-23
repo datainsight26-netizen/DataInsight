@@ -30,14 +30,21 @@ def criar_index():
     produtos_historico.create_index("nome_produto")
     produtos_historico.create_index([("nome_produto", "text")])
 
-def salvar_dados(usuario_id, nome_planilha, colunas, dados):
-    """Salva os dados no banco de dados"""
-    
+def salvar_dados(usuario_id, nome_planilha, colunas, dados, tipo_dominio=None):
+    """Salva os dados no banco de dados com categoria de domínio"""
+    if not tipo_dominio:
+        try:
+            from backend.dados.agregador import detectar_dominio_tabela
+            tipo_dominio = detectar_dominio_tabela(nome_planilha, colunas, dados)
+        except Exception:
+            tipo_dominio = "MISTA_GERAL"
+            
     documento = {
         "usuario_id": usuario_id,
         "nome_planilha": nome_planilha,
         "colunas": colunas,
         "dados": dados,
+        "tipo_dominio": tipo_dominio,
         "criado_em": datetime.now(),
         "atualizado_em": datetime.now()
     }

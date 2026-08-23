@@ -126,4 +126,5 @@ class GeminiOrchestrator:
 
 
 def obter_time_agentes() -> GeminiOrchestrator:
+    """Retorna o orquestrador IA (Gemini)."""
     return GeminiOrchestrator()

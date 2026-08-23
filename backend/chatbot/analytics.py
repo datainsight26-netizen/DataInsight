@@ -52,7 +52,7 @@ def obter_transacoes_recentes(limite: int = 5, **kwargs) -> str:
         return "Usuário não autenticado."
 
     try:
-        documento = dados_colecao.find_one({"usuario_id": usuario_id}, sort=[("criado_em", -1)])
+        documento = dados_colecao.find_one({"usuario_id": usuario_id}, sort=[("atualizado_em", -1), ("criado_em", -1)])
         if not documento or not documento.get("dados"):
             return "Nenhum dado financeiro encontrado."
 
@@ -69,7 +69,7 @@ def prever_receita_mes_seguinte(**kwargs) -> str:
         return "Usuário não autenticado."
 
     try:
-        documento = dados_colecao.find_one({"usuario_id": usuario_id}, sort=[("criado_em", -1)])
+        documento = dados_colecao.find_one({"usuario_id": usuario_id}, sort=[("atualizado_em", -1), ("criado_em", -1)])
         if not documento or not documento.get("dados"):
             return "Dados insuficientes para realizar a previsão."
 
@@ -85,7 +85,7 @@ def prever_receita_mes_seguinte(**kwargs) -> str:
 
         mensal = (
             df.groupby("mes_ano")
-            .apply(lambda g: calcular_total_dinamico(g, "faturamento", mapeamento, COL_FATURAMENTO))
+            .apply(lambda g: calcular_total_dinamico(g, "faturamento", mapeamento, COL_FATURAMENTO), include_groups=False)
             .reset_index(name="faturamento")
         )
 
@@ -113,7 +113,7 @@ def detectar_anomalias_despesas(**kwargs) -> str:
         return "Usuário não autenticado."
 
     try:
-        documento = dados_colecao.find_one({"usuario_id": usuario_id}, sort=[("criado_em", -1)])
+        documento = dados_colecao.find_one({"usuario_id": usuario_id}, sort=[("atualizado_em", -1), ("criado_em", -1)])
         if not documento or not documento.get("dados"):
             return "Nenhum dado para analisar anomalias."
 
@@ -129,7 +129,7 @@ def detectar_anomalias_despesas(**kwargs) -> str:
 
         mensal = (
             df.groupby("mes_ano")
-            .apply(lambda g: calcular_total_dinamico(g, "despesa", mapeamento, COL_DESPESA))
+            .apply(lambda g: calcular_total_dinamico(g, "despesa", mapeamento, COL_DESPESA), include_groups=False)
             .reset_index(name="despesa")
         )
 
@@ -160,7 +160,7 @@ def calcular_ponto_equilibrio(**kwargs) -> str:
         return "Usuário não autenticado."
 
     try:
-        documento = dados_colecao.find_one({"usuario_id": usuario_id}, sort=[("criado_em", -1)])
+        documento = dados_colecao.find_one({"usuario_id": usuario_id}, sort=[("atualizado_em", -1), ("criado_em", -1)])
         if not documento or not documento.get("dados"):
             return "Dados inexistentes."
 

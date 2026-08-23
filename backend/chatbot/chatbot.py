@@ -11,7 +11,7 @@ load_dotenv()
 
 # Reexports: import functions from modularized files so external code that
 # imports `backend.chatbot.chatbot` keeps working as before.
-from .orchestrator import GeminiOrchestrator, obter_time_agentes
+from .orchestrator import obter_time_agentes
 from .tts import _limpar_texto_para_voz, sintetizar_resposta_voz, sintetizar_texto_voz
 from .analytics import (
     obter_resumo_financeiro,
@@ -47,7 +47,6 @@ from .history import (
 )
 
 __all__ = [
-    "GeminiOrchestrator",
     "obter_time_agentes",
     "_limpar_texto_para_voz",
     "sintetizar_resposta_voz",

@@ -50,10 +50,22 @@ def _tokens_busca(texto: str) -> set:
     return {t for t in tokens if len(t) > 2 and t not in _STOPWORDS_PT}
 
 
-def _carregar_documento_dados(usuario_id: str) -> Optional[Dict[str, Any]]:
+def _carregar_documento_dados(usuario_id: str, tabela_id: str = "todas") -> Optional[Dict[str, Any]]:
     if not usuario_id:
         return None
-    return dados_colecao.find_one({"usuario_id": usuario_id}, sort=[("criado_em", -1)])
+    try:
+        from backend.dados.agregador import obter_contexto_dados
+        contexto = obter_contexto_dados(usuario_id, escopo=tabela_id)
+        if contexto and contexto.get("dados"):
+            return {
+                "colunas": contexto.get("colunas", []),
+                "dados": contexto.get("dados", []),
+                "nome_planilha": contexto.get("nome_contexto", "Consolidado"),
+                "planilhas_envolvidas": contexto.get("planilhas_envolvidas", [])
+            }
+    except Exception as e:
+        print(f"[RAG] Erro ao carregar contexto multi-planilhas: {e}", flush=True)
+    return dados_colecao.find_one({"usuario_id": usuario_id}, sort=[("atualizado_em", -1), ("criado_em", -1)])
 
 
 def _resumo_kpis_do_df(df: pd.DataFrame, mapeamento: Dict[str, Any], periodo: str) -> str:
@@ -184,8 +196,8 @@ def _chunk_dados_completos(df: pd.DataFrame, mapeamento: Dict[str, Any]) -> Opti
     return "Dados gerais do conjunto completo de dados:\n" + "\n".join(linhas)
 
 
-def construir_chunks_rag(usuario_id: str, pergunta: str) -> List[Dict[str, Any]]:
-    documento = _carregar_documento_dados(usuario_id)
+def construir_chunks_rag(usuario_id: str, pergunta: str, tabela_id: str = "todas") -> List[Dict[str, Any]]:
+    documento = _carregar_documento_dados(usuario_id, tabela_id=tabela_id)
     if not documento or not documento.get("dados"):
         return [{
             "id": "sem_dados",
@@ -342,11 +354,11 @@ def ranquear_chunks_rag(chunks: List[Dict[str, Any]], pergunta: str, top_k: int 
     return selecionados
 
 
-def montar_contexto_rag(usuario_id: str, pergunta: str, top_k: int = 5) -> str:
+def montar_contexto_rag(usuario_id: str, pergunta: str, top_k: int = 5, tabela_id: str = "todas") -> str:
     if not usuario_id:
         return "Usuário não autenticado — sem acesso aos dados do banco."
 
-    chunks = construir_chunks_rag(usuario_id, pergunta)
+    chunks = construir_chunks_rag(usuario_id, pergunta, tabela_id=tabela_id)
     relevantes = ranquear_chunks_rag(chunks, pergunta, top_k=top_k)
     fontes = [c["id"] for c in relevantes]
     print(f"[RAG] usuario={usuario_id} fontes={fontes}")

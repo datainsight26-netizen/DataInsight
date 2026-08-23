@@ -212,18 +212,35 @@ def gerar_series(df, col_data, mapeamento=None):
 # SALVAR ÚLTIMO PERÍODO
 # ======================
 def salvar_ultimo_periodo(user, inicio, fim):
-    dados_colecao.update_one(
+    doc = dados_colecao.find_one(
         {"usuario_id": user},
-        {
-            "$set": {
-                "ultimo_periodo": {
-                    "inicio": inicio,
-                    "fim": fim
+        sort=[("atualizado_em", -1), ("criado_em", -1)]
+    )
+    if doc:
+        dados_colecao.update_one(
+            {"_id": doc["_id"]},
+            {
+                "$set": {
+                    "ultimo_periodo": {
+                        "inicio": inicio,
+                        "fim": fim
+                    }
                 }
             }
-        },
-        upsert=True
-    )
+        )
+    else:
+        dados_colecao.update_one(
+            {"usuario_id": user},
+            {
+                "$set": {
+                    "ultimo_periodo": {
+                        "inicio": inicio,
+                        "fim": fim
+                    }
+                }
+            },
+            upsert=True
+        )
 
 
 # ======================
@@ -235,7 +252,7 @@ def obter_ultimo_periodo():
     if not user:
         return jsonify({"mensagem": "Usuário não autenticado"}), 401
 
-    doc = dados_colecao.find_one({"usuario_id": user})
+    doc = dados_colecao.find_one({"usuario_id": user}, sort=[("atualizado_em", -1), ("criado_em", -1)])
 
     if doc and "ultimo_periodo" in doc:
         return jsonify(doc["ultimo_periodo"]), 200
@@ -268,16 +285,19 @@ def analise_por_periodo():
         return jsonify({"mensagem": "Data inválida"}), 400
 
     try:
-        # Buscar dados do usuário
-        doc = dados_colecao.find_one(
-            {"usuario_id": user},
-            sort=[("criado_em", -1)]
-        )
+        tabela_id = request.args.get("tabela_id", "todas")
 
-        if not doc:
+        from backend.home.home import obter_colunas_mapeadas, calcular_total_dinamico
+        mapeamento = obter_colunas_mapeadas(user)
+
+        from backend.dados.agregador import obter_contexto_dados
+        contexto = obter_contexto_dados(user, escopo=tabela_id, mapeamento=mapeamento)
+        dados = contexto.get("dados", [])
+
+        if not dados:
             return jsonify({"mensagem": "Nenhum dado encontrado"}), 200
 
-        df = pd.DataFrame(doc.get("dados", []))
+        df = pd.DataFrame(dados)
 
         if df.empty:
             return jsonify({"mensagem": "Nenhum dado encontrado"}), 200

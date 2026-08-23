@@ -1,5 +1,6 @@
 
 from flask import request, jsonify, session, current_app
+from werkzeug.utils import secure_filename
 import os
 import json
 import pandas as pd
@@ -21,8 +22,13 @@ def upload_arquivo():
     if arquivo.filename == "":
         return jsonify({"mensagem": "Arquivo inválido"}), 400
 
+    nome_seguro = secure_filename(arquivo.filename)
+    if not nome_seguro:
+        nome_seguro = f"upload_{os.urandom(4).hex()}_{arquivo.filename.split('.')[-1] if '.' in arquivo.filename else 'dat'}"
+
     upload_folder = current_app.config.get("UPLOAD_FOLDER", "uploads")
-    caminho = os.path.join(upload_folder, arquivo.filename)
+    os.makedirs(upload_folder, exist_ok=True)
+    caminho = os.path.join(upload_folder, nome_seguro)
     arquivo.save(caminho)
 
     # Parâmetro opcional: qual aba importar (para Excel multi-abas)
@@ -93,8 +99,9 @@ def upload_arquivo():
         # Aplicar limpeza dos dados
         df = limpar_dados(df)
 
-        colunas = df.columns.tolist()
-        dados = df.to_dict('records')
+        from backend.dados.dados import converter_para_tipos_nativos
+        colunas = [str(c) for c in df.columns.tolist()]
+        dados = converter_para_tipos_nativos(df.to_dict('records'))
 
         # Salvar no banco de dados
         usuario_id = session.get('usuario_id')
@@ -140,7 +147,9 @@ def listar_abas_excel():
         return jsonify({"mensagem": "Apenas arquivos Excel (.xlsx, .xls) suportam múltiplas abas"}), 400
 
     upload_folder = current_app.config.get("UPLOAD_FOLDER", "uploads")
-    caminho = os.path.join(upload_folder, arquivo.filename)
+    os.makedirs(upload_folder, exist_ok=True)
+    nome_seguro = secure_filename(arquivo.filename) or "temp_excel.xlsx"
+    caminho = os.path.join(upload_folder, nome_seguro)
     arquivo.save(caminho)
 
     try:

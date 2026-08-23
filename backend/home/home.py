@@ -144,17 +144,16 @@ def encontrar_coluna_estoque(df, mapeamento):
     return encontrar_coluna_por_aliases(df, mapeamento, "estoque", COL_ESTOQUE)
 
 
-# ======================
-# DESempenho
-# ======================
-def obter_produtos_overview(periodo="30_dias"):
+def obter_produtos_overview(periodo="30_dias", tabela_id="todas"):
     user_id = session.get('usuario_id')
     if not user_id:
         return jsonify({"mensagem": "Usuário não autenticado"}), 401
 
     try:
-        doc = dados_colecao.find_one({"usuario_id": user_id}, sort=[("criado_em", -1)])
-        if not doc:
+        from backend.dados.agregador import obter_contexto_dados
+        contexto = obter_contexto_dados(user_id, escopo=tabela_id)
+        dados_lista = contexto.get("dados", [])
+        if not dados_lista:
             return jsonify({
                 "produto_coluna": None,
                 "tem_quantidade": False,
@@ -164,7 +163,7 @@ def obter_produtos_overview(periodo="30_dias"):
                 "grafico_lucro": {"labels": [], "series": []}
             }), 200
 
-        df = pd.DataFrame(doc.get("dados", []))
+        df = pd.DataFrame(dados_lista)
         if df.empty:
             return jsonify({
                 "produto_coluna": None,
@@ -333,17 +332,19 @@ def obter_produtos_overview(periodo="30_dias"):
         return jsonify({"mensagem": str(e)}), 500
 
 
-def calcular_desempenho(periodo="30_dias"):
+def calcular_desempenho(periodo="30_dias", tabela_id="todas"):
     user_id = session.get('usuario_id')
     if not user_id:
         return jsonify({"mensagem": "Usuário não autenticado"}), 401
 
     try:
-        doc = dados_colecao.find_one({"usuario_id": user_id}, sort=[("criado_em", -1)])
-        if not doc:
+        from backend.dados.agregador import obter_contexto_dados
+        contexto = obter_contexto_dados(user_id, escopo=tabela_id)
+        dados_lista = contexto.get("dados", [])
+        if not dados_lista:
             return jsonify(empty()), 200
 
-        df = pd.DataFrame(doc.get("dados", []))
+        df = pd.DataFrame(dados_lista)
         if df.empty:
             return jsonify(empty()), 200
 
@@ -410,7 +411,7 @@ def obter_coluna_indicador(df, indicador, mapeamento, colunas_fallback):
     return None
 
 
-def obter_detalhes_kpi(periodo="30_dias", kpi="faturamento"):
+def obter_detalhes_kpi(periodo="30_dias", kpi="faturamento", tabela_id="todas"):
     user_id = session.get('usuario_id')
     if not user_id:
         return jsonify({"mensagem": "Usuário não autenticado"}), 401
@@ -420,11 +421,13 @@ def obter_detalhes_kpi(periodo="30_dias", kpi="faturamento"):
         return jsonify({"mensagem": "KPI inválido"}), 400
 
     try:
-        doc = dados_colecao.find_one({"usuario_id": user_id}, sort=[("criado_em", -1)])
-        if not doc:
+        from backend.dados.agregador import obter_contexto_dados
+        contexto = obter_contexto_dados(user_id, escopo=tabela_id)
+        dados_lista = contexto.get("dados", [])
+        if not dados_lista:
             return jsonify({"kpi": kpi, "valor_total": 0, "detalhes": []}), 200
 
-        df = pd.DataFrame(doc.get("dados", []))
+        df = pd.DataFrame(dados_lista)
         if df.empty:
             return jsonify({"kpi": kpi, "valor_total": 0, "detalhes": []}), 200
 
@@ -537,20 +540,22 @@ def obter_detalhes_kpi(periodo="30_dias", kpi="faturamento"):
 
 # GRÁFICOS
 # ======================
-def obter_dados_graficos(periodo="30_dias"):
+def obter_dados_graficos(periodo="30_dias", tabela_id="todas"):
     user_id = session.get('usuario_id')
     if not user_id:
         return jsonify({"mensagem": "Usuário não autenticado"}), 401
 
     try:
-        doc = dados_colecao.find_one({"usuario_id": user_id}, sort=[("criado_em", -1)])
-        if not doc:
+        from backend.dados.agregador import obter_contexto_dados
+        contexto = obter_contexto_dados(user_id, escopo=tabela_id)
+        dados_lista = contexto.get("dados", [])
+        if not dados_lista:
             return jsonify({
                 "grafico_linha": empty_graph(),
                 "grafico_barras": empty_graph()
             }), 200
 
-        df = pd.DataFrame(doc.get("dados", []))
+        df = pd.DataFrame(dados_lista)
         if df.empty:
              return jsonify({
                 "grafico_linha": empty_graph(),
@@ -617,16 +622,18 @@ def grafico_linha(df, col, periodo, mapeamento):
     if df.empty:
         return empty_graph()
 
-    df["data_str"] = df[col].dt.strftime("%d/%m")
-    grupos = df.groupby("data_str")
+    df = df.sort_values(by=col)
+    anos = df[col].dt.year.unique()
+    formato_data = "%d/%m/%y" if len(anos) > 1 else "%d/%m"
 
-    labels_raw = list(grupos.groups.keys())
-    labels = sorted(labels_raw, key=lambda x: datetime.strptime(x + "/2000", "%d/%m/%Y"))
+    df["data_chave"] = df[col].dt.date
+    grupos = df.groupby("data_chave", sort=True)
 
-    fat_list, desp_list, luc_list = [], [], []
+    labels, fat_list, desp_list, luc_list = [], [], [], []
 
-    for label in labels:
-        g = grupos.get_group(label)
+    for data_chave, g in grupos:
+        data_obj = pd.to_datetime(data_chave)
+        labels.append(data_obj.strftime(formato_data))
         f = calcular_total_dinamico(g, "faturamento", mapeamento, COL_FATURAMENTO)
         d = calcular_total_dinamico(g, "despesa", mapeamento, COL_DESPESA)
         l = calcular_total_dinamico(g, "lucro", mapeamento, COL_LUCRO) or (f - d)
@@ -650,13 +657,14 @@ def grafico_barras(df, col, periodo, mapeamento):
     if df.empty:
         return empty_graph()
 
-    df["periodo_agrupado"] = df[col].dt.strftime('%b/%Y')
-    grupos = df.groupby("periodo_agrupado")
+    df = df.sort_values(by=col)
+    df["mes_ano_chave"] = df[col].dt.to_period('M')
+    grupos = df.groupby("mes_ano_chave", sort=True)
 
     labels, fat, desp, luc = [], [], [], []
 
-    for nome, g in grupos:
-        labels.append(nome)
+    for periodo_mes, g in grupos:
+        labels.append(periodo_mes.strftime('%b/%Y'))
         
         f = calcular_total_dinamico(g, "faturamento", mapeamento, COL_FATURAMENTO)
         d = calcular_total_dinamico(g, "despesa", mapeamento, COL_DESPESA)
@@ -693,7 +701,7 @@ def grafico_pizza(df, col, periodo, mapeamento):
 # ======================
 # STATUS DO NEGÓCIO
 # ======================
-def gerar_status_negocio(periodo="30_dias"):
+def gerar_status_negocio(periodo="30_dias", tabela_id="todas"):
     """Gera o status do negócio (Saudável, Estável ou Em Perigo) baseado na análise dos dados"""
     user_id = session.get('usuario_id')
     if not user_id:
@@ -701,7 +709,7 @@ def gerar_status_negocio(periodo="30_dias"):
 
     try:
         # Obter dados de desempenho
-        response_desempenho, status_desempenho = calcular_desempenho(periodo)
+        response_desempenho, status_desempenho = calcular_desempenho(periodo, tabela_id)
         if status_desempenho != 200:
             return jsonify({"status": "indefinido", "mensagem": "Dados insuficientes"}), 200
 

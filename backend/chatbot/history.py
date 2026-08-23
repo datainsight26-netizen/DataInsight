@@ -138,9 +138,8 @@ def perguntar_chatbot():
                 papel = "Usuário" if m["remetente"] == "user" else "Assistente"
                 contexto_str += f"{papel}: {m['mensagem']}\n"
 
-            salvar_mensagem_historico(usuario_id, "user", mensagem_usuario, sessao_id)
-
-        contexto_rag = montar_contexto_rag(usuario_id, mensagem_usuario, top_k=5)
+        tabela_id = dados.get("tabela_id", "todas")
+        contexto_rag = montar_contexto_rag(usuario_id, mensagem_usuario, top_k=5, tabela_id=tabela_id)
         from .rag_helpers import montar_prompt_com_rag
         from .orchestrator import obter_time_agentes
 
@@ -204,19 +203,22 @@ def perguntar_chatbot():
 
     except Exception as err:
         print(f"[Erro Chatbot Endpoint]: {err}")
+        traceback.print_exc()
         return jsonify({
-            "resposta": "Desculpe, ocorreu um erro interno ao processar sua requisição."
+            "resposta": "Desculpe, ocorreu um erro interno ao processar sua requisição.",
+            "erro_debug": str(err)
         }), 500
 
 
 def gerar_insight_diario():
     try:
         periodo = request.args.get("periodo", "30_dias")
+        tabela_id = request.args.get("tabela_id", "todas")
         usuario_id = session.get("usuario_id")
         orquestrador = obter_time_agentes()
 
         pergunta_rag = f"insights financeiros do período {periodo} com resumo alerta e estratégia"
-        contexto_rag = montar_contexto_rag(usuario_id, pergunta_rag, top_k=4)
+        contexto_rag = montar_contexto_rag(usuario_id, pergunta_rag, top_k=4, tabela_id=tabela_id)
 
         prompt = (
             f"Com base EXCLUSIVAMENTE no contexto RAG abaixo, gere exatamente 3 bullet points "

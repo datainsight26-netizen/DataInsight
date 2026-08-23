@@ -4,7 +4,8 @@ import pandas as pd
 import re
 import unicodedata
 from backend.db import salvar_dados
-from backend.dados.dados import limpar_dados
+from backend.dados.dados import limpar_dados, converter_para_tipos_nativos
+from backend.dados.quality import analisar_e_limpar
 
 
 # ============================================================
@@ -160,15 +161,18 @@ def salvar_dados_manuais():
     usuario_id = session.get('usuario_id')
 
     try:
-        # Converter para DataFrame para aplicar limpeza
+        # Converter para DataFrame para aplicar análise e limpeza
         df = pd.DataFrame(dados, columns=colunas)
 
-        # Aplicar limpeza dos dados
-        df = limpar_dados(df)
+        # Permite ao frontend controlar se deseja limpeza automática
+        auto_clean = bool(dados_json.get('auto_clean', True))
 
-        # Extrair dados limpos
-        colunas_limpas = df.columns.tolist()
-        dados_limpos = df.to_dict('records')
+        # Executar análise de qualidade e limpeza automática (conservadora)
+        df, relatorio_qualidade = analisar_e_limpar(df, auto_clean=auto_clean)
+
+        # Extrair dados limpos e converter para tipos nativos BSON
+        colunas_limpas = [str(c) for c in df.columns.tolist()]
+        dados_limpos = converter_para_tipos_nativos(df.to_dict('records'))
 
         # Salvar no banco de dados principal
         id_salvo = salvar_dados(usuario_id, nome_planilha, colunas_limpas, dados_limpos)
@@ -182,7 +186,8 @@ def salvar_dados_manuais():
         return jsonify({
             "mensagem": "Dados salvos com sucesso!",
             "id": str(id_salvo),
-            "linhas_processadas": len(dados_limpos)
+            "linhas_processadas": len(dados_limpos),
+            "relatorio_qualidade": relatorio_qualidade
         }), 200
 
     except Exception as e:

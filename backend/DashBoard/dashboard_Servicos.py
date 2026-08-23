@@ -6,7 +6,10 @@ import numpy as np
 # DETECÇÃO INTELIGENTE DE COLUNAS
 # ======================
 
-def detectar_colunas(colunas: list, dados: list) -> dict:
+def detectar_colunas(colunas: list, dados: list, mapeamento: dict = None) -> dict:
+
+    if mapeamento is None:
+        mapeamento = {}
 
     colunas_lower = {c.lower(): c for c in colunas}
 
@@ -26,12 +29,19 @@ def detectar_colunas(colunas: list, dados: list) -> dict:
                     return col_o
         return None
 
+    def obter_mapeado(chaves, aliases):
+        for k in chaves:
+            col = mapeamento.get(k)
+            if col and col in colunas:
+                return col
+        return achar(aliases)
+
     return {
-        "data": achar(ALIAS_DATA),
-        "receita": achar(ALIAS_RECEITA),
-        "despesa": achar(ALIAS_DESPESA),
-        "lucro": achar(ALIAS_LUCRO),
-        "categoria": achar(ALIAS_CATEGORIA),
+        "data": obter_mapeado(["data", "periodo"], ALIAS_DATA),
+        "receita": obter_mapeado(["faturamento", "receita_total", "receita_produtos"], ALIAS_RECEITA),
+        "despesa": obter_mapeado(["despesa", "despesas", "custo_variavel"], ALIAS_DESPESA),
+        "lucro": obter_mapeado(["lucro", "resultado"], ALIAS_LUCRO),
+        "categoria": obter_mapeado(["categoria", "produto"], ALIAS_CATEGORIA),
     }
 
 
@@ -220,7 +230,7 @@ def gerar_insights(kpis, evolucao, categorias):
 # PRINCIPAL ( COM PERÍODO)
 # ======================
 
-def processar_dados_dashboard(colunas, dados, periodo=30):
+def processar_dados_dashboard(colunas, dados, periodo=30, mapeamento=None):
 
     if not dados:
         print(" Nenhum dado fornecido")
@@ -231,7 +241,7 @@ def processar_dados_dashboard(colunas, dados, periodo=30):
 
     df = pd.DataFrame(dados, columns=colunas)
 
-    mapa = detectar_colunas(colunas, dados)
+    mapa = detectar_colunas(colunas, dados, mapeamento)
     
     print(f" Mapa de colunas detectadas:")
     print(f"   - Data: {mapa['data']}")
