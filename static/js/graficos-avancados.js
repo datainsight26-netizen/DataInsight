@@ -9,16 +9,21 @@
 const chartsInstances = {};
 
 function isDarkMode() {
-  return document.body.classList.contains('tema-escuro');
+  return document.body.classList.contains('tema-escuro') || localStorage.getItem('tema') === 'escuro';
 }
 
 function getThemeColors() {
   const isDark = isDarkMode();
   return {
-    texto: isDark ? '#F9FAFB' : '#111827',
-    suave: isDark ? '#CBD5E1' : '#6B7280',
-    borda: isDark ? '#334155' : '#E5E7EB',
-    fundo: isDark ? '#1d1d1d' : '#FFFFFF',
+    isDark: isDark,
+    texto: isDark ? '#F9FAFB' : '#0F172A',
+    suave: isDark ? '#94A3B8' : '#64748B',
+    borda: isDark ? '#334155' : '#E2E8F0',
+    fundo: isDark ? '#18181B' : '#FFFFFF',
+    fundoModal: isDark ? '#1E293B' : '#FFFFFF',
+    fundoBox: isDark ? 'rgba(59,130,246,0.12)' : 'rgba(59,130,246,0.06)',
+    bordaBox: isDark ? 'rgba(59,130,246,0.25)' : 'rgba(59,130,246,0.18)',
+    sombraModal: isDark ? '0 25px 60px rgba(0,0,0,0.65)' : '0 20px 50px rgba(0,0,0,0.15)',
     gradientoBorda: isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgba(229, 231, 235, 0.5)'
   };
 }
@@ -191,6 +196,467 @@ function getChartComparativoOptions() {
 }
 
 // ==========================================
+// DRE - DEMONSTRAÇÃO DO RESULTADO (7 LINHAS ESTRUTURADAS)
+// ==========================================
+
+let dreMeta = []; // Armazena a lista de linhas DRE atual com metadados para detalhamento no modal
+let _categoriasDespesasAtual = { labels: [], valores: [] };
+let _kpisAtual = null;
+let modalDreDonutChart = null;
+
+function getChartDREOptions() {
+  const colors = getThemeColors();
+
+  return {
+    series: [{ name: 'DRE', data: [] }],
+    chart: {
+      type: 'bar',
+      height: 460,
+      foreColor: colors.texto,
+      toolbar: { show: true, tools: { zoom: false, zoomin: false, zoomout: false, pan: false, reset: true } },
+      events: {
+        dataPointSelection: (event, chartContext, config) => {
+          abrirModalDetalhamentoDRE(config.dataPointIndex);
+        }
+      }
+    },
+    plotOptions: {
+      bar: {
+        horizontal: true,
+        distributed: true,
+        barHeight: '56%',
+        dataLabels: {
+          position: 'top' // No gráfico horizontal, 'top' posiciona no final da barra
+        }
+      }
+    },
+    title: { align: 'center', style: { fontSize: '14px', fontWeight: 'bold', color: colors.texto } },
+    subtitle: { text: getPeriodoTexto(), align: 'center', style: { fontSize: '12px', color: colors.suave } },
+    colors: [],
+    dataLabels: {
+      enabled: true,
+      textAnchor: 'start', // Garante que o texto comece após o fim da barra (fora da barra)
+      offsetX: 10,         // Espaçamento limpo após o término da barra
+      formatter: (val, opts) => {
+        const meta = dreMeta[opts.dataPointIndex];
+        if (!meta) return 'R$ ' + val.toLocaleString('pt-BR');
+        const sinal = meta.valor < 0 ? '-' : '';
+        const perc = (meta.percentual !== undefined && meta.percentual !== null) ? ` (${meta.percentual}%)` : '';
+        return `${sinal}R$ ${Math.abs(meta.valor).toLocaleString('pt-BR')}${perc}`;
+      },
+      style: {
+        fontSize: '11.5px',
+        fontWeight: '600',
+        colors: [colors.texto]
+      },
+      dropShadow: { enabled: false }
+    },
+    xaxis: {
+      categories: [],
+      labels: { formatter: (val) => 'R$ ' + Number(val).toLocaleString('pt-BR'), style: { fontSize: '11px' } }
+    },
+    tooltip: {
+      custom: ({ dataPointIndex }) => {
+        const meta = dreMeta[dataPointIndex];
+        if (!meta) return '';
+        const tipColors = getThemeColors();
+        const sinal = meta.valor < 0 ? '-' : '';
+        const valorFmt = `${sinal}R$ ${Math.abs(meta.valor).toLocaleString('pt-BR')}`;
+        const percFmt = `${Math.abs(meta.percentual || 0).toFixed(1).replace('.', ',')}%`;
+        return `<div style="
+          padding: 10px 14px; font-size: 12px; border-radius: 8px;
+          background: ${tipColors.fundo}; color: ${tipColors.texto};
+          border: 1px solid ${tipColors.borda}; box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+        ">
+          <strong style="display:block; margin-bottom:4px;">${meta.label}</strong>
+          ${valorFmt} <span style="opacity:.7">(${percFmt} da Receita)</span>
+          <div style="opacity:.6; margin-top:6px; font-size:11px;">🔍 Clique para ver o detalhamento completo</div>
+        </div>`;
+      }
+    },
+    legend: { show: false },
+    grid: {
+      borderColor: colors.borda,
+      strokeDashArray: 5,
+      padding: { right: 35 }
+    },
+    responsive: [{ breakpoint: 768, options: { chart: { height: 420 } } }]
+  };
+}
+
+function montarDREdeKPIs(kpis) {
+  if (!kpis) return null;
+
+  const { receita_total = 0, lucro_liquido = 0, despesa_total = 0, margem_lucro = 0 } = kpis;
+  const impostosEst = receita_total * 0.08;
+  const recLiquidaEst = Math.max(0, receita_total - impostosEst);
+  const custoVarEst = despesa_total * 0.45;
+  const margemContribEst = recLiquidaEst - custoVarEst;
+  const despFixaEst = despesa_total * 0.55;
+
+  const calcPct = (v) => receita_total > 0 ? Math.round((v / receita_total) * 1000) / 10 : 0;
+
+  return [
+    {
+      id: "faturamento_bruto",
+      label: "Faturamento Bruto (Receita)",
+      valor: receita_total,
+      percentual: 100,
+      tipo: "positivo",
+      detalhes: { "Receita Total Bruta": receita_total }
+    },
+    {
+      id: "impostos_taxas",
+      label: "Impostos e Taxas",
+      valor: -Math.abs(impostosEst),
+      percentual: calcPct(impostosEst),
+      tipo: "deducao",
+      detalhes: { "Base de Cálculo": receita_total, "Impostos (Simples/Tributos 8%)": impostosEst }
+    },
+    {
+      id: "receita_liquida",
+      label: "Receita Líquida",
+      valor: recLiquidaEst,
+      percentual: calcPct(recLiquidaEst),
+      tipo: "subtotal",
+      detalhes: { "Faturamento Bruto": receita_total, "(-) Impostos": -Math.abs(impostosEst), "(=) Receita Líquida": recLiquidaEst }
+    },
+    {
+      id: "custo_variavel",
+      label: "Custos Variáveis",
+      valor: -Math.abs(custoVarEst),
+      percentual: calcPct(custoVarEst),
+      tipo: "deducao",
+      detalhes: { "Custos Variáveis Operacionais": custoVarEst }
+    },
+    {
+      id: "margem_contribuicao",
+      label: "Margem Contribuição / Lucro Bruto",
+      valor: margemContribEst,
+      percentual: calcPct(margemContribEst),
+      tipo: "subtotal",
+      detalhes: { "Receita Líquida": recLiquidaEst, "(-) Custos Variáveis": -Math.abs(custoVarEst), "(=) Margem de Contribuição": margemContribEst }
+    },
+    {
+      id: "despesa_fixa",
+      label: "Despesas Fixas",
+      valor: -Math.abs(despFixaEst),
+      percentual: calcPct(despFixaEst),
+      tipo: "deducao",
+      detalhes: { "Despesas Fixas Operacionais": despFixaEst }
+    },
+    {
+      id: "resultado_lucro",
+      label: "Resultado / Lucro Final",
+      valor: lucro_liquido,
+      percentual: margem_lucro,
+      tipo: lucro_liquido >= 0 ? "liquido" : "negativo",
+      detalhes: { "Margem de Contribuição": margemContribEst, "(-) Despesas Fixas": -Math.abs(despFixaEst), "(=) Resultado / Lucro Final": lucro_liquido }
+    }
+  ];
+}
+
+function atualizarGraficoDRE(linhas) {
+  const chart = chartsInstances.dre;
+  if (!chart || !Array.isArray(linhas)) return;
+
+  const mapaCores = {
+    positivo: '#3B82F6', // Azul
+    deducao: '#EF4444',  // Vermelho
+    subtotal: '#0284C7', // Ciano / Azul Escuro
+    liquido: '#10B981',  // Verde
+    negativo: '#EF4444'  // Vermelho
+  };
+
+  dreMeta = linhas.map(l => ({
+    id: l.id,
+    valor: l.valor,
+    percentual: l.percentual,
+    label: l.label,
+    tipo: l.tipo,
+    detalhes: l.detalhes || {}
+  }));
+
+  const categorias = linhas.map(l => {
+    if (l.tipo === 'deducao') return `(-) ${l.label}`;
+    if (l.tipo === 'subtotal' || l.tipo === 'liquido' || l.tipo === 'negativo') return `(=) ${l.label}`;
+    return l.label;
+  });
+
+  const dadosBarras = linhas.map(l => Math.abs(l.valor));
+  const cores = linhas.map(l => mapaCores[l.tipo] || mapaCores.positivo);
+  const maxValor = Math.max(...dadosBarras, 1);
+
+  chart.updateOptions({
+    xaxis: {
+      categories: categorias,
+      max: Math.ceil(maxValor * 1.28) // Margem de 28% no eixo X para acomodar o rótulo completo sem corte
+    },
+    colors: cores
+  });
+  chart.updateSeries([{ name: 'DRE', data: dadosBarras }]);
+}
+
+// ==========================================
+// MODAL DE DETALHAMENTO DO DRE
+// ==========================================
+
+function criarModalDRE() {
+  if (document.getElementById('dreModalOverlay')) return;
+
+  const colors = getThemeColors();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'dreModalOverlay';
+  overlay.style.cssText = `
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+    z-index: 9999; align-items: center; justify-content: center; padding: 20px;
+    backdrop-filter: blur(4px);
+  `;
+
+  overlay.innerHTML = `
+    <div id="dreModalCard" style="
+      background: ${colors.fundoModal}; color: ${colors.texto}; border: 1px solid ${colors.borda};
+      border-radius: 14px; max-width: 720px; width: 100%; padding: 26px;
+      position: relative; box-shadow: ${colors.sombraModal};
+      transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+    ">
+      <button id="dreModalClose" aria-label="Fechar" style="
+        position: absolute; top: 14px; right: 14px; background: transparent; border: none;
+        font-size: 22px; cursor: pointer; color: ${colors.suave}; line-height: 1; padding: 4px;
+      ">&times;</button>
+
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-right: 24px;">
+        <div style="width:38px; height:38px; border-radius:10px; background:rgba(59,130,246,0.15); display:flex; align-items:center; justify-content:center; color:#3B82F6; font-size:19px;">
+          <i class="fa-solid fa-chart-pie"></i>
+        </div>
+        <div>
+          <h3 id="dreModalTitulo" style="margin: 0; font-size: 17px; font-weight: 700; color:${colors.texto};"></h3>
+          <span id="dreModalSub" style="font-size:12px; color:${colors.suave};">Demonstração do Resultado & Comparativo Proporcional</span>
+        </div>
+      </div>
+
+      <div id="dreModalConteudo" style="display: flex; gap: 24px; flex-wrap: wrap; align-items: center;">
+        <div id="dreModalLista" style="flex: 1 1 260px;"></div>
+        <div id="dreModalDonutContainer" style="width: 280px; flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center;"></div>
+      </div>
+
+      <div id="dreModalNotaBox" style="margin-top: 20px; padding: 12px 14px; border-radius: 8px; background: ${colors.fundoBox}; border: 1px solid ${colors.bordaBox};">
+        <p id="dreModalNota" style="margin: 0; font-size: 12.5px; color: ${colors.suave}; line-height: 1.4;"></p>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) fecharModalDRE();
+  });
+
+  overlay.querySelector('#dreModalClose').addEventListener('click', fecharModalDRE);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') fecharModalDRE();
+  });
+}
+
+function fecharModalDRE() {
+  const overlay = document.getElementById('dreModalOverlay');
+  if (overlay) overlay.style.display = 'none';
+
+  if (modalDreDonutChart) {
+    modalDreDonutChart.destroy();
+    modalDreDonutChart = null;
+  }
+}
+
+function _criarLinhaDetalhamento(label, valor, colors, destaque = false) {
+  const linha = document.createElement('div');
+  linha.style.cssText = `
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    padding: 9px 0; border-bottom: 1px solid ${colors.borda};
+    ${destaque ? 'font-weight: 700; font-size: 14.5px; color: #3B82F6;' : 'font-size: 13px;'}
+  `;
+
+  let valorExibicao;
+  if (typeof valor === 'number') {
+    const sinal = valor < 0 ? '-' : '';
+    valorExibicao = `${sinal}${Math.abs(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+  } else {
+    valorExibicao = String(valor);
+  }
+
+  linha.innerHTML = `<span>${label}</span><strong>${valorExibicao}</strong>`;
+  return linha;
+}
+
+function _montarDadosPizzaComparativa(meta, detalhes) {
+  // Paleta de cores corporativa e harmoniosa
+  const paleta = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#EC4899'];
+
+  // 1. Verificar se há subitens positivos decompostos no detalhes
+  const chavesValidas = Object.keys(detalhes).filter(k => 
+    !k.startsWith('(-)') && !k.startsWith('(=)') && !k.includes('Total') && !k.includes('Base') && 
+    typeof detalhes[k] === 'number' && detalhes[k] > 0
+  );
+
+  if (chavesValidas.length > 1) {
+    return {
+      labels: chavesValidas,
+      valores: chavesValidas.map(k => detalhes[k]),
+      cores: paleta.slice(0, chavesValidas.length)
+    };
+  }
+
+  // 2. Se for uma linha agregada ou com 1 subitem, comparar com o restante da estrutura DRE
+  const fatBruto = dreMeta.find(l => l.id === 'faturamento_bruto')?.valor || 0;
+  const impostos = Math.abs(dreMeta.find(l => l.id === 'impostos_taxas')?.valor || 0);
+  const recLiquida = Math.abs(dreMeta.find(l => l.id === 'receita_liquida')?.valor || (fatBruto - impostos));
+  const custoVar = Math.abs(dreMeta.find(l => l.id === 'custo_variavel')?.valor || 0);
+  const margem = dreMeta.find(l => l.id === 'margem_contribuicao')?.valor || (recLiquida - custoVar);
+  const despFixa = Math.abs(dreMeta.find(l => l.id === 'despesa_fixa')?.valor || 0);
+  const lucro = dreMeta.find(l => l.id === 'resultado_lucro')?.valor || (margem - despFixa);
+
+  if (meta.id === 'faturamento_bruto' || meta.id === 'impostos_taxas' || meta.id === 'receita_liquida') {
+    return {
+      labels: ['Receita Líquida', 'Impostos e Taxas'],
+      valores: [Math.max(recLiquida, 0), impostos],
+      cores: ['#0284C7', '#EF4444']
+    };
+  }
+
+  if (meta.id === 'custo_variavel') {
+    return {
+      labels: ['Custos Variáveis', 'Margem de Contribuição'],
+      valores: [custoVar, Math.max(margem, 0)],
+      cores: ['#F59E0B', '#10B981']
+    };
+  }
+
+  if (meta.id === 'margem_contribuicao') {
+    return {
+      labels: ['Margem de Contribuição', 'Custos Variáveis', 'Impostos'],
+      valores: [Math.max(margem, 0), custoVar, impostos],
+      cores: ['#10B981', '#F59E0B', '#EF4444']
+    };
+  }
+
+  if (meta.id === 'despesa_fixa') {
+    return {
+      labels: ['Despesas Fixas', 'Lucro Líquido'],
+      valores: [despFixa, Math.max(lucro, 0)],
+      cores: ['#8B5CF6', '#10B981']
+    };
+  }
+
+  // resultado_lucro ou padrão: Decomposição completa da receita
+  const lucroPositivo = Math.max(lucro, 0);
+  return {
+    labels: ['Lucro Líquido', 'Despesas Fixas', 'Custos Variáveis', 'Impostos e Deduções'],
+    valores: [lucroPositivo, despFixa, custoVar, impostos],
+    cores: ['#10B981', '#8B5CF6', '#F59E0B', '#EF4444']
+  };
+}
+
+function abrirModalDetalhamentoDRE(index) {
+  criarModalDRE();
+
+  const meta = dreMeta[index];
+  if (!meta) return;
+
+  const overlay = document.getElementById('dreModalOverlay');
+  const titulo = document.getElementById('dreModalTitulo');
+  const lista = document.getElementById('dreModalLista');
+  const donutContainer = document.getElementById('dreModalDonutContainer');
+  const nota = document.getElementById('dreModalNota');
+  const colors = getThemeColors();
+
+  const sinal = meta.valor < 0 ? '-' : '';
+  const valorFmt = `${sinal}${Math.abs(meta.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+  const percFmt = (meta.percentual !== undefined) ? ` (${meta.percentual}% da Receita)` : '';
+  titulo.textContent = `${meta.label}: ${valorFmt}${percFmt}`;
+
+  lista.innerHTML = '';
+  donutContainer.innerHTML = '';
+  if (modalDreDonutChart) {
+    modalDreDonutChart.destroy();
+    modalDreDonutChart = null;
+  }
+
+  const detalhes = meta.detalhes || {};
+  const chaves = Object.keys(detalhes);
+
+  // Notas conceituais de negócio para cada linha do DRE
+  const notasDRE = {
+    faturamento_bruto: "Total bruto faturado com a venda de produtos e serviços no período selecionado antes de quaisquer deduções.",
+    impostos_taxas: "Impostos incidentes diretamente sobre o faturamento (Simples Nacional, ISS, ICMS, PIS/COFINS).",
+    receita_liquida: "Receita Líquida = Faturamento Bruto (−) Impostos e Deduções.",
+    custo_variavel: "Custos operacionais diretamente proporcionais ao volume de vendas (CMV, Fornecedores, Insumos, Tráfego Pago/Marketing).",
+    margem_contribuicao: "Margem de Contribuição = Receita Líquida (−) Custos Variáveis. Indica quanto o negócio gera para cobrir Despesas Fixas e dar Lucro.",
+    despesa_fixa: "Custos fixos de estrutura operacional (Aluguel, Folha de Pagamento, Pró-labore, Água/Luz/Internet/Contabilidade).",
+    resultado_lucro: "Resultado Final = Margem de Contribuição (−) Despesas Fixas. Lucro Líquido gerado no período analisado."
+  };
+
+  nota.textContent = notasDRE[meta.id] || "Valores apurados com base no mapeamento financeiro da aba Dados.";
+
+  if (chaves.length > 0) {
+    chaves.forEach(chave => {
+      const val = detalhes[chave];
+      const destaque = chave.startsWith('(=)') || chave.includes('Resultado') || chave.includes('Lucro Final');
+      lista.appendChild(_criarLinhaDetalhamento(chave, val, colors, destaque));
+    });
+  } else {
+    lista.appendChild(_criarLinhaDetalhamento(meta.label, meta.valor, colors, true));
+  }
+
+  // Gerar e renderizar o gráfico de pizza comparativo
+  const dadosPizza = _montarDadosPizzaComparativa(meta, detalhes);
+  if (dadosPizza && dadosPizza.valores && dadosPizza.valores.some(v => v > 0)) {
+    donutContainer.style.display = 'flex';
+
+    modalDreDonutChart = new ApexCharts(donutContainer, {
+      series: dadosPizza.valores,
+      chart: {
+        type: 'donut',
+        height: 240,
+        foreColor: colors.texto,
+        toolbar: { show: false }
+      },
+      labels: dadosPizza.labels,
+      colors: dadosPizza.cores,
+      legend: {
+        position: 'bottom',
+        fontSize: '11px',
+        labels: { colors: colors.texto },
+        itemMargin: { horizontal: 6, vertical: 2 }
+      },
+      dataLabels: {
+        enabled: true,
+        formatter: (val) => val.toFixed(1) + '%'
+      },
+      tooltip: {
+        y: {
+          formatter: (val) => 'R$ ' + Number(val).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+        }
+      },
+      plotOptions: {
+        pie: {
+          donut: {
+            size: '55%',
+            labels: {
+              show: false
+            }
+          }
+        }
+      }
+    });
+    modalDreDonutChart.render();
+  }
+
+  overlay.style.display = 'flex';
+}
+
+// ==========================================
 // ATUALIZAÇÃO DE KPIs
 // ==========================================
 
@@ -245,7 +711,6 @@ function criarSeletorPeriodoRapido(chartId, chartInstance) {
         periodoSelect.value = periodo.dias;
         periodoSelect.dispatchEvent(new Event('change'));
 
-        // Destacar botão ativo
         document.querySelectorAll('.rapid-period-selector button').forEach(b => {
           b.style.background = getThemeColors().fundo;
           b.style.color = getThemeColors().texto;
@@ -275,7 +740,8 @@ function renderizarGraficos() {
     { id: 'graficoLinhaGaleria', config: getChartLinhaOptions, key: 'linha' },
     { id: 'graficoBarrasGaleria', config: getChartBarrasOptions, key: 'barras' },
     { id: 'graficoPizzaGaleria', config: getChartPizzaOptions, key: 'pizza' },
-    { id: 'graficoAreaGaleria', config: getChartAreaOptions, key: 'area' }
+    { id: 'graficoAreaGaleria', config: getChartAreaOptions, key: 'area' },
+    { id: 'graficoDREGaleria', config: getChartDREOptions, key: 'dre' }
   ];
 
   graficos.forEach(({ id, config, key }) => {
@@ -293,7 +759,7 @@ function atualizarSubtitulosGraficos() {
   const periodoTexto = getPeriodoTexto();
   const colors = getThemeColors();
 
-  const chartsCenterAlign = ['linha', 'barras', 'area'];
+  const chartsCenterAlign = ['linha', 'barras', 'area', 'dre'];
   chartsCenterAlign.forEach(chartKey => {
     const chart = chartsInstances[chartKey];
     if (chart?.updateOptions) {
@@ -327,16 +793,13 @@ async function carregarOpcoesPlanilhas() {
     const data = await resp.json();
     _planilhasSumario = data.planilhas || [];
 
-    // Limpar e reconstruir opções
     select.innerHTML = '';
 
-    // Opção Consolidada
     const optTodas = document.createElement('option');
     optTodas.value = 'todas';
     optTodas.textContent = `🌐 Todas as Planilhas (Visão Consolidada - ${_planilhasSumario.length})`;
     select.appendChild(optTodas);
 
-    // Opções individuais
     _planilhasSumario.forEach(p => {
       const opt = document.createElement('option');
       opt.value = p.id;
@@ -345,7 +808,6 @@ async function carregarOpcoesPlanilhas() {
       select.appendChild(opt);
     });
 
-    // Recuperar preferência salva
     const salva = localStorage.getItem('DataInsight_DashboardPlanilha');
     if (salva && (salva === 'todas' || _planilhasSumario.some(p => p.id === salva))) {
       select.value = salva;
@@ -414,7 +876,6 @@ async function atualizarGraficosComDados() {
     const periodo = periodoSelect.value || '30';
     const tabelaId = planilhaSelect?.value || 'todas';
 
-    // Salvar preferência
     localStorage.setItem('DataInsight_DashboardPlanilha', tabelaId);
 
     const resposta = await fetch(`/dashboard/dados?periodo=${periodo}&tabela_id=${tabelaId}`);
@@ -435,7 +896,11 @@ async function atualizarGraficosComDados() {
       atualizarBadgesFontes(dados.contexto);
     }
 
-    if (dados.kpis) atualizarKPIs(dados);
+    if (dados.kpis) {
+      atualizarKPIs(dados);
+      _kpisAtual = dados.kpis;
+    }
+
     if (dados.evolucao?.series && dados.evolucao?.labels) {
       const labelsFormatados = dados.evolucao.labels.map(d => formatarDataExibicao(d));
       await chartsInstances.linha?.updateOptions({ xaxis: { categories: labelsFormatados } });
@@ -443,6 +908,10 @@ async function atualizarGraficosComDados() {
     }
 
     if (dados.categorias?.labels) {
+      _categoriasDespesasAtual = {
+        labels: dados.categorias.labels,
+        valores: dados.categorias.valores || []
+      };
       await chartsInstances.barras?.updateOptions({ xaxis: { categories: dados.categorias.labels } });
       await chartsInstances.barras?.updateSeries([{ name: "Despesas", data: dados.categorias.valores || [] }]);
     }
@@ -460,6 +929,12 @@ async function atualizarGraficosComDados() {
       await chartsInstances.area?.updateSeries([{ name: "Lucro", data: dados.evolucao.lucro }]);
     }
 
+    // Atualização com as 7 linhas completas do DRE
+    const linhasDRE = (Array.isArray(dados.dre) && dados.dre.length > 0) ? dados.dre : montarDREdeKPIs(dados.kpis);
+    if (linhasDRE) {
+      atualizarGraficoDRE(linhasDRE);
+    }
+
     atualizarSubtitulosGraficos();
   } catch (erro) {
     console.error("Erro ao carregar dashboard:", erro);
@@ -470,29 +945,84 @@ async function atualizarGraficosComDados() {
 // TEMA E RESPONSIVIDADE
 // ==========================================
 
+function sincronizarTemaUI() {
+  const colors = getThemeColors();
+
+  // Atualizar todos os gráficos ApexCharts
+  Object.values(chartsInstances).forEach(chart => {
+    if (chart && chart.updateOptions) {
+      chart.updateOptions({
+        chart: { foreColor: colors.texto },
+        title: { style: { color: colors.texto } },
+        subtitle: { style: { color: colors.suave } },
+        grid: { borderColor: colors.borda },
+        dataLabels: { style: { colors: [colors.texto] } },
+        legend: { labels: { colors: colors.texto } },
+        xaxis: { labels: { style: { colors: colors.suave } } },
+        yaxis: { labels: { style: { colors: colors.texto } } }
+      });
+    }
+  });
+
+  // Atualizar botões de período rápido
+  document.querySelectorAll('.rapid-period-selector button').forEach(btn => {
+    btn.style.borderColor = colors.borda;
+    btn.style.background = colors.fundo;
+    btn.style.color = colors.texto;
+  });
+
+  // Atualizar modal DRE caso esteja aberto
+  const modalOverlay = document.getElementById('dreModalOverlay');
+  if (modalOverlay && modalOverlay.style.display !== 'none') {
+    const modalCard = document.getElementById('dreModalCard');
+    if (modalCard) {
+      modalCard.style.background = colors.fundoModal;
+      modalCard.style.color = colors.texto;
+      modalCard.style.borderColor = colors.borda;
+      modalCard.style.boxShadow = colors.sombraModal;
+    }
+    const modalTitulo = document.getElementById('dreModalTitulo');
+    if (modalTitulo) modalTitulo.style.color = colors.texto;
+
+    const modalSub = document.getElementById('dreModalSub');
+    if (modalSub) modalSub.style.color = colors.suave;
+
+    const notaBox = document.getElementById('dreModalNotaBox');
+    if (notaBox) {
+      notaBox.style.background = colors.fundoBox;
+      notaBox.style.borderColor = colors.bordaBox;
+    }
+    const nota = document.getElementById('dreModalNota');
+    if (nota) nota.style.color = colors.suave;
+
+    document.querySelectorAll('#dreModalLista > div').forEach(div => {
+      div.style.borderColor = colors.borda;
+    });
+
+    if (modalDreDonutChart && modalDreDonutChart.updateOptions) {
+      modalDreDonutChart.updateOptions({
+        chart: { foreColor: colors.texto },
+        legend: { labels: { colors: colors.texto } }
+      });
+    }
+  }
+}
+
 const originalAlternarTema = window.alternarTema;
 window.alternarTema = function () {
   if (originalAlternarTema) originalAlternarTema();
-
-  setTimeout(() => {
-    Object.values(chartsInstances).forEach(chart => {
-      if (chart) {
-        chart.updateOptions({
-          chart: { foreColor: getThemeColors().texto },
-          title: { style: { color: getThemeColors().texto } },
-          subtitle: { style: { color: getThemeColors().suave } },
-          grid: { borderColor: getThemeColors().borda }
-        });
-      }
-    });
-
-    document.querySelectorAll('.rapid-period-selector button').forEach(btn => {
-      btn.style.borderColor = getThemeColors().borda;
-      btn.style.background = getThemeColors().fundo;
-      btn.style.color = getThemeColors().texto;
-    });
-  }, 100);
+  setTimeout(() => sincronizarTemaUI(), 60);
 };
+
+// Observar mudança de classe no body para detectar alternância de tema vinda de qualquer botão
+const themeObserver = new MutationObserver((mutations) => {
+  mutations.forEach((mutation) => {
+    if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+      sincronizarTemaUI();
+    }
+  });
+});
+themeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
 
 window.redimensionarGraficos = function () {
   Object.values(chartsInstances).forEach(chart => {
@@ -519,4 +1049,5 @@ document.addEventListener("DOMContentLoaded", async () => {
   renderizarGraficos();
   await carregarOpcoesPlanilhas();
   await atualizarGraficosComDados();
-});
+  sincronizarTemaUI();
+});

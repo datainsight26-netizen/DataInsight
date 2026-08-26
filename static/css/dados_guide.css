@@ -1,0 +1,66 @@
+/* Styles for the Dados page guided tour */
+.dados-guide-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 12000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.dados-guide-highlight {
+  position: absolute;
+  border: 3px solid rgba(124,58,237,0.95);
+  box-shadow: 0 8px 30px rgba(124,58,237,0.18);
+  border-radius: 10px;
+  transition: all 0.22s cubic-bezier(0.16,1,0.3,1);
+  pointer-events: none;
+}
+.dados-guide-tooltip {
+  position: absolute;
+  max-width: 520px;
+  background: var(--cartao, #ffffff);
+  color: var(--texto, #0b1220);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 20px 40px rgba(2,6,23,0.32);
+  z-index: 12010;
+  transition: transform 0.18s ease, opacity 0.15s ease;
+  will-change: transform, top, left;
+}
+.dados-guide-tooltip h4 { margin: 0 0 6px 0; font-size:16px; }
+.dados-guide-tooltip p { margin:0; font-size:13px; color:var(--suave, #475569); line-height:1.45 }
+.dados-guide-controls { display:flex; gap:8px; margin-top:12px; justify-content:flex-end }
+.dados-guide-controls button { padding:8px 12px; border-radius:8px; border:1px solid var(--borda,#e6eef8); background:transparent; cursor:pointer }
+.dados-guide-controls .primary { background: var(--primaria,#3b82f6); color:#fff; border-color:transparent }
+.dados-guide-close { position: absolute; right:12px; top:12px; background:transparent; border:none; color:var(--suave,#64748b); cursor:pointer }
+.btn-style#btnGuiaUso { font-weight:800 }
+
+/* small animations */
+.dados-guide-tooltip { transform: translateY(6px); opacity:0 }
+.dados-guide-overlay.show .dados-guide-tooltip { transform: translateY(0); opacity:1 }
+
+@media (max-width:720px){
+  .dados-guide-tooltip{ max-width:90%; left:5%; right:5%; top:auto !important; bottom:6%; transform:translateY(0); }
+  .dados-guide-highlight{ display:none }
+}
+
+/* Tooltip arrow */
+.dados-guide-tooltip::after{
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--cartao, #fff);
+  transform: rotate(45deg);
+  box-shadow: -2px -2px 6px rgba(2,6,23,0.06);
+  z-index: -1;
+  transition: left 0.12s ease, top 0.12s ease;
+  display: none;
+}
+
+/* show arrow when positioning near an element (JS will set data-arrow attribute) */
+.dados-guide-tooltip[data-arrow="bottom"]::after{ display:block; left:18px; top:-6px }
+.dados-guide-tooltip[data-arrow="top"]::after{ display:block; left:18px; bottom:-6px }
+.dados-guide-tooltip[data-arrow="left"]::after{ display:block; right:-6px; top:18px }
+.dados-guide-tooltip[data-arrow="right"]::after{ display:block; left:-6px; top:18px }
