@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -9,24 +10,25 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
   <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
-  
+
   <style>
     /* ========== EFEITO DE LUZ NOS KPIs - DASHBOARD ========== */
     @keyframes shimmer-light {
       0% {
         left: -100%;
       }
+
       100% {
         left: 100%;
       }
     }
-    
+
     /* KPI Cards com efeito de luz nas cores de cada indicador */
     .grade--4 .cartao {
       position: relative;
       overflow: hidden;
     }
-    
+
     .grade--4 .cartao::before {
       content: '';
       position: absolute;
@@ -37,25 +39,26 @@
       animation: shimmer-light 2.5s linear infinite alternate;
       pointer-events: none;
     }
-    
+
     /* Cores específicas para cada KPI */
     .grade--4 .cartao:nth-child(1)::before {
       background: linear-gradient(90deg, transparent, #3B82F6, transparent);
     }
-    
+
     .grade--4 .cartao:nth-child(2)::before {
       background: linear-gradient(90deg, transparent, #16A34A, transparent);
     }
-    
+
     .grade--4 .cartao:nth-child(3)::before {
       background: linear-gradient(90deg, transparent, #DC2626, transparent);
     }
-    
+
     .grade--4 .cartao:nth-child(4)::before {
       background: linear-gradient(90deg, transparent, #6B7DEE, transparent);
     }
   </style>
 </head>
+
 <body>
   <a href="#conteudo" class="skip-link">Ir para conteúdo</a>
   <div class="layout">
@@ -65,12 +68,15 @@
     <div class="main">
       <header class="topbar" role="banner">
         <div class="topbar__left">
-          <button class="topbar__btn topbar__mobile-toggle" onclick="abrirSidebar()" aria-label="Abrir menu"><i class="fa-solid fa-bars"></i></button>
+          <button class="topbar__btn topbar__mobile-toggle" onclick="abrirSidebar()" aria-label="Abrir menu"><i
+              class="fa-solid fa-bars"></i></button>
           <span class="topbar__greeting">Olá, <strong>{{ session.usuario_nome }}</strong></span>
         </div>
         <div class="topbar__actions">
-          <button class="topbar__btn" onclick="alternarTema()" aria-label="Alternar tema" id="btnTema"><i class="fa-solid fa-moon"></i></button>
-          <a class="topbar__btn" href="{{ url_for('pagina_configuracoes') }}" title="Configurações"><i class="fa-solid fa-gear"></i></a>
+          <button class="topbar__btn" onclick="alternarTema()" aria-label="Alternar tema" id="btnTema"><i
+              class="fa-solid fa-moon"></i></button>
+          <a class="topbar__btn" href="{{ url_for('pagina_configuracoes') }}" title="Configurações"><i
+              class="fa-solid fa-gear"></i></a>
         </div>
       </header>
 
@@ -83,23 +89,30 @@
           </header>
 
           <!-- Filtros e Período com Seletor Multi-Planilha -->
-          <section class="cartao" aria-label="Filtros de análise" style="margin-top: 24px; background: var(--cartao); border: 1px solid var(--borda);">
-            <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+          <section class="cartao" aria-label="Filtros de análise"
+            style="margin-top: 24px; background: var(--cartao); border: 1px solid var(--borda);">
+            <div
+              style="display: flex; gap: 20px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
               <div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: center;">
                 <div style="display: flex; gap: 8px; align-items: center;">
-                  <label for="seletorPlanilhaDash" style="font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 6px;">
+                  <label for="seletorPlanilhaDash"
+                    style="font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 6px;">
                     <i class="fa-solid fa-table-list" style="color: var(--primaria);"></i> Origem:
                   </label>
-                  <select class="form-select w-auto" id="seletorPlanilhaDash" aria-label="Selecionar planilha ou visão consolidada" style="font-weight: 600; min-width: 220px; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--borda); background: var(--fundo-corpo); color: var(--texto);">
+                  <select class="form-select w-auto" id="seletorPlanilhaDash"
+                    aria-label="Selecionar planilha ou visão consolidada"
+                    style="font-weight: 600; min-width: 220px; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--borda); background: var(--fundo-corpo); color: var(--texto);">
                     <option value="todas">🌐 Todas as Planilhas (Visão Consolidada)</option>
                   </select>
                 </div>
 
                 <div style="display: flex; gap: 8px; align-items: center;">
-                  <label for="periodoDash" style="font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 6px;">
+                  <label for="periodoDash"
+                    style="font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 6px;">
                     <i class="fa-solid fa-calendar-days" style="color: var(--primaria);"></i> Período:
                   </label>
-                  <select class="form-select w-auto" id="periodoDash" aria-label="Selecionar período" style="font-weight: 600; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--borda); background: var(--fundo-corpo); color: var(--texto);">
+                  <select class="form-select w-auto" id="periodoDash" aria-label="Selecionar período"
+                    style="font-weight: 600; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--borda); background: var(--fundo-corpo); color: var(--texto);">
                     <option value="7">Últimos 7 dias</option>
                     <option value="30" selected>Últimos 30 dias</option>
                     <option value="90">Últimos 90 dias</option>
@@ -110,7 +123,8 @@
 
               <!-- Badges de Fontes Ativas -->
               <div id="badgeFontesContainer" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                <span class="badge" id="badgeStatusFontes" style="background: rgba(59, 130, 246, 0.12); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.25); padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                <span class="badge" id="badgeStatusFontes"
+                  style="background: rgba(59, 130, 246, 0.12); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.25); padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;">
                   <i class="fa-solid fa-layer-group"></i> Carregando fontes...
                 </span>
               </div>
@@ -176,6 +190,14 @@
                 Evolução Financeira (Receita, Despesa e Lucro)
               </h3>
               <div id="graficoLinhaGaleria" style="min-height: 400px;"></div>
+            </article>
+
+            <article class="cartao" style="margin-bottom: 24px;">
+              <h3 class="h2" style="font-size:18px; margin-bottom:20px;">
+                <i class="fa-solid fa-filter" style="color:var(--icon); margin-right:8px;"></i>
+                DRE - Demonstração do Resultado do Exercício
+              </h3>
+              <div id="graficoDREGaleria" style="min-height: 400px;"></div>
             </article>
 
             <!-- Grid 2x2 para outros gráficos -->
@@ -244,7 +266,9 @@
 
   <div vw class="enabled" id="Vlibras">
     <div vw-access-button class="active"></div>
-    <div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div>
+    <div vw-plugin-wrapper>
+      <div class="vw-plugin-top-wrapper"></div>
+    </div>
   </div>
 
   <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
@@ -253,8 +277,9 @@
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
   <script src="{{ url_for('static', filename='js/graficos-avancados.js') }}"></script>
   <script>
-    function abrirSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sidebarOverlay').classList.add('active');}
-    function fecharSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active');}
+    function abrirSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarOverlay').classList.add('active'); }
+    function fecharSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('active'); }
   </script>
 </body>
+
 </html>
