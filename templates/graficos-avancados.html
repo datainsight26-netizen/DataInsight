@@ -75,166 +75,814 @@
       </header>
 
       <main id="conteudo" class="pagina" role="main" data-ia-help="page_graficos_avancados">
-        <div class="container">
-          <header class="pagina__cabecalho">
-            <div class="migalhas" aria-label="Você está em">Início &gt; Dashboard</div>
-            <h1 class="h1">Dashboard</h1>
-            <p class="p">Visão estratégica completa do desempenho e métricas de sua empresa.</p>
-          </header>
+          <div class="container fluxo-caixa-page">
 
-          <!-- Filtros e Período com Seletor Multi-Planilha -->
-          <section class="cartao" aria-label="Filtros de análise" style="margin-top: 24px; background: var(--cartao); border: 1px solid var(--borda);">
-            <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
-              <div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: center;">
-                <div style="display: flex; gap: 8px; align-items: center;">
-                  <label for="seletorPlanilhaDash" style="font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 6px;">
-                    <i class="fa-solid fa-table-list" style="color: var(--primaria);"></i> Origem:
+            <!-- CABEÇALHO -->
+            <header class="pagina__cabecalho fluxo-header">
+              <div class="migalhas" aria-label="Você está em">
+                Início &gt; Fluxo de Caixa
+              </div>
+
+              <h1 class="h1">Fluxo de Caixa</h1>
+
+              <p class="p">
+                Compare entradas, saídas e saldo do período de forma simples e visual.
+              </p>
+            </header>
+
+
+            <!-- FILTROS -->
+            <section class="cartao fluxo-filtros" aria-label="Filtros de análise">
+              <div class="fluxo-filtros__esquerda">
+
+                <div class="fluxo-filtro-grupo">
+                  <label for="seletorPlanilhaDash">
+                    <i class="fa-solid fa-table-list"></i>
+                    Origem
                   </label>
-                  <select class="form-select w-auto" id="seletorPlanilhaDash" aria-label="Selecionar planilha ou visão consolidada" style="font-weight: 600; min-width: 220px; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--borda); background: var(--fundo-corpo); color: var(--texto);">
-                    <option value="todas">🌐 Todas as Planilhas (Visão Consolidada)</option>
+
+                  <select id="seletorPlanilhaDash">
+                    <option value="todas">
+                      Todas as Planilhas
+                    </option>
                   </select>
                 </div>
 
-                <div style="display: flex; gap: 8px; align-items: center;">
-                  <label for="periodoDash" style="font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 6px;">
-                    <i class="fa-solid fa-calendar-days" style="color: var(--primaria);"></i> Período:
-                  </label>
-                  <select class="form-select w-auto" id="periodoDash" aria-label="Selecionar período" style="font-weight: 600; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--borda); background: var(--fundo-corpo); color: var(--texto);">
-                    <option value="7">Últimos 7 dias</option>
-                    <option value="30" selected>Últimos 30 dias</option>
-                    <option value="90">Últimos 90 dias</option>
-                    <option value="365">Este ano</option>
-                  </select>
+                <div class="fluxo-periodo-info">
+                  <span class="fluxo-periodo-info__label">
+                    PERÍODO
+                  </span>
+
+                  <strong id="textoPeriodoSelecionado">
+                    Exibindo os últimos 30 dias
+                  </strong>
                 </div>
+
               </div>
 
-              <!-- Badges de Fontes Ativas -->
-              <div id="badgeFontesContainer" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                <span class="badge" id="badgeStatusFontes" style="background: rgba(59, 130, 246, 0.12); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.25); padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;">
-                  <i class="fa-solid fa-layer-group"></i> Carregando fontes...
-                </span>
+              <div class="fluxo-periodos">
+                <button type="button" class="fluxo-periodo-btn" data-periodo="7">
+                  7 dias
+                </button>
+
+                <button type="button" class="fluxo-periodo-btn ativo" data-periodo="30">
+                  30 dias
+                </button>
+
+                <button type="button" class="fluxo-periodo-btn" data-periodo="180">
+                  6 meses
+                </button>
+
+                <button type="button" class="fluxo-periodo-btn" data-periodo="365">
+                  1 ano
+                </button>
+
+                <!-- Mantido porque o JS atual depende desse select -->
+                <select id="periodoDash" aria-label="Selecionar período" hidden>
+                  <option value="7">Últimos 7 dias</option>
+                  <option value="30" selected>Últimos 30 dias</option>
+                  <option value="180">Últimos 180 dias</option>
+                  <option value="365">Este ano</option>
+                </select>
               </div>
+            </section>
+
+
+            <!-- FONTES -->
+            <div id="badgeFontesContainer" class="fluxo-fontes">
+              <span class="badge" id="badgeStatusFontes">
+                <i class="fa-solid fa-layer-group"></i>
+                Carregando fontes...
+              </span>
             </div>
-          </section>
-          <!-- Métricas Resumidas -->
-          <section aria-label="Métricas principais de desempenho" style="margin-top: 32px;">
-            <h2 class="h2">Indicador de desempenho</h2>
-            <div class="grade grade--4" style="margin-top: 16px;">
-              <article class="cartao" style=" border-left: 4px solid var(--primaria);">
-                <div style="display: flex; justify-content: space-between; align-items: start;">
+
+
+            <!-- KPIs -->
+            <section class="fluxo-kpis" aria-label="Resumo financeiro">
+
+              <!-- ENTRADAS -->
+              <article class="cartao fluxo-kpi fluxo-kpi--entrada">
+
+                <div class="fluxo-kpi__topo">
                   <div>
-                    <div class="cartao__meta">Receita Total</div>
-                    <div class="cartao__valor" style="color: var(--primaria); font-size: 28px;" id="kpiReceita">--</div>
+                    <span class="fluxo-kpi__titulo">
+                      Total de Entradas
+                    </span>
+
+                    <div
+                      class="fluxo-kpi__valor"
+                      id="kpiReceita"
+                    >
+                      --
+                    </div>
                   </div>
-                  <i class="fa-solid fa-chart-line" style="font-size: 32px; color: var(--primaria); opacity: 0.2;"></i>
+
+                  <div class="fluxo-kpi__icone">
+                    <i class="fa-solid fa-arrow-trend-up"></i>
+                  </div>
                 </div>
+
+                <div class="fluxo-kpi__rodape">
+                  <span>Receitas do período</span>
+                </div>
+
               </article>
 
-              <article class="cartao" style=" border-left: 4px solid var(--primaria);">
-                <div style="display: flex; justify-content: space-between; align-items: start;">
+
+              <!-- SAÍDAS -->
+              <article class="cartao fluxo-kpi fluxo-kpi--saida">
+
+                <div class="fluxo-kpi__topo">
                   <div>
-                    <div class="cartao__meta">Lucro Líquido</div>
-                    <div class="cartao__valor" style="color: var(--sucesso); font-size: 28px;" id="kpiLucro">--</div>
+                    <span class="fluxo-kpi__titulo">
+                      Total de Saídas
+                    </span>
+
+                    <div
+                      class="fluxo-kpi__valor"
+                      id="kpiDespesas"
+                    >
+                      --
+                    </div>
                   </div>
-                  <i class="fa-solid fa-hand-holding-dollar"
-                    style="font-size: 32px; color: var(--sucesso); opacity: 0.2;"></i>
+
+                  <div class="fluxo-kpi__icone">
+                    <i class="fa-solid fa-arrow-trend-down"></i>
+                  </div>
                 </div>
+
+                <div class="fluxo-kpi__rodape">
+                  <span>Despesas do período</span>
+                </div>
+
               </article>
 
-              <article class="cartao" style=" border-left: 4px solid var(--primaria);">
-                <div style="display: flex; justify-content: space-between; align-items: start;">
+
+              <!-- SALDO -->
+              <article class="cartao fluxo-kpi fluxo-kpi--saldo">
+
+                <div class="fluxo-kpi__topo">
                   <div>
-                    <div class="cartao__meta">Despesas Operacionais</div>
-                    <div class="cartao__valor" style="color: var(--perigo); font-size: 28px;" id="kpiDespesas">--</div>
+                    <span class="fluxo-kpi__titulo">
+                      Saldo do Período
+                    </span>
+
+                    <!-- Mantemos kpiLucro para o JS continuar funcionando -->
+                    <div
+                      class="fluxo-kpi__valor"
+                      id="kpiLucro"
+                    >
+                      --
+                    </div>
                   </div>
-                  <i class="fa-solid fa-money-bill-trend-up"
-                    style="font-size: 32px; color: var(--perigo); opacity: 0.2;"></i>
+
+                  <div class="fluxo-kpi__icone">
+                    <i class="fa-solid fa-wallet"></i>
+                  </div>
                 </div>
+
+                <div class="fluxo-kpi__rodape">
+                  <span>Entradas menos saídas</span>
+                </div>
+
               </article>
 
-              <article class="cartao" style=" border-left: 4px solid var(--primaria);">
-                <div style="display: flex; justify-content: space-between; align-items: start;">
+
+              <!-- MARGEM -->
+              <article class="cartao fluxo-kpi fluxo-kpi--margem">
+
+                <div class="fluxo-kpi__topo">
                   <div>
-                    <div class="cartao__meta">Margem de Lucro</div>
-                    <div class="cartao__valor" style="color: var(--info); font-size: 28px;" id="kpiMargem">--</div>
+                    <span class="fluxo-kpi__titulo">
+                      Margem de Lucro
+                    </span>
+
+                    <div
+                      class="fluxo-kpi__valor"
+                      id="kpiMargem"
+                    >
+                      --
+                    </div>
                   </div>
-                  <i class="fa-solid fa-percent" style="font-size: 32px; color: var(--info); opacity: 0.2;"></i>
+
+                  <div class="fluxo-kpi__icone">
+                    <i class="fa-solid fa-percent"></i>
+                  </div>
                 </div>
-              </article>
-            </div>
-          </section>
 
+                <div class="fluxo-kpi__rodape">
+                  <span>Resultado sobre as entradas</span>
+                </div>
 
-          <!-- Gráficos Principais - Layout Otimizado -->
-          <section style="margin-top: 48px;">
-            <h2 class="h2" style="margin-bottom: 24px;">Análise de Desempenho</h2>
-
-            <!-- Linha Temporal - Full Width -->
-            <article class="cartao" style="margin-bottom: 24px;">
-              <h3 class="h2" style="font-size: 18px; margin-bottom: 20px;">
-                <i class="fa-solid fa-chart-line" style="color: var(--sucesso); margin-right: 8px;"></i>
-                Evolução Financeira (Receita, Despesa e Lucro)
-              </h3>
-              <div id="graficoLinhaGaleria" style="min-height: 400px;"></div>
-            </article>
-
-            <!-- Grid 2x2 para outros gráficos -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;" class="grid-responsivo">
-              <!-- Barras -->
-              <article class="cartao">
-                <h3 class="h2" style="font-size: 18px; margin-bottom: 20px;">
-                  <i class="fa-solid fa-bars" style="color: var(--primaria); margin-right: 8px;"></i>
-                  Despesas por Categoria
-                </h3>
-                <div id="graficoBarrasGaleria" style="min-height: 320px;"></div>
               </article>
 
-              <!-- Pizza -->
-              <article class="cartao">
-                <h3 class="h2" style="font-size: 18px; margin-bottom: 20px;">
-                  <i class="fa-solid fa-chart-pie" style="color: var(--aviso); margin-right: 8px;"></i>
-                  Margem de Lucro (%)
-                </h3>
-                <div id="graficoPizzaGaleria" style="min-height: 320px;"></div>
-              </article>
-
-              <!-- Área -->
-              <article class="cartao" style="grid-column: 1 / -1;">
-                <h3 class="h2" style="font-size: 18px; margin-bottom: 20px;">
-                  <i class="fa-solid fa-water" style="color: var(--info); margin-right: 8px;"></i>
-                  Lucro ao Longo do Tempo
-                </h3>
-                <div id="graficoAreaGaleria" style="min-height: 350px;"></div>
-              </article>
-            </div>
-          </section>
+            </section>
 
 
-          <!-- Insights e Recomendações -->
-          <!-- <section class="cartao"
-            style="margin-top: 48px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05)); border-left: 4px solid var(--primaria);">
-            <h2 class="h2">Insights e Recomendações</h2>
-            <div style="margin-top: 16px;">
-              <div
-                style="background: var(--cartao); padding: 16px; border-radius: var(--raio); margin-bottom: 12px; border-left: 3px solid var(--sucesso);">
-                <p class="p"><strong>✓ Ponto Forte:</strong> Crescimento de 15% na receita total com redução de 8% nas
-                  despesas operacionais. Margem de lucro em expansão.</p>
+            <!-- GRÁFICOS -->
+            <section class="fluxo-secao-graficos">
+
+              <div class="fluxo-secao-titulo">
+                <div>
+                  <h2 class="h2">Análise Financeira</h2>
+                  <p class="p">
+                    Visualize a movimentação financeira ao longo do período.
+                  </p>
+                </div>
               </div>
-              <div
-                style="background: var(--cartao); padding: 16px; border-radius: var(--raio); margin-bottom: 12px; border-left: 3px solid var(--aviso);">
-                <p class="p"><strong>⚠ Atenção:</strong> A categoria B apresenta queda de 12% comparado com o período
-                  anterior. Recomenda-se revisar estratégia de marketing.</p>
+
+
+              <div class="fluxo-graficos-grid">
+
+                <!-- ENTRADAS X SAÍDAS -->
+                <article class="cartao fluxo-grafico-card">
+                  <div class="fluxo-grafico-card__header">
+
+                    <div>
+                      <span class="fluxo-grafico-card__label">
+                        MOVIMENTAÇÃO
+                      </span>
+
+                      <h3>
+                        Entradas x Saídas
+                      </h3>
+                    </div>
+
+                    <div class="fluxo-grafico-card__icone">
+                      <i class="fa-solid fa-chart-column"></i>
+                    </div>
+
+                  </div>
+
+                  <!-- Mantemos o ID para não quebrar o JS -->
+                  <div
+                    id="graficoLinhaGaleria"
+                    class="chart-container"
+                    data-chart
+                    role="img"
+                    aria-label="Gráfico de entradas, saídas e saldo"
+                  ></div>
+                </article>
+
+
+                <!-- DESPESAS -->
+                <article class="cartao fluxo-grafico-card">
+                  <div class="fluxo-grafico-card__header">
+
+                    <div>
+                      <span class="fluxo-grafico-card__label">
+                        EVOLUÇÃO DO SALDO
+                      </span>
+
+                      <h3>
+                        Saldo por Período
+                      </h3>
+                    </div>
+
+                    <div class="fluxo-grafico-card__icone">
+                      <i class="fa-solid fa-chart-bar"></i>
+                    </div>
+
+                  </div>
+
+                  <div
+                    id="graficoBarrasGaleria"
+                    class="chart-container"
+                    data-chart
+                    role="img"
+                    aria-label="Gráfico de saldo do período" 
+                  ></div>
+                </article>
+
               </div>
-              <div style="background: var(--cartao); padding: 16px; border-radius: var(--raio);">
-                <p class="p"><strong>→ Recomendação:</strong> Aumentar investimento em Produto Premium que está gerando
-                  35% mais ROI. Reduzir custos de fornecedores secundários.</p>
+
+
+              <!-- Mantidos ocultos para o JS atual não quebrar -->
+              <div style="display:none;">
+                <div id="graficoPizzaGaleria"></div>
+                <div id="graficoAreaGaleria"></div>
               </div>
-            </div>
-          </section> -->
+
+            </section>
+
+
+            <!-- TABELA FLUXO DE CAIXA -->
+            <section class="cartao fluxo-tabela-card">
+
+        <div class="fluxo-tabela-header">
+          <div>
+            <span class="fluxo-grafico-card__label">
+              DETALHAMENTO
+            </span>
+
+            <h2 class="h2">
+              Planilha de Fluxo de Caixa
+            </h2>
+
+            <p class="p">
+              Compare os valores previstos e realizados em cada período.
+            </p>
+          </div>
+        </div>
+
+        <div class="fluxo-tabela-wrapper">
+
+          <table class="fluxo-tabela fluxo-tabela--agrupada">
+
+            <thead id="fluxoTabelaHead">
+              <tr class="fluxo-tabela__cabecalho-principal">
+
+                <th rowspan="2" class="fluxo-col-categoria">
+                  Categoria
+                </th>
+
+                <th colspan="2">
+                  Sem 1
+                </th>
+
+                <th colspan="2">
+                  Sem 2
+                </th>
+
+                <th colspan="2">
+                  Sem 3
+                </th>
+
+                <th colspan="2">
+                  Sem 4
+                </th>
+
+              </tr>
+
+              <tr class="fluxo-tabela__cabecalho-secundario">
+
+                <th>Previsto</th>
+                <th>Realizado</th>
+
+                <th>Previsto</th>
+                <th>Realizado</th>
+
+                <th>Previsto</th>
+                <th>Realizado</th>
+
+                <th>Previsto</th>
+                <th>Realizado</th>
+
+              </tr>
+            </thead>
+
+
+            <tbody>
+
+              <!-- =====================================================
+                  ENTRADAS
+              ====================================================== -->
+
+              <tr class="fluxo-grupo fluxo-grupo--entrada">
+
+                <td>
+                  <button
+                    type="button"
+                    class="fluxo-grupo-toggle"
+                    data-grupo="entradas"
+                    aria-expanded="true"
+                  >
+                    <i class="fa-solid fa-chevron-down"></i>
+                    <strong>ENTRADAS</strong>
+                  </button>
+                </td>
+
+                <td>R$ 18.300</td>
+                <td class="fluxo-valor-realizado fluxo-valor-positivo">
+                  R$ 16.295
+                </td>
+
+                <td>R$ 21.594</td>
+                <td class="fluxo-valor-realizado fluxo-valor-positivo">
+                  R$ 23.885
+                </td>
+
+                <td>R$ 18.300</td>
+                <td class="fluxo-valor-realizado fluxo-valor-positivo">
+                  R$ 19.327
+                </td>
+
+                <td>R$ 15.006</td>
+                <td class="fluxo-valor-realizado fluxo-valor-positivo">
+                  R$ 14.787
+                </td>
+
+              </tr>
+
+
+              <tr class="fluxo-subitem" data-parent="entradas">
+
+                <td>
+                  Venda de Produtos
+                </td>
+
+                <td>R$ 10.500</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--negativa">
+                    -13%
+                  </span>
+                  <strong>R$ 9.870</strong>
+                </td>
+
+                <td>R$ 12.390</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--positiva">
+                    +11%
+                  </span>
+                  <strong>R$ 13.706</strong>
+                </td>
+
+                <td>R$ 10.500</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--positiva">
+                    +4%
+                  </span>
+                  <strong>R$ 10.910</strong>
+                </td>
+
+                <td>R$ 8.610</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--negativa">
+                    -3%
+                  </span>
+                  <strong>R$ 8.368</strong>
+                </td>
+
+              </tr>
+
+
+              <tr class="fluxo-subitem" data-parent="entradas">
+
+                <td>
+                  Prestação de Serviços
+                </td>
+
+                <td>R$ 6.750</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--negativa">
+                    -9%
+                  </span>
+                  <strong>R$ 6.109</strong>
+                </td>
+
+                <td>R$ 7.965</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--positiva">
+                    +14%
+                  </span>
+                  <strong>R$ 9.063</strong>
+                </td>
+
+                <td>R$ 6.750</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--positiva">
+                    +7%
+                  </span>
+                  <strong>R$ 7.227</strong>
+                </td>
+
+                <td>R$ 5.535</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--positiva">
+                    +0%
+                  </span>
+                  <strong>R$ 5.555</strong>
+                </td>
+
+              </tr>
+
+
+              <tr class="fluxo-subitem" data-parent="entradas">
+
+                <td>
+                  Outras Receitas
+                </td>
+
+                <td>R$ 1.050</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--negativa">
+                    -3%
+                  </span>
+                  <strong>R$ 1.106</strong>
+                </td>
+
+                <td>R$ 1.239</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--negativa">
+                    -10%
+                  </span>
+                  <strong>R$ 1.116</strong>
+                </td>
+
+                <td>R$ 1.050</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--positiva">
+                    +13%
+                  </span>
+                  <strong>R$ 1.190</strong>
+                </td>
+
+                <td>R$ 861</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--positiva">
+                    +0%
+                  </span>
+                  <strong>R$ 864</strong>
+                </td>
+
+              </tr>
+
+
+              <!-- =====================================================
+                  SAÍDAS VARIÁVEIS
+              ====================================================== -->
+
+              <tr class="fluxo-grupo fluxo-grupo--saida">
+
+                <td>
+                  <button
+                    type="button"
+                    class="fluxo-grupo-toggle"
+                    data-grupo="variaveis"
+                    aria-expanded="true"
+                  >
+                    <i class="fa-solid fa-chevron-down"></i>
+                    <strong>SAÍDAS - CUSTOS VARIÁVEIS</strong>
+                  </button>
+                </td>
+
+                <td>R$ 7.425</td>
+                <td class="fluxo-valor-negativo">
+                  R$ 7.343
+                </td>
+
+                <td>R$ 8.763</td>
+                <td class="fluxo-valor-negativo">
+                  R$ 8.266
+                </td>
+
+                <td>R$ 7.425</td>
+                <td class="fluxo-valor-negativo">
+                  R$ 8.308
+                </td>
+
+                <td>R$ 6.090</td>
+                <td class="fluxo-valor-negativo">
+                  R$ 6.161
+                </td>
+
+              </tr>
+
+
+              <tr class="fluxo-subitem" data-parent="variaveis">
+
+                <td>
+                  Compras
+                </td>
+
+                <td>R$ 4.625</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--positiva">
+                    -4%
+                  </span>
+                  <strong>R$ 4.440</strong>
+                </td>
+
+                <td>R$ 5.458</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--positiva">
+                    -14%
+                  </span>
+                  <strong>R$ 4.701</strong>
+                </td>
+
+                <td>R$ 4.625</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--negativa">
+                    +9%
+                  </span>
+                  <strong>R$ 5.061</strong>
+                </td>
+
+                <td>R$ 3.793</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--negativa">
+                    +6%
+                  </span>
+                  <strong>R$ 4.015</strong>
+                </td>
+
+              </tr>
+
+
+              <tr class="fluxo-subitem" data-parent="variaveis">
+
+                <td>
+                  Impostos sobre Vendas
+                </td>
+
+                <td>R$ 1.600</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--negativa">
+                    +1%
+                  </span>
+                  <strong>R$ 1.620</strong>
+                </td>
+
+                <td>R$ 1.888</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--negativa">
+                    +8%
+                  </span>
+                  <strong>R$ 2.039</strong>
+                </td>
+
+                <td>R$ 1.600</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--negativa">
+                    +15%
+                  </span>
+                  <strong>R$ 1.835</strong>
+                </td>
+
+                <td>R$ 1.312</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--positiva">
+                    -9%
+                  </span>
+                  <strong>R$ 1.199</strong>
+                </td>
+
+              </tr>
+
+
+              <tr class="fluxo-subitem" data-parent="variaveis">
+
+                <td>
+                  Comissões
+                </td>
+
+                <td>R$ 775</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--negativa">
+                    +15%
+                  </span>
+                  <strong>R$ 895</strong>
+                </td>
+
+                <td>R$ 915</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--negativa">
+                    +6%
+                  </span>
+                  <strong>R$ 966</strong>
+                </td>
+
+                <td>R$ 775</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--positiva">
+                    -1%
+                  </span>
+                  <strong>R$ 767</strong>
+                </td>
+
+                <td>R$ 636</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--positiva">
+                    -5%
+                  </span>
+                  <strong>R$ 606</strong>
+                </td>
+
+              </tr>
+
+
+              <!-- =====================================================
+                  CUSTOS FIXOS
+              ====================================================== -->
+
+              <tr class="fluxo-grupo fluxo-grupo--saida">
+
+                <td>
+                  <button
+                    type="button"
+                    class="fluxo-grupo-toggle"
+                    data-grupo="fixos"
+                    aria-expanded="true"
+                  >
+                    <i class="fa-solid fa-chevron-down"></i>
+                    <strong>SAÍDAS - CUSTOS FIXOS</strong>
+                  </button>
+                </td>
+
+                <td>R$ 8.526</td>
+                <td class="fluxo-valor-negativo">
+                  R$ 8.425
+                </td>
+
+                <td>R$ 10.172</td>
+                <td class="fluxo-valor-negativo">
+                  R$ 10.187
+                </td>
+
+                <td>R$ 8.526</td>
+                <td class="fluxo-valor-negativo">
+                  R$ 8.899
+                </td>
+
+                <td>R$ 6.991</td>
+                <td class="fluxo-valor-negativo">
+                  R$ 7.282
+                </td>
+
+              </tr>
+
+
+              <tr class="fluxo-subitem" data-parent="fixos">
+
+                <td>
+                  Aluguel
+                </td>
+
+                <td>R$ 1.300</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--negativa">
+                    +10%
+                  </span>
+                  <strong>R$ 1.430</strong>
+                </td>
+
+                <td>R$ 1.534</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--negativa">
+                    +3%
+                  </span>
+                  <strong>R$ 1.585</strong>
+                </td>
+
+                <td>R$ 1.300</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--positiva">
+                    -3%
+                  </span>
+                  <strong>R$ 1.256</strong>
+                </td>
+
+                <td>R$ 1.066</td>
+
+                <td>
+                  <span class="fluxo-variacao fluxo-variacao--positiva">
+                    -10%
+                  </span>
+                  <strong>R$ 958</strong>
+                </td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
 
         </div>
-        {% include 'partials/footer.html' %}
-      </main>
+
+      </section>
+
+          </div>
+
+          {% include 'partials/footer.html' %}
+        </main>
     </div>
   </div>
 
@@ -253,8 +901,188 @@
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
   <script src="{{ url_for('static', filename='js/graficos-avancados.js') }}"></script>
   <script>
+    document.querySelectorAll('.fluxo-periodo-btn').forEach(botao => {
+      botao.addEventListener('click', function () {
+
+        const periodo = this.dataset.periodo;
+        const select = document.getElementById('periodoDash');
+
+        if (!select) return;
+
+        document.querySelectorAll('.fluxo-periodo-btn').forEach(btn => {
+          btn.classList.remove('ativo');
+        });
+
+        this.classList.add('ativo');
+
+        select.value = periodo;
+        select.dispatchEvent(new Event('change'));
+
+        const texto = document.getElementById('textoPeriodoSelecionado');
+
+        const textos = {
+          '7': 'Exibindo os últimos 7 dias',
+          '30': 'Exibindo os últimos 30 dias',
+          '180': 'Exibindo os últimos 6 meses',
+          '365': 'Exibindo o último ano'
+        };
+
+        if (texto) {
+          texto.textContent = textos[periodo] || 'Período selecionado';
+        }
+
+      });
+    });
+  </script>
+  <script>
+      document.querySelectorAll('.fluxo-grupo-toggle').forEach(botao => {
+
+          botao.addEventListener('click', function () {
+
+            const grupo = this.dataset.grupo;
+
+            const linhas = document.querySelectorAll(
+              `.fluxo-subitem[data-parent="${grupo}"]`
+            );
+
+            const aberto =
+              this.getAttribute('aria-expanded') === 'true';
+
+            linhas.forEach(linha => {
+              linha.style.display =
+                aberto ? 'none' : 'table-row';
+            });
+
+            this.setAttribute(
+              'aria-expanded',
+              String(!aberto)
+            );
+
+            this.classList.toggle(
+              'fechado',
+              aberto
+            );
+
+            function obterPeriodosTabela(periodo) {
+              const periodoNum = Number(periodo);
+
+              if (periodoNum === 7) {
+                return [
+                  'Dia 1',
+                  'Dia 2',
+                  'Dia 3',
+                  'Dia 4',
+                  'Dia 5',
+                  'Dia 6',
+                  'Dia 7'
+                ];
+              }
+
+              if (periodoNum === 30) {
+                return [
+                  'Sem 1',
+                  'Sem 2',
+                  'Sem 3',
+                  'Sem 4'
+                ];
+              }
+
+              const nomesMeses = [
+                'Jan',
+                'Fev',
+                'Mar',
+                'Abr',
+                'Mai',
+                'Jun',
+                'Jul',
+                'Ago',
+                'Set',
+                'Out',
+                'Nov',
+                'Dez'
+              ];
+
+              if (periodoNum === 180) {
+                const hoje = new Date();
+                const meses = [];
+
+                for (let i = 5; i >= 0; i--) {
+                  const data = new Date(
+                    hoje.getFullYear(),
+                    hoje.getMonth() - i,
+                    1
+                  );
+
+                  meses.push(
+                    nomesMeses[data.getMonth()]
+                  );
+                }
+
+                return meses;
+              }
+
+              if (periodoNum === 365) {
+                return nomesMeses;
+              }
+
+              return [];
+            }
+
+            function atualizarCabecalhoTabela(periodo) {
+              const thead = document.getElementById('fluxoTabelaHead');
+
+              if (!thead) return;
+
+              const periodos = obterPeriodosTabela(periodo);
+
+              let primeiraLinha = `
+                <tr class="fluxo-tabela__cabecalho-principal">
+
+                  <th
+                    rowspan="2"
+                    class="fluxo-col-categoria"
+                  >
+                    Categoria
+                  </th>
+              `;
+
+              periodos.forEach(nome => {
+                primeiraLinha += `
+                  <th colspan="2">
+                    ${nome}
+                  </th>
+                `;
+              });
+
+              primeiraLinha += `</tr>`;
+
+
+              let segundaLinha = `
+                <tr class="fluxo-tabela__cabecalho-secundario">
+              `;
+
+              periodos.forEach(() => {
+                segundaLinha += `
+                  <th>Previsto</th>
+                  <th>Realizado</th>
+                `;
+              });
+
+              segundaLinha += `</tr>`;
+
+
+              thead.innerHTML =
+                primeiraLinha + segundaLinha;
+            }
+
+          });
+
+        });
+      </script>
+  <script>
     function abrirSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sidebarOverlay').classList.add('active');}
     function fecharSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active');}
   </script>
+    
 </body>
 </html>

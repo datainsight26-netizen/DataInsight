@@ -51,7 +51,7 @@ function getPeriodoTexto() {
     '15': 'Últimos 15 dias',
     '30': 'Últimos 30 dias',
     '60': 'Últimos 60 dias',
-    '90': 'Últimos 90 dias'
+    '180': 'Últimos 180 dias'
   };
   return periodoMap[periodo] || `Período ${periodo} dias`;
 }
@@ -62,58 +62,229 @@ function getPeriodoTexto() {
 
 function getChartLinhaOptions() {
   const colors = getThemeColors();
+
   return {
-    series: [{ name: 'Receita', data: [] }, { name: 'Despesa', data: [] }, { name: 'Lucro', data: [] }],
+    series: [
+      {
+        name: 'Entradas',
+        data: []
+      },
+      {
+        name: 'Saídas',
+        data: []
+      }
+    ],
+
     chart: {
-      type: 'line',
-      height: 400,
+      type: 'bar',
+      height: 330,
       foreColor: colors.texto,
-      toolbar: { show: true, tools: { zoom: true, zoomin: true, zoomout: true, pan: true, reset: true } },
-      zoom: { enabled: true, type: 'x', autoScaleYaxis: true }
+      toolbar: {
+        show: false
+      }
     },
-    title: { align: 'center', style: { fontSize: '14px', fontWeight: 'bold', color: colors.texto } },
-    subtitle: { text: getPeriodoTexto(), align: 'center', style: { fontSize: '12px', color: colors.suave } },
-    colors: ['#3B82F6', '#DC2626', '#16A34A'],
-    stroke: { curve: 'smooth', width: [2, 2, 4] },
-    xaxis: {
-      categories: [],
-      labels: { formatter: (val) => val, style: { fontSize: '12px' }, rotate: -45, rotateAlways: false }
+
+    colors: [
+      '#22C55E',
+      '#EF4444'
+    ],
+
+    plotOptions: {
+      bar: {
+        horizontal: false,
+        columnWidth: '48%',
+        borderRadius: 4
+      }
     },
+
+    dataLabels: {
+      enabled: false
+    },
+
+    stroke: {
+      show: true,
+      width: 2,
+      colors: ['transparent']
+    },  
+      xaxis: {
+        categories: [],
+        tickAmount: 8,
+        labels: {
+          show: true,
+          rotate: -45,
+          hideOverlappingLabels: true,
+          trim: true,
+          style: {
+            fontSize: '11px'
+          }
+        }
+      },
+
+    yaxis: {
+      labels: {
+        formatter: function (valor) {
+          return 'R$ ' + valor.toLocaleString('pt-BR');
+        }
+      }
+    },
+
     tooltip: {
       shared: true,
       intersect: false,
-      y: { formatter: (val) => 'R$ ' + val.toLocaleString('pt-BR') },
-      x: { formatter: (val) => 'Período: ' + val }
+
+      y: {
+        formatter: function (valor) {
+          return valor.toLocaleString('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+          });
+        }
+      }
     },
-    legend: { position: 'bottom', horizontalAlign: 'center' },
-    grid: { borderColor: colors.borda, strokeDashArray: 5 },
-    responsive: [{ breakpoint: 768, options: { chart: { height: 350 }, legend: { position: 'bottom' } } }]
+
+    legend: {
+      position: 'bottom',
+      horizontalAlign: 'center'
+    },
+
+    grid: {
+      borderColor: colors.borda,
+      strokeDashArray: 5
+    },
+
+    responsive: [
+      {
+        breakpoint: 768,
+        options: {
+          chart: {
+            height: 300
+          },
+
+          plotOptions: {
+            bar: {
+              columnWidth: '60%'
+            }
+          }
+        }
+      }
+    ]
   };
 }
 
 function getChartBarrasOptions() {
   const colors = getThemeColors();
+
   return {
-    series: [{ name: 'Despesas', data: [] }],
+    series: [
+      {
+        name: 'Saldo',
+        data: []
+      }
+    ],
+
     chart: {
-      type: 'bar',
-      height: 320,
+      type: 'line',
+      height: 330,
       foreColor: colors.texto,
-      toolbar: { show: true, tools: { zoom: true, zoomin: true, zoomout: true, pan: true, reset: true } },
-      zoom: { enabled: true, type: 'x', autoScaleYaxis: true }
+
+      toolbar: {
+        show: false
+      },
+
+      zoom: {
+        enabled: false
+      }
     },
-    title: { align: 'center', style: { fontSize: '14px', fontWeight: 'bold', color: colors.texto } },
-    subtitle: { text: getPeriodoTexto(), align: 'center', style: { fontSize: '12px', color: colors.suave } },
-    colors: ['#0586c2'],
-    xaxis: {
-      categories: [],
-      labels: { style: { fontSize: '11px' }, rotate: -45, rotateAlways: false }
+
+    colors: [
+      '#3B82F6'
+    ],
+
+    stroke: {
+      curve: 'smooth',
+      width: 3
     },
+
+    markers: {
+      size: 4,
+      strokeWidth: 0,
+      hover: {
+        size: 6
+      }
+    },
+
+    dataLabels: {
+      enabled: false
+    },
+
+      xaxis: {
+        categories: [],
+        tickAmount: 6,
+
+        labels: {
+          show: true,
+          rotate: 0,
+          hideOverlappingLabels: true,
+          trim: true,
+          style: {
+            fontSize: '11px'
+          },
+
+          formatter: function (value) {
+            return value;
+          }
+        },
+
+        axisBorder: {
+          show: true
+        },
+
+        axisTicks: {
+          show: false
+        }
+      },
+
+    yaxis: {
+      labels: {
+        formatter: function (valor) {
+          return 'R$ ' + valor.toLocaleString('pt-BR');
+        }
+      }
+    },
+
     tooltip: {
-      y: { formatter: (val) => 'R$ ' + val.toLocaleString('pt-BR') },
-      x: { formatter: (val) => 'Categoria: ' + val }
+      shared: false,
+
+      y: {
+        formatter: function (valor) {
+          return valor.toLocaleString('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+          });
+        }
+      }
     },
-    responsive: [{ breakpoint: 768, options: { chart: { height: 280 }, xaxis: { labels: { rotate: -90, style: { fontSize: '10px' } } } } }]
+
+    legend: {
+      position: 'bottom',
+      horizontalAlign: 'center'
+    },
+
+    grid: {
+      borderColor: colors.borda,
+      strokeDashArray: 5
+    },
+
+    responsive: [
+      {
+        breakpoint: 768,
+        options: {
+          chart: {
+            height: 300
+          }
+        }
+      }
+    ]
   };
 }
 
@@ -222,7 +393,7 @@ function criarSeletorPeriodoRapido(chartId, chartInstance) {
     { label: '15d', dias: '15' },
     { label: '30d', dias: '30' },
     { label: '60d', dias: '60' },
-    { label: '90d', dias: '90' }
+    { label: '180d', dias: '180' }
   ];
 
   periodos.forEach(periodo => {
@@ -280,11 +451,13 @@ function renderizarGraficos() {
 
   graficos.forEach(({ id, config, key }) => {
     const element = document.getElementById(id);
+
     if (element) {
       const chart = new ApexCharts(element, config());
+
       chart.render();
+
       chartsInstances[key] = chart;
-      criarSeletorPeriodoRapido(id, chart);
     }
   });
 }
@@ -405,6 +578,102 @@ function atualizarBadgesFontes(contexto) {
 // CARREGAMENTO DE DADOS
 // ==========================================
 
+function agruparDadosPorPeriodo(labels, series, periodo) {
+  const periodoNum = Number(periodo);
+
+  // Para 7 e 30 dias, mantém granularidade diária
+  if (periodoNum <= 30) {
+    return {
+      labels,
+      series
+    };
+  }
+
+  // Para 180 e 365 dias, agrupa por mês
+  const meses = {};
+
+  labels.forEach((label, index) => {
+    let data;
+
+    // Tenta interpretar yyyy-mm-dd
+    if (typeof label === 'string' && label.includes('-')) {
+      const partes = label.split('-');
+
+      if (partes.length === 3) {
+        data = new Date(
+          Number(partes[0]),
+          Number(partes[1]) - 1,
+          Number(partes[2])
+        );
+      }
+    }
+
+    // Tenta dd/mm ou dd/mm/yyyy
+    if (!data && typeof label === 'string' && label.includes('/')) {
+      const partes = label.split('/');
+
+      if (partes.length >= 2) {
+        const dia = Number(partes[0]);
+        const mes = Number(partes[1]) - 1;
+        const ano = partes[2]
+          ? Number(partes[2])
+          : new Date().getFullYear();
+
+        data = new Date(ano, mes, dia);
+      }
+    }
+
+    if (!data || isNaN(data.getTime())) {
+      return;
+    }
+
+    const chave = `${data.getFullYear()}-${data.getMonth()}`;
+
+    if (!meses[chave]) {
+      meses[chave] = {
+        data,
+        valores: series.map(() => 0)
+      };
+    }
+
+    series.forEach((serie, serieIndex) => {
+      meses[chave].valores[serieIndex] +=
+        Number(serie.data?.[index] || 0);
+    });
+  });
+
+  const mesesOrdenados = Object.values(meses)
+    .sort((a, b) => a.data - b.data);
+
+  const nomesMeses = [
+    'Janeiro',
+    'Fevereiro',
+    'Março',
+    'Abril',
+    'Maio',
+    'Junho',
+    'Julho',
+    'Agosto',
+    'Setembro',
+    'Outubro',
+    'Novembro',
+    'Dezembro'
+  ];
+
+  return {
+    labels: mesesOrdenados.map(item =>
+      nomesMeses[item.data.getMonth()]
+    ),
+
+    series: series.map((serie, serieIndex) => ({
+      name: serie.name,
+      data: mesesOrdenados.map(item =>
+        item.valores[serieIndex]
+      )
+    }))
+  };
+}
+
 async function atualizarGraficosComDados() {
   try {
     const periodoSelect = document.getElementById('periodoDash');
@@ -436,15 +705,112 @@ async function atualizarGraficosComDados() {
     }
 
     if (dados.kpis) atualizarKPIs(dados);
+   // ==========================================
+   // ENTRADAS X SAÍDAS
+   // ==========================================
+
     if (dados.evolucao?.series && dados.evolucao?.labels) {
-      const labelsFormatados = dados.evolucao.labels.map(d => formatarDataExibicao(d));
-      await chartsInstances.linha?.updateOptions({ xaxis: { categories: labelsFormatados } });
-      await chartsInstances.linha?.updateSeries(dados.evolucao.series);
+
+      const serieReceita =
+        dados.evolucao.series.find(
+          serie =>
+            serie.name?.toLowerCase().includes('receita')
+        );
+
+      const serieDespesa =
+        dados.evolucao.series.find(
+          serie =>
+            serie.name?.toLowerCase().includes('despesa')
+        );
+
+      const dadosTratados = agruparDadosPorPeriodo(
+        dados.evolucao.labels,
+        [
+          {
+            name: 'Entradas',
+            data: serieReceita?.data || []
+          },
+          {
+            name: 'Saídas',
+            data: serieDespesa?.data || []
+          }
+        ],
+        periodo
+      );
+
+      const labelsFormatados =
+        Number(periodo) <= 30
+          ? dadosTratados.labels.map(d => formatarDataExibicao(d))
+          : dadosTratados.labels;
+
+      await chartsInstances.linha?.updateOptions({
+        xaxis: {
+          categories: labelsFormatados
+        }
+      });
+
+      await chartsInstances.linha?.updateSeries(
+        dadosTratados.series
+      );
     }
 
-    if (dados.categorias?.labels) {
-      await chartsInstances.barras?.updateOptions({ xaxis: { categories: dados.categorias.labels } });
-      await chartsInstances.barras?.updateSeries([{ name: "Despesas", data: dados.categorias.valores || [] }]);
+
+// ==========================================
+// SALDO DO PERÍODO
+// ==========================================
+
+    if (dados.evolucao?.labels) {
+
+      let saldo = [];
+
+      if (dados.evolucao?.lucro) {
+        saldo = dados.evolucao.lucro;
+      } else if (dados.evolucao?.series) {
+
+        const receita =
+          dados.evolucao.series.find(
+            serie =>
+              serie.name?.toLowerCase().includes('receita')
+          );
+
+        const despesa =
+          dados.evolucao.series.find(
+            serie =>
+              serie.name?.toLowerCase().includes('despesa')
+          );
+
+        saldo = receita?.data?.map(
+          (valor, index) =>
+            Number(valor || 0) -
+            Number(despesa?.data?.[index] || 0)
+        ) || [];
+      }
+
+      const dadosSaldo = agruparDadosPorPeriodo(
+        dados.evolucao.labels,
+        [
+          {
+            name: 'Saldo',
+            data: saldo
+          }
+        ],
+        periodo
+      );
+
+      const labelsSaldo =
+        Number(periodo) <= 30
+          ? dadosSaldo.labels.map(d => formatarDataExibicao(d))
+          : dadosSaldo.labels;
+
+      await chartsInstances.barras?.updateOptions({
+        xaxis: {
+          categories: labelsSaldo
+        }
+      });
+
+      await chartsInstances.barras?.updateSeries(
+        dadosSaldo.series
+      );
     }
 
     if (dados.kpis?.receita_total !== undefined) {
@@ -519,4 +885,4 @@ document.addEventListener("DOMContentLoaded", async () => {
   renderizarGraficos();
   await carregarOpcoesPlanilhas();
   await atualizarGraficosComDados();
-});
+});
