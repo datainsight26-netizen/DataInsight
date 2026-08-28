@@ -1,6 +1,8 @@
 from flask import session, jsonify, render_template, request
 from backend.dados.agregador import obter_contexto_dados, listar_planilhas_usuario
 from backend.DashBoard.dashboard_Servicos import processar_dados_dashboard, converter_json_safe
+from backend.db import usuario
+from bson import ObjectId
 
 
 def dashboard_page():
@@ -24,11 +26,17 @@ def dashboard_dados():
         periodo = int(request.args.get("periodo", 30))
         tabela_id = request.args.get("tabela_id", "todas")
 
-        from backend.home.home import obter_colunas_mapeadas
-        mapeamento = obter_colunas_mapeadas(usuario_id)
+        user_filter = {"_id": ObjectId(usuario_id)} if (usuario_id and ObjectId.is_valid(str(usuario_id))) else {"_id": usuario_id}
+        user_doc = usuario.find_one(user_filter) if user_filter else None
+
+        mapeamento = user_doc.get("mapeamento", {}) if user_doc else {}
+        mapeamento_financeiro = user_doc.get("mapeamento_financeiro", {}) if user_doc else {}
+
+        # Mapeamento unificado para passar ao agregador
+        mapeamento_unificado = {**mapeamento, **mapeamento_financeiro}
 
         # Buscar dados via motor agregador inteligente
-        contexto = obter_contexto_dados(usuario_id, escopo=tabela_id, mapeamento=mapeamento)
+        contexto = obter_contexto_dados(usuario_id, escopo=tabela_id, mapeamento=mapeamento_unificado)
 
         colunas = contexto.get("colunas", [])
         dados = contexto.get("dados", [])
@@ -39,7 +47,7 @@ def dashboard_dados():
                 "contexto": contexto
             }), 200
 
-        resultado = processar_dados_dashboard(colunas, dados, periodo, mapeamento)
+        resultado = processar_dados_dashboard(colunas, dados, periodo, mapeamento_unificado, mapeamento_financeiro)
         resultado["contexto"] = {
             "escopo": contexto.get("escopo", "todas"),
             "tabela_id": contexto.get("tabela_id", "todas"),
@@ -55,4 +63,4 @@ def dashboard_dados():
         print(f" Erro ao processar dashboard: {e}")
         import traceback
         traceback.print_exc()
-        return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
+        return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
