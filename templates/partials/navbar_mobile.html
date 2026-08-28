@@ -31,6 +31,23 @@
     <span>Análises</span>
   </a>
 
+  <a class="navbar-bottom__item {% if request.endpoint=='pagina_fluxo_caixa' %}active{% endif %}"
+   href="{{ url_for('pagina_fluxo_caixa') }}"
+   aria-label="Fluxo de Caixa"
+   {% if request.endpoint=='pagina_fluxo_caixa' %}aria-current="page"{% endif %}>
+    <i class="fa-solid fa-right-left"></i>
+    <span>Fluxo de Caixa</span>
+  </a>
+
+  <a class="navbar-bottom__item {% if request.endpoint=='pagina_planejamento_financeiro' %}active{% endif %}"
+   href="{{ url_for('pagina_planejamento_financeiro') }}"
+   aria-label="Planejamento"
+   {% if request.endpoint=='pagina_planejamento_financeiro' %}aria-current="page"{% endif %}>
+
+  <i class="fa-solid fa-chart-pie"></i>
+  <span>Planejamento</span>
+  </a>
+
   <a class="navbar-bottom__item {% if request.endpoint=='pagina_ia' %}active{% endif %}"
      href="{{ url_for('pagina_ia') }}" aria-label="IA"
      {% if request.endpoint=='pagina_ia' %}aria-current="page"{% endif %}>

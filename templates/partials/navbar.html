@@ -36,6 +36,18 @@
     Análises
   </a>
 
+  <a href="{{ url_for('pagina_fluxo_caixa') }}"
+   {% if request.endpoint=='pagina_fluxo_caixa' %}aria-current="page"{% endif %}>
+    <i class="fa-solid fa-right-left"></i>
+    Fluxo de Caixa
+  </a>
+
+  <a href="{{ url_for('pagina_planejamento_financeiro') }}"
+   {% if request.endpoint=='pagina_planejamento_financeiro' %}aria-current="page"{% endif %}>
+    <i class="fa-solid fa-chart-pie"></i>
+    Planejamento
+  </a>
+
   <a href="{{ url_for('pagina_relatorio') }}"
      {% if request.endpoint=='pagina_relatorio' %}aria-current="page"{% endif %}>
     <i class="fa-solid fa-file-pdf"></i>

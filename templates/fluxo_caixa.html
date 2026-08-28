@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="DataInsight — Dashboard empresarial com gráficos avançados." />
+  <title>DataInsight • Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
+  
+  <style>
+    /* ========== EFEITO DE LUZ NOS KPIs - DASHBOARD ========== */
+    @keyframes shimmer-light {
+      0% {
+        left: -100%;
+      }
+      100% {
+        left: 100%;
+      }
+    }
+    
+    /* KPI Cards com efeito de luz nas cores de cada indicador */
+    .grade--4 .cartao {
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .grade--4 .cartao::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      animation: shimmer-light 2.5s linear infinite alternate;
+      pointer-events: none;
+    }
+    
+    /* Cores específicas para cada KPI */
+    .grade--4 .cartao:nth-child(1)::before {
+      background: linear-gradient(90deg, transparent, #3B82F6, transparent);
+    }
+    
+    .grade--4 .cartao:nth-child(2)::before {
+      background: linear-gradient(90deg, transparent, #16A34A, transparent);
+    }
+    
+    .grade--4 .cartao:nth-child(3)::before {
+      background: linear-gradient(90deg, transparent, #DC2626, transparent);
+    }
+    
+    .grade--4 .cartao:nth-child(4)::before {
+      background: linear-gradient(90deg, transparent, #6B7DEE, transparent);
+    }
+
+    /* ========== CORES DAS CATEGORIAS DA TABELA FLUXO DE CAIXA ========== */
+    /* Idêntico à identidade visual do Planejamento Financeiro */
+
+    /* 1. ENTRADAS (Verde Petróleo #0f8f83) */
+    .fluxo-tabela .fluxo-grupo--entradas th,
+    .fluxo-tabela .fluxo-grupo--entradas td {
+      background: #0f8f83 !important;
+      color: #ffffff !important;
+      font-weight: 700;
+      border-color: rgba(255, 255, 255, 0.15) !important;
+    }
+    .fluxo-tabela .fluxo-subitem[data-parent="entradas"] td:first-child {
+      border-left: 4px solid #0f8f83 !important;
+    }
+
+    /* 2. CUSTOS VARIÁVEIS (Âmbar / Laranja #d98200) */
+    .fluxo-tabela .fluxo-grupo--variaveis th,
+    .fluxo-tabela .fluxo-grupo--variaveis td {
+      background: #d98200 !important;
+      color: #ffffff !important;
+      font-weight: 700;
+      border-color: rgba(255, 255, 255, 0.15) !important;
+    }
+    .fluxo-tabela .fluxo-subitem[data-parent="variaveis"] td:first-child {
+      border-left: 4px solid #d98200 !important;
+    }
+
+    /* 3. GASTOS FIXOS (Rubi / Carmesim #d91f4f) */
+    .fluxo-tabela .fluxo-grupo--fixos th,
+    .fluxo-tabela .fluxo-grupo--fixos td {
+      background: #d91f4f !important;
+      color: #ffffff !important;
+      font-weight: 700;
+      border-color: rgba(255, 255, 255, 0.15) !important;
+    }
+    .fluxo-tabela .fluxo-subitem[data-parent="fixos"] td:first-child {
+      border-left: 4px solid #d91f4f !important;
+    }
+
+    /* 4. SUBTOTAIS DE CADA GRUPO */
+    .fluxo-tabela .fluxo-subtotal-grupo td {
+      background: rgba(255, 255, 255, 0.04) !important;
+      font-weight: 700;
+      border-top: 1px dashed var(--borda);
+      border-bottom: 1px solid var(--borda);
+    }
+    .fluxo-tabela .fluxo-subtotal--entradas td:first-child {
+      border-left: 4px solid #0f8f83 !important;
+      color: #10b981;
+    }
+    .fluxo-tabela .fluxo-subtotal--variaveis td:first-child {
+      border-left: 4px solid #d98200 !important;
+      color: #f59e0b;
+    }
+    .fluxo-tabela .fluxo-subtotal--fixos td:first-child {
+      border-left: 4px solid #d91f4f !important;
+      color: #ef4444;
+    }
+
+    /* 5. TOTAIS E SALDOS */
+    .fluxo-tabela .fluxo-total--anterior th,
+    .fluxo-tabela .fluxo-total--anterior td {
+      background: #0284c7 !important;
+      color: #ffffff !important;
+      font-weight: 800;
+    }
+
+    .fluxo-tabela .fluxo-total--saidas th,
+    .fluxo-tabela .fluxo-total--saidas td {
+      background: #c5221f !important;
+      color: #ffffff !important;
+      font-weight: 800;
+    }
+
+    .fluxo-tabela .fluxo-total--operacional th,
+    .fluxo-tabela .fluxo-total--operacional td {
+      background: #1777c8 !important;
+      color: #ffffff !important;
+      font-weight: 800;
+    }
+
+    .fluxo-tabela .fluxo-total--acumulado th,
+    .fluxo-tabela .fluxo-total--acumulado td {
+      background: #0aa37f !important;
+      color: #ffffff !important;
+      font-weight: 800;
+    }
+
+    /* Efeitos hover nos subitens */
+    .fluxo-tabela .fluxo-subitem:hover td {
+      background: rgba(255, 255, 255, 0.04);
+    }
+  </style>
+</head>
+<body>
+  <a href="#conteudo" class="skip-link">Ir para conteúdo</a>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Navegação principal">
+      {% include 'partials/navbar.html' %}
+    </aside>
+    <div class="main">
+      <header class="topbar" role="banner">
+        <div class="topbar__left">
+          <button class="topbar__btn topbar__mobile-toggle" onclick="abrirSidebar()" aria-label="Abrir menu"><i class="fa-solid fa-bars"></i></button>
+          <span class="topbar__greeting">Olá, <strong>{{ session.usuario_nome }}</strong></span>
+        </div>
+        <div class="topbar__actions">
+          <button class="topbar__btn" onclick="alternarTema()" aria-label="Alternar tema" id="btnTema"><i class="fa-solid fa-moon"></i></button>
+          <a class="topbar__btn" href="{{ url_for('pagina_configuracoes') }}" title="Configurações"><i class="fa-solid fa-gear"></i></a>
+        </div>
+      </header>
+
+      <main id="conteudo" class="pagina" role="main" data-ia-help="page_graficos_avancados">
+          <div class="container fluxo-caixa-page">
+
+            <!-- CABEÇALHO -->
+            <header class="pagina__cabecalho fluxo-header">
+              <div class="migalhas" aria-label="Você está em">
+                Início &gt; Fluxo de Caixa
+              </div>
+
+              <h1 class="h1">Fluxo de Caixa</h1>
+
+              <p class="p">
+                Compare entradas, saídas e saldo do período de forma simples e visual.
+              </p>
+            </header>
+
+
+            <!-- FILTROS -->
+            <section class="cartao fluxo-filtros" aria-label="Filtros de análise">
+              <div class="fluxo-filtros__esquerda">
+
+                <div class="fluxo-filtro-grupo">
+                  <label for="seletorPlanilhaDash">
+                    <i class="fa-solid fa-table-list"></i>
+                    Origem
+                  </label>
+
+                  <select id="seletorPlanilhaDash">
+                    <option value="todas">
+                      Todas as Planilhas
+                    </option>
+                  </select>
+                </div>
+
+                <div class="fluxo-periodo-info">
+                  <span class="fluxo-periodo-info__label">
+                    PERÍODO
+                  </span>
+
+                  <strong id="textoPeriodoSelecionado">
+                    Exibindo os últimos 30 dias
+                  </strong>
+                </div>
+
+              </div>
+
+              <div class="fluxo-periodos">
+                <button type="button" class="fluxo-periodo-btn" data-periodo="7">
+                  7 dias
+                </button>
+
+                <button type="button" class="fluxo-periodo-btn ativo" data-periodo="30">
+                  30 dias
+                </button>
+
+                <button type="button" class="fluxo-periodo-btn" data-periodo="180">
+                  6 meses
+                </button>
+
+                <button type="button" class="fluxo-periodo-btn" data-periodo="365">
+                  1 ano
+                </button>
+
+                <!-- Mantido porque o JS atual depende desse select -->
+                <select id="periodoDash" aria-label="Selecionar período" hidden>
+                  <option value="7">Últimos 7 dias</option>
+                  <option value="30" selected>Últimos 30 dias</option>
+                  <option value="180">Últimos 180 dias</option>
+                  <option value="365">Este ano</option>
+                </select>
+              </div>
+            </section>
+
+
+            <!-- FONTES -->
+            <div id="badgeFontesContainer" class="fluxo-fontes">
+              <span class="badge" id="badgeStatusFontes">
+                <i class="fa-solid fa-layer-group"></i>
+                Carregando fontes...
+              </span>
+            </div>
+
+
+            <!-- KPIs -->
+            <section class="fluxo-kpis" aria-label="Resumo financeiro">
+
+              <!-- ENTRADAS -->
+              <article class="cartao fluxo-kpi fluxo-kpi--entrada">
+
+                <div class="fluxo-kpi__topo">
+                  <div>
+                    <span class="fluxo-kpi__titulo">
+                      Total de Entradas
+                    </span>
+
+                    <div
+                      class="fluxo-kpi__valor"
+                      id="kpiReceita"
+                    >
+                      --
+                    </div>
+                  </div>
+
+                  <div class="fluxo-kpi__icone">
+                    <i class="fa-solid fa-arrow-trend-up"></i>
+                  </div>
+                </div>
+
+                <div class="fluxo-kpi__rodape">
+                  <span>Receitas do período</span>
+                </div>
+
+              </article>
+
+
+              <!-- SAÍDAS -->
+              <article class="cartao fluxo-kpi fluxo-kpi--saida">
+
+                <div class="fluxo-kpi__topo">
+                  <div>
+                    <span class="fluxo-kpi__titulo">
+                      Total de Saídas
+                    </span>
+
+                    <div
+                      class="fluxo-kpi__valor"
+                      id="kpiDespesas"
+                    >
+                      --
+                    </div>
+                  </div>
+
+                  <div class="fluxo-kpi__icone">
+                    <i class="fa-solid fa-arrow-trend-down"></i>
+                  </div>
+                </div>
+
+                <div class="fluxo-kpi__rodape">
+                  <span>Despesas do período</span>
+                </div>
+
+              </article>
+
+
+              <!-- SALDO -->
+              <article class="cartao fluxo-kpi fluxo-kpi--saldo">
+
+                <div class="fluxo-kpi__topo">
+                  <div>
+                    <span class="fluxo-kpi__titulo">
+                      Saldo do Período
+                    </span>
+
+                    <!-- Mantemos kpiLucro para o JS continuar funcionando -->
+                    <div
+                      class="fluxo-kpi__valor"
+                      id="kpiLucro"
+                    >
+                      --
+                    </div>
+                  </div>
+
+                  <div class="fluxo-kpi__icone">
+                    <i class="fa-solid fa-wallet"></i>
+                  </div>
+                </div>
+
+                <div class="fluxo-kpi__rodape">
+                  <span>Entradas menos saídas</span>
+                </div>
+
+              </article>
+
+
+              <!-- MARGEM -->
+              <article class="cartao fluxo-kpi fluxo-kpi--margem">
+
+                <div class="fluxo-kpi__topo">
+                  <div>
+                    <span class="fluxo-kpi__titulo">
+                      Margem de Lucro
+                    </span>
+
+                    <div
+                      class="fluxo-kpi__valor"
+                      id="kpiMargem"
+                    >
+                      --
+                    </div>
+                  </div>
+
+                  <div class="fluxo-kpi__icone">
+                    <i class="fa-solid fa-percent"></i>
+                  </div>
+                </div>
+
+                <div class="fluxo-kpi__rodape">
+                  <span>Resultado sobre as entradas</span>
+                </div>
+
+              </article>
+
+            </section>
+
+
+            <!-- GRÁFICOS -->
+            <section class="fluxo-secao-graficos">
+
+              <div class="fluxo-secao-titulo">
+                <div>
+                  <h2 class="h2">Análise Financeira</h2>
+                  <p class="p">
+                    Visualize a movimentação financeira ao longo do período.
+                  </p>
+                </div>
+              </div>
+
+
+              <div class="fluxo-graficos-grid">
+
+                <!-- ENTRADAS X SAÍDAS -->
+                <article class="cartao fluxo-grafico-card">
+                  <div class="fluxo-grafico-card__header">
+
+                    <div>
+                      <span class="fluxo-grafico-card__label">
+                        MOVIMENTAÇÃO
+                      </span>
+
+                      <h3>
+                        Entradas x Saídas
+                      </h3>
+                    </div>
+
+                    <div class="fluxo-grafico-card__icone">
+                      <i class="fa-solid fa-chart-column"></i>
+                    </div>
+
+                  </div>
+
+                  <!-- Mantemos o ID para não quebrar o JS -->
+                  <div
+                    id="graficoLinhaGaleria"
+                    class="chart-container"
+                    data-chart
+                    role="img"
+                    aria-label="Gráfico de entradas, saídas e saldo"
+                  ></div>
+                </article>
+
+
+                <!-- DESPESAS -->
+                <article class="cartao fluxo-grafico-card">
+                  <div class="fluxo-grafico-card__header">
+
+                    <div>
+                      <span class="fluxo-grafico-card__label">
+                        EVOLUÇÃO DO SALDO
+                      </span>
+
+                      <h3>
+                        Saldo por Período
+                      </h3>
+                    </div>
+
+                    <div class="fluxo-grafico-card__icone">
+                      <i class="fa-solid fa-chart-bar"></i>
+                    </div>
+
+                  </div>
+
+                  <div
+                    id="graficoBarrasGaleria"
+                    class="chart-container"
+                    data-chart
+                    role="img"
+                    aria-label="Gráfico de saldo do período" 
+                  ></div>
+                </article>
+
+              </div>
+
+
+              <!-- Mantidos ocultos para o JS atual não quebrar -->
+              <div style="display:none;">
+                <div id="graficoPizzaGaleria"></div>
+                <div id="graficoAreaGaleria"></div>
+              </div>
+
+            </section>
+
+
+            <!-- TABELA FLUXO DE CAIXA -->
+            <section class="cartao fluxo-tabela-card">
+
+        <div class="fluxo-tabela-header">
+          <div>
+            <span class="fluxo-grafico-card__label">
+              DETALHAMENTO
+            </span>
+
+            <h2 class="h2">
+              Planilha de Fluxo de Caixa
+            </h2>
+
+            <p class="p">
+              Compare os valores previstos e realizados em cada período.
+            </p>
+          </div>
+        </div>
+
+        <div class="fluxo-tabela-wrapper" style="overflow-x:auto; margin-top:16px;">
+          <table class="fluxo-tabela fluxo-tabela--agrupada" id="tabelaFluxoCaixa" style="width:100%; min-width:850px;">
+            <thead id="fluxoTabelaHead">
+              <!-- Cabeçalho dinâmico renderizado via JS -->
+            </thead>
+            <tbody id="fluxoTabelaBody">
+              <tr>
+                <td colspan="12" style="text-align:center;padding:32px;color:var(--suave);">
+                  <i class="fa-solid fa-spinner fa-spin" style="margin-right:8px;"></i> Carregando dados do Fluxo de Caixa...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </section>
+
+
+      <section class="cartao fluxo-gastos-card" style="margin-top: 24px; border-left: 4px solid var(--perigo);">
+          <div class="fluxo-gastos-header">
+            <div>
+              <span class="fluxo-grafico-card__label">
+                ANÁLISE DE DESPESAS
+              </span>
+
+              <h2 class="h2">
+                Onde a empresa mais gastou
+              </h2>
+
+              <p class="p">
+                Identifique as categorias que mais consumiram recursos no período selecionado.
+              </p>
+            </div>
+          </div>
+
+          <div class="fluxo-gastos-grid">
+
+            <article class="fluxo-gastos-grafico">
+              <h3>Maiores despesas por categoria</h3>
+
+              <div
+                id="graficoMaioresGastos"
+                class="chart-container"
+                data-chart
+                role="img"
+                aria-label="Gráfico das maiores despesas por categoria"
+              ></div>
+            </article>
+
+            <aside class="fluxo-gastos-resumo">
+
+              <div class="fluxo-gasto-resumo-item">
+                <span>Maior gasto</span>
+                <strong id="maiorGastoValor">--</strong>
+                <small id="maiorGastoCategoria">--</small>
+              </div>
+
+              <div class="fluxo-gasto-resumo-item">
+                <span>Total gasto no período</span>
+                <strong id="totalGastoPeriodo">--</strong>
+              </div>
+
+              <div class="fluxo-gasto-resumo-item">
+                <span>Participação da maior categoria</span>
+                <strong id="maiorGastoPercentual">--</strong>
+              </div>
+
+            </aside>
+
+          </div>
+
+      </section>
+
+
+      <!-- ONDE A EMPRESA MAIS LUCROU -->
+      <section class="cartao fluxo-gastos-card" style="margin-top: 24px; border-left: 4px solid var(--sucesso);">
+          <div class="fluxo-gastos-header">
+            <div>
+              <span class="fluxo-grafico-card__label" style="color: var(--sucesso);">
+                ANÁLISE DE RECEITAS E LUCRO
+              </span>
+
+              <h2 class="h2">
+                Onde a empresa mais lucrou
+              </h2>
+
+              <p class="p">
+                Identifique os produtos, serviços e categorias que mais geraram faturamento e resultado no período selecionado.
+              </p>
+            </div>
+          </div>
+
+          <div class="fluxo-gastos-grid">
+
+            <article class="fluxo-gastos-grafico">
+              <h3>Maiores fontes de faturamento e lucro</h3>
+
+              <div
+                id="graficoMaioresLucros"
+                class="chart-container"
+                data-chart
+                role="img"
+                aria-label="Gráfico das maiores fontes de lucro e receita por categoria"
+              ></div>
+            </article>
+
+            <aside class="fluxo-gastos-resumo">
+
+              <div class="fluxo-gasto-resumo-item">
+                <span>Maior fonte de receita</span>
+                <strong id="maiorLucroValor" style="color: var(--sucesso);">--</strong>
+                <small id="maiorLucroCategoria">--</small>
+              </div>
+
+              <div class="fluxo-gasto-resumo-item">
+                <span>Total faturado no período</span>
+                <strong id="totalLucroPeriodo">--</strong>
+              </div>
+
+              <div class="fluxo-gasto-resumo-item">
+                <span>Participação da maior fonte</span>
+                <strong id="maiorLucroPercentual">--</strong>
+              </div>
+
+            </aside>
+
+          </div>
+
+        </section>
+          </div>
+
+          {% include 'partials/footer.html' %}
+        </main>
+    </div>
+  </div>
+
+  {% include 'partials/navbar_mobile.html' %}
+  {% include 'partials/painel_acessibilidade.html' %}
+  {% include 'partials/chatbot.html' %}
+
+  <div vw class="enabled" id="Vlibras">
+    <div vw-access-button class="active"></div>
+    <div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div>
+  </div>
+
+  <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+  <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
+  <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/fluxo_caixa.js') }}?v=5.9"></script>
+    
+</body>
+</html>

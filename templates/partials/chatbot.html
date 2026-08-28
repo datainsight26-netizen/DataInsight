@@ -2019,6 +2019,12 @@ body.tema-escuro .chatbot-input-area input {
         // Carregar opções de planilhas no seletor do chatbot
         configurarSeletorPlanilhaChatbotFlutuante();
 
+        // Expor funções para uso externo (ex: botão de análise do planejamento financeiro)
+        window.DataInsightChatbot = {
+            enviar: (msg) => enviarMensagem(msg),
+            abrir: () => abrirChatbot()
+        };
+
     }
 
     if (document.readyState === 'loading') {
