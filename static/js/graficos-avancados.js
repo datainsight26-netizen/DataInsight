@@ -361,6 +361,74 @@ function getChartComparativoOptions() {
   };
 }
 
+function getChartMaioresGastosOptions() {
+  const colors = getThemeColors();
+
+  return {
+    series: [
+      {
+        name: 'Gastos',
+        data: []
+      }
+    ],
+
+    chart: {
+      type: 'bar',
+      height: 320,
+      foreColor: colors.texto,
+      toolbar: {
+        show: false
+      }
+    },
+
+    plotOptions: {
+      bar: {
+        horizontal: true,
+        borderRadius: 5,
+        barHeight: '55%'
+      }
+    },
+
+    dataLabels: {
+      enabled: true,
+      formatter: function (val) {
+        return val.toLocaleString('pt-BR', {
+          style: 'currency',
+          currency: 'BRL'
+        });
+      }
+    },
+
+    xaxis: {
+      categories: [],
+      labels: {
+        formatter: function (val) {
+          return 'R$ ' + Number(val).toLocaleString('pt-BR');
+        }
+      }
+    },
+
+    tooltip: {
+      y: {
+        formatter: function (val) {
+          return val.toLocaleString('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+          });
+        }
+      }
+    },
+
+    grid: {
+      borderColor: colors.borda,
+      strokeDashArray: 4
+    }
+  };
+}
+
+
+
+
 // ==========================================
 // ATUALIZAÇÃO DE KPIs
 // ==========================================
@@ -446,7 +514,8 @@ function renderizarGraficos() {
     { id: 'graficoLinhaGaleria', config: getChartLinhaOptions, key: 'linha' },
     { id: 'graficoBarrasGaleria', config: getChartBarrasOptions, key: 'barras' },
     { id: 'graficoPizzaGaleria', config: getChartPizzaOptions, key: 'pizza' },
-    { id: 'graficoAreaGaleria', config: getChartAreaOptions, key: 'area' }
+    { id: 'graficoAreaGaleria', config: getChartAreaOptions, key: 'area' },
+    {id: 'graficoMaioresGastos',config: getChartMaioresGastosOptions,key: 'maioresGastos'}
   ];
 
   graficos.forEach(({ id, config, key }) => {
@@ -737,6 +806,64 @@ async function atualizarGraficosComDados() {
         ],
         periodo
       );
+      
+      if (dados.categorias?.labels && dados.categorias?.valores) {
+
+  const despesas = dados.categorias.labels.map((categoria, index) => ({
+    categoria,
+    valor: Number(dados.categorias.valores[index] || 0)
+  }));
+
+  despesas.sort((a, b) => b.valor - a.valor);
+
+  const topDespesas = despesas.slice(0, 6);
+
+  await chartsInstances.maioresGastos?.updateOptions({
+    xaxis: {
+      categories: topDespesas.map(item => item.categoria)
+    }
+  });
+
+  await chartsInstances.maioresGastos?.updateSeries([
+    {
+      name: 'Gastos',
+      data: topDespesas.map(item => item.valor)
+    }
+  ]);
+
+  const total = despesas.reduce(
+    (soma, item) => soma + item.valor,
+    0
+  );
+
+  const maior = despesas[0];
+
+    if (maior) {
+          document.getElementById('maiorGastoValor').textContent =
+            maior.valor.toLocaleString('pt-BR', {
+              style: 'currency',
+              currency: 'BRL'
+            });
+
+          document.getElementById('maiorGastoCategoria').textContent =
+            maior.categoria;
+
+          document.getElementById('totalGastoPeriodo').textContent =
+            total.toLocaleString('pt-BR', {
+              style: 'currency',
+              currency: 'BRL'
+            });
+
+        const percentual =
+          total > 0
+            ? (maior.valor / total) * 100
+            : 0;
+
+        document.getElementById('maiorGastoPercentual').textContent =
+          percentual.toFixed(1).replace('.', ',') + '%';
+      }
+    }
+
 
       const labelsFormatados =
         Number(periodo) <= 30
@@ -757,7 +884,7 @@ async function atualizarGraficosComDados() {
 
 // ==========================================
 // SALDO DO PERÍODO
-// ==========================================
+// =========================================='
 
     if (dados.evolucao?.labels) {
 

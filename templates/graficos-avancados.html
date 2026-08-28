@@ -879,6 +879,61 @@
 
       </section>
 
+
+      <section class="cartao fluxo-gastos-card">
+          <div class="fluxo-gastos-header">
+            <div>
+              <span class="fluxo-grafico-card__label">
+                ANÁLISE DE DESPESAS
+              </span>
+
+              <h2 class="h2">
+                Onde a empresa mais gastou
+              </h2>
+
+              <p class="p">
+                Identifique as categorias que mais consumiram recursos no período selecionado.
+              </p>
+            </div>
+          </div>
+
+          <div class="fluxo-gastos-grid">
+
+            <article class="fluxo-gastos-grafico">
+              <h3>Maiores despesas por categoria</h3>
+
+              <div
+                id="graficoMaioresGastos"
+                class="chart-container"
+                data-chart
+                role="img"
+                aria-label="Gráfico das maiores despesas por categoria"
+              ></div>
+            </article>
+
+            <aside class="fluxo-gastos-resumo">
+
+              <div class="fluxo-gasto-resumo-item">
+                <span>Maior gasto</span>
+                <strong id="maiorGastoValor">--</strong>
+                <small id="maiorGastoCategoria">--</small>
+              </div>
+
+              <div class="fluxo-gasto-resumo-item">
+                <span>Total gasto no período</span>
+                <strong id="totalGastoPeriodo">--</strong>
+              </div>
+
+              <div class="fluxo-gasto-resumo-item">
+                <span>Participação da maior categoria</span>
+                <strong id="maiorGastoPercentual">--</strong>
+              </div>
+
+            </aside>
+
+          </div>
+
+        </section>
           </div>
 
           {% include 'partials/footer.html' %}
