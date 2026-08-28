@@ -3107,3 +3107,786 @@ table td {
 .celula-destaque-anima {
     animation: flashHighlight 0.5s ease-in-out;
 }
+
+/* =========================================================
+   FLUXO DE CAIXA - DASHBOARD
+   ========================================================= */
+
+.fluxo-caixa-page {
+  padding-top: 24px;
+  padding-bottom: 40px;
+}
+
+.fluxo-header {
+  margin-bottom: 24px;
+}
+
+/* =========================================================
+   FILTROS / PERÍODO
+   ========================================================= */
+
+.fluxo-filtros {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+
+.fluxo-filtros__esquerda {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+
+.fluxo-filtro-grupo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fluxo-filtro-grupo label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--suave);
+}
+
+.fluxo-filtro-grupo label i {
+  color: var(--primaria);
+}
+
+.fluxo-filtro-grupo select {
+  min-width: 220px;
+  padding: 8px 12px;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background: var(--cartao);
+  color: var(--texto);
+  font-family: var(--fonte);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fluxo-periodo-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.fluxo-periodo-info__label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--suave);
+}
+
+.fluxo-periodo-info strong {
+  font-size: 13px;
+  color: var(--texto);
+}
+
+.fluxo-periodos {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.fluxo-periodo-btn {
+  border: 1px solid var(--borda);
+  background: transparent;
+  color: var(--suave);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.fluxo-periodo-btn:hover {
+  color: var(--primaria);
+  border-color: var(--primaria);
+}
+
+.fluxo-periodo-btn.ativo {
+  background: var(--primaria);
+  border-color: var(--primaria);
+  color: white;
+}
+
+
+/* =========================================================
+   FONTES / BADGES
+   ========================================================= */
+
+.fluxo-fontes {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.fluxo-fontes .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+
+/* =========================================================
+   KPIs
+   ========================================================= */
+
+.fluxo-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-top: 26px;
+}
+
+.fluxo-kpi {
+  position: relative;
+  overflow: hidden;
+  min-height: 135px;
+  padding: 18px;
+}
+
+.fluxo-kpi::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  border-radius: 4px 0 0 4px;
+}
+
+.fluxo-kpi--entrada::before {
+  background: var(--sucesso);
+}
+
+.fluxo-kpi--saida::before {
+  background: var(--perigo);
+}
+
+.fluxo-kpi--saldo::before {
+  background: var(--primaria);
+}
+
+.fluxo-kpi--margem::before {
+  background: #8b5cf6;
+}
+
+.fluxo-kpi__topo {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.fluxo-kpi__titulo {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--suave);
+  margin-bottom: 8px;
+}
+
+.fluxo-kpi__valor {
+  font-size: 26px;
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--texto);
+}
+
+.fluxo-kpi__icone {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  font-size: 17px;
+}
+
+.fluxo-kpi--entrada .fluxo-kpi__icone {
+  color: var(--sucesso);
+  background: rgba(22, 163, 74, 0.12);
+}
+
+.fluxo-kpi--saida .fluxo-kpi__icone {
+  color: var(--perigo);
+  background: rgba(220, 38, 38, 0.12);
+}
+
+.fluxo-kpi--saldo .fluxo-kpi__icone {
+  color: var(--primaria);
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.fluxo-kpi--margem .fluxo-kpi__icone {
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.12);
+}
+
+.fluxo-kpi__rodape {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid var(--borda);
+  font-size: 11px;
+  color: var(--suave);
+}
+
+
+/* =========================================================
+   GRÁFICOS
+   ========================================================= */
+
+.fluxo-secao-graficos {
+  margin-top: 42px;
+}
+
+.fluxo-secao-titulo {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.fluxo-secao-titulo .h2 {
+  margin-bottom: 4px;
+}
+
+.fluxo-graficos-grid {
+  display: grid;
+  grid-template-columns: 1.25fr 0.75fr;
+  gap: 20px;
+}
+
+.fluxo-grafico-card {
+  min-width: 0;
+  padding: 20px;
+}
+
+.fluxo-grafico-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+.fluxo-grafico-card__label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--suave);
+  margin-bottom: 4px;
+}
+
+.fluxo-grafico-card__header h3 {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--texto);
+  margin: 0;
+}
+
+.fluxo-grafico-card__icone {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--primaria);
+}
+
+.fluxo-grafico-card .chart-container {
+  width: 100%;
+  min-height: 330px;
+}
+
+
+/* =========================================================
+   TABELA - FLUXO DE CAIXA
+   ========================================================= */
+
+.fluxo-tabela-card {
+  margin-top: 32px;
+  padding: 24px;
+}
+
+/* Cabeçalho da seção */
+.fluxo-tabela-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.fluxo-tabela-header .h2 {
+  font-size: 22px;
+  margin-top: 4px;
+  margin-bottom: 6px;
+}
+
+.fluxo-tabela-header .p {
+  font-size: 13px;
+}
+
+
+/* =========================================================
+   CONTAINER DA TABELA
+   ========================================================= */
+
+.fluxo-tabela-wrapper {
+  width: 100%;
+  overflow-x: auto;
+
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+
+  background: var(--cartao);
+}
+
+
+/* =========================================================
+   TABELA
+   ========================================================= */
+
+.fluxo-tabela {
+  width: 100%;
+  min-width: 1000px;
+
+  border-collapse: collapse;
+  table-layout: auto;
+}
+
+
+/* CABEÇALHO */
+
+.fluxo-tabela thead {
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.fluxo-tabela th {
+  padding: 16px 18px;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+
+  color: var(--suave);
+
+  border-bottom: 1px solid var(--borda);
+
+  white-space: nowrap;
+}
+
+
+/* CÉLULAS */
+
+.fluxo-tabela td {
+  padding: 18px;
+
+  font-size: 14px;
+  font-weight: 500;
+
+  color: var(--texto);
+
+  border-bottom: 1px solid var(--borda);
+
+  vertical-align: middle;
+}
+
+
+/* Altura mínima das linhas */
+.fluxo-tabela tbody tr {
+  min-height: 58px;
+  transition: background 0.2s ease;
+}
+
+
+/* Remove borda da última linha */
+.fluxo-tabela tbody tr:last-child td {
+  border-bottom: none;
+}
+
+
+/* Hover */
+.fluxo-tabela tbody tr:hover {
+  background: rgba(59, 130, 246, 0.06);
+}
+
+
+/* =========================================================
+   TAMANHO DAS COLUNAS
+   ========================================================= */
+
+.fluxo-tabela th:nth-child(1),
+.fluxo-tabela td:nth-child(1) {
+  min-width: 120px;
+}
+
+.fluxo-tabela th:nth-child(2),
+.fluxo-tabela td:nth-child(2) {
+  min-width: 230px;
+}
+
+.fluxo-tabela th:nth-child(3),
+.fluxo-tabela td:nth-child(3) {
+  min-width: 160px;
+}
+
+.fluxo-tabela th:nth-child(4),
+.fluxo-tabela td:nth-child(4) {
+  min-width: 120px;
+}
+
+.fluxo-tabela th:nth-child(5),
+.fluxo-tabela td:nth-child(5),
+.fluxo-tabela th:nth-child(6),
+.fluxo-tabela td:nth-child(6) {
+  min-width: 145px;
+}
+
+.fluxo-tabela th:nth-child(7),
+.fluxo-tabela td:nth-child(7) {
+  min-width: 130px;
+}
+
+
+/* =========================================================
+   TAGS
+   ========================================================= */
+
+.fluxo-tag,
+.fluxo-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 6px;
+
+  min-height: 30px;
+
+  padding: 6px 11px;
+
+  border-radius: 999px;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+
+.fluxo-tag--entrada {
+  color: var(--sucesso);
+  background: rgba(22, 163, 74, 0.12);
+}
+
+.fluxo-tag--saida {
+  color: var(--perigo);
+  background: rgba(220, 38, 38, 0.12);
+}
+
+.fluxo-status--ok {
+  color: var(--sucesso);
+  background: rgba(22, 163, 74, 0.12);
+}
+
+.fluxo-status--pendente {
+  color: var(--aviso);
+  background: rgba(245, 158, 11, 0.14);
+}
+
+
+/* =========================================================
+   DARK MODE
+   ========================================================= */
+
+.tema-escuro .fluxo-tabela-wrapper {
+  background: #161e2e;
+}
+
+.tema-escuro .fluxo-tabela {
+  background: #161e2e;
+}
+
+.tema-escuro .fluxo-tabela thead {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.tema-escuro .fluxo-tabela tbody tr:hover {
+  background: rgba(59, 130, 246, 0.09);
+}
+
+/* =========================================================
+   TABELA AGRUPADA
+   ========================================================= */
+
+.fluxo-tabela--agrupada {
+  min-width: 1180px;
+}
+
+.fluxo-tabela--agrupada th:not(:first-child),
+.fluxo-tabela--agrupada td:not(:first-child) {
+  text-align: right;
+}
+
+.fluxo-tabela__cabecalho-principal th {
+  text-align: center !important;
+  color: var(--texto);
+  font-size: 12px;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.fluxo-tabela__cabecalho-principal .fluxo-col-categoria {
+  text-align: left !important;
+}
+
+.fluxo-tabela__cabecalho-secundario th {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: none;
+  text-align: right;
+  color: var(--suave);
+  background: rgba(148, 163, 184, 0.04);
+}
+
+.fluxo-col-categoria {
+  width: 260px;
+  min-width: 260px !important;
+}
+
+
+/* GRUPOS */
+
+.fluxo-grupo td {
+  padding-top: 13px;
+  padding-bottom: 13px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.fluxo-grupo--entrada {
+  background: rgba(22, 163, 74, 0.07) !important;
+}
+
+.fluxo-grupo--saida {
+  background: rgba(220, 38, 38, 0.06) !important;
+}
+
+.fluxo-grupo-toggle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+
+  padding: 0;
+
+  border: none;
+  background: transparent;
+
+  color: var(--texto);
+
+  font-family: inherit;
+  font-size: 12px;
+
+  cursor: pointer;
+
+  text-align: left;
+}
+
+.fluxo-grupo-toggle i {
+  width: 12px;
+  color: var(--suave);
+  transition: transform 0.2s ease;
+}
+
+.fluxo-grupo-toggle.fechado i {
+  transform: rotate(-90deg);
+}
+
+
+/* SUBITENS */
+
+.fluxo-subitem td:first-child {
+  padding-left: 38px;
+  color: var(--suave);
+}
+
+.fluxo-subitem td {
+  font-size: 12px;
+}
+
+.fluxo-subitem strong {
+  color: var(--texto);
+  font-weight: 700;
+}
+
+
+/* VALORES */
+
+.fluxo-valor-positivo {
+  color: var(--sucesso) !important;
+  font-weight: 700;
+}
+
+.fluxo-valor-negativo {
+  color: var(--perigo) !important;
+  font-weight: 700;
+}
+
+
+/* VARIAÇÕES */
+
+.fluxo-variacao {
+  display: inline-block;
+
+  margin-right: 6px;
+
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.fluxo-variacao--positiva {
+  color: var(--sucesso);
+}
+
+.fluxo-variacao--negativa {
+  color: var(--perigo);
+}
+
+
+/* DARK MODE */
+
+.tema-escuro .fluxo-tabela__cabecalho-principal th {
+  background: rgba(59, 130, 246, 0.07);
+}
+
+.tema-escuro .fluxo-tabela__cabecalho-secundario th {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.tema-escuro .fluxo-grupo--entrada {
+  background: rgba(22, 163, 74, 0.08) !important;
+}
+
+.tema-escuro .fluxo-grupo--saida {
+  background: rgba(220, 38, 38, 0.075) !important;
+}
+
+/* =========================================================
+   RESPONSIVIDADE
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+  .fluxo-tabela-card {
+    padding: 16px;
+  }
+
+  .fluxo-tabela-header {
+    flex-direction: column;
+  }
+
+  .fluxo-tabela th {
+    padding: 14px;
+  }
+
+  .fluxo-tabela td {
+    padding: 16px 14px;
+  }
+
+}
+
+.fluxo-gastos-card {
+  margin-top: 28px;
+  padding: 24px;
+}
+
+.fluxo-gastos-header {
+  margin-bottom: 22px;
+}
+
+.fluxo-gastos-grid {
+  display: grid;
+  grid-template-columns: 1.7fr 0.7fr;
+  gap: 22px;
+  align-items: stretch;
+}
+
+.fluxo-gastos-grafico {
+  min-width: 0;
+}
+
+.fluxo-gastos-grafico h3 {
+  font-size: 16px;
+  margin-bottom: 12px;
+  color: var(--texto);
+}
+
+.fluxo-gastos-grafico .chart-container {
+  min-height: 320px;
+}
+
+.fluxo-gastos-resumo {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.fluxo-gasto-resumo-item {
+  background: rgba(148, 163, 184, 0.06);
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fluxo-gasto-resumo-item span {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--suave);
+}
+
+.fluxo-gasto-resumo-item strong {
+  font-size: 22px;
+  color: var(--texto);
+}
+
+.fluxo-gasto-resumo-item small {
+  color: var(--perigo);
+  font-weight: 600;
+}
+
+.tema-escuro .fluxo-gasto-resumo-item {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+@media (max-width: 900px) {
+  .fluxo-gastos-grid {
+    grid-template-columns: 1fr;
+  }
+}

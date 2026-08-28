@@ -970,3 +970,557 @@ label { font-size: 0.8rem; font-weight: 600; color: var(--texto); }
   background: rgba(59, 130, 246, 0.15);
   border-color: rgba(59, 130, 246, 0.3);
 }
+
+
+/* ============================================================================
+   HOTFIX RESPONSIVO — FOOTER + MOBILE/TABLET
+   Mantém o layout desktop e corrige sobreposição/estreitamento em telas menores.
+   ============================================================================ */
+
+/* Evita que cards, grids e conteúdo flex forcem largura além da viewport */
+.main,
+.pagina,
+.pagina > .container,
+.cartao,
+.grade,
+.rodape,
+.rodape__grid,
+.topbar__left,
+.topbar__actions {
+  min-width: 0;
+}
+
+img,
+svg,
+canvas {
+  max-width: 100%;
+}
+
+/* O footer deve participar do fluxo normal da página */
+.rodape {
+  position: static !important;
+  inset: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  clear: both;
+  max-width: 100%;
+}
+
+/* Tablets / notebooks estreitos */
+@media (max-width: 1024px) {
+  html,
+  body {
+    width: 100%;
+    min-height: 100%;
+    height: auto;
+    overflow-x: hidden;
+  }
+
+  /*
+   * No desktop o scroll interno em .pagina funciona bem.
+   * No mobile/tablet, liberar o fluxo da página evita footer "preso"
+   * ou sobreposto dentro de um container de 100vh.
+   */
+  .layout {
+    width: 100%;
+    max-width: 100%;
+    min-height: 100vh;
+    height: auto;
+    overflow: visible;
+    flex-direction: column;
+  }
+
+  .main {
+    width: 100%;
+    max-width: 100%;
+    min-height: 100vh;
+    height: auto;
+    overflow: visible;
+  }
+
+  .pagina {
+    width: 100%;
+    max-width: 100%;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: visible;
+    display: block;
+  }
+
+  .pagina > .container {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding: 20px;
+    margin: 0 !important;
+    overflow: visible;
+  }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .topbar__left {
+    overflow: hidden;
+  }
+
+  .topbar__greeting {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .cartao {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .rodape {
+    width: 100% !important;
+    max-width: 100%;
+    margin-top: 28px;
+    padding: 22px 20px;
+    z-index: 1;
+  }
+
+  .rodape__grid {
+    width: 100%;
+    max-width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 24px;
+  }
+}
+
+/* Celulares */
+@media (max-width: 640px) {
+  .pagina > .container {
+    padding: 14px 12px 24px;
+  }
+
+  .topbar {
+    min-height: 56px;
+    height: 56px;
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .topbar__left {
+    gap: 8px;
+  }
+
+  .topbar__actions {
+    gap: 6px;
+  }
+
+  .topbar__btn {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+  }
+
+  .topbar__greeting {
+    font-size: 0.8rem;
+  }
+
+  .grade--2,
+  .grade--3,
+  .grade--4,
+  .kpi-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .cartao {
+    padding: 16px;
+  }
+
+  .tabela-envoltoria,
+  .pf-table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .rodape {
+    margin-top: 24px;
+    padding: 20px 16px 28px;
+    text-align: left;
+  }
+
+  .rodape__grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+    text-align: left;
+  }
+
+  .rodape__col,
+  .rodape__col ul {
+    min-width: 0;
+    width: 100%;
+    align-items: flex-start;
+  }
+
+  .rodape__col a,
+  .rodape__col p,
+  .rodape__col small {
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+
+  .botao {
+    max-width: 100%;
+  }
+}
+
+/* Celulares muito estreitos */
+@media (max-width: 380px) {
+  .pagina > .container {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .topbar {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .topbar__greeting {
+    font-size: 0.75rem;
+  }
+
+  .rodape {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
+/* ============================================================================
+   TABLET — 769px até 1024px
+   Mantém sidebar e layout horizontal
+   ============================================================================ */
+
+@media (min-width: 769px) and (max-width: 1024px) {
+
+  .layout {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .sidebar {
+    position: relative !important;
+    transform: none !important;
+
+    width: 220px !important;
+    min-width: 220px !important;
+    max-width: 220px !important;
+
+    height: 100vh;
+    left: auto;
+    top: auto;
+    bottom: auto;
+
+    box-shadow: none;
+    flex-shrink: 0;
+  }
+
+  .main {
+    flex: 1;
+    width: auto !important;
+    max-width: none !important;
+
+    height: 100vh;
+    min-height: 0;
+
+    margin-left: 0 !important;
+
+    overflow: hidden;
+  }
+
+  .pagina {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    width: 100%;
+    min-width: 0;
+  }
+
+  .pagina > .container {
+    width: 100%;
+    max-width: 100%;
+
+    padding: 18px 20px;
+    margin: 0 auto !important;
+  }
+  /* Corrige campos estourando containers/grid */
+.campo {
+  min-width: 0;
+  width: 100%;
+}
+
+.campo .entrada,
+.campo select,
+.campo input {
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pf-filterbar {
+  width: 100%;
+  max-width: 100%;
+}
+
+.pf-filterbar > * {
+  min-width: 0;
+}
+
+
+  /* Tablet não precisa do botão hamburger */
+  .topbar__mobile-toggle {
+    display: none !important;
+  }
+
+  .topbar {
+    padding: 0 18px;
+  }
+
+  /* Cards continuam aproveitando largura */
+  .grade--2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .grade--3,
+  .grade--4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rodape {
+    width: 100% !important;
+  }
+
+  .rodape__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ==========================================================================
+   MOBILE FINAL FIX — DATAINSIGHT
+   ========================================================================== */
+
+@media (max-width: 768px) {
+
+  html,
+  body {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    overflow-x: hidden !important;
+  }
+
+  body {
+    display: block !important;
+    height: auto !important;
+    min-height: 100vh;
+  }
+
+  /* NÃO usar 100vw no mobile */
+  .layout {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    height: auto !important;
+    min-height: 100vh;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    overflow-x: hidden !important;
+
+    display: block !important;
+  }
+
+  .main {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    height: auto !important;
+    min-height: 100vh;
+
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+  }
+
+  /* layout.css antigo coloca padding aqui */
+  .pagina,
+  .page {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+
+    display: block !important;
+  }
+
+  /* O espaçamento fica SOMENTE no container */
+  .pagina > .container,
+  .page > .container {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    margin: 0 !important;
+    padding: 14px 12px 24px !important;
+
+    box-sizing: border-box !important;
+
+    overflow-x: hidden !important;
+  }
+
+  /* Planejamento */
+  .pf-shell {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .pf-head {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .pf-head__actions {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .pf-tabs {
+    width: 100%;
+    max-width: 100%;
+
+    overflow-x: auto !important;
+    overflow-y: hidden;
+
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .pf-filterbar {
+    width: 100% !important;
+    min-width: 0 !important;
+
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .pf-filterbar > *,
+  .campo {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .campo input,
+  .campo select,
+  .campo textarea,
+  .entrada {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    box-sizing: border-box !important;
+  }
+
+  /* Todos os grids viram uma coluna */
+  .pf-kpis,
+  .pf-grid-2,
+  .pf-annual-kpis,
+  .pf-annual-summary,
+  .pf-ai-placeholder,
+  .grade,
+  .grade--2,
+  .grade--3,
+  .grade--4,
+  .kpi-grid {
+    width: 100% !important;
+    min-width: 0 !important;
+
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .cartao,
+  .pf-kpi,
+  .pf-chart-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    box-sizing: border-box !important;
+  }
+
+  /* ApexCharts não pode aumentar a largura da página */
+  .pf-chart,
+  .apexcharts-canvas,
+  .apexcharts-svg {
+    max-width: 100% !important;
+  }
+
+  .pf-chart {
+    width: 100% !important;
+    min-width: 0 !important;
+    overflow: hidden;
+  }
+
+  /* Só a tabela pode rolar horizontalmente */
+  .pf-table-wrap {
+    width: 100%;
+    max-width: 100%;
+
+    overflow-x: auto !important;
+    overflow-y: hidden;
+
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .rodape {
+    width: 100% !important;
+    max-width: 100% !important;
+
+    margin: 24px 0 0 !important;
+    padding: 20px 14px 28px !important;
+
+    box-sizing: border-box !important;
+
+    position: static !important;
+  }
+
+}
+.layout {
+    width: 100vw;
+}
+
+
