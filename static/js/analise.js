@@ -64,10 +64,15 @@ function restaurarMetricasSelecionadas() {
     if (!salvo) return;
 
     const metricas = JSON.parse(salvo);
-    if (metricas.faturamento) document.getElementById('check-faturamento').checked = true;
-    if (metricas.despesas) document.getElementById('check-despesas').checked = true;
-    if (metricas.lucro) document.getElementById('check-lucro').checked = true;
-    if (metricas.margem) document.getElementById('check-margem').checked = true;
+    const cF = document.getElementById('check-faturamento');
+    const cD = document.getElementById('check-despesas');
+    const cL = document.getElementById('check-lucro');
+    const cM = document.getElementById('check-margem');
+
+    if (metricas.faturamento && cF) cF.checked = true;
+    if (metricas.despesas && cD) cD.checked = true;
+    if (metricas.lucro && cL) cL.checked = true;
+    if (metricas.margem && cM) cM.checked = true;
 
     // Atualizar estilos
     atualizarEstilosMetricas();
@@ -284,8 +289,13 @@ function atualizarBadgeStatusAnalise(planilhas, idSelecionado) {
 // FILTROS
 // =============================
 function aplicarFiltros() {
-    const inicio = document.getElementById('data-inicio').value;
-    const fim = document.getElementById('data-fim').value;
+    const elInicio = document.getElementById('data-inicio');
+    const elFim = document.getElementById('data-fim');
+
+    if (!elInicio || !elFim) return;
+
+    const inicio = elInicio.value;
+    const fim = elFim.value;
 
     if (!inicio || !fim) {
         return;
@@ -354,13 +364,17 @@ function carregarLocalStorage() {
 }
 
 function setPeriodoEAplicar(inicio, fim) {
-    document.getElementById('data-inicio').value = inicio;
-    document.getElementById('data-fim').value = fim;
+    const elInicio = document.getElementById('data-inicio');
+    const elFim = document.getElementById('data-fim');
+    if (elInicio) elInicio.value = inicio;
+    if (elFim) elFim.value = fim;
     
     // Se não há métricas salvas, usar padrão (faturamento e lucro)
     if (!localStorage.getItem('analise_metricas')) {
-        document.getElementById('check-faturamento').checked = true;
-        document.getElementById('check-lucro').checked = true;
+        const cFat = document.getElementById('check-faturamento');
+        const cLuc = document.getElementById('check-lucro');
+        if (cFat) cFat.checked = true;
+        if (cLuc) cLuc.checked = true;
         salvarMetricasSelecionadas();
         atualizarEstilosMetricas();
     }
