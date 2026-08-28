@@ -115,6 +115,9 @@ from backend.produtos import (
     obter_produto_exato,
     salvar_produto,
 )
+from backend.planejamento.planejamento_financeiro import obter_planejamento_financeiro
+from backend.fluxoCaixa.fluxo_caixa import obter_dados_fluxo_caixa
+
 
 key = os.getenv('SECRET_KEY')
 
@@ -244,6 +247,16 @@ def pagina_home():
 def pagina_analise():
     return render_template("analises.html")
 
+@app.route("/planejamento-financeiro")
+@login_required
+def pagina_planejamento_financeiro():
+    return render_template("analise_planejamento_adaptado.html")
+
+@app.route("/fluxo-caixa", endpoint="pagina_fluxo_caixa")
+@app.route("/fluxo_caixa")
+@login_required
+def pagina_fluxo_caixa():
+    return render_template("fluxo_caixa.html")
 
 @app.route("/graficos-avancados")
 @login_required
@@ -471,6 +484,20 @@ def set_mapeamento():
 
 
 # =================== MAPEAMENTO FINANCEIRO ===================
+@app.route("/api/planejamento-financeiro", methods=["GET"])
+@login_required
+def get_planejamento_financeiro():
+    """Retorna o planejamento financeiro"""
+    return obter_planejamento_financeiro()
+
+
+@app.route("/api/fluxo-caixa", methods=["GET"])
+@login_required
+def get_fluxo_caixa():
+    """Retorna dados processados do fluxo de caixa"""
+    return obter_dados_fluxo_caixa()
+
+
 @app.route("/api/mapeamento-financeiro", methods=["GET"])
 @login_required
 def get_mapeamento_financeiro():
@@ -880,6 +907,170 @@ def resetar_senha_route():
 def route_reenviar_codigo():
     """Reenvia o código de recuperação para o email"""
     return reenviar_codigo()
+
+
+# =================== PLANEJAMENTO FINANCEIRO IA ENDPOINT ===================
+@app.route("/api/planejamento-financeiro/analise-ia", methods=["POST"])
+@login_required
+def api_analise_ia_planejamento():
+    """Gera análise de IA para o planejamento financeiro baseado nos dados da tabela"""
+    import re
+    import json
+    from backend.chatbot.chatbot import obter_time_agentes
+    
+    try:
+        dados_req = request.get_json() or {}
+        scenario = dados_req.get("scenario", "otimista")
+        ia_data = dados_req.get("data")
+        
+        if not ia_data:
+            return jsonify({"sucesso": False, "mensagem": "Dados do planejamento não fornecidos."}), 400
+            
+        totals = ia_data.get("totals", {})
+        meses = ia_data.get("meses", [])
+        best = ia_data.get("best")
+        worst = ia_data.get("worst")
+        meses_pos = ia_data.get("mesesPos", 0)
+        
+        # Formatar valores monetários e percentuais para a IA
+        def format_brl(val):
+            try:
+                n = float(val)
+                return f"R$ {n:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            except:
+                return "R$ 0,00"
+                
+        def format_pct(val):
+            try:
+                n = float(val)
+                return f"{n:.1f}%".replace(".", ",")
+            except:
+                return "0,0%"
+
+        receita_total = format_brl(totals.get("receita", 0))
+        impostos_total = format_brl(totals.get("impostos", 0))
+        variaveis_total = format_brl(totals.get("variaveis", 0))
+        gastos_fixos_total = format_brl(totals.get("fixos", 0))
+        margem_total = format_brl(totals.get("margem", 0))
+        margem_pct_total = format_pct(totals.get("margemPct", 0))
+        investimentos_total = format_brl(totals.get("investimentos", 0))
+        resultado_total = format_brl(totals.get("resultado", 0))
+        
+        detalhes_mensais_list = []
+        for m in meses:
+            detalhes_mensais_list.append(
+                f"- {m.get('mes')}: Receita: {format_brl(m.get('receita'))} | "
+                f"Var: {format_brl(m.get('variaveis'))} | "
+                f"Fix: {format_brl(m.get('fixos'))} | "
+                f"Res: {format_brl(m.get('resultado'))}"
+            )
+        detalhes_mensais_str = "\n".join(detalhes_mensais_list)
+        
+        prompt = f"""Você é um analista financeiro sênior da equipe DataInsight.
+Analise os dados reais do Planejamento Financeiro do cliente (Cenário: {scenario}):
+
+RESUMO ANUAL:
+- Faturamento / Receita Total: {receita_total}
+- Impostos Totais: {impostos_total}
+- Gastos Variáveis Totais: {variaveis_total}
+- Gastos Fixos Totais: {gastos_fixos_total}
+- Margem de Contribuição Total: {margem_total} ({margem_pct_total})
+- Investimentos Totais: {investimentos_total}
+- Resultado Líquido Projetado: {resultado_total}
+- Meses no Azul / Positivos: {meses_pos}/{len(meses)}
+"""
+        if best:
+            prompt += f"- Melhor Mês: {best.get('mes')} ({format_brl(best.get('resultado'))})\n"
+        if worst:
+            prompt += f"- Pior Mês: {worst.get('mes')} ({format_brl(worst.get('resultado'))})\n"
+            
+        prompt += f"""
+DETALHAMENTO MENSAL:
+{detalhes_mensais_str}
+
+Com base nestes dados reais da Tabela Mensal, faça um diagnóstico financeiro executivo estruturado.
+Você deve retornar obrigatoriamente um objeto JSON válido, contendo exatamente os três campos descritos abaixo.
+Atenção: Não utilize markdown (como ```json) ou qualquer texto antes/depois do JSON. Retorne apenas o JSON puro para que possamos fazer o parsing diretamente.
+
+Formato do JSON esperado:
+{{
+  "diagnostico_geral": "Um diagnóstico resumido e profissional da saúde financeira geral para este cenário. Use termos técnicos e seja analítico (limite de 3 a 4 linhas).",
+  "alertas_riscos": "Indique os pontos críticos, custos elevados, meses com prejuízo ou ameaças específicas encontradas nos dados mensais (limite de 3 a 4 linhas).",
+  "recomendacoes": [
+    "Recomendação prática 1 baseada nos dados",
+    "Recomendação prática 2 baseada nos dados",
+    "Recomendação prática 3 baseada nos dados"
+  ]
+}}
+"""
+        orquestrador = obter_time_agentes()
+        diagnostico = ""
+        alertas = ""
+        recoms = []
+        
+        success = False
+        try:
+            resposta_obj = orquestrador.run(prompt)
+            resposta_texto = resposta_obj.content.strip()
+            
+            # Limpar formatações do markdown se houver
+            if resposta_texto.startswith("```"):
+                resposta_texto = re.sub(r"^```(?:json)?\n?", "", resposta_texto, flags=re.IGNORECASE)
+                resposta_texto = re.sub(r"\n?```$", "", resposta_texto)
+            
+            resposta_texto = resposta_texto.strip()
+            
+            parsed = json.loads(resposta_texto)
+            diagnostico = parsed.get("diagnostico_geral", "")
+            alertas = parsed.get("alertas_riscos", "")
+            recoms = parsed.get("recomendacoes", [])
+            if diagnostico and alertas and len(recoms) >= 3:
+                success = True
+        except Exception as e:
+            print("[Erro ao chamar / processar Gemini para Análise de Planejamento]:", e)
+            
+        if not success:
+            # Fallback determinístico
+            val_receita = totals.get("receita", 0)
+            val_resultado = totals.get("resultado", 0)
+            
+            diagnostico = (
+                f"Análise executiva simplificada: O cenário {scenario} projeta uma receita total de "
+                f"{receita_total} e resultado líquido anual de {resultado_total}, com uma margem de contribuição "
+                f"média de {margem_pct_total}. O desempenho operacional se mostra "
+                f"{'saudável e superavitário' if val_resultado >= 0 else 'deficitário no acumulado do ano'}."
+            )
+            
+            if val_resultado < 0:
+                alertas = (
+                    f"Risco de déficit financeiro anual acumulado em {format_brl(abs(val_resultado))}. "
+                    f"A operação não está conseguindo cobrir todos os gastos fixos e variáveis projetados."
+                )
+            else:
+                alertas = (
+                    f"Apesar do resultado positivo, monitore a sazonalidade. "
+                    f"Existem {len(meses) - meses_pos} meses projetados no vermelho que exigem atenção ao fluxo de caixa."
+                    if meses_pos < len(meses) else
+                    "Operação estável com todos os meses projetados em superávit."
+                )
+                
+            recoms = [
+                "Rever a precificação e buscar otimizar a margem de contribuição nos meses de menor movimento.",
+                "Estabelecer um controle rigoroso sobre os gastos fixos para diminuir o ponto de equilíbrio operacional.",
+                "Planejar a alocação de investimentos de expansão somente após a confirmação de meses com sobra de caixa."
+            ]
+            
+        return jsonify({
+            "sucesso": True,
+            "diagnostico_geral": diagnostico,
+            "alertas_riscos": alertas,
+            "recomendacoes": recoms
+        })
+        
+    except Exception as e:
+        print("[Erro Rota IA Planejamento]:", e)
+        traceback.print_exc()
+        return jsonify({"sucesso": False, "mensagem": str(e)}), 500
 
 
 # =================== RUN ===================
