@@ -201,12 +201,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function persistSessionId() {
+        sessionStorage.setItem(CHATBOT_SESSION_KEY, currentSessionId);
+        localStorage.setItem(CHATBOT_SESSION_KEY, currentSessionId);
+    }
+
     function restoreChatbotSession() {
         const savedSession = sessionStorage.getItem(CHATBOT_SESSION_KEY) || localStorage.getItem(CHATBOT_SESSION_KEY);
         if (savedSession) {
             currentSessionId = savedSession;
-            sessionStorage.setItem(CHATBOT_SESSION_KEY, currentSessionId);
-            localStorage.setItem(CHATBOT_SESSION_KEY, currentSessionId);
+            persistSessionId();
         }
     }
 
@@ -329,6 +333,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         btn.onclick = () => {
                             currentSessionId = s.sessao_id;
+                            persistSessionId();
                             mostrarChat();
                             carregarHistorico();
                         };
@@ -356,6 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function sendMessage() {
         const text = input.value.trim();
         if (!text) return;
+        persistSessionId();
         appendMessage(text, 'user');
         input.value = '';
 
@@ -399,6 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('btn-nova-conversa').addEventListener('click', () => {
         currentSessionId = Date.now().toString();
+        persistSessionId();
         mostrarChat();
         carregarHistorico();
     });
@@ -409,6 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .then(res => res.json())
                 .then(data => {
                     currentSessionId = Date.now().toString();
+                    persistSessionId();
                     carregarHistorico();
                     carregarSessoes();
                 })
@@ -954,8 +962,8 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
     }
 
-    document.getElementById('btn-galeria-graficos').addEventListener('click', () => abrirGaleriaGraficos());
-    document.getElementById('btn-galeria-arquivos').addEventListener('click', () => abrirGaleriaArquivos());
+    document.getElementById('btn-galeria-graficos')?.addEventListener('click', () => abrirGaleriaGraficos());
+    document.getElementById('btn-galeria-arquivos')?.addEventListener('click', () => abrirGaleriaArquivos());
 
     document.addEventListener('click', function (e) {
         const chartDiv = e.target.closest('.grafico-ia-render');

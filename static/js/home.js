@@ -924,3 +924,43 @@ function formatarNumero(valor) {
     maximumFractionDigits: 2
   });
 }
+
+/* ================================================================
+   ENGINE DE ANÁLISE COMPLETA COM IA (DELEGADO AO IA_ANALISE_MODAL.JS)
+   ================================================================ */
+function abrirModalIaAnaliseHome() {
+  if (window.IaAnaliseModal) {
+    IaAnaliseModal.abrir('home', coletarContextoIaHome);
+  }
+}
+
+function fecharModalIaAnaliseHome() {
+  if (window.IaAnaliseModal) {
+    IaAnaliseModal.fechar('home');
+  }
+}
+
+function fecharModalIaAnaliseHomeSeBackdrop(event) {
+  if (window.IaAnaliseModal) {
+    IaAnaliseModal.fecharSeBackdrop(event, 'home');
+  }
+}
+
+function copiarAnaliseIaHome() {
+  if (window.IaAnaliseModal) {
+    IaAnaliseModal.copiar('home');
+  }
+}
+
+function executarSimulacaoIaHome() {
+  if (window.IaAnaliseModal) {
+    IaAnaliseModal.reanalisar('home');
+  }
+}
+
+// Exportar para escopo global
+window.abrirModalIaAnaliseHome = abrirModalIaAnaliseHome;
+window.fecharModalIaAnaliseHome = fecharModalIaAnaliseHome;
+window.fecharModalIaAnaliseHomeSeBackdrop = fecharModalIaAnaliseHomeSeBackdrop;
+window.executarSimulacaoIaHome = executarSimulacaoIaHome;
+window.copiarAnaliseIaHome = copiarAnaliseIaHome;

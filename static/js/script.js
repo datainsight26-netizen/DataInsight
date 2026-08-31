@@ -78,19 +78,12 @@ function initChartSelection() {
   })
 }
 
-const ACCESSIBILITY_KEY = "acessibilidadeAtiva"
-
-const isAcessibilidadeAtiva = () => localStorage.getItem(ACCESSIBILITY_KEY) !== "false"
-
+// Acessibilidade é gerenciada de forma centralizada por static/acessibilidade/acessibilidade.js
 function setAcessibilidadeAtiva(active) {
-  localStorage.setItem(ACCESSIBILITY_KEY, active ? "true" : "false")
-  document.body.classList.toggle("acessibilidade-ativada", active)
-
-  const painel = document.querySelector(".acessibilidade-flutuante")
-  const vlibras = document.querySelector("#Vlibras")
-
-  if (painel) painel.style.display = active ? "block" : "none"
-  if (vlibras) vlibras.style.display = active ? "block" : "none"
+  if (window.Acessibilidade) {
+    if (active) window.Acessibilidade.ativar();
+    else window.Acessibilidade.desativar();
+  }
 }
 
 // function initChatbot() {
@@ -298,7 +291,6 @@ window.addEventListener("load", () => {
 // =============================
 document.addEventListener('DOMContentLoaded', function() {
   setTema();
-  setAcessibilidadeAtiva(isAcessibilidadeAtiva());
   initChartSelection();
   // if (typeof initChatbot === 'function') {
   //   initChatbot();

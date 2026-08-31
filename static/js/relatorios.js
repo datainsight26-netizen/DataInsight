@@ -431,65 +431,77 @@ document.addEventListener('DOMContentLoaded', carregarDadosRelatorios);
     }
 
     /* =============================================
-       HISTÓRICO LOCAL (localStorage)
+       HISTÓRICO NO BANCO DE DADOS (MongoDB via API)
     ============================================= */
-    const HISTORY_KEY = 'di_relatorios_hist';
+    let _historicoRelatorios = [];
     let filtroAtivo = 'todos';
 
-    function carregarHistorico() {
-      try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }
-      catch (e) { return []; }
+    async function carregarHistorico() {
+      try {
+        const resp = await fetch('/api/relatorios');
+        if (!resp.ok) return [];
+        const json = await resp.json();
+        _historicoRelatorios = json.relatorios || [];
+        return _historicoRelatorios;
+      } catch (e) {
+        console.warn('Aviso ao buscar relatórios do banco de dados:', e);
+        return [];
+      }
     }
-    function salvarHistorico(lista) {
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(lista));
+
+    async function removerDoHistorico(id) {
+      if (!confirm('Deseja realmente excluir este relatório salvo no banco de dados?')) return;
+
+      try {
+        const resp = await fetch(`/api/relatorios/${id}`, { method: 'DELETE' });
+        const json = await resp.json();
+
+        if (json.success) {
+          _historicoRelatorios = _historicoRelatorios.filter(r => String(r.id) !== String(id));
+          renderHistorico(document.getElementById('search-historico')?.value || '');
+          showToast('Relatório removido do banco de dados!', 'info');
+        } else {
+          showToast(json.mensagem || 'Erro ao excluir relatório', 'error');
+        }
+      } catch (e) {
+        console.error('Erro ao excluir relatório:', e);
+        showToast('Erro de conexão ao excluir relatório', 'error');
+      }
     }
-    function adicionarAoHistorico(nome, periodo, url) {
-      const lista = carregarHistorico();
-      lista.unshift({
-        id: Date.now(),
-        nome,
-        periodo,
-        data: new Date().toISOString(),
-        dataFormatada: new Date().toLocaleDateString('pt-BR', {
-          day: '2-digit', month: 'short', year: 'numeric',
-          hour: '2-digit', minute: '2-digit'
-        }),
-        url
-      });
-      salvarHistorico(lista.slice(0, 50));
-      renderHistorico();
-    }
-    function removerDoHistorico(id) {
-      const lista = carregarHistorico().filter(r => r.id !== Number(id));
-      salvarHistorico(lista);
-      renderHistorico();
-      showToast('Relatório removido do histórico', 'info');
-    }
+
     function filtrarPorPilula(lista) {
       const agora = new Date();
       if (filtroAtivo === 'hoje') {
-        return lista.filter(r => new Date(r.data).toDateString() === agora.toDateString());
+        return lista.filter(r => {
+          if (!r.data) return false;
+          return new Date(r.data).toDateString() === agora.toDateString();
+        });
       }
       if (filtroAtivo === 'semana') {
         const lim = new Date(agora); lim.setDate(agora.getDate() - 7);
-        return lista.filter(r => new Date(r.data) >= lim);
+        return lista.filter(r => {
+          if (!r.data) return false;
+          return new Date(r.data) >= lim;
+        });
       }
       if (filtroAtivo === 'mes') {
         return lista.filter(r => {
+          if (!r.data) return false;
           const d = new Date(r.data);
           return d.getMonth() === agora.getMonth() && d.getFullYear() === agora.getFullYear();
         });
       }
       return lista;
     }
+
     function renderHistorico(busca = '') {
-      const lista = carregarHistorico();
+      const lista = _historicoRelatorios;
       const filtradosPilula = filtrarPorPilula(lista);
       const query = busca.trim().toLowerCase();
       const filtrados = query
         ? filtradosPilula.filter(r =>
-          r.nome.toLowerCase().includes(query) ||
-          r.dataFormatada.toLowerCase().includes(query) ||
+          (r.nome || '').toLowerCase().includes(query) ||
+          (r.dataFormatada || '').toLowerCase().includes(query) ||
           (r.periodo || '').toLowerCase().includes(query))
         : filtradosPilula;
 
@@ -499,14 +511,15 @@ document.addEventListener('DOMContentLoaded', carregarDadosRelatorios);
       const countEl = document.getElementById('history-count');
       const qDisplay = document.getElementById('search-query-display');
 
-      countEl.textContent = lista.length;
+      if (countEl) countEl.textContent = lista.length;
       const listaVazia = lista.length === 0;
       const semResultados = !listaVazia && filtrados.length === 0 && query.length > 0;
 
-      emptyEl.style.display = listaVazia ? 'block' : 'none';
-      noResEl.classList.toggle('visivel', semResultados);
+      if (emptyEl) emptyEl.style.display = listaVazia ? 'block' : 'none';
+      if (noResEl) noResEl.classList.toggle('visivel', semResultados);
       if (qDisplay) qDisplay.textContent = '"' + busca + '"';
 
+      if (!listEl) return;
       if (listaVazia || semResultados) { listEl.innerHTML = ''; return; }
 
       listEl.innerHTML = filtrados.map(r => `
@@ -517,31 +530,33 @@ document.addEventListener('DOMContentLoaded', carregarDadosRelatorios);
             <div class="history-item__meta">
               <span class="history-item__date"><i class="fa-regular fa-clock"></i> ${r.dataFormatada}</span>
               ${r.periodo ? `<span class="history-item__period">${r.periodo}</span>` : ''}
-              <span class="status-tag status-tag--ok"><i class="fa-solid fa-circle-check"></i> Gerado</span>
+              <span class="status-tag status-tag--ok"><i class="fa-solid fa-cloud-arrow-up"></i> Salvo no Banco</span>
             </div>
           </div>
           <div class="history-item__actions">
             <button class="history-btn" onclick="baixarRelatorio('${r.url || ''}', '${r.nome.replace(/'/g, "\\'")}\')" title="Baixar PDF" aria-label="Baixar ${r.nome}">
               <i class="fa-solid fa-download"></i>
             </button>
-            <button class="history-btn history-btn--danger" onclick="removerDoHistorico(${r.id})" title="Remover do histórico" aria-label="Remover ${r.nome}">
+            <button class="history-btn history-btn--danger" onclick="removerDoHistorico('${r.id}')" title="Remover do banco de dados" aria-label="Remover ${r.nome}">
               <i class="fa-solid fa-trash-can"></i>
             </button>
           </div>
         </div>
       `).join('');
     }
+
     function baixarRelatorio(url, nome) {
       if (!url) { showToast('URL do relatório não encontrada', 'error'); return; }
-      const a = document.createElement('a');
-      a.href = url; a.download = nome + '.pdf'; a.click();
-      showToast('Download iniciado!', 'success');
+      window.open(url + (url.includes('?') ? '&' : '?') + 'auto=1', '_blank');
+      showToast('Download do PDF iniciado!', 'success');
     }
+
     function filtrarHistorico() {
       const busca = document.getElementById('search-historico').value;
       document.getElementById('search-clear').classList.toggle('visivel', busca.length > 0);
       renderHistorico(busca);
     }
+
     function limparBusca() {
       const input = document.getElementById('search-historico');
       input.value = '';
@@ -549,6 +564,7 @@ document.addEventListener('DOMContentLoaded', carregarDadosRelatorios);
       renderHistorico();
       input.focus();
     }
+
     function setPill(el, filtro) {
       filtroAtivo = filtro;
       document.querySelectorAll('.pill').forEach(p => p.classList.remove('ativo'));
@@ -577,13 +593,14 @@ document.addEventListener('DOMContentLoaded', carregarDadosRelatorios);
     }
 
     /* =============================================
-       EXPORTAR PDF MELHORADO
+       EXPORTAR PDF & SALVAR NO BANCO DE DADOS
     ============================================= */
-    function exportarPDFMelhorado() {
+    async function exportarPDFMelhorado() {
       const btn = document.getElementById('btn-pdf');
-      const loadingText = btn.querySelector('.btn-loading-text');
-      const spinner = btn.querySelector('.rel-spinner');
-      const btnText = btn.querySelector('.btn-text');
+      const loadingText = btn?.querySelector('.btn-loading-text');
+      const spinner = btn?.querySelector('.rel-spinner');
+      const btnText = btn?.querySelector('.btn-text');
+
       if (btn) {
         btn.setAttribute('data-loading', 'true');
         if (btnText) btnText.style.display = 'none';
@@ -591,8 +608,7 @@ document.addEventListener('DOMContentLoaded', carregarDadosRelatorios);
         if (loadingText) loadingText.style.display = 'inline';
         btn.disabled = true;
       }
-      const nome = document.getElementById('nomeRel').value || 'Relatório';
-      const periodo = document.getElementById('perRel').value || 'Últimos 6 meses';
+
       function resetBtn() {
         if (btn) {
           btn.removeAttribute('data-loading');
@@ -602,38 +618,99 @@ document.addEventListener('DOMContentLoaded', carregarDadosRelatorios);
           btn.disabled = false;
         }
       }
-      // Intercept fetch for this call
-      const origFetch = window.fetch;
-      window.fetch = function (url, opts) {
-        return origFetch(url, opts).then(async res => {
-          window.fetch = origFetch;
-          if (url && url.includes('gerar-relatorio')) {
-            const clone = res.clone();
-            try {
-              const json = await clone.json();
-              resetBtn();
-              if (json.success && json.redirect) {
-                adicionarAoHistorico(nome, periodo, json.redirect);
-                showToast('Relatório "' + nome + '" gerado!', 'success');
-                setTimeout(() => { window.location.href = json.redirect + '?auto=1'; }, 800);
-              } else {
-                showToast(json.mensagem || 'Erro ao gerar relatório', 'error');
-              }
-            } catch (e) { resetBtn(); }
+
+      const nome = document.getElementById('nomeRel')?.value || 'Meu Relatório';
+      const periodo = document.getElementById('perRel')?.value || 'Últimos 6 meses';
+      const data = new Date().toLocaleDateString('pt-BR');
+
+      gerarPreview();
+      const periodoDados = getPeriodoDados(periodo);
+
+      // Lógica de Insights Dinâmicos
+      let insightsDinamicos = [];
+      if (getCheckbox('opt-insights') && periodoDados.meses.length > 0) {
+        const fatTotal = somaValores(periodoDados.faturamento);
+        const cresc = calcCrescimento(periodoDados.faturamento);
+        insightsDinamicos.push(`O faturamento total do período selecionado alcançou R$ ${formatarValor(fatTotal)}.`);
+        
+        if (cresc.startsWith('-')) {
+          insightsDinamicos.push(`Houve uma retração de ${cresc} no faturamento. Avalie redução de custos urgentes.`);
+        } else if (cresc === '0%') {
+          insightsDinamicos.push(`O faturamento permaneceu estagnado. Pode ser a hora de testar novas abordagens comerciais.`);
+        } else {
+          insightsDinamicos.push(`Crescimento consistente com variação positiva de ${cresc}. Mantenha a estratégia atual.`);
+        }
+
+        const margemMedia = (somaValores(periodoDados.margem) / periodoDados.margem.length).toFixed(1);
+        insightsDinamicos.push(`A margem de lucro operou em uma média de ${margemMedia}%.`);
+        
+        let maxLucro = -1;
+        let mesMaxLucro = '';
+        for (let i = 0; i < periodoDados.lucro.length; i++) {
+          if (periodoDados.lucro[i] > maxLucro) {
+            maxLucro = periodoDados.lucro[i];
+            mesMaxLucro = periodoDados.meses[i];
           }
-          return res;
-        }).catch(err => {
-          window.fetch = origFetch;
-          resetBtn();
-          showToast('Erro de conexão. Verifique o console.', 'error');
-          throw err;
-        });
+        }
+        if (mesMaxLucro) {
+          insightsDinamicos.push(`Destaque positivo: ${mesMaxLucro} obteve o maior lucro do período (R$ ${formatarValor(maxLucro)}).`);
+        }
+      }
+
+      const payload = {
+        nome,
+        periodo,
+        data,
+        kpis: {
+          faturamento: formatarValor(somaValores(periodoDados.faturamento)),
+          lucro: formatarValor(somaValores(periodoDados.lucro)),
+          despesas: formatarValor(somaValores(periodoDados.despesas)),
+          crescimento: calcCrescimento(periodoDados.faturamento)
+        },
+        grafico: getCheckbox('opt-grafico'),
+        tendencias: getCheckbox('opt-tendencias'),
+        margem: getCheckbox('opt-margem'),
+        dadosDetalhados: getCheckbox('opt-dados'),
+        insights: insightsDinamicos,
+        tabela: periodoDados.meses.map((mes, i) => ({
+          mes, 
+          fat_raw: periodoDados.faturamento[i], 
+          luc_raw: periodoDados.lucro[i],
+          fat: formatarValor(periodoDados.faturamento[i]), 
+          desp: formatarValor(periodoDados.despesas[i]), 
+          luc: formatarValor(periodoDados.lucro[i]), 
+          margem: periodoDados.margem[i] + '%'
+        }))
       };
-      if (typeof exportarPDF === 'function') {
-        exportarPDF();
-      } else {
+
+      try {
+        const res = await fetch('/gerar-relatorio', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          const texto = await res.text();
+          throw new Error(`HTTP ${res.status}: ${texto.substring(0, 400)}`);
+        }
+
+        const dataRes = await res.json();
         resetBtn();
-        showToast('Função de exportação não encontrada', 'error');
+
+        if (dataRes.success && dataRes.redirect) {
+          showToast(`Relatório "${nome}" salvo no banco e pronto para download!`, 'success');
+          await carregarHistorico();
+          setTimeout(() => {
+            window.location.href = `${dataRes.redirect}${dataRes.redirect.includes('?') ? '&' : '?'}auto=1`;
+          }, 600);
+        } else {
+          showToast(dataRes.mensagem || 'Erro ao salvar relatório', 'error');
+        }
+      } catch (erro) {
+        resetBtn();
+        console.error('Erro ao salvar relatório no banco de dados:', erro);
+        showToast('Erro de conexão ao salvar relatório no banco.', 'error');
       }
     }
 
@@ -643,7 +720,7 @@ document.addEventListener('DOMContentLoaded', carregarDadosRelatorios);
     document.addEventListener('DOMContentLoaded', async () => {
       await configurarSeletorPlanilhaRelatorios();
       await carregarDadosRelatorios();
-      renderHistorico();
+      await carregarHistorico();
       // Init card visual states
       document.querySelectorAll('.card-opcao input[type="checkbox"]').forEach(cb => {
         const wrap = document.getElementById('wrap-' + cb.id);

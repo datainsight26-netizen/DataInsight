@@ -25,6 +25,12 @@
         function getScenarioData(root, desired) {
             if (!root) return null;
 
+            const customList = (root.campos_custom && root.campos_custom.length > 0)
+                ? root.campos_custom
+                : ((root.categorias_custom && root.categorias_custom.length > 0)
+                    ? root.categorias_custom
+                    : (window.planejamentoFinanceiroBackend ? (window.planejamentoFinanceiroBackend.campos_custom || window.planejamentoFinanceiroBackend.categorias_custom || []) : []));
+
             /*
              * Os 3 cenários calculados pelo backend:
              * - provavel: realizado + projeção linear pela média
@@ -36,7 +42,7 @@
                 root.provavel &&
                 Array.isArray(root.provavel.meses)
             ) {
-                return root.provavel;
+                return { ...root.provavel, campos_custom: customList, categorias_custom: customList };
             }
 
             if (
@@ -44,7 +50,7 @@
                 root.otimista &&
                 Array.isArray(root.otimista.meses)
             ) {
-                return root.otimista;
+                return { ...root.otimista, campos_custom: customList, categorias_custom: customList };
             }
 
             if (
@@ -52,7 +58,7 @@
                 root.pessimista &&
                 Array.isArray(root.pessimista.meses)
             ) {
-                return root.pessimista;
+                return { ...root.pessimista, campos_custom: customList, categorias_custom: customList };
             }
 
             if (
@@ -60,7 +66,7 @@
                 root.cenarios[desired] &&
                 Array.isArray(root.cenarios[desired].meses)
             ) {
-                return root.cenarios[desired];
+                return { ...root.cenarios[desired], campos_custom: customList, categorias_custom: customList };
             }
 
             if (
@@ -68,12 +74,12 @@
                 typeof root[desired] === 'object' &&
                 Array.isArray(root[desired].meses)
             ) {
-                return root[desired];
+                return { ...root[desired], campos_custom: customList, categorias_custom: customList };
             }
 
             /* fallback de compatibilidade com a base */
             if (Array.isArray(root.meses)) {
-                return { meses: root.meses };
+                return { meses: root.meses, campos_custom: customList, categorias_custom: customList };
             }
 
             return null;
@@ -204,6 +210,7 @@
             ) || (infraestrutura + equipamentos + outrosInv);
 
             return {
+                ...raw,
                 mes: raw.mes || MESES_PADRAO[index] || `Mês ${index + 1}`,
                 projetado: raw.projetado === true,
                 produtos,
@@ -247,7 +254,11 @@
             // Se todos os meses forem zerados e não projetados, não há dados.
             const temDadosReais = meses.some(m => !m.projetado && Math.abs(m.receita) > 0);
             if (!temDadosReais) return null;
-            return { meses };
+            return { 
+                ...raw,
+                meses,
+                campos_custom: raw.campos_custom || raw.categorias_custom || []
+            };
         }
 
         function totals(data) {
@@ -556,15 +567,58 @@
             const summaryEl = document.getElementById('pf-monthly-quick-summary');
             if(summaryEl) summaryEl.innerHTML = summaryText;
 
+            let customCats = [];
+            if (data && Array.isArray(data.campos_custom) && data.campos_custom.length > 0) {
+                customCats = data.campos_custom;
+            } else if (data && Array.isArray(data.categorias_custom) && data.categorias_custom.length > 0) {
+                customCats = data.categorias_custom;
+            } else if (window.planejamentoFinanceiroBackend) {
+                customCats = window.planejamentoFinanceiroBackend.campos_custom || window.planejamentoFinanceiroBackend.categorias_custom || [];
+            }
+
+            const customReceitas = customCats.filter(c => c && (c.grupo === 'Detalhamento de Receitas' || c.grupo === 'Receitas'));
+            const customImpostos = customCats.filter(c => c && c.grupo === 'Impostos');
+            const customVariaveis = customCats.filter(c => c && (c.grupo === 'Custos Variáveis' || c.grupo === 'Gastos Variáveis'));
+            const customFixos = customCats.filter(c => c && c.grupo === 'Gastos Fixos');
+            const customInvestimentos = customCats.filter(c => c && c.grupo === 'Investimentos');
+
             $('pf-monthly-body').innerHTML = [
                 section('▼ RECEITAS','receitas'),
-                moneyRow('Vendas de Produtos','produtos','','receitas'), moneyRow('Vendas de Serviços','servicos','','receitas'), moneyRow('Outros','outros','','receitas'), moneyRow('TOTAL','receita','pf-total','receitas'),
-                section('▼ IMPOSTOS','impostos'), pctRow('Valor Mensal de Impostos (%)','impostosPercentual','impostos'), moneyRow('Valor Mensal de Impostos (R$)','impostos','pf-total','impostos'),
-                section('▼ GASTOS VARIÁVEIS','variaveis'), moneyRow('Fornecedores','fornecedores','','variaveis'), moneyRow('Publicidade','publicidade','','variaveis'), moneyRow('Outros','outros_variaveis','','variaveis'), moneyRow('TOTAL','variaveis','pf-total','variaveis'),
-                section('▼ MARGEM DE CONTRIBUIÇÃO','margem'), moneyRow('Margem de Contribuição (R$)','margem','pf-total','margem'), pctRow('Margem de Contribuição (%)','margemPct','margem'),
-                section('▼ GASTOS FIXOS','fixos'), moneyRow('Aluguel','aluguel','','fixos'), moneyRow('Folha de Pagamento','folha','','fixos'), moneyRow('Pró-Labore','proLabore','','fixos'), moneyRow('Outros','outrosFixos','','fixos'), moneyRow('TOTAL','fixos','pf-total','fixos'),
-                section('▼ RESULTADO','resultado'), resultRow('resultado'),
-                section('▼ INVESTIMENTOS','investimentos'), moneyRow('Infraestrutura','infraestrutura','','investimentos'), moneyRow('Equipamentos','equipamentos','','investimentos'), moneyRow('Outros','outrosInv','','investimentos'), moneyRow('TOTAL','investimentos','pf-total','investimentos')
+                moneyRow('Vendas de Produtos','produtos','','receitas'),
+                moneyRow('Vendas de Serviços','servicos','','receitas'),
+                ...customReceitas.map(c => moneyRow(c.label, c.id, '', 'receitas')),
+                moneyRow('TOTAL','receita','pf-total','receitas'),
+
+                section('▼ IMPOSTOS','impostos'),
+                pctRow('Valor Mensal de Impostos (%)','impostosPercentual','impostos'),
+                moneyRow('Valor Mensal de Impostos (R$)','impostos','pf-total','impostos'),
+                ...customImpostos.map(c => c.tipo === 'percentual' ? pctRow(c.label, c.id, 'impostos') : moneyRow(c.label, c.id, '', 'impostos')),
+
+                section('▼ GASTOS VARIÁVEIS','variaveis'),
+                moneyRow('Fornecedores','fornecedores','','variaveis'),
+                moneyRow('Publicidade','publicidade','','variaveis'),
+                ...customVariaveis.map(c => moneyRow(c.label, c.id, '', 'variaveis')),
+                moneyRow('TOTAL','variaveis','pf-total','variaveis'),
+
+                section('▼ MARGEM DE CONTRIBUIÇÃO','margem'),
+                moneyRow('Margem de Contribuição (R$)','margem','pf-total','margem'),
+                pctRow('Margem de Contribuição (%)','margemPct','margem'),
+
+                section('▼ GASTOS FIXOS','fixos'),
+                moneyRow('Aluguel','aluguel','','fixos'),
+                moneyRow('Folha de Pagamento','folha','','fixos'),
+                moneyRow('Pró-Labore','proLabore','','fixos'),
+                ...customFixos.map(c => moneyRow(c.label, c.id, '', 'fixos')),
+                moneyRow('TOTAL','fixos','pf-total','fixos'),
+
+                section('▼ RESULTADO','resultado'),
+                resultRow('resultado'),
+
+                section('▼ INVESTIMENTOS','investimentos'),
+                moneyRow('Infraestrutura','infraestrutura','','investimentos'),
+                moneyRow('Equipamentos','equipamentos','','investimentos'),
+                ...customInvestimentos.map(c => moneyRow(c.label, c.id, '', 'investimentos')),
+                moneyRow('TOTAL','investimentos','pf-total','investimentos')
             ].join('');
         }
 
@@ -1061,13 +1115,79 @@
             }
         }
 
+        let _planilhasSumario = [];
+
+        async function configurarSeletorPlanilhaPlanejamento() {
+            const select = $('seletorPlanilhaAnalise');
+            if (!select) return;
+
+            try {
+                const resp = await fetch('/api/planilhas/sumario');
+                if (!resp.ok) return;
+
+                const data = await resp.json();
+                _planilhasSumario = data.planilhas || [];
+
+                select.innerHTML = '';
+
+                const optTodas = document.createElement('option');
+                optTodas.value = 'todas';
+                optTodas.textContent = `🌐 Todas as Planilhas (Visão Consolidada - ${_planilhasSumario.length})`;
+                select.appendChild(optTodas);
+
+                _planilhasSumario.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    const icone = p.tipo_fluxo === 'saida' ? '🔻' : (p.tipo_fluxo === 'entrada' ? '🟢' : '📁');
+                    opt.textContent = `${icone} [${p.dominio_label || 'Geral'}] ${p.nome} (${p.total_linhas || 0} linhas)`;
+                    select.appendChild(opt);
+                });
+
+                const salva = localStorage.getItem('DataInsight_DashboardPlanilha');
+                if (salva && (salva === 'todas' || _planilhasSumario.some(p => p.id === salva))) {
+                    select.value = salva;
+                }
+
+                atualizarBadgeStatusPlanejamento(_planilhasSumario, select.value);
+            } catch (e) {
+                console.warn('Não foi possível carregar sumário de planilhas no Planejamento Financeiro:', e);
+            }
+        }
+
+        function atualizarBadgeStatusPlanejamento(planilhas, idSelecionado) {
+            const container = $('pfStatusFontesContainer');
+            if (!container) return;
+
+            if (!idSelecionado || idSelecionado === 'todas') {
+                const total = (planilhas && planilhas.length) || 0;
+                container.innerHTML = `
+                    <span class="badge" style="background:rgba(59,130,246,0.12); color:#3b82f6; border:1px solid rgba(59,130,246,0.25); padding:6px 12px; border-radius:14px; font-size:0.78rem; font-weight:600; display:inline-flex; align-items:center; gap:6px;">
+                        <i class="fa-solid fa-layer-group"></i> ${total} ${total === 1 ? 'planilha consolidada' : 'planilhas consolidadas'}
+                    </span>
+                `;
+            } else {
+                const p = planilhas ? planilhas.find(x => x.id === idSelecionado) : null;
+                const nome = p ? p.nome : 'Planilha Selecionada';
+                const dom = p ? (p.dominio_label || 'Individual') : 'Individual';
+                container.innerHTML = `
+                    <span class="badge" style="background:rgba(16,185,129,0.12); color:#10b981; border:1px solid rgba(16,185,129,0.25); padding:6px 12px; border-radius:14px; font-size:0.78rem; font-weight:600; display:inline-flex; align-items:center; gap:6px;">
+                        <i class="fa-solid fa-file-invoice"></i> ${nome} (${dom})
+                    </span>
+                `;
+            }
+        }
+
         document.querySelectorAll('.pf-tab').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab)));
         document.querySelectorAll('.pf-scenario button').forEach(btn=>btn.addEventListener('click',()=>setScenario(btn.dataset.scenario)));
 
         const seletorPlanilha = $('seletorPlanilhaAnalise');
         if (seletorPlanilha) {
             seletorPlanilha.addEventListener('change', () => {
-                carregarPlanejamentoFinanceiro(seletorPlanilha.value);
+                const novaTabelaId = seletorPlanilha.value;
+                localStorage.setItem('DataInsight_DashboardPlanilha', novaTabelaId);
+                atualizarBadgeStatusPlanejamento(_planilhasSumario, novaTabelaId);
+                iaAnaliseCache = { provavel: null, otimista: null, pessimista: null };
+                carregarPlanejamentoFinanceiro(novaTabelaId);
             });
         }
 
@@ -1121,6 +1241,7 @@
 
                     if (opcaoExiste) {
                         seletor.value = payload.escopo;
+                        atualizarBadgeStatusPlanejamento(_planilhasSumario, payload.escopo);
                     }
                 }
 
@@ -1149,27 +1270,28 @@
             setScenario(scenario);
         };
 
-        /* Ponte com os quatro KPIs que o analise.js já atualiza hoje. */
-        const legacyMap = { 'fat-valor':'pf-receita-total', 'desp-valor':'pf-fixos-total', 'luc-valor':'pf-resultado-total', 'mg-valor':'pf-margem-percentual' };
-        Object.entries(legacyMap).forEach(([legacy,target])=>{
-            const src=$(legacy), dest=$(target);
-            if (!src || !dest) return;
-            new MutationObserver(()=>{ if(src.textContent.trim() && src.textContent.trim()!=='--' && !currentData) dest.textContent=src.textContent; })
-                .observe(src,{childList:true,subtree:true,characterData:true});
-        });
-
         /* Se alternarTema() trocar classe/data-attribute, os gráficos se redesenham no tema novo. */
         new MutationObserver(()=>{ if(currentData) setTimeout(()=>renderCharts(currentData),80); })
             .observe(document.documentElement,{attributes:true,attributeFilter:['class','data-theme']});
         new MutationObserver(()=>{ if(currentData) setTimeout(()=>renderCharts(currentData),80); })
             .observe(document.body,{attributes:true,attributeFilter:['class','data-theme']});
 
-        /* Inicializa a interface e depois busca os dados reais da API. */
-        const initial = getScenarioData(window.planejamentoFinanceiroBackend,scenario);
-        renderAll(initial);
+        /* Inicializa a interface, preenche as planilhas do seletor e busca os dados da tabela ativa */
+        async function inicializarPlanejamento() {
+            const initial = getScenarioData(window.planejamentoFinanceiroBackend, scenario);
+            renderAll(initial);
 
-        const tabelaInicial = $('seletorPlanilhaAnalise')?.value || 'todas';
-        carregarPlanejamentoFinanceiro(tabelaInicial);
+            await configurarSeletorPlanilhaPlanejamento();
+
+            const tabelaInicial = $('seletorPlanilhaAnalise')?.value || localStorage.getItem('DataInsight_DashboardPlanilha') || 'todas';
+            await carregarPlanejamentoFinanceiro(tabelaInicial);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', inicializarPlanejamento);
+        } else {
+            inicializarPlanejamento();
+        }
 
         /* Aguarda o defer do ApexCharts sem bloquear o restante da interface. */
         let tries=0;

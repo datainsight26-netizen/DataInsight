@@ -7,6 +7,7 @@
     analise: {},          // resultado da análise { coluna: {categoria, confianca, ...} }
     mapeamentoSugerido: {}, // sugestão automática { categoria: coluna }
     mapeamentoUsuario: {}, // mapeamento confirmado pelo usuário
+    categoriasCustom: [],  // classificações financeiras personalizadas criadas pelo usuário
     categoriasDisponiveis: {}, // metadados das categorias do backend
     completude: {},       // prontidão por ferramenta
     recomendacoes: [],    // lista de recomendações
@@ -27,7 +28,6 @@
     // DETALHAMENTO DE RECEITAS
     { id: "receita_produtos",  label: "Venda de Produtos",            grupo: "Detalhamento de Receitas",         cor: "#10b981", icone: "fa-box",               temManual: false },
     { id: "receita_servicos",  label: "Venda de Serviços",            grupo: "Detalhamento de Receitas",         cor: "#10b981", icone: "fa-screwdriver-wrench",temManual: false },
-    { id: "receita_outros",    label: "Outras Receitas",              grupo: "Detalhamento de Receitas",         cor: "#10b981", icone: "fa-plus-circle",        temManual: false },
 
     // IMPOSTOS
     { id: "impostos",          label: "Impostos (Valor R$)",          grupo: "Impostos",                         cor: "#6366f1", icone: "fa-file-invoice-dollar",temManual: true },
@@ -36,18 +36,15 @@
     // CUSTOS VARIÁVEIS
     { id: "fornecedores",      label: "Fornecedores / CMV",           grupo: "Custos Variáveis",                 cor: "#f59e0b", icone: "fa-truck",              temManual: true },
     { id: "publicidade",       label: "Publicidade / Marketing",      grupo: "Custos Variáveis",                 cor: "#f59e0b", icone: "fa-bullhorn",           temManual: true },
-    { id: "custo_variavel",    label: "Outros Custos Variáveis",      grupo: "Custos Variáveis",                 cor: "#f59e0b", icone: "fa-arrows-rotate",      temManual: true },
 
     // GASTOS FIXOS
     { id: "aluguel",           label: "Aluguel / Locação",            grupo: "Gastos Fixos",                     cor: "#ef4444", icone: "fa-building",           temManual: true, placeholder: "Valor fixo mensal R$" },
     { id: "folha_pagamento",   label: "Folha de Pagamento",           grupo: "Gastos Fixos",                     cor: "#ef4444", icone: "fa-users",              temManual: true, placeholder: "Total folha mensal R$" },
     { id: "pro_labore",        label: "Pró-labore / Retirada",        grupo: "Gastos Fixos",                     cor: "#ef4444", icone: "fa-user-tie",           temManual: true, placeholder: "Valor pró-labore R$" },
-    { id: "gasto_fixo_outros", label: "Outros Gastos Fixos",          grupo: "Gastos Fixos",                     cor: "#ef4444", icone: "fa-file-alt",           temManual: true },
 
     // INVESTIMENTOS
     { id: "investimento_infra",        label: "Investimento – Infraestrutura", grupo: "Investimentos",          cor: "#8b5cf6", icone: "fa-hammer",            temManual: true },
     { id: "investimento_equipamentos", label: "Investimento – Equipamentos",   grupo: "Investimentos",          cor: "#8b5cf6", icone: "fa-computer",          temManual: true },
-    { id: "investimento_outros",       label: "Outros Investimentos",          grupo: "Investimentos",          cor: "#8b5cf6", icone: "fa-coins",             temManual: true },
   ];
 
   /* ================================================================
@@ -641,6 +638,9 @@
   /* ================================================================
      RENDERIZAR CATEGORIAS
      ================================================================ */
+  /* ================================================================
+     RENDERIZAR CATEGORIAS
+     ================================================================ */
   function renderizarCategorias() {
     const container = document.getElementById('finCategoriasContainer');
     if (!container) return;
@@ -670,19 +670,27 @@
       `;
     }
 
-    const grupos = {};
-    FIN_CATEGORIAS_LOCAL.forEach(cat => {
-      if (!grupos[cat.grupo]) grupos[cat.grupo] = [];
-      grupos[cat.grupo].push(cat);
-    });
+    const gruposPadrao = [
+      { nome: "Indicadores Principais do Negócio", podeAdicionar: false },
+      { nome: "Detalhamento de Receitas", podeAdicionar: true, corPadrao: "#10b981", iconePadrao: "fa-arrow-trend-up" },
+      { nome: "Impostos", podeAdicionar: true, corPadrao: "#6366f1", iconePadrao: "fa-percent" },
+      { nome: "Custos Variáveis", podeAdicionar: true, corPadrao: "#f59e0b", iconePadrao: "fa-arrows-rotate" },
+      { nome: "Gastos Fixos", podeAdicionar: true, corPadrao: "#ef4444", iconePadrao: "fa-building" },
+      { nome: "Investimentos", podeAdicionar: true, corPadrao: "#8b5cf6", iconePadrao: "fa-coins" }
+    ];
 
-    Object.entries(grupos).forEach(([grupo, cats]) => {
-      html += `<p class="fin-grupo-label">${grupo}</p><div class="fin-categorias-grid">`;
-      cats.forEach(cat => {
+    gruposPadrao.forEach(grp => {
+      const catsFixas = FIN_CATEGORIAS_LOCAL.filter(c => c.grupo === grp.nome);
+      const catsCustom = (FinState.categoriasCustom || []).filter(c => c.grupo === grp.nome);
+      const todasCats = [...catsFixas, ...catsCustom];
+
+      html += `<p class="fin-grupo-label">${grp.nome}</p><div class="fin-categorias-grid">`;
+      
+      todasCats.forEach(cat => {
         const valorAtual = FinState.mapeamentoUsuario[cat.id] || '';
         const valorManual = FinState.mapeamentoUsuario[`${cat.id}_manual`] || '';
         const confianca = FinState.analise[valorAtual]?.confianca || 0;
-        const sugestao = NOMES_SUGERIDOS_COLUNAS[cat.id] || { nome: cat.label, tipo: "moeda", tipoLabel: "💰 Moeda", valorPadrao: 0.0 };
+        const sugestao = NOMES_SUGERIDOS_COLUNAS[cat.id] || { nome: cat.label, tipo: cat.tipo || "moeda", tipoLabel: "💰 Moeda", valorPadrao: 0.0 };
 
         let statusClass = 'ausente';
         let statusText = '❌ Não mapeado';
@@ -702,14 +710,18 @@
 
         html += `
           <div class="fin-cat-card" style="--fin-cat-cor: ${cat.cor};">
+            ${cat.isCustom ? `
+            <button class="fin-cat-remove-btn" type="button" title="Excluir classificação ${cat.label}" onclick="removerClassificacaoCustom('${cat.id}')">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>` : ''}
             <button class="fin-info-btn" type="button" title="Guia explicativo: ${cat.label}" onclick="abrirModalFinInfo('${cat.id}')">
               <i class="fa-solid fa-circle-info"></i>
             </button>
             <div class="fin-cat-card-header">
               <div class="fin-cat-icon" style="background:${cat.cor}20; color:${cat.cor};">
-                <i class="fa-solid ${cat.icone}"></i>
+                <i class="fa-solid ${cat.icone || 'fa-tag'}"></i>
               </div>
-              <div style="flex:1; min-width:0;">
+              <div style="flex:1; min-width:0; padding-right:${cat.isCustom ? '48px' : '24px'};">
                 <div class="fin-cat-title">${cat.label}</div>
                 <div class="fin-cat-grupo">${cat.grupo}</div>
               </div>
@@ -751,6 +763,18 @@
             </div>` : ''}
           </div>`;
       });
+
+      // Botão + Adicionar Campo para o grupo
+      if (grp.podeAdicionar) {
+        html += `
+          <div class="fin-cat-add-card" onclick="abrirModalNovaClassificacaoCustom('${grp.nome}')" title="Adicionar classificação personalizada em ${grp.nome}">
+            <div class="fin-cat-add-icon"><i class="fa-solid fa-plus"></i></div>
+            <div class="fin-cat-add-title">Adicionar Campo</div>
+            <div class="fin-cat-add-subtitle">Personalizar em ${grp.nome}</div>
+          </div>
+        `;
+      }
+
       html += `</div>`;
     });
 
@@ -759,16 +783,169 @@
   }
 
   /* ================================================================
+     MODAL DE CRIAÇÃO DE CLASSIFICAÇÃO PERSONALIZADA (CUSTOM)
+     ================================================================ */
+  function abrirModalNovaClassificacaoCustom(grupo) {
+    const modal = document.getElementById('modalNovaClassificacaoCustom');
+    if (!modal) return;
+
+    const grupoInput = document.getElementById('finCustomGrupo');
+    const grupoLabel = document.getElementById('finCustomGrupoLabel');
+    const inputNome = document.getElementById('finCustomNome');
+    const selectTipo = document.getElementById('finCustomTipo');
+    const inputValorFixo = document.getElementById('finCustomValorFixo');
+    const checkCriarColuna = document.getElementById('finCustomCriarColuna');
+
+    if (grupoInput) grupoInput.value = grupo;
+    if (grupoLabel) grupoLabel.textContent = grupo;
+    if (inputNome) { inputNome.value = ''; inputNome.focus(); }
+    if (selectTipo) selectTipo.value = 'moeda';
+    if (inputValorFixo) inputValorFixo.value = '';
+    if (checkCriarColuna) checkCriarColuna.checked = true;
+
+    const iconeHeader = document.getElementById('finCustomModalIcon');
+    if (iconeHeader) {
+      const cores = {
+        'Detalhamento de Receitas': '#10b981',
+        'Impostos': '#6366f1',
+        'Custos Variáveis': '#f59e0b',
+        'Gastos Fixos': '#ef4444',
+        'Investimentos': '#8b5cf6'
+      };
+      iconeHeader.style.background = cores[grupo] || 'var(--primaria)';
+    }
+
+    modal.style.display = 'flex';
+  }
+  window.abrirModalNovaClassificacaoCustom = abrirModalNovaClassificacaoCustom;
+
+  async function executarCriacaoClassificacaoCustom() {
+    const grupo = document.getElementById('finCustomGrupo')?.value || 'Gastos Fixos';
+    const nome = document.getElementById('finCustomNome')?.value.trim();
+    const tipo = document.getElementById('finCustomTipo')?.value || 'moeda';
+    const valorFixo = document.getElementById('finCustomValorFixo')?.value.trim() || '';
+    const criarColuna = document.getElementById('finCustomCriarColuna')?.checked;
+
+    if (!nome) {
+      if (typeof mostrarToast === 'function') mostrarToast('Informe o nome da classificação.', 'warning');
+      return;
+    }
+
+    const btn = document.getElementById('btnConfirmarCriarCustom');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Criando...'; }
+
+    try {
+      const idLimpo = 'custom_' + nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '') + '_' + Date.now().toString().slice(-4);
+      
+      const configCoresIcones = {
+        'Detalhamento de Receitas': { cor: '#10b981', icone: 'fa-arrow-trend-up' },
+        'Impostos': { cor: '#6366f1', icone: 'fa-percent' },
+        'Custos Variáveis': { cor: '#f59e0b', icone: 'fa-arrows-rotate' },
+        'Gastos Fixos': { cor: '#ef4444', icone: 'fa-building' },
+        'Investimentos': { cor: '#8b5cf6', icone: 'fa-coins' }
+      };
+      const infoVisual = configCoresIcones[grupo] || { cor: '#3b82f6', icone: 'fa-tag' };
+
+      const novaCat = {
+        id: idLimpo,
+        label: nome,
+        grupo: grupo,
+        cor: infoVisual.cor,
+        icone: infoVisual.icone,
+        temManual: true,
+        isCustom: true,
+        tipo: tipo,
+        desc: `Classificação personalizada de ${grupo}`
+      };
+
+      if (!Array.isArray(FinState.categoriasCustom)) {
+        FinState.categoriasCustom = [];
+      }
+      FinState.categoriasCustom.push(novaCat);
+
+      // Se o usuário optou por criar a coluna na tabela de dados
+      if (criarColuna) {
+        const valParaPreencher = (valorFixo !== '' && !isNaN(parseFloat(valorFixo)) && tipo !== 'texto') 
+          ? parseFloat(valorFixo) 
+          : (valorFixo || 0.0);
+
+        if (typeof window.adicionarColunaComNome === 'function') {
+          window.adicionarColunaComNome(nome, valParaPreencher, false);
+        }
+
+        if (typeof estado !== 'undefined' && Array.isArray(estado.todosDados)) {
+          if (estado.todosDados.length === 0) {
+            estado.todosDados = [{ _id: 'row-1', [nome]: valParaPreencher }];
+          } else {
+            estado.todosDados.forEach(linha => {
+              if (linha[nome] === undefined || linha[nome] === '' || linha[nome] === null) {
+                linha[nome] = valParaPreencher;
+              }
+            });
+          }
+          if (typeof atualizarTabela === 'function') atualizarTabela();
+          if (typeof exibirPagina === 'function') exibirPagina();
+          if (typeof sincronizarTabelaAtiva === 'function') sincronizarTabelaAtiva();
+        }
+
+        const { colunas, amostra } = finObterDadosTabela();
+        FinState.colunas = colunas.length > 0 ? colunas : [nome];
+        FinState.dadosAmostra = amostra;
+        FinState.mapeamentoUsuario[idLimpo] = nome;
+      }
+
+      if (valorFixo !== '' && !isNaN(parseFloat(valorFixo))) {
+        FinState.mapeamentoUsuario[`${idLimpo}_manual`] = parseFloat(valorFixo);
+      }
+
+      // Fechar modal e renderizar
+      const modal = document.getElementById('modalNovaClassificacaoCustom');
+      if (modal) modal.style.display = 'none';
+
+      renderizarCategorias();
+      await salvarClassificacaoFinanceira(true);
+
+      if (typeof mostrarToast === 'function') {
+        mostrarToast(`✓ Classificação "${nome}" adicionada com sucesso!`, 'success');
+      }
+    } catch (err) {
+      console.error('[Fin] Erro ao criar classificação custom:', err);
+      if (typeof mostrarToast === 'function') mostrarToast('Erro ao criar classificação.', 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check"></i> Adicionar Classificação'; }
+    }
+  }
+  window.executarCriacaoClassificacaoCustom = executarCriacaoClassificacaoCustom;
+
+  async function removerClassificacaoCustom(catId) {
+    if (!confirm('Deseja realmente remover esta classificação personalizada?')) return;
+
+    if (Array.isArray(FinState.categoriasCustom)) {
+      FinState.categoriasCustom = FinState.categoriasCustom.filter(c => c.id !== catId);
+    }
+    delete FinState.mapeamentoUsuario[catId];
+    delete FinState.mapeamentoUsuario[`${catId}_manual`];
+
+    renderizarCategorias();
+    await salvarClassificacaoFinanceira(true);
+
+    if (typeof mostrarToast === 'function') {
+      mostrarToast('Classificação personalizada removida.', 'info');
+    }
+  }
+  window.removerClassificacaoCustom = removerClassificacaoCustom;
+
+  /* ================================================================
      MODAL E CRIAÇÃO AUTOMÁTICA DE COLUNA FINANCEIRA
      ================================================================ */
   function abrirModalCriarColunaFin(catId) {
-    const cat = FIN_CATEGORIAS_LOCAL.find(c => c.id === catId);
+    const cat = FIN_CATEGORIAS_LOCAL.find(c => c.id === catId) || (FinState.categoriasCustom || []).find(c => c.id === catId);
     if (!cat) return;
 
     const modal = document.getElementById('modalConfirmarCriarColunaFin');
     if (!modal) return;
 
-    const sugestao = NOMES_SUGERIDOS_COLUNAS[catId] || { nome: cat.label, tipo: "moeda", tipoLabel: "💰 Moeda", valorPadrao: 0.0 };
+    const sugestao = NOMES_SUGERIDOS_COLUNAS[catId] || { nome: cat.label, tipo: cat.tipo || "moeda", tipoLabel: "💰 Moeda", valorPadrao: 0.0 };
 
     document.getElementById('finModalCatId').value = catId;
     document.getElementById('finModalCatTitulo').textContent = cat.label;
@@ -861,7 +1038,6 @@
           })
         }).catch(e => console.warn('[Fin] Erro ao sincronizar criação com backend:', e))
       ]).then(() => {
-        // Atualizar status após persistência (background)
         atualizarStatusCompleto().catch(() => {});
       }).catch(e => console.warn('[Fin] Erro ao persistir coluna:', e));
 
@@ -959,7 +1135,6 @@
      ================================================================ */
   function finAtualizarMapeamento(cat, coluna) {
     if (coluna && coluna.startsWith('__criar_')) {
-      // Usuário selecionou opção de criar coluna
       abrirModalCriarColunaFin(cat);
       const sel = document.querySelector(`select[data-cat="${cat}"]`);
       if (sel) sel.value = FinState.mapeamentoUsuario[cat] || '';
@@ -975,7 +1150,6 @@
     atualizarBadge();
     finAtualizarStatusCard(cat);
 
-    // Auto-salvar no banco em segundo plano
     debounceSalvarClassificacao();
   }
 
@@ -989,7 +1163,6 @@
       const numVal = parseFloat(valLimpo);
       FinState.mapeamentoUsuario[chave] = numVal;
 
-      // Se houver uma coluna mapeada para esta categoria na tabela, preencher as células vazias com o valor fixo
       if (colMapeada && typeof estado !== 'undefined' && Array.isArray(estado.todosDados)) {
         let alterou = false;
         estado.todosDados.forEach(linha => {
@@ -1008,7 +1181,6 @@
     } else {
       delete FinState.mapeamentoUsuario[chave];
 
-      // Quando o valor fixo é removido, limpar as células que continham esse valor fixo anterior
       if (colMapeada && typeof estado !== 'undefined' && Array.isArray(estado.todosDados)) {
         let alterou = false;
         estado.todosDados.forEach(linha => {
@@ -1063,8 +1235,9 @@
      BADGE DE CAMPOS MAPEADOS
      ================================================================ */
   function atualizarBadge() {
-    const total = FIN_CATEGORIAS_LOCAL.length;
-    const mapeados = FIN_CATEGORIAS_LOCAL.filter(c =>
+    const todasCats = [...FIN_CATEGORIAS_LOCAL, ...(FinState.categoriasCustom || [])];
+    const total = todasCats.length;
+    const mapeados = todasCats.filter(c =>
       FinState.mapeamentoUsuario[c.id] || FinState.mapeamentoUsuario[`${c.id}_manual`]
     ).length;
 
@@ -1346,16 +1519,29 @@
         : Promise.resolve();
 
       // 2. Salvar o mapeamento financeiro no backend
+      const payloadParaSalvar = {
+        ...FinState.mapeamentoUsuario,
+        _categorias_custom: FinState.categoriasCustom || [],
+        categorias_custom: FinState.categoriasCustom || []
+      };
+
       const resp = await fetch('/api/mapeamento-financeiro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(FinState.mapeamentoUsuario),
+        body: JSON.stringify(payloadParaSalvar),
       });
       const json = await resp.json();
 
       if (resp.ok) {
         FinState.salvo = true;
-        if (json.mapeamento) FinState.mapeamentoUsuario = json.mapeamento;
+        if (json.mapeamento) {
+          if (json.mapeamento._categorias_custom && Array.isArray(json.mapeamento._categorias_custom)) {
+            FinState.categoriasCustom = json.mapeamento._categorias_custom;
+          } else if (json.mapeamento.categorias_custom && Array.isArray(json.mapeamento.categorias_custom)) {
+            FinState.categoriasCustom = json.mapeamento.categorias_custom;
+          }
+          FinState.mapeamentoUsuario = json.mapeamento;
+        }
         FinState.completude = json.completude || {};
         FinState.recomendacoes = json.recomendacoes || [];
         renderizarCategorias();
@@ -1390,6 +1576,13 @@
       const resp = await fetch('/api/mapeamento-financeiro', { method: 'GET' });
       const json = await resp.json();
       if (resp.ok && json.mapeamento && Object.keys(json.mapeamento).length > 0) {
+        if (json.mapeamento._categorias_custom && Array.isArray(json.mapeamento._categorias_custom)) {
+          FinState.categoriasCustom = json.mapeamento._categorias_custom;
+        } else if (json.mapeamento.categorias_custom && Array.isArray(json.mapeamento.categorias_custom)) {
+          FinState.categoriasCustom = json.mapeamento.categorias_custom;
+        } else if (json.categorias_custom && Array.isArray(json.categorias_custom)) {
+          FinState.categoriasCustom = json.categorias_custom;
+        }
         FinState.mapeamentoUsuario = json.mapeamento;
         FinState.completude = json.completude || {};
         FinState.recomendacoes = json.recomendacoes || [];
@@ -1445,9 +1638,13 @@
   }
 
   // Exportar funções necessárias para escopo global
+  window.FinState = FinState;
   window.finLimparManual = finLimparManual;
   window.finAtualizarManual = finAtualizarManual;
   window.finAtualizarMapeamento = finAtualizarMapeamento;
+  window.abrirModalNovaClassificacaoCustom = abrirModalNovaClassificacaoCustom;
+  window.executarCriacaoClassificacaoCustom = executarCriacaoClassificacaoCustom;
+  window.removerClassificacaoCustom = removerClassificacaoCustom;
   window.salvarClassificacaoFinanceira = salvarClassificacaoFinanceira;
   window.analisarColunasFinanceiras = analisarColunasFinanceiras;
   window.mostrarPainelFinanceiro = mostrarPainelFinanceiro;

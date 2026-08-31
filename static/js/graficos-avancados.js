@@ -196,6 +196,294 @@ function getChartComparativoOptions() {
 }
 
 // ==========================================
+// PROJEÇÃO FINANCEIRA PREDITIVA (6 MESES - REGRESSÃO LINEAR)
+// ==========================================
+
+let _projecaoAtual = null;
+let _modoProjecao = 'cenarios'; // 'cenarios' | 'provavel_detalhado'
+
+function getChartProjecaoOptions() {
+  const colors = getThemeColors();
+  return {
+    series: [
+      { name: 'Cenário Otimista', data: [] },
+      { name: 'Cenário Provável (Tendência)', data: [] },
+      { name: 'Cenário Pessimista', data: [] }
+    ],
+    chart: {
+      type: 'line',
+      height: 420,
+      foreColor: colors.texto,
+      toolbar: {
+        show: true,
+        tools: { zoom: true, zoomin: true, zoomout: true, pan: true, reset: true }
+      },
+      zoom: { enabled: true, type: 'x', autoScaleYaxis: true }
+    },
+    title: {
+      text: ' Tendência Preditiva de Lucro Líquido (6 Meses)',
+      align: 'center',
+      style: { fontSize: '14px', fontWeight: 'bold', color: colors.texto }
+    },
+    subtitle: {
+      text: 'Baseado no modelo de Regressão Linear sobre os últimos 3 meses históricos',
+      align: 'center',
+      style: { fontSize: '12px', color: colors.suave }
+    },
+    colors: ['#10B981', '#3B82F6', '#EF4444'], // Otimista (Verde), Provável (Azul), Pessimista (Vermelho)
+    stroke: {
+      curve: 'smooth',
+      width: [3, 4, 3],
+      dashArray: [4, 0, 4]
+    },
+    markers: {
+      size: [5, 6, 5],
+      strokeWidth: 2,
+      hover: { size: 8 }
+    },
+    xaxis: {
+      categories: [],
+      labels: {
+        style: { fontSize: '12px', fontWeight: '600' }
+      },
+      title: {
+     
+        style: { fontSize: '11px', color: colors.suave }
+      }
+    },
+    yaxis: {
+      labels: {
+        formatter: (val) => 'R$ ' + Number(val).toLocaleString('pt-BR', { maximumFractionDigits: 0 })
+      }
+    },
+    annotations: {
+      yaxis: [
+        {
+          y: 0,
+          borderColor: colors.isDark ? '#64748B' : '#94A3B8',
+          strokeDashArray: 4,
+          borderWidth: 2,
+          label: {
+            borderColor: colors.isDark ? '#64748B' : '#94A3B8',
+            style: {
+              color: '#FFFFFF',
+              background: colors.isDark ? '#334155' : '#64748B',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              padding: { left: 8, right: 8, top: 4, bottom: 4 }
+            },
+            text: '⚖️ Ponto de Equilíbrio / Break-even (R$ 0)'
+          }
+        }
+      ]
+    },
+    tooltip: {
+      shared: true,
+      intersect: false,
+      custom: ({ series, seriesIndex, dataPointIndex, w }) => {
+        const tipColors = getThemeColors();
+        const cats = w.globals.categoryLabels || w.globals.labels || [];
+        const mesLabel = cats[dataPointIndex] || `Mês +${dataPointIndex + 1}`;
+        let html = `
+          <div style="padding: 12px 14px; font-size: 12px; border-radius: 8px; background: ${tipColors.fundo}; color: ${tipColors.texto}; border: 1px solid ${tipColors.borda}; box-shadow: 0 4px 16px rgba(0,0,0,0.3); min-width: 230px;">
+            <div style="font-weight: 700; border-bottom: 1px solid ${tipColors.borda}; padding-bottom: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+              <span>${mesLabel}</span>
+              <span style="font-size: 10px; background: rgba(59,130,246,0.15); color:#3B82F6; padding: 2px 6px; border-radius: 4px; font-weight: 600;">Projeção IA</span>
+            </div>
+        `;
+
+        w.globals.seriesNames.forEach((name, i) => {
+          const val = series[i] ? series[i][dataPointIndex] : undefined;
+          if (val !== undefined && val !== null) {
+            const cor = w.globals.colors[i];
+            const isLucro = val >= 0;
+            const badgeLucro = isLucro 
+              ? `<span style="color:#10B981; font-weight:700; font-size:10.5px;">[Lucro 🟢]</span>` 
+              : `<span style="color:#EF4444; font-weight:700; font-size:10.5px;">[Prejuízo 🔴]</span>`;
+            const sinal = val < 0 ? '-' : '';
+            const valFmt = `${sinal}R$ ${Math.abs(val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+            html += `
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 5px;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="display:inline-block; width:9px; height:9px; border-radius:50%; background:${cor};"></span>
+                  <span style="font-size:11.5px; opacity:0.9;">${name}:</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <strong>${valFmt}</strong>
+                  ${badgeLucro}
+                </div>
+              </div>
+            `;
+          }
+        });
+
+        html += `</div>`;
+        return html;
+      }
+    },
+    legend: {
+      position: 'bottom',
+      horizontalAlign: 'center',
+      fontSize: '12px'
+    },
+    grid: {
+      borderColor: colors.borda,
+      strokeDashArray: 5
+    },
+    responsive: [{ breakpoint: 768, options: { chart: { height: 360 } } }]
+  };
+}
+
+function aplicarModoGraficoProjecao(projecao, modo) {
+  const chart = chartsInstances.projecao;
+  if (!chart || !projecao || !projecao.cenarios) return;
+
+  const labels = projecao.labels_projecao || [];
+  const cenarios = projecao.cenarios;
+
+  if (modo === 'provavel_detalhado') {
+    const prov = cenarios.provavel?.series || {};
+    chart.updateOptions({
+      xaxis: { categories: labels },
+      colors: ['#3B82F6', '#EF4444', '#10B981'],
+      stroke: {
+        width: [3, 3, 4],
+        dashArray: [0, 0, 0]
+      },
+      markers: { size: [4, 4, 6] }
+    });
+    chart.updateSeries([
+      { name: 'Receita Estimada', data: prov.receita || [] },
+      { name: 'Despesa Estimada', data: prov.despesa || [] },
+      { name: 'Lucro Líquido Projetado', data: prov.lucro || [] }
+    ]);
+  } else {
+    // Modo padrão: Comparativo dos 3 Cenários de Lucro Líquido
+    chart.updateOptions({
+      xaxis: { categories: labels },
+      colors: ['#10B981', '#3B82F6', '#EF4444'],
+      stroke: {
+        width: [3, 4, 3],
+        dashArray: [4, 0, 4]
+      },
+      markers: { size: [5, 6, 5] }
+    });
+    chart.updateSeries([
+      { name: 'Cenário Otimista', data: cenarios.otimista?.series?.lucro || [] },
+      { name: 'Cenário Provável (Tendência)', data: cenarios.provavel?.series?.lucro || [] },
+      { name: 'Cenário Pessimista', data: cenarios.pessimista?.series?.lucro || [] }
+    ]);
+  }
+}
+
+function atualizarGraficoProjecao(projecao) {
+  if (!projecao || !projecao.cenarios) return;
+  _projecaoAtual = projecao;
+
+  const { pess = {}, prov = {}, otim = {} } = {
+    pess: projecao.cenarios.pessimista || {},
+    prov: projecao.cenarios.provavel || {},
+    otim: projecao.cenarios.otimista || {}
+  };
+
+  const formatarMoeda = (num) => {
+    if (num === undefined || num === null) return '--';
+    const sinal = num < 0 ? '-' : '';
+    return `${sinal}R$ ${Math.abs(num).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
+  // Atualizar Card Pessimista
+  const elPessTotal = document.getElementById('projPessimistaTotal');
+  const elPessMedia = document.getElementById('projPessimistaMedia');
+  const elPessMeses = document.getElementById('projPessimistaMeses');
+  const elPessBadge = document.getElementById('projPessimistaBadge');
+
+  if (elPessTotal) elPessTotal.textContent = formatarMoeda(pess.lucro_total);
+  if (elPessMedia) elPessMedia.textContent = `${formatarMoeda(pess.media_mensal_lucro)}/mês`;
+  if (elPessMeses) elPessMeses.textContent = pess.meses_prejuizo > 0 ? `${pess.meses_prejuizo} de 6 meses` : 'Nenhum (Lucro integral)';
+  if (elPessBadge) {
+    elPessBadge.textContent = pess.status_badge || 'Pessimista';
+    if (pess.lucro_total < 0) {
+      elPessBadge.style.background = 'rgba(239, 68, 68, 0.18)';
+      elPessBadge.style.color = '#EF4444';
+    } else {
+      elPessBadge.style.background = 'rgba(245, 158, 11, 0.18)';
+      elPessBadge.style.color = '#F59E0B';
+    }
+  }
+
+  // Atualizar Card Provável
+  const elProvTotal = document.getElementById('projProvavelTotal');
+  const elProvMedia = document.getElementById('projProvavelMedia');
+  const elProvR2 = document.getElementById('projProvavelR2');
+  const elProvBadge = document.getElementById('projProvavelBadge');
+
+  if (elProvTotal) elProvTotal.textContent = formatarMoeda(prov.lucro_total);
+  if (elProvMedia) elProvMedia.textContent = `${formatarMoeda(prov.media_mensal_lucro)}/mês`;
+  const r2 = projecao.regressao?.lucro?.r_quadrado !== undefined ? projecao.regressao.lucro.r_quadrado : 0.95;
+  if (elProvR2) elProvR2.textContent = `${(r2 * 100).toFixed(1)}% (Alta confiança)`;
+  if (elProvBadge) elProvBadge.textContent = prov.status_badge || 'Tendência Linear';
+
+  // Atualizar Card Otimista
+  const elOtimTotal = document.getElementById('projOtimistaTotal');
+  const elOtimMedia = document.getElementById('projOtimistaMedia');
+  const elOtimStatus = document.getElementById('projOtimistaStatus');
+  const elOtimBadge = document.getElementById('projOtimistaBadge');
+
+  if (elOtimTotal) elOtimTotal.textContent = formatarMoeda(otim.lucro_total);
+  if (elOtimMedia) elOtimMedia.textContent = `${formatarMoeda(otim.media_mensal_lucro)}/mês`;
+  if (elOtimStatus) elOtimStatus.textContent = otim.meses_prejuizo === 0 ? '100% Lucro Projetado' : `${otim.meses_lucrativos} meses positivos`;
+  if (elOtimBadge) elOtimBadge.textContent = otim.status_badge || 'Otimista';
+
+  // Atualizar Diagnóstico Textual
+  const elDiagnostico = document.getElementById('textoDiagnosticoProjecao');
+  const boxDiagnostico = document.getElementById('boxDiagnosticoProjecao');
+  if (elDiagnostico && projecao.diagnostico?.texto) {
+    elDiagnostico.innerHTML = projecao.diagnostico.texto;
+  }
+  if (boxDiagnostico) {
+    if (projecao.diagnostico?.alerta_prejuizo) {
+      boxDiagnostico.style.background = 'rgba(239, 68, 68, 0.08)';
+      boxDiagnostico.style.borderLeftColor = '#EF4444';
+      const icon = boxDiagnostico.querySelector('i');
+      if (icon) icon.style.color = '#EF4444';
+    } else {
+      boxDiagnostico.style.background = 'rgba(59, 130, 246, 0.08)';
+      boxDiagnostico.style.borderLeftColor = '#3B82F6';
+      const icon = boxDiagnostico.querySelector('i');
+      if (icon) icon.style.color = '#3B82F6';
+    }
+  }
+
+  // Renderizar a série no gráfico
+  aplicarModoGraficoProjecao(projecao, _modoProjecao);
+}
+
+function configurarBotoesProjecao() {
+  const container = document.getElementById('botoesFiltroProjecao');
+  if (!container) return;
+
+  const btns = container.querySelectorAll('.btn-proj-filtro');
+  btns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      btns.forEach(b => {
+        b.style.background = 'var(--fundo-corpo)';
+        b.style.color = 'var(--texto)';
+        b.classList.remove('active');
+      });
+      btn.style.background = '#3B82F6';
+      btn.style.color = '#FFFFFF';
+      btn.classList.add('active');
+      _modoProjecao = btn.getAttribute('data-modo') || 'cenarios';
+      if (_projecaoAtual) {
+        aplicarModoGraficoProjecao(_projecaoAtual, _modoProjecao);
+      }
+    });
+  });
+}
+
+// ==========================================
 // DRE - DEMONSTRAÇÃO DO RESULTADO (7 LINHAS ESTRUTURADAS)
 // ==========================================
 
@@ -737,6 +1025,7 @@ function renderizarGraficos() {
   Object.values(chartsInstances).forEach(chart => chart?.destroy());
 
   const graficos = [
+    { id: 'graficoProjecaoGaleria', config: getChartProjecaoOptions, key: 'projecao' },
     { id: 'graficoLinhaGaleria', config: getChartLinhaOptions, key: 'linha' },
     { id: 'graficoBarrasGaleria', config: getChartBarrasOptions, key: 'barras' },
     { id: 'graficoPizzaGaleria', config: getChartPizzaOptions, key: 'pizza' },
@@ -750,7 +1039,9 @@ function renderizarGraficos() {
       const chart = new ApexCharts(element, config());
       chart.render();
       chartsInstances[key] = chart;
-      criarSeletorPeriodoRapido(id, chart);
+      if (id !== 'graficoProjecaoGaleria') {
+        criarSeletorPeriodoRapido(id, chart);
+      }
     }
   });
 }
@@ -901,6 +1192,11 @@ async function atualizarGraficosComDados() {
       _kpisAtual = dados.kpis;
     }
 
+    // Atualização da Projeção Preditiva (6 Meses / 3 Cenários)
+    if (dados.projecao) {
+      atualizarGraficoProjecao(dados.projecao);
+    }
+
     if (dados.evolucao?.series && dados.evolucao?.labels) {
       const labelsFormatados = dados.evolucao.labels.map(d => formatarDataExibicao(d));
       await chartsInstances.linha?.updateOptions({ xaxis: { categories: labelsFormatados } });
@@ -963,6 +1259,33 @@ function sincronizarTemaUI() {
       });
     }
   });
+
+  // Atualizar linha de anotação de Break-even no gráfico de projeção
+  if (chartsInstances.projecao?.updateOptions) {
+    chartsInstances.projecao.updateOptions({
+      annotations: {
+        yaxis: [
+          {
+            y: 0,
+            borderColor: colors.isDark ? '#64748B' : '#94A3B8',
+            strokeDashArray: 4,
+            borderWidth: 2,
+            label: {
+              borderColor: colors.isDark ? '#64748B' : '#94A3B8',
+              style: {
+                color: '#FFFFFF',
+                background: colors.isDark ? '#334155' : '#64748B',
+                fontSize: '11px',
+                fontWeight: 'bold',
+                padding: { left: 8, right: 8, top: 4, bottom: 4 }
+              },
+              text: '⚖️ Ponto de Equilíbrio / Break-even (R$ 0)'
+            }
+          }
+        ]
+      }
+    });
+  }
 
   // Atualizar botões de período rápido
   document.querySelectorAll('.rapid-period-selector button').forEach(btn => {
@@ -1047,6 +1370,7 @@ document.getElementById('seletorPlanilhaDash')?.addEventListener('change', () =>
 
 document.addEventListener("DOMContentLoaded", async () => {
   renderizarGraficos();
+  configurarBotoesProjecao();
   await carregarOpcoesPlanilhas();
   await atualizarGraficosComDados();
   sincronizarTemaUI();

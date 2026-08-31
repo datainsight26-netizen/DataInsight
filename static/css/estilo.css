@@ -642,9 +642,12 @@ body {
 
 .pagina__cabecalho {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
   margin-bottom: var(--esp3);
+  width: 100%;
 }
 
 .h1 {
