@@ -288,21 +288,22 @@
                     <div class="swot-grid">
                         <div class="swot-cell swot-s">
                             <div class="swot-label"><i class="fa-solid fa-shield-halved"></i> Forças (Strengths)</div>
-                            <div class="swot-content loading" id="swot-s">Execute a análise para visualizar</div>
+                            <div class="swot-content" id="swot-s">Carregando dados estratégicos...</div>
                         </div>
                         <div class="swot-cell swot-w">
                             <div class="swot-label"><i class="fa-solid fa-triangle-exclamation"></i> Fraquezas (Weaknesses)</div>
-                            <div class="swot-content loading" id="swot-w">Execute a análise para visualizar</div>
+                            <div class="swot-content" id="swot-w">Carregando dados estratégicos...</div>
                         </div>
                         <div class="swot-cell swot-o">
                             <div class="swot-label"><i class="fa-solid fa-star"></i> Oportunidades</div>
-                            <div class="swot-content loading" id="swot-o">Execute a análise para visualizar</div>
+                            <div class="swot-content" id="swot-o">Carregando dados estratégicos...</div>
                         </div>
                         <div class="swot-cell swot-t">
                             <div class="swot-label"><i class="fa-solid fa-bolt"></i> Ameaças (Threats)</div>
-                            <div class="swot-content loading" id="swot-t">Execute a análise para visualizar</div>
+                            <div class="swot-content" id="swot-t">Carregando dados estratégicos...</div>
                         </div>
                     </div>
+
 
                     <!-- Cenários -->
                     <div style="font-size:0.88rem;font-weight:700;color:var(--texto);margin-bottom:12px;display:flex;align-items:center;gap:7px;">
@@ -413,13 +414,95 @@
         function abrirSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sidebarOverlay').classList.add('active');}
         function fecharSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active');}
 
-        // Preencher cenários com base nos inputs do simulador
+        // 1. Preencher SWOT instantaneamente com base nos dados reais do usuário
+        async function carregarSwotInstantaneo() {
+            const selPeriodo = document.getElementById('modulo-periodo');
+            const periodo = selPeriodo ? selPeriodo.value : '30_dias';
+            const tabelaId = localStorage.getItem('DataInsight_DashboardPlanilha') || 'todas';
+
+            try {
+                const [rDesemp, rProd] = await Promise.all([
+                    fetch(`/api/desempenho?periodo=${periodo}&tabela_id=${tabelaId}`).then(r => r.ok ? r.json() : null),
+                    fetch(`/api/produtos/overview?periodo=${periodo}&tabela_id=${tabelaId}`).then(r => r.ok ? r.json() : null)
+                ]);
+
+                const elS = document.getElementById('swot-s');
+                const elW = document.getElementById('swot-w');
+                const elO = document.getElementById('swot-o');
+                const elT = document.getElementById('swot-t');
+
+                // Forças
+                const fatNum = Number(rDesemp?.faturamento?.valor || rDesemp?.faturamento || 0);
+                const lucNum = Number(rDesemp?.lucro?.valor || rDesemp?.lucro || 0);
+                const margemPct = rDesemp?.margem_lucro?.valor || (fatNum > 0 ? ((lucNum / fatNum) * 100).toFixed(1) + '%' : '—');
+                const topProd = rProd?.mais_vendido?.nome || rProd?.maior_lucro?.nome || 'Mix de vendas consolidado';
+                const maiorLucroProd = rProd?.maior_lucro?.nome;
+
+                if (elS) {
+                    elS.classList.remove('loading');
+                    elS.innerHTML = `
+                        <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;">
+                            <li>Faturamento consolidado no período (${fatNum > 0 ? 'R$ ' + fatNum.toLocaleString('pt-BR', {minimumFractionDigits: 2}) : 'Em expansão'}).</li>
+                            <li>Margem de rentabilidade estimada em <strong>${margemPct}</strong>.</li>
+                            <li>Destaque operacional no item <strong>${topProd}</strong>.</li>
+                        </ul>
+                    `;
+                }
+
+                // Fraquezas
+                const despNum = Number(rDesemp?.despesa?.valor || rDesemp?.despesas?.valor || rDesemp?.despesa || 0);
+                const maiorCusto = rProd?.maior_despesa?.nome;
+                const baixoGiro = rProd?.menos_vendido?.nome;
+
+                if (elW) {
+                    elW.classList.remove('loading');
+                    elW.innerHTML = `
+                        <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;">
+                            <li>Despesas acumuladas em <strong>R$ ${despNum.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</strong>.</li>
+                            ${maiorCusto ? `<li>Concentração de custo no produto <strong>${maiorCusto}</strong>.</li>` : '<li>Atenção aos custos fixos e variáveis da operação.</li>'}
+                            ${baixoGiro ? `<li>Baixa frequência de saída em <strong>${baixoGiro}</strong>.</li>` : ''}
+                        </ul>
+                    `;
+                }
+
+                // Oportunidades
+                if (elO) {
+                    elO.classList.remove('loading');
+                    elO.innerHTML = `
+                        <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;">
+                            ${maiorLucroProd ? `<li>Escalar comercialmente <strong>${maiorLucroProd}</strong> para alavancar resultado.</li>` : '<li>Ampliar ticket médio com combos e vendas cruzadas.</li>'}
+                            <li>Revisão da precificação para ganhar até 5% a mais em margem líquida.</li>
+                            <li>Expansão de campanhas focadas nos canais de maior conversão.</li>
+                        </ul>
+                    `;
+                }
+
+                // Ameaças
+                if (elT) {
+                    elT.classList.remove('loading');
+                    elT.innerHTML = `
+                        <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;">
+                            <li>Sensibilidade a aumentos nos custos de reposição/fornecedores.</li>
+                            <li>Dependência de produtos líderes para sustentar a receita.</li>
+                            <li>Oscilações de demanda em meses de menor sazonalidade.</li>
+                        </ul>
+                    `;
+                }
+
+            } catch (e) {
+                console.warn('Erro ao carregar SWOT instantâneo:', e);
+            }
+        }
+
+        // 2. Preencher cenários com base nos inputs do simulador
         function calcularCenarios() {
+            const selPeriodo = document.getElementById('modulo-periodo');
+            const periodo = selPeriodo ? selPeriodo.value : '30_dias';
+            const tabelaId = localStorage.getItem('DataInsight_DashboardPlanilha') || 'todas';
             const crescimento = parseFloat(document.getElementById('sim-crescimento')?.value) || 15;
             const custos = parseFloat(document.getElementById('sim-custos')?.value) || 10;
 
-            // Buscar faturamento atual e calcular cenários
-            fetch('/api/desempenho?periodo=30_dias')
+            fetch(`/api/desempenho?periodo=${periodo}&tabela_id=${tabelaId}`)
                 .then(r => r.ok ? r.json() : null)
                 .then(data => {
                     const rawFat = (typeof data?.faturamento === 'object' && data?.faturamento !== null) ? data.faturamento.valor : data?.faturamento;
@@ -445,65 +528,67 @@
                 });
         }
 
-        document.addEventListener('DOMContentLoaded', calcularCenarios);
-        ['sim-crescimento','sim-custos','sim-clientes'].forEach(id => {
-            document.getElementById(id)?.addEventListener('input', calcularCenarios);
+        // 3. Atualizar SWOT com a resposta profunda da IA quando concluída
+        window.addEventListener('ia:analise-concluida', (e) => {
+            const resposta = e.detail?.resposta || '';
+            if (resposta) {
+                populateSWOTFromText(resposta);
+            }
         });
 
-        // Interceptar análise para popular SWOT
-        const origRun = window.iaModulo?.runModuleAnalysis;
-        document.getElementById('ia-modulo-run')?.addEventListener('click', () => {
-            // Marcar SWOT como carregando
-            ['swot-s','swot-w','swot-o','swot-t'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) { el.textContent = 'Analisando...'; el.classList.add('loading'); }
-            });
-
-            // Montar prompt com parâmetros do simulador
-            const crescimento = document.getElementById('sim-crescimento')?.value || '15';
-            const custos = document.getElementById('sim-custos')?.value || '10';
-            const clientes = document.getElementById('sim-clientes')?.value || '50';
-            const investimento = document.getElementById('sim-investimento')?.value || 'R$ 10.000';
-            const customPrompt = document.getElementById('ia-modulo-prompt')?.value?.trim();
-
-            const basePrompt = customPrompt || `Com os parâmetros: meta de crescimento ${crescimento}%, redução de custos ${custos}%, ${clientes} novos clientes/mês e investimento de ${investimento} — gere: 1) Análise SWOT completa separando claramente Forças, Fraquezas, Oportunidades e Ameaças; 2) Projeção dos 3 cenários (conservador, moderado, agressivo); 3) Recomendação do caminho a seguir com justificativa.`;
-
-            if (window.iaModulo) {
-                window.iaModulo.runModuleAnalysis(basePrompt).then?.(() => {
-                    populateSWOT();
-                });
-            }
-        }, { capture: true });
-
-        function populateSWOT() {
-            const result = document.getElementById('ia-modulo-result')?.innerText || '';
-            if (!result) return;
-
-            const sections = { s: '', w: '', o: '', t: '' };
-            const text = result.toLowerCase();
-
-            // Extração heurística de seções SWOT
-            const lines = result.split('\n');
+        function populateSWOTFromText(text) {
+            if (!text) return;
+            const sections = { s: [], w: [], o: [], t: [] };
+            const lines = text.split('\n');
             let current = null;
-            lines.forEach(line => {
+
+            lines.forEach(rawLine => {
+                const line = rawLine.trim();
                 const l = line.toLowerCase();
-                if (l.includes('força') || l.includes('strength')) current = 's';
-                else if (l.includes('fraqueza') || l.includes('weakness')) current = 'w';
-                else if (l.includes('oportunidade') || l.includes('opportunit')) current = 'o';
-                else if (l.includes('ameaça') || l.includes('threat')) current = 't';
-                else if (current && line.trim()) sections[current] += line + '\n';
+
+                if (l.includes('força') || l.includes('strength') || l.includes('forças')) current = 's';
+                else if (l.includes('fraqueza') || l.includes('weakness') || l.includes('fraquezas')) current = 'w';
+                else if (l.includes('oportunidade') || l.includes('opportunit') || l.includes('oportunidades')) current = 'o';
+                else if (l.includes('ameaça') || l.includes('threat') || l.includes('ameaças')) current = 't';
+                else if (current && line) {
+                    const clean = line.replace(/^[#\*\-\d\.\)\s]+/, '').trim();
+                    if (clean && clean.length > 5 && !clean.startsWith('===') && !clean.startsWith('---')) {
+                        if (sections[current].length < 4) {
+                            sections[current].push(clean);
+                        }
+                    }
+                }
             });
 
             ['s','w','o','t'].forEach(k => {
                 const el = document.getElementById(`swot-${k}`);
-                if (el) {
+                if (el && sections[k].length > 0) {
                     el.classList.remove('loading');
-                    el.innerHTML = sections[k]
-                        ? sections[k].trim().replace(/\n/g,'<br>')
-                        : '<em style="color:var(--suave);">Não identificado na análise</em>';
+                    el.innerHTML = `
+                        <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;">
+                            ${sections[k].map(item => `<li>${item}</li>`).join('')}
+                        </ul>
+                    `;
                 }
             });
         }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            carregarSwotInstantaneo();
+            calcularCenarios();
+
+            const selPeriodo = document.getElementById('modulo-periodo');
+            if (selPeriodo) {
+                selPeriodo.addEventListener('change', () => {
+                    carregarSwotInstantaneo();
+                    calcularCenarios();
+                });
+            }
+
+            ['sim-crescimento','sim-custos','sim-clientes'].forEach(id => {
+                document.getElementById(id)?.addEventListener('input', calcularCenarios);
+            });
+        });
     </script>
 </body>
 </html>
