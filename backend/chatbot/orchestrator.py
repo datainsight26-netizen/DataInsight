@@ -1,18 +1,66 @@
-import os
 import json
-import time
-import urllib.error
+import os
 import urllib.request
 from types import SimpleNamespace
-from typing import Any, Optional
+from typing import List, Optional
+
+
+_ORQUESTRADOR = None
 
 
 class GeminiOrchestrator:
-    """Wrapper para integração com a API Google Gemini via REST."""
+    """Integração Gemini com cliente reutilizado e modelo que já funcionou."""
 
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         self.api_key = api_key or os.getenv("GOOGLE_API_KEY")
-        self.model = model or os.getenv("GOOGLE_GEMINI_MODEL", "gemini-2.5-flash")
+        self.model = model or os.getenv("GOOGLE_GEMINI_MODEL", "gemini-flash-lite-latest")
+        self.candidate_models = self._montar_candidatos()
+        self._modelo_ok = self.candidate_models[0] if self.candidate_models else self.model
+        self._client = None
+
+    def _montar_candidatos(self) -> List[str]:
+        vistos = []
+        for nome in (
+            self.model,
+            "gemini-flash-lite-latest",
+            "gemini-2.5-flash-lite",
+        ):
+            if nome and nome not in vistos:
+                vistos.append(nome)
+        return vistos
+
+    def _modelos_em_ordem(self) -> List[str]:
+        if self._modelo_ok in self.candidate_models:
+            return [self._modelo_ok] + [m for m in self.candidate_models if m != self._modelo_ok]
+        return list(self.candidate_models)
+
+    def _obter_client(self):
+        if self._client is not None:
+            return self._client
+        from google import genai
+        try:
+            self._client = genai.Client(
+                api_key=self.api_key,
+                http_options={"timeout": 20000},
+            )
+        except TypeError:
+            self._client = genai.Client(api_key=self.api_key)
+        return self._client
+
+    def _config_geracao(self):
+        try:
+            from google.genai import types
+            kwargs = {
+                "temperature": 0.2,
+                "max_output_tokens": 1536,
+            }
+            try:
+                kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
+            except Exception:
+                pass
+            return types.GenerateContentConfig(**kwargs)
+        except Exception:
+            return None
 
     def run(self, prompt: str) -> SimpleNamespace:
         return SimpleNamespace(content=self._gerar_resposta(prompt))
@@ -24,107 +72,91 @@ class GeminiOrchestrator:
                 "Defina a variável de ambiente `GOOGLE_API_KEY`."
             )
 
-        endpoint = (
-            f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
-            f"?key={self.api_key}"
-        )
+        texto = self._via_sdk(prompt)
+        if texto:
+            return texto
 
-        payload = {
-            "contents": [
-                {
-                    "role": "user",
-                    "parts": [{"text": prompt}],
-                }
-            ],
-            "generationConfig": {
-                "temperature": 0.2,
-                "maxOutputTokens": 1024,
-            },
-        }
-
-        data = json.dumps(payload).encode("utf-8")
-        req = urllib.request.Request(
-            endpoint,
-            data=data,
-            headers={"Content-Type": "application/json"},
-            method="POST",
-        )
-
-        max_retries = 3
-        backoff = 1
-        last_error = None
-
-        for attempt in range(1, max_retries + 1):
-            try:
-                with urllib.request.urlopen(req, timeout=60) as response:
-                    body = json.loads(response.read().decode("utf-8"))
-                    candidates = body.get("candidates", [])
-                    if not candidates:
-                        return "Não foi possível extrair a resposta do modelo."
-
-                    candidate = candidates[0]
-                    if not isinstance(candidate, dict):
-                        return "Não foi possível extrair a resposta do modelo."
-
-                    content = candidate.get("content", {})
-                    if isinstance(content, dict):
-                        parts = content.get("parts", [])
-                        textos = [
-                            str(part.get("text", "")).strip()
-                            for part in parts
-                            if isinstance(part, dict) and part.get("text")
-                        ]
-                        if textos:
-                            return "\n".join(textos).strip()
-
-                    if "output" in candidate:
-                        return str(candidate.get("output", "")).strip()
-
-                    return "Não foi possível extrair a resposta do modelo."
-
-            except urllib.error.HTTPError as err:
-                status = err.code
-                detalhe = err.read().decode('utf-8', errors='ignore')[:300]
-                print(f"[Erro Gemini API HTTP {status}]: {detalhe}")
-                last_error = err
-                if 500 <= status < 600 and attempt < max_retries:
-                    time.sleep(backoff)
-                    backoff *= 2
-                    continue
-                break
-            except urllib.error.URLError as err:
-                print(f"[Erro Gemini API URLError]: {err}")
-                last_error = err
-                if attempt < max_retries:
-                    time.sleep(backoff)
-                    backoff *= 2
-                    continue
-                break
-            except Exception as err:
-                detalhe = str(err)
-                print(f"[Erro Gemini API Exception]: {detalhe}")
-                last_error = err
-                if attempt < max_retries:
-                    time.sleep(backoff)
-                    backoff *= 2
-                    continue
-                break
-
-        if last_error is not None:
-            detalhe = str(last_error)
-            if hasattr(last_error, "read"):
-                try:
-                    detalhe = f"{last_error}: {last_error.read().decode('utf-8')[:300]}"
-                except Exception:
-                    pass
-            print(f"[Erro Gemini API final]: {detalhe}")
+        texto = self._via_rest(prompt)
+        if texto:
+            return texto
 
         return (
             "Desculpe — não consegui contatar a API Gemini no momento. "
-            "Por favor, verifique a chave de API e a conectividade de rede."
+            "Por favor, verifique a conectividade de rede."
         )
+
+    def _via_sdk(self, prompt: str) -> Optional[str]:
+        try:
+            client = self._obter_client()
+            config = self._config_geracao()
+        except Exception as e:
+            print(f"[Gemini SDK Import/Client Falha]: {e}")
+            return None
+
+        for m in self._modelos_em_ordem():
+            try:
+                kwargs = {"model": m, "contents": prompt}
+                if config is not None:
+                    kwargs["config"] = config
+                response = client.models.generate_content(**kwargs)
+                if response and getattr(response, "text", None):
+                    self._modelo_ok = m
+                    return response.text.strip()
+            except Exception as sdk_err:
+                print(f"[Gemini SDK ({m}) Falha]: {sdk_err}")
+                continue
+        return None
+
+    def _via_rest(self, prompt: str) -> Optional[str]:
+        payload = {
+            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+            "generationConfig": {
+                "temperature": 0.2,
+                "maxOutputTokens": 1536,
+                "thinkingConfig": {"thinkingBudget": 0},
+            },
+        }
+        data = json.dumps(payload).encode("utf-8")
+
+        for m in self._modelos_em_ordem():
+            endpoint = (
+                f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent"
+                f"?key={self.api_key}"
+            )
+            req = urllib.request.Request(
+                endpoint,
+                data=data,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=18) as response:
+                    body = json.loads(response.read().decode("utf-8"))
+                    candidatos = body.get("candidates") or []
+                    if not candidatos:
+                        continue
+                    content = candidatos[0].get("content") or {}
+                    parts = content.get("parts") if isinstance(content, dict) else []
+                    textos = [
+                        str(part.get("text", "")).strip()
+                        for part in (parts or [])
+                        if isinstance(part, dict) and part.get("text")
+                    ]
+                    if textos:
+                        self._modelo_ok = m
+                        return "\n".join(textos).strip()
+            except Exception as err:
+                print(f"[Gemini REST ({m}) Erro]: {err}")
+                if "thinking" in str(err).lower() or "thinkingConfig" in str(err):
+                    payload["generationConfig"].pop("thinkingConfig", None)
+                    data = json.dumps(payload).encode("utf-8")
+                continue
+        return None
 
 
 def obter_time_agentes() -> GeminiOrchestrator:
-    """Retorna o orquestrador IA (Gemini)."""
-    return GeminiOrchestrator()
+    """Retorna o orquestrador IA reutilizado entre requisições."""
+    global _ORQUESTRADOR
+    if _ORQUESTRADOR is None:
+        _ORQUESTRADOR = GeminiOrchestrator()
+    return _ORQUESTRADOR

@@ -20,6 +20,8 @@ dados_colecao = db["dados"]
 chat_historico = db["chat_historico"]
 galeria = db["galeria"]
 produtos_historico = db["produtos_historico"]
+analises_salvas_colecao = db["analises_salvas"]
+relatorios_colecao = db["relatorios"]
 
 def criar_index():
     usuario.create_index("email", unique=True)
@@ -29,6 +31,8 @@ def criar_index():
     produtos_historico.create_index("usuario_id")
     produtos_historico.create_index("nome_produto")
     produtos_historico.create_index([("nome_produto", "text")])
+    analises_salvas_colecao.create_index([("usuario_id", 1), ("criado_em", -1)])
+    relatorios_colecao.create_index([("usuario_id", 1), ("criado_em", -1)])
 
 def salvar_dados(usuario_id, nome_planilha, colunas, dados, tipo_dominio=None):
     """Salva os dados no banco de dados com categoria de domínio"""

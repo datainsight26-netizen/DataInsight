@@ -432,7 +432,7 @@ def obter_sumario_planilhas():
     """
     usuario_id = session.get('usuario_id')
     if not usuario_id:
-        return jsonify({"mensagem": "Não autorizado"}), 401
+        return jsonify({"mensagem": "Não autorizado", "planilhas": [], "total": 0}), 401
 
     try:
         from backend.dados.agregador import listar_planilhas_usuario
@@ -444,6 +444,6 @@ def obter_sumario_planilhas():
         }), 200
     except Exception as e:
         print(f"Erro ao obter sumário de planilhas: {e}", flush=True)
-        return jsonify({"mensagem": "Erro ao carregar sumário", "erro": str(e)}), 500
+        return jsonify({"mensagem": "Erro ao carregar sumário", "erro": str(e), "planilhas": [], "total": 0}), 500
 
 

@@ -202,6 +202,34 @@ def preparar_dataframe_financeiro(df, mapeamento):
     df_calc["_outros_inv"] = _serie_financeira(df_calc, mapeamento, "investimento_outros")
     df_calc["_investimentos"] = df_calc["_infra"] + df_calc["_equipamentos"] + df_calc["_outros_inv"]
 
+    # Processar categorias customizadas
+    cats_custom = mapeamento.get("categorias_custom") or mapeamento.get("_categorias_custom") or [] if isinstance(mapeamento, dict) else []
+    for c_item in cats_custom:
+        if isinstance(c_item, dict) and c_item.get("id"):
+            cid = c_item["id"]
+            col = _obter_coluna(mapeamento, cid, df_calc)
+            if col:
+                df_calc[f"_custom_{cid}"] = df_calc[col].apply(_numero)
+            else:
+                val_manual = mapeamento.get(f"{cid}_manual")
+                if val_manual is not None and val_manual != "":
+                    try:
+                        df_calc[f"_custom_{cid}"] = pd.Series([float(val_manual)] * len(df_calc), index=df_calc.index)
+                    except Exception:
+                        df_calc[f"_custom_{cid}"] = pd.Series([0.0] * len(df_calc), index=df_calc.index)
+                else:
+                    df_calc[f"_custom_{cid}"] = pd.Series([0.0] * len(df_calc), index=df_calc.index)
+
+            grp = c_item.get("grupo")
+            if grp == "Detalhamento de Receitas":
+                df_calc["_receita"] = df_calc["_receita"] + df_calc[f"_custom_{cid}"]
+            elif grp == "Custos Variáveis":
+                df_calc["_variaveis"] = df_calc["_variaveis"] + df_calc[f"_custom_{cid}"]
+            elif grp == "Gastos Fixos":
+                df_calc["_fixos"] = df_calc["_fixos"] + df_calc[f"_custom_{cid}"]
+            elif grp == "Investimentos":
+                df_calc["_investimentos"] = df_calc["_investimentos"] + df_calc[f"_custom_{cid}"]
+
     # Saldo Operacional e Resultado
     df_calc["_saidas_totais"] = df_calc["_variaveis"] + df_calc["_fixos"]
     df_calc["_saldo"] = df_calc["_receita"] - df_calc["_saidas_totais"]
@@ -419,6 +447,36 @@ def construir_tabela_detalhada(colunas_periodos, dfs_periodos, mapeamento=None):
             "campo": "_saldo"
         }
     ]
+
+    # Inserir subitens customizados na tabela detalhada
+    cats_custom = mapeamento.get("categorias_custom") or mapeamento.get("_categorias_custom") or [] if isinstance(mapeamento, dict) else []
+    
+    # Inserir custom em entradas (antes do total)
+    idx_rec = next((i for i, r in enumerate(estrutura_linhas) if r.get("id") == "entradas_total"), len(estrutura_linhas))
+    custom_rec = [
+        {"id": c["id"], "label": c["label"], "tipo": "subitem", "grupo": "entradas", "campo": f"_custom_{c['id']}"}
+        for c in cats_custom if c.get("grupo") == "Detalhamento de Receitas" and c.get("id")
+    ]
+    for offset, item in enumerate(custom_rec):
+        estrutura_linhas.insert(idx_rec + offset, item)
+
+    # Inserir custom em variáveis (antes do total)
+    idx_var = next((i for i, r in enumerate(estrutura_linhas) if r.get("id") == "saidas_var_total"), len(estrutura_linhas))
+    custom_var = [
+        {"id": c["id"], "label": c["label"], "tipo": "subitem", "grupo": "variaveis", "campo": f"_custom_{c['id']}"}
+        for c in cats_custom if c.get("grupo") == "Custos Variáveis" and c.get("id")
+    ]
+    for offset, item in enumerate(custom_var):
+        estrutura_linhas.insert(idx_var + offset, item)
+
+    # Inserir custom em fixos (antes do total)
+    idx_fix = next((i for i, r in enumerate(estrutura_linhas) if r.get("id") == "saidas_fix_total"), len(estrutura_linhas))
+    custom_fix = [
+        {"id": c["id"], "label": c["label"], "tipo": "subitem", "grupo": "fixos", "campo": f"_custom_{c['id']}"}
+        for c in cats_custom if c.get("grupo") == "Gastos Fixos" and c.get("id")
+    ]
+    for offset, item in enumerate(custom_fix):
+        estrutura_linhas.insert(idx_fix + offset, item)
 
     # Pré-cálculo de saldos por sub-período
     saldos_periodo = []

@@ -77,13 +77,48 @@ def _serie_financeira(df, mapeamento, categoria):
     return pd.Series([0.0] * len(df), index=df.index)
 
 
+def _obter_categorias_custom(mapeamento):
+    """
+    Retorna a lista de categorias customizadas cadastradas no mapeamento.
+    """
+    if not isinstance(mapeamento, dict):
+        return []
+    cats = mapeamento.get("categorias_custom") or mapeamento.get("_categorias_custom") or []
+    if isinstance(cats, list):
+        return cats
+    return []
+
+
+def _serie_custom_grupo(df, mapeamento, grupo_nome):
+    """
+    Soma todas as colunas de categorias customizadas pertencentes ao grupo.
+    """
+    cats = _obter_categorias_custom(mapeamento)
+    serie_soma = pd.Series([0.0] * len(df), index=df.index)
+    for cat in cats:
+        if isinstance(cat, dict) and cat.get("grupo") == grupo_nome:
+            cid = cat.get("id")
+            if cid:
+                col = _obter_coluna(mapeamento, cid, df)
+                if col:
+                    serie_soma = serie_soma + df[col].apply(_numero)
+                else:
+                    val_manual = mapeamento.get(f"{cid}_manual")
+                    if val_manual is not None and val_manual != "":
+                        try:
+                            num_manual = float(val_manual)
+                            serie_soma = serie_soma + pd.Series([num_manual] * len(df), index=df.index)
+                        except Exception:
+                            pass
+    return serie_soma
+
+
 def _receita(df, mapeamento):
     """
     Receita total.
-
-    Se houver uma coluna receita_total, ela tem prioridade.
-    Caso contrário, soma produtos + serviços + outras receitas.
+    Soma receita_total (se presente) ou produtos + serviços + customizadas.
     """
+    custom_rec = _serie_custom_grupo(df, mapeamento, "Detalhamento de Receitas")
     receita_total = _serie_financeira(
         df,
         mapeamento,
@@ -91,16 +126,18 @@ def _receita(df, mapeamento):
     )
 
     if receita_total.abs().sum() > 0:
-        return receita_total
+        return receita_total + custom_rec
 
     return (
         _serie_financeira(df, mapeamento, "receita_produtos")
         + _serie_financeira(df, mapeamento, "receita_servicos")
         + _serie_financeira(df, mapeamento, "receita_outros")
+        + custom_rec
     )
 
 
 def _custos_variaveis(df, mapeamento):
+    custom_var = _serie_custom_grupo(df, mapeamento, "Custos Variáveis")
     custo_total = _serie_financeira(
         df,
         mapeamento,
@@ -108,42 +145,36 @@ def _custos_variaveis(df, mapeamento):
     )
 
     if custo_total.abs().sum() > 0:
-        return custo_total
+        return custo_total + custom_var
 
     return (
         _serie_financeira(df, mapeamento, "fornecedores")
         + _serie_financeira(df, mapeamento, "publicidade")
         + _serie_financeira(df, mapeamento, "custo_variavel_outros")
+        + custom_var
     )
 
 
 def _gastos_fixos(df, mapeamento):
     """
-    Calcula gastos fixos mensais.
-    Prioridade:
-    1. Se houver componentes individuais mapeados (aluguel, folha, pro_labore),
-       soma-os e adiciona gasto_fixo_outros como item residual.
-    2. Se nenhum componente individual existir, usa gasto_fixo_outros como
-       total dos fixos (fallback).
-    Isso evita dupla contagem quando o usuário mapeia 'gasto_fixo_outros'
-    como o total dos gastos fixos.
+    Calcula gastos fixos mensais incluindo categorias personalizadas.
     """
+    custom_fix = _serie_custom_grupo(df, mapeamento, "Gastos Fixos")
     aluguel = _serie_financeira(df, mapeamento, "aluguel")
     folha   = _serie_financeira(df, mapeamento, "folha_pagamento")
     pro     = _serie_financeira(df, mapeamento, "pro_labore")
     outros  = _serie_financeira(df, mapeamento, "gasto_fixo_outros")
 
-    componentes = aluguel + folha + pro
+    componentes = aluguel + folha + pro + custom_fix
 
     if componentes.abs().sum() > 0:
-        # Componentes individuais existem → outros é item residual
         return componentes + outros
 
-    # Nenhum componente individual: usa gasto_fixo_outros como total dos fixos
-    return outros
+    return outros + custom_fix
 
 
 def _investimentos(df, mapeamento):
+    custom_inv = _serie_custom_grupo(df, mapeamento, "Investimentos")
     investimento_total = _serie_financeira(
         df,
         mapeamento,
@@ -157,6 +188,7 @@ def _investimentos(df, mapeamento):
             mapeamento,
             "investimento_equipamentos"
         )
+        + custom_inv
     )
 
     return investimento_total + componentes
@@ -691,6 +723,24 @@ def obter_planejamento_financeiro():
         for nome, serie in detalhes.items():
             df[f"_{nome}"] = serie
 
+        # Adicionar séries contábeis para cada classificação customizada
+        cats_custom = _obter_categorias_custom(mapeamento)
+        for c_item in cats_custom:
+            if isinstance(c_item, dict) and c_item.get("id"):
+                cid = c_item["id"]
+                col = _obter_coluna(mapeamento, cid, df)
+                if col:
+                    df[f"_{cid}"] = df[col].apply(_numero)
+                else:
+                    val_manual = mapeamento.get(f"{cid}_manual")
+                    if val_manual is not None and val_manual != "":
+                        try:
+                            df[f"_{cid}"] = pd.Series([float(val_manual)] * len(df), index=df.index)
+                        except Exception:
+                            df[f"_{cid}"] = pd.Series([0.0] * len(df), index=df.index)
+                    else:
+                        df[f"_{cid}"] = pd.Series([0.0] * len(df), index=df.index)
+
         # ---------------------------------------
         # 6. Criar janeiro → dezembro
         # Meses com dados reais → projetado: False
@@ -746,7 +796,7 @@ def obter_planejamento_financeiro():
                 else 0
             )
 
-            meses_saida.append({
+            mes_dado = {
                 "mes": MESES[numero_mes - 1],
                 "numero_mes": numero_mes,
                 "projetado": not tem_dados,
@@ -878,7 +928,6 @@ def obter_planejamento_financeiro():
                     2
                 ),
 
-
                 "fixos": round(
                     fixos,
                     2
@@ -893,7 +942,15 @@ def obter_planejamento_financeiro():
                     investimentos,
                     2
                 ),
-            })
+            }
+
+            # Adicionar valores mensais de cada classificação customizada
+            for c_item in cats_custom:
+                if isinstance(c_item, dict) and c_item.get("id"):
+                    cid = c_item["id"]
+                    mes_dado[cid] = round(float(df_mes[f"_{cid}"].sum()), 2)
+
+            meses_saida.append(mes_dado)
 
         # ---------------------------------------
         # 7. Totais anuais (soma dos valores reais)
@@ -962,6 +1019,9 @@ def obter_planejamento_financeiro():
         return jsonify({
             "sucesso": True,
 
+            "campos_custom": cats_custom,
+            "categorias_custom": cats_custom,
+
             "imposto_estimado": _usa_imposto_estimado,
 
             "nome_contexto": contexto.get(
@@ -988,13 +1048,17 @@ def obter_planejamento_financeiro():
             "provavel": {
                 "tipo": "realizado_projetado_medio",
                 "descricao": "Cenário Provável baseado nos dados realizados com projeção linear pela média.",
-                "meses": meses_saida
+                "meses": meses_saida,
+                "campos_custom": cats_custom,
+                "categorias_custom": cats_custom
             },
 
             "otimista": {
                 "tipo": "maximizacao_sustentavel",
                 "descricao": "Cenário Otimista com crescimento sustentável de 15% na receita e custos controlados.",
-                "meses": meses_otimista
+                "meses": meses_otimista,
+                "campos_custom": cats_custom,
+                "categorias_custom": cats_custom
             },
 
             "pessimista": {
@@ -1003,7 +1067,9 @@ def obter_planejamento_financeiro():
                     "Faturamento mínimo estimado para "
                     "manter a operação sem prejuízo."
                 ),
-                "meses": meses_pessimista
+                "meses": meses_pessimista,
+                "campos_custom": cats_custom,
+                "categorias_custom": cats_custom
             },
 
             "totais": {
