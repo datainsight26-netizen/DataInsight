@@ -302,10 +302,21 @@ def obter_produtos_overview(periodo="30_dias", tabela_id="todas"):
         ordenado_lucro = agrupado.sort_values('lucro', ascending=False)
         ordenado_estoque = agrupado.sort_values('estoque', ascending=False) if tem_estoque else agrupado
 
+        categorias_unicas = []
+        if categoria_col and categoria_col in atual.columns:
+            categorias_unicas = [str(c).strip() for c in atual[categoria_col].dropna().unique() if str(c).strip()]
+            total_categorias = len(categorias_unicas)
+        else:
+            total_categorias = len(agrupado) if produto_col else 0
+
         resposta = {
             'produto_coluna': produto_col,
             'tem_quantidade': bool(quantidade_col and quantidade_col in atual.columns),
             'tem_estoque': tem_estoque,
+            'total_produtos': len(tabela_produtos),
+            'produtos': tabela_produtos,
+            'total_categorias': total_categorias,
+            'categorias': categorias_unicas,
             'mais_vendido': resumo_item(grafico_vendas_base, 'quantidade'),
             'menos_vendido': resumo_item(agrupado.sort_values('quantidade', ascending=True).head(1), 'quantidade') if quantidade_col and quantidade_col in atual.columns else None,
             'maior_despesa': resumo_item(ordenado_despesa, 'despesa'),
@@ -756,6 +767,56 @@ def gerar_status_negocio(periodo="30_dias", tabela_id="todas"):
             emoji = "🔴"
             descricao = f"Atenção! Prejuízo de R$ {abs(lucro_valor):,.2f}. Despesas devem ser reduzidas urgentemente."
 
+        fat_valor = faturamento.get('valor', 0)
+        desp_valor = despesa.get('valor', 0)
+
+        alertas = []
+        if desp_valor > fat_valor and fat_valor > 0:
+            alertas.append({
+                "tipo": "alerta",
+                "nivel": "alto",
+                "texto": f"Despesas totais (R$ {desp_valor:,.2f}) superaram o faturamento (R$ {fat_valor:,.2f}) no período."
+            })
+        elif desp_valor > 0 and fat_valor > 0 and (desp_valor / fat_valor) > 0.85:
+            alertas.append({
+                "tipo": "alerta",
+                "nivel": "medio",
+                "texto": f"Comprometimento de caixa: despesas consomem {(desp_valor / fat_valor) * 100:.1f}% do faturamento."
+            })
+
+        if lucro_percentual < -5:
+            alertas.append({
+                "tipo": "alerta",
+                "nivel": "alto",
+                "texto": f"Queda de {abs(lucro_percentual):.1f}% no lucro em relação ao período anterior."
+            })
+        elif faturamento_percentual < -5:
+            alertas.append({
+                "tipo": "alerta",
+                "nivel": "medio",
+                "texto": f"Redução de {abs(faturamento_percentual):.1f}% no faturamento comparado ao período anterior."
+            })
+
+        if status == "saudavel":
+            margem_calc = (lucro_valor / fat_valor * 100) if fat_valor > 0 else 0
+            alertas.append({
+                "tipo": "info",
+                "nivel": "baixo",
+                "texto": f"Operação saudável com margem líquida estimada em {margem_calc:.1f}%."
+            })
+        elif status == "estavel":
+            alertas.append({
+                "tipo": "alerta",
+                "nivel": "baixo",
+                "texto": "Crescimento moderado. Oportunidade para aumentar ticket médio e expandir itens líderes."
+            })
+        elif status == "em_perigo":
+            alertas.append({
+                "tipo": "alerta",
+                "nivel": "alto",
+                "texto": "Alerta de liquidez: despesas pressionando margem. Recomendada auditoria de custos operacionais."
+            })
+
         return jsonify({
             "status": status,
             "emoji": emoji,
@@ -763,9 +824,10 @@ def gerar_status_negocio(periodo="30_dias", tabela_id="todas"):
             "descricao": descricao,
             "lucro_valor": round(lucro_valor, 2),
             "lucro_percentual": round(lucro_percentual, 1),
-            "faturamento_valor": round(faturamento.get('valor', 0), 2),
+            "faturamento_valor": round(fat_valor, 2),
             "faturamento_percentual": round(faturamento_percentual, 1),
-            "despesa_valor": round(despesa.get('valor', 0), 2),
+            "despesa_valor": round(desp_valor, 2),
+            "alertas": alertas,
             "periodo": periodo
         }), 200
 
