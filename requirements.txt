@@ -18,3 +18,4 @@ gTTS
 openai
 mercadopago
 stripe
+scipy
