@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='acessibilidade/acessibilidade.css') }}" />
   <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
   
   <style>
@@ -171,16 +172,24 @@
           <div class="container fluxo-caixa-page">
 
             <!-- CABEÇALHO -->
-            <header class="pagina__cabecalho fluxo-header">
-              <div class="migalhas" aria-label="Você está em">
-                Início &gt; Fluxo de Caixa
+            <header class="pagina__cabecalho fluxo-header" style="display: flex !important; flex-direction: row !important; align-items: flex-start !important; justify-content: space-between !important; gap: 16px; margin-bottom: 24px; width: 100%;">
+              <div style="flex: 1; min-width: 0;">
+                <div class="migalhas" aria-label="Você está em">Início &gt; Fluxo de Caixa</div>
+                <h1 class="h1" style="margin-bottom: 4px;">Fluxo de Caixa</h1>
+                <p class="p" style="margin: 0;">Compare entradas, saídas e saldo do período de forma simples e visual.</p>
               </div>
-
-              <h1 class="h1">Fluxo de Caixa</h1>
-
-              <p class="p">
-                Compare entradas, saídas e saldo do período de forma simples e visual.
-              </p>
+              <!-- BOTÃO DE IA BRILHANTE AZUL COM ANIMAÇÃO E PULSANDO -->
+              <div style="display: flex; align-items: center; gap: 12px; flex-shrink: 0;">
+                <button type="button" 
+                        id="btnIaAnaliseFluxoCaixa" 
+                        class="btn-ia-glow-blue" 
+                        onclick="IaAnaliseModal.abrir('fluxo_caixa', coletarContextoIaFluxoCaixa)" 
+                        title="Executar Análise Completa e Direta do Fluxo de Caixa com IA"
+                        aria-label="Executar Análise Completa com IA">
+                  <span class="btn-ia-glow-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+                  <span class="btn-ia-glow-text">IA</span>
+                </button>
+              </div>
             </header>
 
 
@@ -618,16 +627,16 @@
   {% include 'partials/painel_acessibilidade.html' %}
   {% include 'partials/chatbot.html' %}
 
-  <div vw class="enabled" id="Vlibras">
-    <div vw-access-button class="active"></div>
-    <div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div>
-  </div>
+</div>
 
-  <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
-  <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
-  <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+<script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ia_analise_modal.js') }}"></script>
   <script src="{{ url_for('static', filename='js/fluxo_caixa.js') }}?v=5.9"></script>
-    
+
+  <!-- MODAL DE ANÁLISE COMPLETA COM IA -->
+  {% with page_id='fluxo_caixa' %}
+    {% include 'partials/modal_analise_ia.html' %}
+  {% endwith %}
 </body>
 </html>

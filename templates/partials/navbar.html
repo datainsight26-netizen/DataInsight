@@ -36,6 +36,12 @@
     Análises
   </a>
 
+  <a href="{{ url_for('pagina_analises_salvas') }}"
+     {% if request.endpoint=='pagina_analises_salvas' %}aria-current="page"{% endif %}>
+    <i class="fa-solid fa-bookmark"></i>
+    Análises Salvas
+  </a>
+
   <a href="{{ url_for('pagina_fluxo_caixa') }}"
    {% if request.endpoint=='pagina_fluxo_caixa' %}aria-current="page"{% endif %}>
     <i class="fa-solid fa-right-left"></i>

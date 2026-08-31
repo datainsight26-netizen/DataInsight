@@ -1,23 +1,233 @@
-<div class="acessibilidade-flutuante" aria-label="Ferramentas de acessibilidade">
-    <div id="painelAcessibilidade" class="acessibilidade-painel" role="dialog" aria-modal="false"
-        aria-labelledby="tituloAcessibilidade">
-        <h2 id="tituloAcessibilidade" class="acessibilidade-titulo">Acessibilidade</h2>
+<!-- ============================================================
+     SISTEMA DE ACESSIBILIDADE — Partial Universal
+     Incluído em TODAS as páginas.
+     Visível apenas quando acc_ativado === true no localStorage.
+     ============================================================ -->
 
-        <div class="acessibilidade-acoes">
-            <button class="botao botao--suave" type="button" id="botaoAumentar">Aumentar fonte</button>
-            <button class="botao botao--suave" type="button" id="botaoDiminuir">Diminuir fonte</button>
-            <button class="botao botao--suave" type="button" id="botaoLer">Ler página (voz)</button>
-            <button class="botao botao--suave" type="button" id="botaoParar">Parar leitura</button>
+<!-- Overlay de fundo -->
+<div class="acc-overlay" id="accOverlay" aria-hidden="true"></div>
 
+<!-- Botão flutuante (canto inferior ESQUERDO) -->
+<div class="acc-flutuante-wrapper" id="accFlutuante" role="complementary" aria-label="Recursos de Acessibilidade">
+  <button
+    class="acc-btn-toggle"
+    id="alternarAcessibilidade"
+    type="button"
+    aria-expanded="false"
+    aria-controls="painelAcessibilidade"
+    title="Abrir/Fechar Recursos de Acessibilidade (Alt + A)"
+  >
+    <i class="fa-solid fa-universal-access"></i>
+  </button>
+</div>
+
+<!-- Painel Slide-In (lado esquerdo) -->
+<div id="painelAcessibilidade" class="acc-painel" role="dialog" aria-modal="true" aria-labelledby="accTitulo">
+
+  <!-- Header -->
+  <div class="acc-painel-header">
+    <div class="acc-painel-header-left">
+      <div class="acc-painel-icon"><i class="fa-solid fa-universal-access"></i></div>
+      <div>
+        <p class="acc-painel-title" id="accTitulo">Acessibilidade</p>
+        <p class="acc-painel-subtitle">Recursos de inclusão digital</p>
+      </div>
+    </div>
+    <button type="button" class="acc-close-btn" id="fecharPainelAcessibilidade" aria-label="Fechar painel">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+
+  <!-- Body -->
+  <div class="acc-painel-body">
+
+    <!-- SEÇÃO 1: Leitor por Voz -->
+    <div class="acc-secao">
+      <div class="acc-secao-header">
+        <i class="fa-solid fa-volume-high"></i>
+        <span>Leitor por Voz (Síntese)</span>
+      </div>
+      <div class="acc-secao-body">
+        <div class="acc-voz-controles">
+          <button type="button" class="acc-btn-voz ler" id="botaoLer" aria-label="Iniciar leitura da página">
+            <i class="fa-solid fa-play"></i> Ler Página
+          </button>
+          <button type="button" class="acc-btn-voz parar" id="botaoParar" aria-label="Parar leitura">
+            <i class="fa-solid fa-stop"></i> Parar
+          </button>
         </div>
-
-        <p class="ajuda" style="margin:10px 0 0;">
-            Dica: use TAB para navegar e Enter/Espaço para ativar botões.
-        </p>
+        <div>
+          <div class="acc-linha" style="margin-bottom:6px;">
+            <span class="acc-linha-label">Velocidade da voz</span>
+          </div>
+          <select id="selectorVelocidade" class="acc-select" aria-label="Velocidade da síntese de voz">
+            <option value="0.7">🐢 Lenta (0.7x)</option>
+            <option value="1.0" selected>▶ Normal (1.0x)</option>
+            <option value="1.3">⚡ Rápida (1.3x)</option>
+            <option value="1.6">🚀 Muito Rápida (1.6x)</option>
+          </select>
+        </div>
+      </div>
     </div>
 
-    <button id="alternarAcessibilidade" class="acessibilidade-alternar" type="button" aria-expanded="false"
-        aria-controls="painelAcessibilidade">
-        <img src="static/img/Logo acessibilidade.png" alt="img-acessibilidade">
+    <!-- SEÇÃO 2: Tamanho do Texto -->
+    <div class="acc-secao">
+      <div class="acc-secao-header">
+        <i class="fa-solid fa-text-height"></i>
+        <span>Tamanho do Texto</span>
+      </div>
+      <div class="acc-secao-body">
+        <div class="acc-fonte-controles">
+          <button type="button" class="acc-btn-fonte" id="botaoDiminuir" title="Diminuir fonte (A-)">A−</button>
+          <div class="acc-fonte-display" id="displayEscalaFonte">100%</div>
+          <button type="button" class="acc-btn-fonte" id="botaoAumentar" title="Aumentar fonte (A+)">A+</button>
+          <button type="button" class="acc-btn-fonte" id="botaoResetarFonte" title="Restaurar tamanho padrão" style="font-size:0.7rem;">
+            <i class="fa-solid fa-rotate-left"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO 3: Visão & Contraste -->
+    <div class="acc-secao">
+      <div class="acc-secao-header">
+        <i class="fa-solid fa-eye"></i>
+        <span>Visão & Contraste</span>
+      </div>
+      <div class="acc-secao-body">
+
+        <div class="acc-linha">
+          <div>
+            <div class="acc-linha-label">Alto Contraste Visual</div>
+            <div class="acc-linha-desc">Preto com texto branco/amarelo</div>
+          </div>
+          <label class="acc-toggle" aria-label="Alto contraste visual">
+            <input type="checkbox" id="toggleAltoContraste">
+            <span class="acc-toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="acc-linha">
+          <div>
+            <div class="acc-linha-label">Fonte para Dislexia</div>
+            <div class="acc-linha-desc">Fonte arredondada de fácil leitura</div>
+          </div>
+          <label class="acc-toggle" aria-label="Fonte para dislexia">
+            <input type="checkbox" id="toggleDyslexia">
+            <span class="acc-toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="acc-linha">
+          <div>
+            <div class="acc-linha-label">Cursor Ampliado</div>
+          </div>
+          <label class="acc-toggle" aria-label="Cursor ampliado">
+            <input type="checkbox" id="toggleCursorGrande">
+            <span class="acc-toggle-track"></span>
+          </label>
+        </div>
+
+        <div>
+          <div class="acc-linha-label" style="margin-bottom:6px;">Filtro de Daltonismo</div>
+          <select id="selectorDaltonismo" class="acc-select" aria-label="Filtro de daltonismo">
+            <option value="nenhum">— Sem filtro —</option>
+            <option value="deuteranopia">Deuteranopia (cegueira ao verde)</option>
+            <option value="protanopia">Protanopia (cegueira ao vermelho)</option>
+            <option value="tritanopia">Tritanopia (cegueira ao azul)</option>
+            <option value="acromatopsia">Acromatopsia (monocromático)</option>
+          </select>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SEÇÃO 4: Navegação & Inclusão -->
+    <div class="acc-secao">
+      <div class="acc-secao-header">
+        <i class="fa-solid fa-keyboard"></i>
+        <span>Navegação & Inclusão</span>
+      </div>
+      <div class="acc-secao-body">
+
+        <div class="acc-linha">
+          <div>
+            <div class="acc-linha-label">Destaque de Foco (Tab)</div>
+            <div class="acc-linha-desc">Anel visível ao navegar pelo teclado</div>
+          </div>
+          <label class="acc-toggle" aria-label="Destaque de foco">
+            <input type="checkbox" id="toggleFocoAlto">
+            <span class="acc-toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="acc-linha">
+          <div>
+            <div class="acc-linha-label">Reduzir Animações</div>
+            <div class="acc-linha-desc">Para epilepsia, tontura ou TDAH</div>
+          </div>
+          <label class="acc-toggle" aria-label="Reduzir animações">
+            <input type="checkbox" id="toggleMovimento">
+            <span class="acc-toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="acc-linha">
+          <div>
+            <div class="acc-linha-label">Tradutor VLibras (LIBRAS)</div>
+            <div class="acc-linha-desc">Avatar sinalizador em Língua de Sinais</div>
+          </div>
+          <label class="acc-toggle" aria-label="Ativar VLibras">
+            <input type="checkbox" id="toggleVlibras">
+            <span class="acc-toggle-track"></span>
+          </label>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Atalhos de Teclado -->
+    <div class="acc-atalhos">
+      <div class="acc-atalhos-title"><i class="fa-solid fa-bolt"></i> Atalhos de Teclado</div>
+      <div class="acc-atalho-linha">
+        <span class="acc-kbd">Alt + A</span><span>Abrir / Fechar painel</span>
+      </div>
+      <div class="acc-atalho-linha">
+        <span class="acc-kbd">Alt + L</span><span>Iniciar leitura por voz</span>
+      </div>
+      <div class="acc-atalho-linha">
+        <span class="acc-kbd">Alt + S</span><span>Parar leitura por voz</span>
+      </div>
+      <div class="acc-atalho-linha">
+        <span class="acc-kbd">Alt + C</span><span>Alto Contraste</span>
+      </div>
+      <div class="acc-atalho-linha">
+        <span class="acc-kbd">Esc</span><span>Fechar painel</span>
+      </div>
+    </div>
+
+    <!-- Resetar -->
+    <button type="button" class="acc-btn-reset" id="botaoResetarAcessibilidade">
+      <i class="fa-solid fa-rotate-left"></i> Desativar e Resetar Tudo
     </button>
-</div>
+
+  </div><!-- /acc-painel-body -->
+</div><!-- /acc-painel -->
+
+<!-- SVG Filtros de Daltonismo (invisíveis) -->
+<svg id="accFiltrosSvg" style="position:absolute;width:0;height:0;overflow:hidden;" aria-hidden="true">
+  <defs>
+    <filter id="filtro-deuteranopia">
+      <feColorMatrix type="matrix" values="0.625 0.375 0 0 0  0.7 0.3 0 0 0  0 0.3 0.7 0 0  0 0 0 1 0"/>
+    </filter>
+    <filter id="filtro-protanopia">
+      <feColorMatrix type="matrix" values="0.567 0.433 0 0 0  0.558 0.442 0 0 0  0 0.242 0.758 0 0  0 0 0 1 0"/>
+    </filter>
+    <filter id="filtro-tritanopia">
+      <feColorMatrix type="matrix" values="0.95 0.05 0 0 0  0 0.433 0.567 0 0  0 0.475 0.525 0 0  0 0 0 1 0"/>
+    </filter>
+    <filter id="filtro-acromatopsia">
+      <feColorMatrix type="saturate" values="0"/>
+    </filter>
+  </defs>
+</svg>

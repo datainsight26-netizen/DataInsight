@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="DataInsight — Módulo de Análise Financeira com IA: projeções, gargalos e planos de ação." />
+    <title>DataInsight • IA Financeiro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='acessibilidade/acessibilidade.css') }}" />
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+    <style>
+        /* ===== MÓDULO FINANCEIRO ===== */
+        @keyframes ia-fade-in { from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);} }
+        @keyframes ia-shimmer { 0%{background-position:-200% 0;}100%{background-position:200% 0;} }
+        @keyframes ia-pulse { 0%,100%{opacity:1;}50%{opacity:.5;} }
+
+        .modulo-header-stripe {
+            height: 4px;
+            background: linear-gradient(90deg, #10B981, #3B82F6, #7C3AED);
+            border-radius: 4px 4px 0 0;
+            margin: -1px -1px 0;
+        }
+
+        .modulo-hero {
+            background: linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(59,130,246,0.05) 100%);
+            border: 1px solid rgba(16,185,129,0.2);
+            border-radius: 16px;
+            padding: 28px 32px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .modulo-hero-icon {
+            width: 64px; height: 64px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #10B981, #059669);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem; color: white;
+            box-shadow: 0 8px 24px rgba(16,185,129,0.35);
+            flex-shrink: 0;
+        }
+        .modulo-hero-body { flex: 1; }
+        .modulo-hero-title { font-size: 1.5rem; font-weight: 800; color: var(--texto); margin: 0 0 6px; }
+        .modulo-hero-desc { font-size: 0.9rem; color: var(--suave); line-height: 1.6; }
+        .modulo-hero-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+        .modulo-btn-primary {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 11px 22px;
+            background: linear-gradient(135deg, #10B981, #059669);
+            color: white; border: none; border-radius: 10px;
+            font-size: 0.88rem; font-weight: 700;
+            cursor: pointer; font-family: var(--fonte);
+            box-shadow: 0 4px 14px rgba(16,185,129,0.3);
+            transition: all 0.22s;
+        }
+        .modulo-btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(16,185,129,0.4); }
+        .modulo-btn-primary:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+        .modulo-btn-secondary {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 11px 18px;
+            background: var(--cartao); color: var(--texto);
+            border: 1px solid var(--borda); border-radius: 10px;
+            font-size: 0.88rem; font-weight: 600;
+            cursor: pointer; font-family: var(--fonte);
+            transition: all 0.2s;
+        }
+        .modulo-btn-secondary:hover { background: var(--fundo); border-color: var(--primaria); color: var(--primaria); }
+
+        /* CHIPS */
+        .ia-modulo-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+        .ia-modulo-chip {
+            padding: 6px 13px; border: 1px solid var(--borda);
+            border-radius: 100px; font-size: 0.78rem; font-weight: 600;
+            color: var(--suave); background: transparent;
+            cursor: pointer; transition: all 0.2s; font-family: var(--fonte);
+        }
+        .ia-modulo-chip:hover, .ia-modulo-chip.active {
+            background: #10B981; border-color: #10B981; color: white;
+        }
+
+        /* CHARTS */
+        .modulo-charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        .modulo-chart-card {
+            background: var(--cartao);
+            border: 1px solid var(--borda);
+            border-radius: 14px;
+            padding: 20px;
+            overflow: hidden;
+        }
+        .modulo-chart-title {
+            font-size: 0.88rem; font-weight: 700; color: var(--texto);
+            margin-bottom: 16px; display: flex; align-items: center; gap: 7px;
+        }
+        .modulo-chart-title i { color: #10B981; }
+        #ia-chart-1, #ia-chart-2 { min-height: 280px; width: 100%; }
+        .ia-chart-empty {
+            min-height: 280px; display: flex; align-items: center; justify-content: center;
+            text-align: center; color: var(--suave); font-size: 0.88rem; padding: 24px;
+        }
+
+        /* RESULT */
+        .modulo-result-area {
+            background: var(--cartao);
+            border: 1px solid var(--borda);
+            border-radius: 14px;
+            padding: 24px;
+            margin-bottom: 24px;
+            display: none;
+            animation: ia-fade-in 0.4s ease;
+        }
+        .ia-analysis-text { font-size: 0.9rem; line-height: 1.8; color: var(--texto); }
+        .ia-analysis-text strong { color: var(--primaria); }
+        .ia-analysis-text h2, .ia-analysis-text h3 { color: var(--texto); margin: 16px 0 8px; font-size: 1rem; }
+
+        /* SKELETON */
+        #ia-modulo-skeleton {
+            display: none;
+            padding: 24px;
+            background: var(--cartao);
+            border: 1px solid var(--borda);
+            border-radius: 14px;
+            margin-bottom: 24px;
+        }
+        .skeleton-line {
+            height: 14px; border-radius: 6px; margin-bottom: 12px;
+            background: linear-gradient(90deg, var(--borda) 25%, rgba(255,255,255,0.08) 50%, var(--borda) 75%);
+            background-size: 200% 100%;
+            animation: ia-shimmer 1.5s infinite;
+        }
+
+        /* CHECKLIST */
+        .modulo-checklist-card {
+            background: var(--cartao);
+            border: 1px solid var(--borda);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .modulo-checklist-title {
+            font-size: 0.88rem; font-weight: 700; color: var(--texto);
+            display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+        }
+        .modulo-checklist-title i { color: #10B981; }
+
+        #ia-checklist { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+        .ia-check-item label {
+            display: flex; align-items: flex-start; gap: 10px;
+            cursor: pointer; font-size: 0.87rem; color: var(--texto); line-height: 1.5;
+        }
+        .ia-check-item input[type="checkbox"] {
+            width: 16px; height: 16px; border-radius: 4px;
+            accent-color: #10B981; cursor: pointer; flex-shrink: 0; margin-top: 2px;
+        }
+        .ia-check-item.done label { text-decoration: line-through; color: var(--suave); }
+
+        /* PROMPT TEXTAREA */
+        #ia-modulo-prompt {
+            width: 100%; padding: 12px 16px;
+            background: var(--fundo); color: var(--texto);
+            border: 1px solid var(--borda); border-radius: 10px;
+            font-size: 0.88rem; line-height: 1.6;
+            font-family: var(--fonte); resize: vertical; min-height: 72px;
+            transition: border-color 0.2s;
+        }
+        #ia-modulo-prompt:focus { outline: none; border-color: #10B981; box-shadow: 0 0 0 3px rgba(16,185,129,0.12); }
+
+        /* PERIOD SELECTOR */
+        #modulo-periodo {
+            padding: 8px 12px;
+            background: var(--fundo); color: var(--texto);
+            border: 1px solid var(--borda); border-radius: 8px;
+            font-size: 0.85rem; font-weight: 600;
+            cursor: pointer; font-family: var(--fonte);
+        }
+
+        /* EXPORT ROW */
+        .modulo-export-row {
+            display: flex; gap: 10px; justify-content: flex-end; margin-bottom: 24px; flex-wrap: wrap;
+        }
+
+        /* BREADCRUMB */
+        .modulo-breadcrumb {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.8rem; color: var(--suave); margin-bottom: 20px;
+        }
+        .modulo-breadcrumb a { color: var(--primaria); text-decoration: none; }
+        .modulo-breadcrumb a:hover { text-decoration: underline; }
+
+        /* TOAST */
+        #ia-toast-container { position:fixed;bottom:24px;right:24px;z-index:99999;display:flex;flex-direction:column;gap:10px; }
+        .ia-toast { display:flex;align-items:center;gap:10px;padding:12px 18px;border-radius:12px;font-size:0.85rem;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.15);opacity:0;transform:translateX(30px);transition:all .3s cubic-bezier(.4,0,.2,1); }
+        .ia-toast.visible { opacity:1;transform:translateX(0); }
+        .ia-toast-success{background:rgba(16,185,129,.92);color:white;}
+        .ia-toast-error{background:rgba(239,68,68,.92);color:white;}
+        .ia-toast-info{background:rgba(59,130,246,.92);color:white;}
+        .ia-toast-warning{background:rgba(245,158,11,.92);color:white;}
+
+        @media (max-width:768px) {
+            .modulo-charts-grid { grid-template-columns: 1fr; }
+            .modulo-hero { flex-direction: column; text-align: center; }
+            .modulo-hero-actions { justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+    <a href="#conteudo" class="skip-link">Ir para conteúdo</a>
+    <div class="layout">
+        <aside class="sidebar" id="sidebar" aria-label="Navegação principal">
+            {% include 'partials/navbar.html' %}
+        </aside>
+        <div class="main">
+            <header class="topbar" role="banner">
+                <div class="topbar__left">
+                    <button class="topbar__btn topbar__mobile-toggle" onclick="abrirSidebar()" aria-label="Abrir menu"><i class="fa-solid fa-bars"></i></button>
+                    <span class="topbar__greeting">Olá, <strong>{{ session.usuario_nome }}</strong></span>
+                </div>
+                <div class="topbar__actions">
+                    <button class="topbar__btn" onclick="alternarTema()" aria-label="Alternar tema" id="btnTema"><i class="fa-solid fa-moon"></i></button>
+                    <a class="topbar__btn" href="{{ url_for('pagina_configuracoes') }}" title="Configurações"><i class="fa-solid fa-gear"></i></a>
+                </div>
+            </header>
+
+            <main id="conteudo" class="pagina" role="main">
+                <div class="container">
+
+                    <!-- Breadcrumb -->
+                    <nav class="modulo-breadcrumb" aria-label="Navegação estrutural">
+                        <a href="{{ url_for('pagina_ia') }}"><i class="fa-solid fa-robot"></i> Centro de IA</a>
+                        <i class="fa-solid fa-chevron-right" style="font-size:0.7rem;"></i>
+                        <span>Análise Financeira</span>
+                    </nav>
+
+                    <!-- Hero -->
+                    <div class="modulo-hero">
+                        <div class="modulo-hero-icon"><i class="fa-solid fa-coins"></i></div>
+                        <div class="modulo-hero-body">
+                            <h1 class="modulo-hero-title">Fluxo de Caixa & Análise Financeira</h1>
+                            <p class="modulo-hero-desc">Análise preditiva de saldo, identificação de gargalos financeiros, projeções de receita e plano de ação estruturado para a saúde financeira do negócio.</p>
+                        </div>
+                        <div class="modulo-hero-actions">
+                            <select id="modulo-periodo" title="Período de análise">
+                                <option value="7_dias">Últimos 7 dias</option>
+                                <option value="30_dias" selected>Últimos 30 dias</option>
+                                <option value="90_dias">Últimos 90 dias</option>
+                                <option value="ano_atual">Este ano</option>
+                            </select>
+                            <button class="modulo-btn-primary" id="ia-modulo-run">
+                                <i class="fa-solid fa-brain"></i> Analisar com IA
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Gráficos -->
+                    <div class="modulo-charts-grid">
+                        <div class="modulo-chart-card">
+                            <div class="modulo-chart-title"><i class="fa-solid fa-chart-area"></i> Evolução Financeira</div>
+                            <div id="ia-chart-1"></div>
+                        </div>
+                        <div class="modulo-chart-card">
+                            <div class="modulo-chart-title"><i class="fa-solid fa-chart-pie"></i> Distribuição por Categoria</div>
+                            <div id="ia-chart-2"></div>
+                        </div>
+                    </div>
+
+                    <!-- Prompt personalizado -->
+                    <div class="cartao" style="border-radius:14px;padding:20px;margin-bottom:18px;">
+                        <div style="font-size:0.88rem;font-weight:700;color:var(--texto);margin-bottom:12px;display:flex;align-items:center;gap:7px;">
+                            <i class="fa-solid fa-sliders" style="color:#10B981;"></i> Personalizar Análise
+                        </div>
+                        <div class="ia-modulo-chips">
+                            <button class="ia-modulo-chip" data-prompt="Analise o fluxo de caixa e identifique os 3 maiores gargalos financeiros com sugestões de solução.">Gargalos Financeiros</button>
+                            <button class="ia-modulo-chip" data-prompt="Calcule a projeção de faturamento para os próximos 3 meses com base na tendência atual.">Projeção 3 Meses</button>
+                            <button class="ia-modulo-chip" data-prompt="Qual é o ponto de equilíbrio atual do negócio? Analise receita versus despesas.">Ponto de Equilíbrio</button>
+                            <button class="ia-modulo-chip" data-prompt="Identifique sazonalidades no faturamento e explique os picos e quedas.">Sazonalidade</button>
+                            <button class="ia-modulo-chip" data-prompt="Sugira uma estratégia de redução de custos sem comprometer a operação.">Redução de Custos</button>
+                        </div>
+                        <textarea id="ia-modulo-prompt" rows="3" placeholder="Ex: Analise o fluxo de caixa e identifique oportunidades de melhoria financeira..."></textarea>
+                    </div>
+
+                    <!-- Skeleton loading -->
+                    <div id="ia-modulo-skeleton">
+                        <div class="skeleton-line" style="width:60%;"></div>
+                        <div class="skeleton-line" style="width:90%;"></div>
+                        <div class="skeleton-line" style="width:80%;"></div>
+                        <div class="skeleton-line" style="width:70%;"></div>
+                        <div class="skeleton-line" style="width:85%;"></div>
+                    </div>
+
+                    <!-- Resultado da análise -->
+                    <div class="modulo-result-area" id="ia-modulo-result">
+                        <!-- Preenchido via JS -->
+                    </div>
+
+                    <!-- Exportar -->
+                    <div class="modulo-export-row">
+                        <div id="ia-export-save-wrap" style="display:none; gap:10px; flex-wrap:wrap; align-items:center;">
+                            <button class="modulo-btn-primary" type="button" id="ia-export-save">
+                                <i class="fa-solid fa-bookmark"></i> Salvar análise
+                            </button>
+                        </div>
+                        <button class="modulo-btn-secondary" id="ia-export-copy"><i class="fa-solid fa-copy"></i> Copiar Análise</button>
+                        <button class="modulo-btn-secondary" id="ia-export-pdf"><i class="fa-solid fa-file-pdf"></i> Exportar PDF</button>
+                    </div>
+
+                    <!-- Checklist de Ações -->
+                    <div class="modulo-checklist-card">
+                        <div class="modulo-checklist-title"><i class="fa-solid fa-list-check"></i> Plano de Ação</div>
+                        <p style="font-size:0.83rem;color:var(--suave);margin-bottom:14px;">Marque as ações concluídas. A lista é gerada automaticamente após a análise.</p>
+                        <ul id="ia-checklist">
+                            <li class="ia-check-item"><label><input type="checkbox"><span>Gere uma análise para ver o plano de ação automático</span></label></li>
+                        </ul>
+                    </div>
+
+                    <!-- Navegação entre módulos -->
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:8px;flex-wrap:wrap;">
+                        <a href="{{ url_for('pagina_ia') }}" style="display:inline-flex;align-items:center;gap:7px;font-size:0.85rem;font-weight:600;color:var(--suave);text-decoration:none;padding:9px 14px;border:1px solid var(--borda);border-radius:9px;background:var(--cartao);transition:all .2s;">
+                            <i class="fa-solid fa-arrow-left"></i> Voltar ao Hub
+                        </a>
+                        <a href="{{ url_for('pagina_ia_decisoes') }}" style="display:inline-flex;align-items:center;gap:7px;font-size:0.85rem;font-weight:600;color:white;text-decoration:none;padding:9px 16px;border-radius:9px;background:linear-gradient(135deg,#7C3AED,#6D28D9);box-shadow:0 4px 12px rgba(124,58,237,.3);transition:all .2s;">
+                            Módulo de Decisões <i class="fa-solid fa-arrow-right"></i>
+                        </a>
+                    </div>
+
+                    {% include 'partials/footer.html' %}
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="ia-toast-container"></div>
+    {% include 'partials/navbar_mobile.html' %}
+    {% include 'partials/painel_acessibilidade.html' %}
+    {% include 'partials/chatbot.html' %}
+
+    <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/ia-modulos.js') }}"></script>
+    <script>
+        function abrirSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sidebarOverlay').classList.add('active');}
+        function fecharSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active');}
+    </script>
+</body>
+</html>

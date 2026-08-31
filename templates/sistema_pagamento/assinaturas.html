@@ -358,17 +358,10 @@
   {% include 'partials/painel_acessibilidade.html' %}
 
   <!-- VLibras Plugin -->
-  <div vw class="enabled" id="Vlibras">
-    <div vw-access-button class="active"></div>
-    <div vw-plugin-wrapper>
-      <div class="vw-plugin-top-wrapper"></div>
-    </div>
-  </div>
+</div>
 
   <!-- Scripts Globais e Acessibilidade -->
-  <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
-  <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
-  <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+<script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 
   <!-- Script da Simulação de Pagamento & Tema -->

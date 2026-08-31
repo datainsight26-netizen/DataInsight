@@ -13,6 +13,10 @@
 
   <!-- CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='acessibilidade/acessibilidade.css') }}" />
+
+  <!-- ESTILOS DO BOTÃO BRILHANTE E MODAL RETANGULAR PULSANTE DA IA -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ia_analise_modal.css') }}" />
 
   <!-- Charts -->
   <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
@@ -74,10 +78,24 @@
         <div class="container">
 
           <!-- CABEÇALHO DA PÁGINA -->
-          <header class="pagina__cabecalho anim-fade-up">
-            <div class="migalhas">Início</div>
-            <h1 class="h1">Visão rápida do negócio</h1>
-            <p class="p">Indicadores de desempenho e oportunidades identificadas pela IA.</p>
+          <header class="pagina__cabecalho anim-fade-up" style="display: flex !important; flex-direction: row !important; align-items: flex-start !important; justify-content: space-between !important; gap: 16px; margin-bottom: 24px; width: 100%;">
+            <div style="flex: 1; min-width: 0;">
+              <div class="migalhas">Início</div>
+              <h1 class="h1" style="margin-bottom: 4px;">Visão rápida do negócio</h1>
+              <p class="p" style="margin: 0;">Indicadores de desempenho e oportunidades identificadas pela IA.</p>
+            </div>
+            <!-- BOTÃO DE IA BRILHANTE AZUL COM ANIMAÇÃO E PULSANDO -->
+            <div style="display: flex; align-items: center; gap: 12px; flex-shrink: 0;">
+              <button type="button" 
+                      id="btnIaAnaliseHome" 
+                      class="btn-ia-glow-blue" 
+                      onclick="IaAnaliseModal.abrir('home', coletarContextoIaHome)" 
+                      title="Executar Análise Completa e Direta da Página com IA"
+                      aria-label="Executar Análise Completa com IA">
+                <span class="btn-ia-glow-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+                <span class="btn-ia-glow-text">IA</span>
+              </button>
+            </div>
           </header>
 
           <!-- FILTRO DE PERÍODO E ORIGEM DOS DADOS -->
@@ -119,16 +137,21 @@
             </div>
           </section>
 
-          <!-- STATUS DO NEGÓCIO (IA) -->
+          <!-- STATUS DO NEGÓCIO (IA) COM BOTÃO DE ANÁLISE COMPLETA -->
           <section class="cartao anim-fade-up anim-fade-up-d1"
                    id="status-negocio-section"
                    data-ia-help="status_negocio"
-                   style="margin-bottom:20px; border-left:4px solid var(--sucesso);"
+                   style="margin-bottom:20px; border-left:4px solid var(--sucesso); position:relative; overflow:visible;"
                    aria-label="Status do negócio">
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
-              <i class="fa-solid fa-circle-check" style="color:var(--sucesso);"></i>
-              <h2 style="font-size:0.9rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; margin:0; color:var(--suave);">Status do Negócio</h2>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; flex-wrap:wrap;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-circle-check" style="color:var(--sucesso);"></i>
+                <h2 style="font-size:0.9rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; margin:0; color:var(--suave);">Status do Negócio</h2>
+              </div>
+              
+             
             </div>
+
             <div id="status-negocio-container">
               <div class="skeleton" style="height:18px; width:70%; margin-bottom:8px; border-radius:6px;"></div>
               <div class="skeleton" style="height:14px; width:45%; border-radius:6px;"></div>
@@ -304,19 +327,13 @@
   {% include 'partials/chatbot.html' %}
 
   <!-- VLibras -->
-  <div vw class="enabled" id="Vlibras">
-    <div vw-access-button class="active"></div>
-    <div vw-plugin-wrapper>
-      <div class="vw-plugin-top-wrapper"></div>
-    </div>
-  </div>
+</div>
 
   <!-- Scripts -->
-  <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
-  <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
-  <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+<script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/home.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ia_analise_modal.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/home.js') }}?v=5.0"></script>
 
   <div id="kpiDetalheModal" class="modal-backdrop" style="display:none; position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.65); align-items:center; justify-content:center; padding:20px;">
     <div class="modal" style="background:var(--cartao); width:100%; max-width:680px; border-radius:20px; box-shadow:0 24px 70px rgba(0,0,0,0.35); overflow:hidden; max-height:90vh; display:flex; flex-direction:column; color:var(--text-primary); border:1px solid var(--border-color);">
@@ -334,6 +351,11 @@
       </div>
     </div>
   </div>
+
+  <!-- MODAL DE ANÁLISE COMPLETA COM IA -->
+  {% with page_id='home' %}
+    {% include 'partials/modal_analise_ia.html' %}
+  {% endwith %}
 
   <script>
     // Sidebar mobile toggle

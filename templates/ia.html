@@ -3,192 +3,586 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="DataInsight — Centro de Inteligência Artificial para análise de dados." />
-    <title>DataInsight • Inteligência IA</title>
+    <meta name="description" content="DataInsight — Centro de Inteligência Estratégica com IA: Copiloto, Módulos Especializados, Agentes Automáticos." />
+    <title>DataInsight • Centro de Inteligência com IA</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='acessibilidade/acessibilidade.css') }}" />
     <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
-    
+
     <style>
-        /* ========== EFEITOS TECNOLÓGICOS - PÁGINA IA ========== */
-        
-        @keyframes pulse-glow {
-            0%, 100% { 
-                box-shadow: 0 0 15px rgba(59, 130, 246, 0.2),
-                            inset 0 0 15px rgba(59, 130, 246, 0.05);
-            }
-            50% { 
-                box-shadow: 0 0 30px rgba(59, 130, 246, 0.5),
-                            inset 0 0 30px rgba(59, 130, 246, 0.15);
-            }
+        /* ================================================================
+           IA HUB — ESTILOS GLOBAIS DO CENTRO DE INTELIGÊNCIA
+        ================================================================ */
+
+        /* Animação keyframes */
+        @keyframes ia-pulse {
+            0%,100% { opacity:1; }
+            50% { opacity:0.5; }
         }
-        
-        @keyframes pulse-border {
-            0%, 100% { 
-                border-color: rgba(59, 130, 246, 0.2);
-                box-shadow: 0 0 10px rgba(59, 130, 246, 0.1);
-            }
-            50% { 
-                border-color: rgba(59, 130, 246, 0.6);
-                box-shadow: 0 0 25px rgba(59, 130, 246, 0.3);
-            }
+        @keyframes ia-glow-pulse {
+            0%,100% { box-shadow: 0 0 12px rgba(59,130,246,0.15); }
+            50% { box-shadow: 0 0 28px rgba(59,130,246,0.4); }
         }
-        
-        @keyframes button-pulse {
-            0%, 100% { 
-                box-shadow: 0 0 0px rgba(59, 130, 246, 0);
-            }
-            50% { 
-                box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
-            }
+        @keyframes ia-spin {
+            to { transform: rotate(360deg); }
         }
-        
-        .page-ia-container {
+        @keyframes ia-fade-in {
+            from { opacity:0; transform:translateY(16px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+        @keyframes ia-shimmer {
+            0%   { background-position: -200% 0; }
+            100% { background-position:  200% 0; }
+        }
+        @keyframes badge-dot-pulse {
+            0%,100% { transform:scale(1); opacity:1; }
+            50% { transform:scale(1.6); opacity:0.6; }
+        }
+
+        /* ----------------------------------------------------------------
+           TAB NAVIGATION
+        ---------------------------------------------------------------- */
+        .ia-hub-nav {
+            display: flex;
+            gap: 4px;
+            padding: 6px;
+            background: var(--cartao);
+            border: 1px solid var(--borda);
+            border-radius: 14px;
+            margin-bottom: 28px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .ia-hub-nav::-webkit-scrollbar { display:none; }
+
+        .ia-hub-tab {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border: none;
+            background: transparent;
+            color: var(--suave);
+            font-size: 0.875rem;
+            font-weight: 600;
+            font-family: var(--fonte);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.22s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .ia-hub-tab:hover {
+            background: rgba(59,130,246,0.08);
+            color: var(--primaria);
+        }
+        .ia-hub-tab.active {
+            background: var(--primaria);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(59,130,246,0.35);
+        }
+        .ia-hub-tab .ia-tab-badge {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.25);
+            line-height: 1;
+        }
+
+        /* ----------------------------------------------------------------
+           PANELS
+        ---------------------------------------------------------------- */
+        .ia-hub-panel {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .ia-hub-panel.active {
+            opacity: 1;
+            animation: ia-fade-in 0.35s ease forwards;
+        }
+
+        /* ----------------------------------------------------------------
+           STATUS BADGE
+        ---------------------------------------------------------------- */
+        .ia-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border-radius: 100px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+        .ia-status-badge::before {
+            content: '';
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .ia-status-online { background: rgba(16,185,129,0.1); color: #10B981; border: 1px solid rgba(16,185,129,0.25); }
+        .ia-status-online::before { background: #10B981; animation: badge-dot-pulse 1.5s ease infinite; }
+        .ia-status-loading { background: rgba(245,158,11,0.1); color: #F59E0B; border: 1px solid rgba(245,158,11,0.25); }
+        .ia-status-loading::before { background: #F59E0B; animation: ia-pulse 1s linear infinite; }
+        .ia-status-offline { background: rgba(239,68,68,0.08); color: #EF4444; border: 1px solid rgba(239,68,68,0.2); }
+        .ia-status-offline::before { background: #EF4444; }
+
+        /* ----------------------------------------------------------------
+           OVERVIEW — KPI GRID
+        ---------------------------------------------------------------- */
+        .ia-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .ia-kpi-card {
+            background: var(--cartao);
+            border: 1px solid var(--borda);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .ia-kpi-card:hover { transform:translateY(-3px); box-shadow: var(--shadow-lg); }
+        .ia-kpi-icon {
+            width: 42px; height: 42px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; flex-shrink: 0;
+        }
+        .ia-kpi-body { flex: 1; min-width: 0; }
+        .ia-kpi-label { display: block; font-size: 0.75rem; color: var(--suave); font-weight: 500; margin-bottom: 4px; }
+        .ia-kpi-value { display: block; font-size: 1.25rem; font-weight: 800; color: var(--texto); line-height: 1.2; }
+        .ia-kpi-var { display: block; font-size: 0.75rem; font-weight: 600; margin-top: 4px; }
+
+        /* ----------------------------------------------------------------
+           INSIGHT DIÁRIO
+        ---------------------------------------------------------------- */
+        .ia-insight-card {
+            background: linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(124,58,237,0.06) 100%);
+            border: 1px solid rgba(59,130,246,0.25);
+            border-radius: 14px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+        .ia-insight-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 4px; height: 100%;
+            background: linear-gradient(180deg, #3B82F6, #7C3AED);
+            border-radius: 4px 0 0 4px;
+        }
+        .ia-insight-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            gap: 12px;
+        }
+        .ia-insight-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--primaria);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+        #ia-daily-insight {
+            font-size: 0.93rem;
+            line-height: 1.7;
+            color: var(--texto);
+            min-height: 60px;
+        }
+        #ia-daily-insight:not(.loaded) {
+            background: linear-gradient(90deg, var(--borda) 25%, rgba(255,255,255,0.1) 50%, var(--borda) 75%);
+            background-size: 200% 100%;
+            animation: ia-shimmer 1.5s infinite;
+            border-radius: 6px;
+            color: transparent;
+        }
+
+        /* ----------------------------------------------------------------
+           ALERTAS
+        ---------------------------------------------------------------- */
+        .ia-alerts-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .ia-alert-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px 16px;
+            background: var(--cartao);
+            border: 1px solid var(--borda);
+            border-radius: 10px;
+            font-size: 0.87rem;
+            color: var(--texto);
+            transition: transform 0.2s;
+        }
+        .ia-alert-item:hover { transform: translateX(4px); }
+
+        /* ----------------------------------------------------------------
+           MODULE CARDS (Grid)
+        ---------------------------------------------------------------- */
+        .ia-modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .ia-module-card {
+            background: var(--cartao);
+            border: 1px solid var(--borda);
+            border-radius: 16px;
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .ia-module-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 16px;
+            opacity: 0;
+            transition: opacity 0.25s;
+        }
+        .ia-module-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 16px 40px rgba(0,0,0,0.12);
+            border-color: var(--primaria);
+        }
+        .ia-module-card:hover::after { opacity: 1; }
+
+        .ia-module-card.financeiro { --mod-color: #10B981; }
+        .ia-module-card.decisoes  { --mod-color: #7C3AED; }
+        .ia-module-card.operacional { --mod-color: #3B82F6; }
+
+        .ia-module-stripe {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: var(--mod-color, var(--primaria));
+            border-radius: 16px 16px 0 0;
+        }
+        .ia-module-icon-wrap {
+            width: 52px; height: 52px;
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem;
+            margin-bottom: 16px;
+            background: color-mix(in srgb, var(--mod-color, #3B82F6) 12%, transparent);
+            color: var(--mod-color, var(--primaria));
+        }
+        .ia-module-title { font-size: 1.05rem; font-weight: 700; color: var(--texto); margin-bottom: 8px; }
+        .ia-module-desc { font-size: 0.85rem; color: var(--suave); line-height: 1.6; margin-bottom: 16px; }
+        .ia-module-features {
+            display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px;
+        }
+        .ia-module-feature {
+            font-size: 0.73rem; font-weight: 600;
+            padding: 3px 9px;
+            border-radius: 100px;
+            background: color-mix(in srgb, var(--mod-color, #3B82F6) 10%, transparent);
+            color: var(--mod-color, var(--primaria));
+            border: 1px solid color-mix(in srgb, var(--mod-color, #3B82F6) 25%, transparent);
+        }
+        .ia-module-cta {
+            display: flex; align-items: center; justify-content: space-between;
+            font-size: 0.85rem; font-weight: 700;
+            color: var(--mod-color, var(--primaria));
+        }
+
+        /* ----------------------------------------------------------------
+           COPILOTO CONTEXT CHIPS
+        ---------------------------------------------------------------- */
+        .ia-copiloto-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 14px; gap: 12px; flex-wrap: wrap;
+        }
+        .ia-copiloto-chips {
+            display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
+        }
+        .ia-prompt-chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 12px;
+            border: 1px solid var(--borda);
+            border-radius: 100px;
+            font-size: 0.78rem; font-weight: 600;
+            color: var(--suave);
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: var(--fonte);
+        }
+        .ia-prompt-chip:hover, .ia-prompt-chip.active {
+            background: var(--primaria);
+            border-color: var(--primaria);
+            color: #fff;
+        }
+
+        /* ----------------------------------------------------------------
+           AGENTS
+        ---------------------------------------------------------------- */
+        .ia-agents-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .ia-agent-card {
+            background: var(--cartao);
+            border: 1px solid var(--borda);
+            border-radius: 16px;
+            padding: 20px;
+            transition: all 0.25s;
             position: relative;
         }
-        
-        /* Chat box com pulsação */
+        .ia-agent-card.active {
+            border-color: rgba(59,130,246,0.4);
+            box-shadow: 0 4px 20px rgba(59,130,246,0.08);
+        }
+        .ia-agent-header {
+            display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+        }
+        .ia-agent-icon {
+            width: 44px; height: 44px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; flex-shrink: 0;
+        }
+        .ia-agent-meta { flex: 1; min-width: 0; }
+        .ia-agent-name { font-size: 0.97rem; font-weight: 700; color: var(--texto); margin: 0 0 3px; }
+        .ia-agent-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 0.72rem; font-weight: 700;
+            padding: 2px 8px; border-radius: 100px;
+        }
+        .ia-agent-badge.online { background: rgba(16,185,129,0.12); color: #10B981; }
+        .ia-agent-badge.offline { background: rgba(107,114,128,0.12); color: var(--suave); }
+        .ia-badge-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: currentColor;
+        }
+        .ia-agent-badge.online .ia-badge-dot { animation: badge-dot-pulse 1.5s ease infinite; }
+
+        .ia-agent-desc {
+            font-size: 0.84rem; color: var(--suave); line-height: 1.6; margin-bottom: 14px;
+        }
+        .ia-agent-details { margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px; }
+        .ia-agent-detail-group {}
+        .ia-detail-label {
+            font-size: 0.72rem; font-weight: 700;
+            color: var(--suave); text-transform: uppercase; letter-spacing: 0.05em;
+            display: flex; align-items: center; gap: 5px; margin-bottom: 6px;
+        }
+        .ia-detail-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+        .ia-tag {
+            font-size: 0.72rem; padding: 2px 8px; border-radius: 100px;
+            background: var(--fundo); border: 1px solid var(--borda); color: var(--suave);
+        }
+        .ia-tag-action {
+            background: rgba(59,130,246,0.08);
+            border-color: rgba(59,130,246,0.2);
+            color: var(--primaria);
+        }
+
+        /* Toggle Switch */
+        .ia-toggle { position: relative; display: inline-block; width: 42px; height: 24px; flex-shrink: 0; }
+        .ia-toggle-input { opacity: 0; width: 0; height: 0; position: absolute; }
+        .ia-toggle-slider {
+            position: absolute; inset: 0; border-radius: 100px;
+            background: var(--borda); cursor: pointer;
+            transition: 0.25s;
+        }
+        .ia-toggle-slider::before {
+            content: '';
+            position: absolute;
+            height: 18px; width: 18px;
+            left: 3px; bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.25s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .ia-toggle-input:checked + .ia-toggle-slider { background: var(--primaria); }
+        .ia-toggle-input:checked + .ia-toggle-slider::before { transform: translateX(18px); }
+
+        .ia-agent-run-btn {
+            width: 100%;
+            padding: 9px;
+            border: 1px solid var(--borda);
+            border-radius: 9px;
+            background: transparent;
+            color: var(--texto);
+            font-size: 0.84rem; font-weight: 600;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 7px;
+            transition: all 0.2s;
+            font-family: var(--fonte);
+        }
+        .ia-agent-run-btn:hover:not(:disabled) {
+            background: var(--primaria);
+            border-color: var(--primaria);
+            color: #fff;
+        }
+        .ia-agent-run-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* ----------------------------------------------------------------
+           AGENT RESULT MODAL
+        ---------------------------------------------------------------- */
+        #ia-agent-result-modal {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.75);
+            z-index: 9999;
+            backdrop-filter: blur(6px);
+            align-items: center; justify-content: center;
+        }
+        #ia-agent-result-modal.open { display: flex; }
+        .ia-agent-result-window {
+            background: var(--cartao);
+            border: 1px solid var(--borda);
+            border-radius: 18px;
+            width: 90%; max-width: 720px;
+            max-height: 82vh;
+            display: flex; flex-direction: column;
+            animation: ia-fade-in 0.3s ease;
+            box-shadow: 0 32px 80px rgba(0,0,0,0.2);
+        }
+        .ia-agent-result-header {
+            padding: 18px 22px 14px;
+            border-bottom: 1px solid var(--borda);
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        }
+        .ia-agent-result-header h2 { font-size: 1rem; font-weight: 700; color: var(--texto); margin: 0; }
+        .ia-modal-close-btn {
+            background: transparent; border: none; cursor: pointer;
+            color: var(--suave); font-size: 1.2rem; padding: 4px; line-height: 1;
+            transition: color 0.2s;
+        }
+        .ia-modal-close-btn:hover { color: var(--perigo); }
+        .ia-agent-result-body {
+            flex: 1; overflow-y: auto;
+            padding: 22px;
+            font-size: 0.9rem; line-height: 1.75; color: var(--texto);
+        }
+        .ia-agent-result-footer {
+            padding: 14px 22px;
+            border-top: 1px solid var(--borda);
+            display: flex; gap: 10px; justify-content: flex-end;
+        }
+
+        /* ----------------------------------------------------------------
+           TOAST
+        ---------------------------------------------------------------- */
+        #ia-toast-container {
+            position: fixed; bottom: 24px; right: 24px;
+            z-index: 99999;
+            display: flex; flex-direction: column; gap: 10px;
+            pointer-events: none;
+        }
+        .ia-toast {
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px 18px;
+            border-radius: 12px;
+            font-size: 0.85rem; font-weight: 600;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            pointer-events: all;
+            opacity: 0; transform: translateX(30px);
+            transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+            backdrop-filter: blur(12px);
+        }
+        .ia-toast.visible { opacity: 1; transform: translateX(0); }
+        .ia-toast-success { background: rgba(16,185,129,0.92); color: white; }
+        .ia-toast-error   { background: rgba(239,68,68,0.92); color: white; }
+        .ia-toast-info    { background: rgba(59,130,246,0.92); color: white; }
+        .ia-toast-warning { background: rgba(245,158,11,0.92); color: white; }
+
+        /* ----------------------------------------------------------------
+           ANIMATE
+        ---------------------------------------------------------------- */
+        .ia-animate { opacity: 0; transform: translateY(20px); }
+        .ia-anim-in { animation: ia-fade-in 0.4s ease forwards; }
+
+        /* ----------------------------------------------------------------
+           SECTION TITLES
+        ---------------------------------------------------------------- */
+        .ia-section-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 16px; gap: 12px; flex-wrap: wrap;
+        }
+        .ia-section-title {
+            font-size: 1rem; font-weight: 700; color: var(--texto);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .ia-section-title i { color: var(--primaria); }
+
+        /* ----------------------------------------------------------------
+           CHAT AREA (preservada do original)
+        ---------------------------------------------------------------- */
+        .page-ia-container {
+            display: flex; flex-direction: row; gap: 20px;
+        }
+        @keyframes pulse-border {
+            0%,100% { border-color:rgba(59,130,246,0.2); box-shadow:0 0 10px rgba(59,130,246,0.1); }
+            50% { border-color:rgba(59,130,246,0.6); box-shadow:0 0 25px rgba(59,130,246,0.3); }
+        }
+        @keyframes button-pulse {
+            0%,100% { box-shadow:0 0 0px rgba(59,130,246,0); }
+            50% { box-shadow:0 0 15px rgba(59,130,246,0.5); }
+        }
         .chat-box {
-            border: 1px solid rgba(59, 130, 246, 0.3) !important;
+            border: 1px solid rgba(59,130,246,0.3) !important;
             background: var(--cartao) !important;
             border-radius: 12px;
             animation: pulse-border 2s ease-in-out infinite;
             transition: all 0.3s ease;
         }
-        
-        .chat-box:hover {
-            animation: none;
-            border-color: rgba(59, 130, 246, 0.8) !important;
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
-        }
-        
-        /* Sidebar com pulsação suave */
+        .chat-box:hover { animation:none; border-color:rgba(59,130,246,0.8)!important; box-shadow:0 0 20px rgba(59,130,246,0.3); }
         .chat-sidebar {
-            border: 1px solid rgba(59, 130, 246, 0.2) !important;
+            border: 1px solid rgba(59,130,246,0.2) !important;
             animation: pulse-border 2.5s ease-in-out infinite;
-            transition: all 0.3s ease;
         }
-        
-        .chat-sidebar:hover {
+        .chat-input-area {
+            border-top: 1px solid rgba(59,130,246,0.2);
+            padding: 15px;
             animation: none;
-            border-color: rgba(59, 130, 246, 0.6) !important;
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
         }
-        
-        /* Botões com pulsação */
         #btn-nova-conversa {
             animation: button-pulse 2s ease-in-out infinite;
             transition: all 0.3s ease;
         }
-        
-        #btn-nova-conversa:hover {
-            animation: none;
-            transform: translateY(-2px);
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.6) !important;
-        }
-        
-        /* Chat input area */
-        .chat-input-area {
-            border-top: 1px solid rgba(59, 130, 246, 0.2);
-            padding-top: 15px;
-            animation: pulse-glow 3s ease-in-out infinite;
-            border-radius: 8px;
-            padding: 15px;
-        }
-        
-        /* Galeria com pulsação */
-        #gallery-box {
-            border: 1px solid rgba(59, 130, 246, 0.2) !important;
-            animation: pulse-border 2.5s ease-in-out infinite;
-            transition: all 0.3s ease;
-        }
-        
-        #gallery-box:hover {
-            animation: none;
-            border-color: rgba(59, 130, 246, 0.6) !important;
-        }
-        
-        /* Itens da galeria com destaque */
-        #gallery-grid > div {
-            opacity: 0.8;
-            transition: all 0.3s ease;
-        }
-        
-        #gallery-grid > div:hover {
-            opacity: 1;
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.25);
-        }
-        
-        /* Modal com pulsação elegante */
-        #ia-modal > div {
-            border: 1px solid rgba(59, 130, 246, 0.3) !important;
-            animation: pulse-glow 2.5s ease-in-out infinite;
-            box-shadow: 0 0 40px rgba(59, 130, 246, 0.15),
-                        0 0 80px rgba(59, 130, 246, 0.05) !important;
-        }
+        #btn-nova-conversa:hover { animation:none; transform:translateY(-2px); box-shadow:0 0 20px rgba(59,130,246,0.6)!important; }
+        #gallery-box { border: 1px solid rgba(59,130,246,0.2)!important; animation: pulse-border 2.5s ease-in-out infinite; }
+        #ia-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:9999; backdrop-filter:blur(5px); overflow:hidden; }
+        .ia-modal-window { position:absolute; top:10%; left:7.5%; width:85%; height:85%; min-width:360px; min-height:280px; max-width:calc(100% - 40px); max-height:calc(100% - 40px); }
 
-        #ia-modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.85);
-            z-index: 9999;
-            backdrop-filter: blur(5px);
-            overflow: hidden;
+        /* ----------------------------------------------------------------
+           RESPONSIVE
+        ---------------------------------------------------------------- */
+        @media (max-width: 768px) {
+            .ia-hub-tab { padding: 8px 14px; font-size: 0.8rem; }
+            .ia-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+            .ia-modules-grid { grid-template-columns: 1fr; }
+            .ia-agents-grid { grid-template-columns: 1fr; }
+            .page-ia-container { flex-direction: column; }
         }
-
-        .ia-modal-window {
-            position: absolute;
-            top: 10%;
-            left: 7.5%;
-            width: 85%;
-            height: 85%;
-            min-width: 360px;
-            min-height: 280px;
-            max-width: calc(100% - 40px);
-            max-height: calc(100% - 40px);
-        }
-
-        #modal-header-actions {
-            cursor: grab;
-            user-select: none;
-        }
-
-        #modal-header-actions:active {
-            cursor: grabbing;
-        }
-
-        #modal-resize-handle {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            right: 12px;
-            bottom: 12px;
-            cursor: nwse-resize;
-            z-index: 20;
-        }
-
-        .chatbot-transition-overlay {
-            position: fixed;
-            z-index: 25000;
-            border-radius: 28px;
-            overflow: hidden;
-            pointer-events: none;
-            transition: all 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-            box-shadow: 0 30px 90px rgba(15, 23, 42, 0.35);
-        }
-
-        .chatbox-highlight {
-            animation: chatbox-highlight 1.2s ease forwards;
-        }
-
-        @keyframes chatbox-highlight {
-            0% { box-shadow: 0 0 12px rgba(59, 130, 246, 0.18); }
-            50% { box-shadow: 0 0 42px rgba(59, 130, 246, 0.35); }
-            100% { box-shadow: 0 0 18px rgba(59, 130, 246, 0.2); }
+        @media (max-width: 480px) {
+            .ia-kpi-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -205,141 +599,457 @@
                     <span class="topbar__greeting">Olá, <strong>{{ session.usuario_nome }}</strong></span>
                 </div>
                 <div class="topbar__actions">
+                    <!-- Status da IA -->
+                    <span id="ia-status-badge" class="ia-status-badge ia-status-loading">
+                        <span class="ia-status-text">Iniciando IA...</span>
+                    </span>
                     <button class="topbar__btn" onclick="alternarTema()" aria-label="Alternar tema" id="btnTema"><i class="fa-solid fa-moon"></i></button>
                     <a class="topbar__btn" href="{{ url_for('pagina_configuracoes') }}" title="Configurações"><i class="fa-solid fa-gear"></i></a>
                 </div>
             </header>
 
-            <main id="conteudo" class="pagina" role="main" data-ia-help="page_ia">
+            <main id="conteudo" class="pagina" role="main">
                 <div class="container">
-                    <header class="pagina__cabecalho">
-                        <div class="migalhas" aria-label="Você está em">Inteligência IA</div>
-                        <h1 class="h1">Centro de Inteligência</h1>
-                        <p class="p">Converse com seu Analista, Cientista de Dados e Consultor Virtual.</p>
+                    <!-- CABEÇALHO COM BOTÃO DE ANÁLISE IA -->
+                    <header class="pagina__cabecalho" style="margin-bottom: 20px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 0;">
+                            <div class="migalhas" aria-label="Você está em">Inteligência IA</div>
+                            <h1 class="h1" style="margin-bottom: 4px;">Centro de Inteligência Estratégica</h1>
+                            <p class="p" style="margin: 0;">Copiloto de IA, módulos especializados e agentes autônomos para decisões inteligentes.</p>
+                        </div>
+                       
                     </header>
 
-                
+                    <!-- FILTRO DE PERÍODO E ORIGEM DOS DADOS (TABELA) -->
+                    <section class="cartao" style="margin-bottom: 20px; padding: 14px 20px; border-radius: 12px;" aria-label="Filtros da IA">
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                            <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <label for="seletorPlanilhaIaHub" style="font-size: 0.8rem; font-weight: 700; white-space: nowrap; display: flex; align-items: center; gap: 5px; color: var(--texto);">
+                                        <i class="fa-solid fa-table-list" style="color: var(--primaria);"></i>
+                                        Base de Dados:
+                                    </label>
+                                    <select class="selecao" id="seletorPlanilhaIaHub" aria-label="Selecionar planilha ou consolidado"
+                                            style="min-width: 240px; padding: 7px 12px; font-size: 0.8rem; font-weight: 600;">
+                                        <option value="todas">🌐 Todas as Planilhas (Visão Consolidada)</option>
+                                    </select>
+                                </div>
 
-                    <!-- Container principal com cabeçalho de botões de tela cheia -->
-                    <div class="fullscreen-header" style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 12px;">
-                      
-                        <button id="btn-fullscreen" class="fullscreen-btn" title="Tela Cheia">
-                            <i class="fa-solid fa-expand"></i> Tela Cheia
-                        </button>
-                    </div>
-
-                    <div class="page-ia-container" style="flex-direction: row; gap: 20px;">
-                        <div class="chat-sidebar"
-                            style="width: 220px; background: var(--cartao); border-radius: 12px; border: 1px solid var(--borda); padding: 15px; display: flex; flex-direction: column; gap: 12px;">
-                            
-                            <!-- SELETOR DE ESCOPO / PLANILHA DA IA -->
-                            <div>
-                                <label for="seletorPlanilhaIa" style="font-size: 11.5px; font-weight: 700; color: var(--suave); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; display: flex; align-items: center; gap: 5px;">
-                                    <i class="fa-solid fa-database" style="color: var(--primaria);"></i> Base de Dados:
-                                </label>
-                                <select id="seletorPlanilhaIa" class="entrada" style="width: 100%; font-size: 12px; font-weight: 600; padding: 6px 8px; border-radius: 6px;">
-                                    <option value="todas">🌐 Todas as Planilhas</option>
-                                </select>
-                            </div>
-
-                            <!-- <a href="{{ url_for('pagina_assistente_virtual') }}"
-                                style="background: linear-gradient(135deg, #3B82F6, #8B5CF6); color: white; border: none; padding: 10px; border-radius: 8px; width: 100%; cursor: pointer; text-align: center; text-decoration: none; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);"><i
-                                    class="fa-solid fa-user-tie"></i> Assistente 3D</a> -->
-
-                            <button id="btn-nova-conversa"
-                                style="background: var(--primaria); color: white; border: none; padding: 10px; border-radius: 8px; width: 100%; cursor: pointer;"><i
-                                    class="fa-solid fa-plus"></i> Nova Conversa</button>
-
-                            <!-- Botão SAIR DA TELA CHEIA dentro do sidebar -->
-                            <button id="btn-exit-fullscreen" class="exit-fullscreen-btn" title="Sair da Tela Cheia">
-                                <i class="fa-solid fa-compress"></i> Sair da Tela Cheia
-                            </button>
-
-                            <hr style="border-color: var(--borda); margin: 0;">
-                            <div style="flex: 1; overflow-y: auto;">
-                                <!-- <p
-                                    style="font-size: 13px; color: var(--muted); font-weight: bold; margin-bottom: 10px;">
-                                    GALERIAS</p>
-                                <button id="btn-galeria-graficos"
-                                    style="background: transparent; border: none; color: var(--texto); text-align: left; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 13px; width: 100%; transition: 0.2s;"><i
-                                        class="fa-solid fa-chart-area"></i> Gráficos</button>
-                                <button id="btn-galeria-arquivos"
-                                    style="background: transparent; border: none; color: var(--texto); text-align: left; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 13px; width: 100%; transition: 0.2s;"><i
-                                        class="fa-solid fa-file-pdf"></i> Arquivos & PDFs</button> -->
-
-                                <p
-                                    style="font-size: 13px; color: var(--muted); font-weight: bold; margin-bottom: 10px; margin-top: 20px;">
-                                    HISTÓRICO</p>
-                                <div id="historico-lista"
-                                    style="font-size: 14px; color: var(--texto); display: flex; flex-direction: column; gap: 5px;">
-                                    <span style="color: var(--muted);"><i class="fa-solid fa-message"></i> Conversa
-                                        Atual</span>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <label for="seletorPeriodoIaHub" style="font-size: 0.8rem; font-weight: 700; white-space: nowrap; display: flex; align-items: center; gap: 5px; color: var(--texto);">
+                                        <i class="fa-solid fa-calendar-days" style="color: var(--primaria);"></i>
+                                        Período:
+                                    </label>
+                                    <select class="selecao" id="seletorPeriodoIaHub" aria-label="Selecionar período"
+                                            style="width: auto; padding: 7px 12px; font-size: 0.8rem; font-weight: 600;">
+                                        <option value="7_dias">Últimos 7 dias</option>
+                                        <option value="30_dias" selected>Últimos 30 dias</option>
+                                        <option value="90_dias">Últimos 90 dias</option>
+                                        <option value="ano_atual">Este ano</option>
+                                        <option value="todos">Consolidado Geral</option>
+                                    </select>
                                 </div>
                             </div>
-                            <button id="btn-apagar-historico"
-                                style="background: transparent; color: var(--perigo); border: 1px solid var(--perigo); padding: 10px; border-radius: 8px; width: 100%; cursor: pointer;"><i
-                                    class="fa-solid fa-trash"></i> Apagar Histórico</button>
-                        </div>
 
-                        <div class="chat-box" id="chat-box" style="flex: 1;">
-                            <div class="chat-messages" id="chat-messages">
-                                <!-- Mensagens via JS -->
-                            </div>
-
-                            <div class="chat-input-area">
-                                <input type="text" id="chat-input"
-                                    placeholder="Ex: Faça uma análise do faturamento dos últimos 30 dias com gráficos..."
-                                    autocomplete="off">
-                                <button id="chat-send"><i class="fa-solid fa-paper-plane"></i> Enviar</button>
+                            <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                                <span class="badge" style="background: rgba(59,130,246,0.1); color: var(--primaria); border: 1px solid rgba(59,130,246,0.25); padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">
+                                    <i class="fa-solid fa-microchip"></i> Motor Gemini Conectado
+                                </span>
                             </div>
                         </div>
+                    </section>
 
-                        <!-- GALERIA (Oculta por padrão) -->
-                        <div id="gallery-box"
-                            style="flex: 1; display: none; flex-direction: column; background: var(--fundo); border-radius: 12px; border: 1px solid var(--borda); overflow: hidden;">
-                            <div
-                                style="padding: 20px; border-bottom: 1px solid var(--borda); display: flex; justify-content: space-between; align-items: center; background: var(--cartao);">
-                                <h2 id="gallery-main-title" style="margin: 0; font-size: 1.2rem; color: var(--texto);">
-                                    Galeria</h2>
-                                <select id="gallery-period-select"
-                                    style="padding: 8px; border-radius: 6px; border: 1px solid var(--borda); background: var(--fundo); color: var(--texto); cursor: pointer;">
-                                    <option value="7_dias">Últimos 7 Dias</option>
-                                    <option value="30_dias" selected>Últimos 30 Dias</option>
-                                    <option value="90_dias">Últimos 90 Dias</option>
-                                    <option value="ano_atual">Este Ano</option>
-                                </select>
+                    <!-- TAB NAVIGATION -->
+                    <nav class="ia-hub-nav" aria-label="Seções do Centro de IA" role="tablist">
+                        <button class="ia-hub-tab" data-tab="overview" role="tab" aria-selected="true" id="tab-overview">
+                            <i class="fa-solid fa-gauge-high"></i> Visão Geral
+                        </button>
+                        <button class="ia-hub-tab" data-tab="copiloto" role="tab" id="tab-copiloto">
+                            <i class="fa-solid fa-comments"></i> Copiloto IA
+                        </button>
+                        <button class="ia-hub-tab" data-tab="modulos" role="tab" id="tab-modulos">
+                            <i class="fa-solid fa-grid-2"></i> Módulos Especializados
+                        </button>
+                        <button class="ia-hub-tab" data-tab="agents" role="tab" id="tab-agents">
+                            <i class="fa-solid fa-robot"></i> Agentes & Automação
+                            <span class="ia-tab-badge">4</span>
+                        </button>
+                    </nav>
+
+                    <!-- ================================================
+                         PANEL 1 — VISÃO GERAL
+                    ================================================ -->
+                    <div class="ia-hub-panel" id="panel-overview" role="tabpanel">
+
+                        <!-- Insight Diário -->
+                        <div class="ia-insight-card ia-animate">
+                            <div class="ia-insight-header">
+                                <span class="ia-insight-title">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Insight do Dia
+                                </span>
+                                <button onclick="loadDailyInsight()" style="background:transparent;border:none;cursor:pointer;color:var(--primaria);font-size:0.8rem;font-weight:600;display:flex;align-items:center;gap:5px;" title="Atualizar Insight">
+                                    <i class="fa-solid fa-rotate-right"></i> Atualizar
+                                </button>
                             </div>
-                            <div id="gallery-grid"
-                                style="flex: 1; padding: 20px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; align-content: start;">
-                                <!-- Itens via JS -->
+                            <div id="ia-daily-insight">Carregando análise automática do negócio...</div>
+                        </div>
+
+                        <!-- KPIs -->
+                        <!-- <div class="ia-section-header ia-animate">
+                            <span class="ia-section-title"><i class="fa-solid fa-chart-line"></i> Indicadores do Período</span>
+                            <a href="{{ url_for('pagina_graficoAvancado') }}" style="font-size:0.82rem;font-weight:600;color:var(--primaria);text-decoration:none;">Ver Dashboard completo →</a>
+                        </div>
+                        <div class="ia-kpi-grid ia-animate" id="ia-kpi-grid">
+    
+                            <div class="ia-kpi-card" style="border-left:3px solid #10B981;">
+                                <div class="ia-kpi-icon" style="background:#10B98120;color:#10B981;"><i class="fa-solid fa-dollar-sign"></i></div>
+                                <div class="ia-kpi-body">
+                                    <span class="ia-kpi-label">Faturamento</span>
+                                    <span class="ia-kpi-value" style="background:linear-gradient(90deg,var(--borda) 25%,rgba(255,255,255,0.15) 50%,var(--borda) 75%);background-size:200% 100%;animation:ia-shimmer 1.5s infinite;border-radius:4px;color:transparent;">R$ 0,00</span>
+                                </div>
+                            </div>
+                            <div class="ia-kpi-card" style="border-left:3px solid #3B82F6;">
+                                <div class="ia-kpi-icon" style="background:#3B82F620;color:#3B82F6;"><i class="fa-solid fa-chart-line"></i></div>
+                                <div class="ia-kpi-body">
+                                    <span class="ia-kpi-label">Lucro Líquido</span>
+                                    <span class="ia-kpi-value" style="background:linear-gradient(90deg,var(--borda) 25%,rgba(255,255,255,0.15) 50%,var(--borda) 75%);background-size:200% 100%;animation:ia-shimmer 1.5s infinite;border-radius:4px;color:transparent;">R$ 0,00</span>
+                                </div>
+                            </div>
+                            <div class="ia-kpi-card" style="border-left:3px solid #EF4444;">
+                                <div class="ia-kpi-icon" style="background:#EF444420;color:#EF4444;"><i class="fa-solid fa-receipt"></i></div>
+                                <div class="ia-kpi-body">
+                                    <span class="ia-kpi-label">Despesas Totais</span>
+                                    <span class="ia-kpi-value" style="background:linear-gradient(90deg,var(--borda) 25%,rgba(255,255,255,0.15) 50%,var(--borda) 75%);background-size:200% 100%;animation:ia-shimmer 1.5s infinite;border-radius:4px;color:transparent;">R$ 0,00</span>
+                                </div>
+                            </div>
+                            <div class="ia-kpi-card" style="border-left:3px solid #7C3AED;">
+                                <div class="ia-kpi-icon" style="background:#7C3AED20;color:#7C3AED;"><i class="fa-solid fa-percent"></i></div>
+                                <div class="ia-kpi-body">
+                                    <span class="ia-kpi-label">Margem Líquida</span>
+                                    <span class="ia-kpi-value" style="background:linear-gradient(90deg,var(--borda) 25%,rgba(255,255,255,0.15) 50%,var(--borda) 75%);background-size:200% 100%;animation:ia-shimmer 1.5s infinite;border-radius:4px;color:transparent;">0%</span>
+                                </div>
+                            </div>
+                        </div> -->
+
+                        <!-- Alertas e Quick Actions -->
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;" class="ia-animate">
+                            <!-- Alertas -->
+                            <div class="cartao" style="border-radius:14px;padding:20px;">
+                                <div class="ia-section-header" style="margin-bottom:14px;">
+                                    <span class="ia-section-title"><i class="fa-solid fa-triangle-exclamation"></i> Alertas & Anomalias</span>
+                                </div>
+                                <div class="ia-alerts-grid" id="ia-status-alerts">
+                                    <div class="ia-alert-item" style="opacity:0.5;">
+                                        <i class="fa-solid fa-spinner fa-spin" style="color:var(--suave);"></i>
+                                        <span>Verificando anomalias nos dados...</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Ações Rápidas -->
+                            <div class="cartao" style="border-radius:14px;padding:20px;">
+                                <div class="ia-section-header" style="margin-bottom:14px;">
+                                    <span class="ia-section-title"><i class="fa-solid fa-bolt"></i> Ações Rápidas</span>
+                                </div>
+                                <div style="display:flex;flex-direction:column;gap:9px;">
+                                    <a href="{{ url_for('pagina_ia_financeiro') }}" class="ia-alert-item" style="text-decoration:none;color:inherit;cursor:pointer;">
+                                        <i class="fa-solid fa-coins" style="color:#10B981;"></i>
+                                        <span>Análise Financeira Completa</span>
+                                        <i class="fa-solid fa-arrow-right" style="margin-left:auto;color:var(--suave);font-size:0.8rem;"></i>
+                                    </a>
+                                    <a href="{{ url_for('pagina_ia_decisoes') }}" class="ia-alert-item" style="text-decoration:none;color:inherit;cursor:pointer;">
+                                        <i class="fa-solid fa-brain" style="color:#7C3AED;"></i>
+                                        <span>Gerar Análise SWOT</span>
+                                        <i class="fa-solid fa-arrow-right" style="margin-left:auto;color:var(--suave);font-size:0.8rem;"></i>
+                                    </a>
+                                    <a href="{{ url_for('pagina_ia_operacional') }}" class="ia-alert-item" style="text-decoration:none;color:inherit;cursor:pointer;">
+                                        <i class="fa-solid fa-chart-bar" style="color:#3B82F6;"></i>
+                                        <span>Diagnóstico Operacional</span>
+                                        <i class="fa-solid fa-arrow-right" style="margin-left:auto;color:var(--suave);font-size:0.8rem;"></i>
+                                    </a>
+                                    <a href="{{ url_for('pagina_analises_salvas') }}" class="ia-alert-item" style="text-decoration:none;color:inherit;cursor:pointer;">
+                                        <i class="fa-solid fa-bookmark" style="color:#F59E0B;"></i>
+                                        <span>Ver Análises Salvas</span>
+                                        <i class="fa-solid fa-arrow-right" style="margin-left:auto;color:var(--suave);font-size:0.8rem;"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <style>
+                            @media (max-width: 768px) {
+                                #panel-overview > div:last-child { grid-template-columns: 1fr !important; }
+                            }
+                        </style>
+                    </div>
+
+                    <!-- ================================================
+                         PANEL 2 — COPILOTO IA
+                    ================================================ -->
+                    <div class="ia-hub-panel" id="panel-copiloto" role="tabpanel">
+
+                        <!-- Chips de contexto -->
+                        <div class="cartao ia-animate" style="border-radius:14px;padding:18px 20px;margin-bottom:18px;">
+                            <div class="ia-copiloto-header">
+                                <span class="ia-section-title"><i class="fa-solid fa-wand-sparkles"></i> Prompt Rápido</span>
+                                <span style="font-size:0.78rem;color:var(--suave);">Clique para preencher automaticamente</span>
+                            </div>
+                            <div class="ia-copiloto-chips">
+                                <button class="ia-prompt-chip" data-prompt="Faça uma análise completa do faturamento dos últimos 30 dias com gráficos.">
+                                    <i class="fa-solid fa-chart-line"></i> Análise de Faturamento
+                                </button>
+                                <button class="ia-prompt-chip" data-prompt="Quais são os 5 produtos mais lucrativos? Mostre em formato de ranking com valores e percentuais.">
+                                    <i class="fa-solid fa-trophy"></i> Top Produtos
+                                </button>
+                                <button class="ia-prompt-chip" data-prompt="Identifique gargalos no fluxo de caixa e sugira 3 ações para melhorar a liquidez.">
+                                    <i class="fa-solid fa-right-left"></i> Fluxo de Caixa
+                                </button>
+                                <button class="ia-prompt-chip" data-prompt="Gere uma análise SWOT do negócio com base nos dados disponíveis.">
+                                    <i class="fa-solid fa-brain"></i> Análise SWOT
+                                </button>
+                                <button class="ia-prompt-chip" data-prompt="Qual é a tendência de crescimento para os próximos 3 meses? Baseie-se nos dados históricos.">
+                                    <i class="fa-solid fa-arrow-trend-up"></i> Projeção
+                                </button>
+                                <button class="ia-prompt-chip" data-prompt="Existe alguma anomalia ou dado suspeito nos registros? Analise e explique.">
+                                    <i class="fa-solid fa-magnifying-glass-chart"></i> Anomalias
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Container do Chat (preservado do original) -->
+                        <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+                            <button id="btn-fullscreen" class="fullscreen-btn" title="Tela Cheia" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--cartao);border:1px solid var(--borda);border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:600;color:var(--texto);font-family:var(--fonte);">
+                                <i class="fa-solid fa-expand"></i> Tela Cheia
+                            </button>
+                        </div>
+
+                        <div class="page-ia-container" style="flex-direction:row;gap:20px;">
+                            <div class="chat-sidebar"
+                                style="width:220px;background:var(--cartao);border-radius:12px;border:1px solid var(--borda);padding:15px;display:flex;flex-direction:column;gap:12px;">
+
+                                <div>
+                                    <label for="seletorPlanilhaIa" style="font-size:11.5px;font-weight:700;color:var(--suave);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:flex;align-items:center;gap:5px;">
+                                        <i class="fa-solid fa-database" style="color:var(--primaria);"></i> Base de Dados:
+                                    </label>
+                                    <select id="seletorPlanilhaIa" class="entrada" style="width:100%;font-size:12px;font-weight:600;padding:6px 8px;border-radius:6px;">
+                                        <option value="todas">🌐 Todas as Planilhas</option>
+                                    </select>
+                                </div>
+
+                                <button id="btn-nova-conversa" style="background:var(--primaria);color:white;border:none;padding:10px;border-radius:8px;width:100%;cursor:pointer;">
+                                    <i class="fa-solid fa-plus"></i> Nova Conversa
+                                </button>
+
+                                <button id="btn-exit-fullscreen" class="exit-fullscreen-btn" title="Sair da Tela Cheia" style="display:none;background:transparent;border:1px solid var(--borda);color:var(--texto);padding:8px;border-radius:8px;width:100%;cursor:pointer;font-size:0.82rem;">
+                                    <i class="fa-solid fa-compress"></i> Sair da Tela Cheia
+                                </button>
+
+                                <hr style="border-color:var(--borda);margin:0;">
+                                <div style="flex:1;overflow-y:auto;">
+                                    <p style="font-size:13px;color:var(--suave);font-weight:bold;margin-bottom:10px;margin-top:10px;">HISTÓRICO</p>
+                                    <div id="historico-lista" style="font-size:14px;color:var(--texto);display:flex;flex-direction:column;gap:5px;">
+                                        <span style="color:var(--suave);"><i class="fa-solid fa-message"></i> Conversa Atual</span>
+                                    </div>
+                                </div>
+                                <button id="btn-apagar-historico" style="background:transparent;color:var(--perigo);border:1px solid var(--perigo);padding:10px;border-radius:8px;width:100%;cursor:pointer;">
+                                    <i class="fa-solid fa-trash"></i> Apagar Histórico
+                                </button>
+                            </div>
+
+                            <div class="chat-box" id="chat-box" style="flex:1;">
+                                <div class="chat-messages" id="chat-messages"></div>
+                                <div class="chat-input-area">
+                                    <input type="text" id="chat-input"
+                                        placeholder="Ex: Faça uma análise do faturamento dos últimos 30 dias com gráficos..."
+                                        autocomplete="off">
+                                    <button id="chat-send"><i class="fa-solid fa-paper-plane"></i> Enviar</button>
+                                </div>
+                            </div>
+
+                            <!-- Galeria (oculta por padrão) -->
+                            <div id="gallery-box" style="flex:1;display:none;flex-direction:column;background:var(--fundo);border-radius:12px;border:1px solid var(--borda);overflow:hidden;">
+                                <div style="padding:20px;border-bottom:1px solid var(--borda);display:flex;justify-content:space-between;align-items:center;background:var(--cartao);">
+                                    <h2 id="gallery-main-title" style="margin:0;font-size:1.2rem;color:var(--texto);">Galeria</h2>
+                                    <select id="gallery-period-select" style="padding:8px;border-radius:6px;border:1px solid var(--borda);background:var(--fundo);color:var(--texto);cursor:pointer;">
+                                        <option value="7_dias">Últimos 7 Dias</option>
+                                        <option value="30_dias" selected>Últimos 30 Dias</option>
+                                        <option value="90_dias">Últimos 90 Dias</option>
+                                        <option value="ano_atual">Este Ano</option>
+                                    </select>
+                                </div>
+                                <div id="gallery-grid" style="flex:1;padding:20px;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;align-content:start;"></div>
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- FOOTER DENTRO DO SCROLL -->
+
+                    <!-- ================================================
+                         PANEL 3 — MÓDULOS ESPECIALIZADOS
+                    ================================================ -->
+                    <div class="ia-hub-panel" id="panel-modulos" role="tabpanel">
+
+                        <div class="ia-section-header ia-animate" style="margin-bottom:20px;">
+                            <div>
+                                <span class="ia-section-title" style="font-size:1.1rem;"><i class="fa-solid fa-grid-2"></i> Módulos de Análise Especializada</span>
+                                <p style="font-size:0.84rem;color:var(--suave);margin-top:4px;">Ferramentas de IA especializadas para cada área do seu negócio. Clique para acessar análises aprofundadas.</p>
+                            </div>
+                        </div>
+
+                        <div class="ia-modules-grid ia-animate">
+                            <!-- Card Financeiro -->
+                            <div class="ia-module-card financeiro" data-href="{{ url_for('pagina_ia_financeiro') }}" role="button" tabindex="0" aria-label="Módulo de Análise Financeira">
+                                <div class="ia-module-stripe"></div>
+                                <div class="ia-module-icon-wrap">
+                                    <i class="fa-solid fa-coins"></i>
+                                </div>
+                                <h2 class="ia-module-title">Fluxo de Caixa & Finanças</h2>
+                                <p class="ia-module-desc">Análise preditiva de saldo, identificação de gargalos financeiros, projeções de receita e diagnóstico de saúde financeira do negócio.</p>
+                                <div class="ia-module-features">
+                                    <span class="ia-module-feature">Análise Preditiva</span>
+                                    <span class="ia-module-feature">Gargalos Financeiros</span>
+                                    <span class="ia-module-feature">Projeções</span>
+                                    <span class="ia-module-feature">Plano de Ação</span>
+                                </div>
+                                <div class="ia-module-cta">
+                                    <span>Acessar Módulo</span>
+                                    <i class="fa-solid fa-arrow-right"></i>
+                                </div>
+                            </div>
+
+                            <!-- Card Decisões -->
+                            <div class="ia-module-card decisoes" data-href="{{ url_for('pagina_ia_decisoes') }}" role="button" tabindex="0" aria-label="Módulo de Tomada de Decisão">
+                                <div class="ia-module-stripe"></div>
+                                <div class="ia-module-icon-wrap">
+                                    <i class="fa-solid fa-brain"></i>
+                                </div>
+                                <h2 class="ia-module-title">Decisões & Estratégia</h2>
+                                <p class="ia-module-desc">Simulações de cenários "E se...?", análises SWOT automáticas, recomendações estratégicas de crescimento e planejamento baseado em dados.</p>
+                                <div class="ia-module-features">
+                                    <span class="ia-module-feature">Análise SWOT</span>
+                                    <span class="ia-module-feature">Cenários "E se"</span>
+                                    <span class="ia-module-feature">Estratégia</span>
+                                    <span class="ia-module-feature">Crescimento</span>
+                                </div>
+                                <div class="ia-module-cta">
+                                    <span>Acessar Módulo</span>
+                                    <i class="fa-solid fa-arrow-right"></i>
+                                </div>
+                            </div>
+
+                            <!-- Card Operacional -->
+                            <div class="ia-module-card operacional" data-href="{{ url_for('pagina_ia_operacional') }}" role="button" tabindex="0" aria-label="Módulo Operacional">
+                                <div class="ia-module-stripe"></div>
+                                <div class="ia-module-icon-wrap">
+                                    <i class="fa-solid fa-chart-bar"></i>
+                                </div>
+                                <h2 class="ia-module-title">Vendas & Operações</h2>
+                                <p class="ia-module-desc">Diagnóstico de produtos e serviços mais lucrativos, análise de comportamento de clientes, sazonalidade e mapa de oportunidades operacionais.</p>
+                                <div class="ia-module-features">
+                                    <span class="ia-module-feature">Top Produtos</span>
+                                    <span class="ia-module-feature">Comportamento</span>
+                                    <span class="ia-module-feature">Sazonalidade</span>
+                                    <span class="ia-module-feature">Oportunidades</span>
+                                </div>
+                                <div class="ia-module-cta">
+                                    <span>Acessar Módulo</span>
+                                    <i class="fa-solid fa-arrow-right"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Acesso rápido análises salvas -->
+                        <!-- <div class="cartao ia-animate" style="border-radius:14px;padding:20px;margin-top:24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;background:linear-gradient(135deg,rgba(59,130,246,0.08),rgba(124,58,237,0.05));border:1px solid rgba(59,130,246,0.2);">
+                            <div style="display:flex;align-items:center;gap:14px;">
+                                <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#2563eb,#3b82f6);display:flex;align-items:center;justify-content:center;color:white;font-size:1.2rem;box-shadow:0 4px 14px rgba(59,130,246,0.35);">
+                                    <i class="fa-solid fa-bookmark"></i>
+                                </div>
+                                <div>
+                                    <h3 style="margin:0;font-size:1rem;font-weight:800;color:var(--texto);">Minhas Análises Salvas</h3>
+                                    <p style="margin:2px 0 0;font-size:0.82rem;color:var(--suave);">Central de relatórios gerados pela IA — acesse, filtre e exporte.</p>
+                                </div>
+                            </div>
+                            <a href="{{ url_for('pagina_analises_salvas') }}" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:var(--primaria);color:white;border-radius:9px;font-size:0.85rem;font-weight:700;text-decoration:none;box-shadow:0 4px 12px rgba(59,130,246,0.3);transition:all 0.2s;">
+                                <i class="fa-solid fa-folder-open"></i> Ver Análises Salvas
+                            </a>
+                        </div> -->
+                    </div>
+
+                    <!-- ================================================
+                         PANEL 4 — AGENTES & AUTOMAÇÃO
+                    ================================================ -->
+                    <div class="ia-hub-panel" id="panel-agents" role="tabpanel">
+
+                        <div class="ia-section-header ia-animate" style="margin-bottom:8px;">
+                            <div>
+                                <span class="ia-section-title" style="font-size:1.1rem;">Agentes de IA</span>
+                                <p style="font-size:0.84rem;color:var(--suave);margin-top:4px;">Agentes autônomos especializados. Ative, configure e execute análises automáticas.</p>
+                            </div>
+                        </div>
+
+                        <div class="ia-agents-grid ia-animate" id="ia-agents-grid">
+                            <!-- Agentes renderizados via JS -->
+                            <div style="padding:40px;text-align:center;color:var(--suave);">
+                                <i class="fa-solid fa-spinner fa-spin" style="font-size:1.5rem;margin-bottom:12px;"></i>
+                                <p>Carregando agentes...</p>
+                            </div>
+                        </div>
+                    </div>
+
                     {% include 'partials/footer.html' %}
                 </div>
             </main>
         </div>
     </div>
 
+    <!-- Modal resultado do Agente -->
+    <div id="ia-agent-result-modal" role="dialog" aria-modal="true" aria-labelledby="ia-agent-result-title">
+        <div class="ia-agent-result-window">
+            <div class="ia-agent-result-header">
+                <h2 id="ia-agent-result-title">Resultado do Agente</h2>
+                <button class="ia-modal-close-btn" title="Fechar" aria-label="Fechar modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="ia-agent-result-body" id="ia-agent-result-body"></div>
+            <div class="ia-agent-result-footer">
+                <button id="ia-agent-result-copy" class="btn-ia-glow-blue" style="padding:9px 16px;font-size:0.82rem;display:inline-flex;align-items:center;gap:7px;">
+                    <i class="fa-solid fa-copy"></i> Copiar Análise
+                </button>
+                <button class="ia-modal-close-btn" style="padding:9px 16px;background:var(--fundo);border:1px solid var(--borda);border-radius:8px;font-size:0.82rem;color:var(--texto);cursor:pointer;font-family:var(--fonte);">
+                    Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast container -->
+    <div id="ia-toast-container"></div>
+
+    {% set page_id = 'ia' %}
+    {% include 'partials/modal_analise_ia.html' %}
+
     {% include 'partials/navbar_mobile.html' %}
     {% include 'partials/painel_acessibilidade.html' %}
     {% include 'partials/chatbot.html' %}
 
-    <div vw class="enabled" id="Vlibras">
-        <div vw-access-button class="active"></div>
-        <div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div>
-    </div>
-
-    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
-    <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
     <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/ia_analise_modal.js') }}"></script>
     <script src="{{ url_for('static', filename='js/ia.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/ia-hub.js') }}"></script>
     <script>
-      function abrirSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sidebarOverlay').classList.add('active');}
-      function fecharSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active');}
+        function abrirSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sidebarOverlay').classList.add('active');}
+        function fecharSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active');}
+
+        // Reload insight button
+        function loadDailyInsight() {
+            const el = document.getElementById('ia-daily-insight');
+            if (el) { el.classList.remove('loaded'); el.textContent = 'Gerando novo insight...'; }
+            fetch('/api/insight_diario')
+                .then(r => r.json())
+                .then(data => {
+                    if (el && data.insight) {
+                        el.innerHTML = data.insight.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+                        el.classList.add('loaded');
+                    }
+                }).catch(() => { if(el){el.textContent='Erro ao carregar insight.';el.classList.add('loaded');} });
+        }
     </script>
 </body>
 </html>

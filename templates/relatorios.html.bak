@@ -153,7 +153,22 @@
   </div>
 
   <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
-  <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
+    <script>
+    (function() {
+      try {
+        var accAtivado = localStorage.getItem('acc_ativado') === 'true';
+        var prefs = {};
+        try { prefs = JSON.parse(localStorage.getItem('acc_preferencias') || '{}'); } catch(e) {}
+        if (accAtivado && prefs.vlibras) {
+          new window.VLibras.Widget('https://vlibras.gov.br/app');
+        } else {
+          // Ocultar o container VLibras sem inicializar o plugin
+          var vl = document.getElementById('Vlibras');
+          if (vl) vl.style.setProperty('display', 'none', 'important');
+        }
+      } catch(e) {}
+    })();
+  </script>
   <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
   <script src="{{ url_for('static', filename='js/relatorios.js') }}"></script>

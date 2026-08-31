@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='acessibilidade/acessibilidade.css') }}" />
     <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
 
     <style>
@@ -658,16 +659,13 @@
 
             <main id="conteudo" class="pagina" role="main" data-ia-help="page_planejamento_financeiro">
                 <div class="container pf-shell">
-                    <header class="pf-head">
-                        <div>
+                    <header class="pf-head" style="display: flex !important; flex-direction: row !important; align-items: flex-start !important; justify-content: space-between !important; gap: 16px; margin-bottom: 20px; width: 100%;">
+                        <div style="flex: 1; min-width: 0;">
                             <div class="migalhas">Início &gt; Planejamento Financeiro</div>
                             <h1 class="h1" style="margin-bottom:4px;">Planejamento Financeiro</h1>
-                            <p class="p" style="margin:0;">Projeção de 12 meses com cenários, custos, resultado e visão
-                                anual.</p>
-
-
+                            <p class="p" style="margin:0;">Projeção de 12 meses com cenários, custos, resultado e visão anual.</p>
                         </div>
-                        <div class="pf-head__actions">
+                        <div class="pf-head__actions" style="display:flex; align-items:center; gap:12px; flex-shrink:0;">
                             <div class="pf-scenario" role="group" aria-label="Selecionar cenário financeiro">
                                 <button type="button" data-scenario="pessimista"><i
                                         class="fa-solid fa-scale-balanced"></i> Pessimista</button>
@@ -676,6 +674,16 @@
                                 <button type="button" data-scenario="otimista"><i
                                         class="fa-solid fa-arrow-trend-up"></i> Otimista</button>
                             </div>
+                            <!-- BOTÃO DE IA BRILHANTE AZUL COM ANIMAÇÃO E PULSANDO -->
+                            <button type="button" 
+                                    id="btnIaAnalisePlanejamento" 
+                                    class="btn-ia-glow-blue" 
+                                    onclick="IaAnaliseModal.abrir('planejamento', coletarContextoIaPlanejamento)" 
+                                    title="Executar Análise Completa e Direta do Planejamento com IA"
+                                    aria-label="Executar Análise Completa com IA">
+                                <span class="btn-ia-glow-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+                                <span class="btn-ia-glow-text">IA</span>
+                            </button>
                         </div>
                     </header>
 
@@ -689,16 +697,17 @@
                             Anual</button>
                     </nav>
 
-                    <!-- Mantém os mesmos IDs usados hoje no analise.js para não quebrar a origem/filtro dos dados. -->
+                    <!-- Filtros e origem dos dados -->
                     <section class="cartao" aria-label="Filtros e origem dos dados">
-                        <div class="pf-filterbar">
-                            <div class="campo">
+                        <div class="pf-filterbar" style="display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap;">
+                            <div class="campo" style="flex:1; min-width:240px; max-width:420px; margin:0;">
                                 <label for="seletorPlanilhaAnalise"><i class="fa-solid fa-table-list"
                                         style="color:var(--primaria);"></i> Origem dos Dados</label>
                                 <select class="entrada" id="seletorPlanilhaAnalise" style="font-weight:650;">
                                     <option value="todas">Todas as Planilhas (Visão Consolidada)</option>
                                 </select>
                             </div>
+                            <div id="pfStatusFontesContainer" style="display:flex; align-items:center; min-height:42px;"></div>
                         </div>
                     </section>
 
@@ -1209,16 +1218,9 @@
     {% include 'partials/painel_acessibilidade.html' %}
     {% include 'partials/chatbot.html' %}
 
-    <div vw class="enabled" id="Vlibras">
-        <div vw-access-button class="active"></div>
-        <div vw-plugin-wrapper>
-            <div class="vw-plugin-top-wrapper"></div>
-        </div>
-    </div>
+</div>
 
-    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
-    <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
-    <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+<script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 
     <!-- <script>
@@ -1254,14 +1256,16 @@
         }
 
         // Os dados financeiros são carregados pela API após a página iniciar.
-        window.analise_selecionada = null;
         window.planejamentoFinanceiroBackend = null;
     </script>
 
-    <script src="{{ url_for('static', filename='js/home.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/analise.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/ia_analise_modal.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/planejamento_financeiro.js') }}?v=5.1"></script>
 
-    <script src="{{ url_for('static', filename='js/planejamento_financeiro.js') }}?v=4.3"></script>
+    <!-- MODAL DE ANÁLISE COMPLETA COM IA -->
+    {% with page_id='planejamento' %}
+        {% include 'partials/modal_analise_ia.html' %}
+    {% endwith %}
 </body>
 
 </html>

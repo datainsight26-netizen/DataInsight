@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="DataInsight — Análises e Diagnósticos de IA Salvos." />
+  <title>DataInsight • Análises Salvas da IA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='acessibilidade/acessibilidade.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ia_analise_modal.css') }}" />
+
+  <style>
+    /* =============================================
+       ANÁLISES SALVAS — DESIGN SYSTEM & UI/UX
+       ============================================= */
+
+    .salvas-page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    /* CARDS KPI DE RESUMO DO HISTÓRICO */
+    .salvas-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .salvas-kpi-card {
+      background: var(--cartao, #ffffff);
+      border: 1px solid var(--borda, #e5e7eb);
+      border-radius: 14px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+    }
+
+    .salvas-kpi-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(59, 130, 246, 0.4);
+      box-shadow: 0 8px 24px rgba(59, 130, 246, 0.12);
+    }
+
+    .salvas-kpi-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+
+    .salvas-kpi-val {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--texto, #111827);
+      line-height: 1.1;
+    }
+
+    .salvas-kpi-lbl {
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--suave, #64748b);
+      margin-top: 3px;
+    }
+
+    /* FILTROS RÁPIDOS (PILLS) */
+    .pills-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--borda, #e5e7eb);
+    }
+
+    .pill-btn {
+      background: rgba(59, 130, 246, 0.06);
+      color: var(--texto, #111827);
+      border: 1px solid var(--borda, #e5e7eb);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pill-btn:hover,
+    .pill-btn.ativo {
+      background: #3b82f6;
+      color: #ffffff;
+      border-color: #3b82f6;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    /* GRID DE CARDS */
+    .salvas-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .salvas-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .salva-card {
+      background: var(--cartao, #ffffff);
+      border: 1px solid var(--borda, #e5e7eb);
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 16px;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    }
+
+    .salva-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: #3b82f6;
+      border-radius: 4px 0 0 4px;
+    }
+
+    .salva-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(59, 130, 246, 0.5);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.15), 0 0 20px rgba(59, 130, 246, 0.15);
+    }
+
+    .salva-card-badges {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .salva-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .salva-badge--pagina {
+      background: rgba(59, 130, 246, 0.12);
+      color: #3b82f6;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .salva-badge--origem {
+      background: rgba(139, 92, 246, 0.12);
+      color: #8b5cf6;
+      border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+
+    .salva-badge--periodo {
+      background: rgba(16, 185, 129, 0.12);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .salva-card-title {
+      font-size: 1.08rem;
+      font-weight: 800;
+      color: var(--texto, #111827);
+      margin: 8px 0 6px 0;
+      line-height: 1.35;
+    }
+
+    .salva-card-desc {
+      font-size: 0.84rem;
+      color: var(--suave, #64748b);
+      line-height: 1.55;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      background: rgba(59, 130, 246, 0.03);
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(59, 130, 246, 0.08);
+      margin-bottom: 8px;
+    }
+
+    .salva-card-highlights {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: var(--suave, #64748b);
+    }
+
+    .salva-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--borda, #e5e7eb);
+      padding-top: 14px;
+      margin-top: 4px;
+    }
+
+    .salva-card-data {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--suave, #64748b);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .salva-card-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-salva-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+      text-decoration: none;
+    }
+
+    .btn-salva-action--ver {
+      background: #3b82f6;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .btn-salva-action--ver:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+    }
+
+    .btn-salva-action--copiar {
+      background: rgba(59, 130, 246, 0.08);
+      color: #3b82f6;
+      border-color: rgba(59, 130, 246, 0.2);
+    }
+
+    .btn-salva-action--copiar:hover {
+      background: rgba(59, 130, 246, 0.16);
+      transform: translateY(-1px);
+    }
+
+    .btn-ia-action--pdf {
+      background: rgba(220, 38, 38, 0.1);
+      color: #dc2626;
+      border-color: rgba(220, 38, 38, 0.28);
+    }
+
+    .btn-ia-action--pdf:hover {
+      background: rgba(220, 38, 38, 0.18);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.22);
+    }
+
+    .btn-ia-action--pdf:disabled {
+      opacity: 0.65;
+      cursor: wait;
+      transform: none;
+    }
+
+    .btn-salva-action--excluir {
+      background: rgba(239, 68, 68, 0.08);
+      color: #ef4444;
+      border-color: rgba(239, 68, 68, 0.2);
+      padding: 7px 10px;
+    }
+
+    .btn-salva-action--excluir:hover {
+      background: #ef4444;
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    /* MODAL DE VISUALIZAÇÃO */
+    .salvas-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 10600;
+      background: rgba(10, 15, 29, 0.82);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .salvas-modal-container {
+      background: var(--cartao, #ffffff);
+      border-radius: 16px;
+      border: 1.5px solid rgba(59, 130, 246, 0.55);
+      max-width: 860px;
+      width: 100%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.5), 0 0 35px rgba(59, 130, 246, 0.3);
+      animation: resultFadeIn 0.35s ease;
+    }
+  </style>
+</head>
+
+<body>
+  <a href="#conteudo" class="skip-link">Ir para conteúdo</a>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Navegação principal">
+      {% include 'partials/navbar.html' %}
+    </aside>
+
+    <div class="main">
+      <header class="topbar" role="banner">
+        <div class="topbar__left">
+          <button class="topbar__btn topbar__mobile-toggle" onclick="abrirSidebar()" aria-label="Abrir menu"><i
+              class="fa-solid fa-bars"></i></button>
+          <span class="topbar__greeting">Olá, <strong>{{ session.usuario_nome }}</strong></span>
+        </div>
+        <div class="topbar__actions">
+          <button class="topbar__btn" onclick="alternarTema()" aria-label="Alternar tema" id="btnTema"><i
+              class="fa-solid fa-moon"></i></button>
+          <a class="topbar__btn" href="{{ url_for('pagina_configuracoes') }}" title="Configurações"><i
+              class="fa-solid fa-gear"></i></a>
+        </div>
+      </header>
+
+      <main id="conteudo" class="pagina" role="main">
+        <div class="container">
+
+          <!-- CABEÇALHO ELEGANTE DA PÁGINA -->
+          <header class="salvas-page-header">
+            <div>
+              <div class="migalhas" aria-label="Você está em">Início &gt; Análises Salvas</div>
+              <h1 class="h1" style="margin:0;">Histórico de Análises Salvas da IA</h1>
+              <p class="p" style="margin-top:4px;">Consulte, filtre e revise todos os diagnósticos gerenciais salvos do
+                seu negócio.</p>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:10px;">
+              <a href="{{ url_for('pagina_ia') }}" class="btn-ia-glow-blue" style="text-decoration:none;">
+                <span class="btn-ia-glow-icon"><i class="fa-solid fa-robot"></i></span>
+                <span class="btn-ia-glow-text">Centro de IA</span>
+              </a>
+            </div>
+          </header>
+
+          <!-- CARDS DE RESUMO DOS INDICADORES DE HISTÓRICO -->
+          <div class="salvas-kpi-grid">
+            <div class="salvas-kpi-card">
+              <div class="salvas-kpi-icon" style="background:rgba(59,130,246,0.12); color:#3b82f6;">
+                <i class="fa-solid fa-bookmark"></i>
+              </div>
+              <div>
+                <div class="salvas-kpi-val" id="kpiTotalAnalises">0</div>
+                <div class="salvas-kpi-lbl">Análises Salvas</div>
+              </div>
+            </div>
+
+            <div class="salvas-kpi-card">
+              <div class="salvas-kpi-icon" style="background:rgba(16,185,129,0.12); color:#10b981;">
+                <i class="fa-solid fa-bolt"></i>
+              </div>
+              <div>
+                <div class="salvas-kpi-val" id="kpiAltaPerf">0</div>
+                <div class="salvas-kpi-lbl">Alta Performance</div>
+              </div>
+            </div>
+
+            <div class="salvas-kpi-card">
+              <div class="salvas-kpi-icon" style="background:rgba(245,158,11,0.12); color:#f59e0b;">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+              </div>
+              <div>
+                <div class="salvas-kpi-val" id="kpiAlertas">0</div>
+                <div class="salvas-kpi-lbl">Com Alertas</div>
+              </div>
+            </div>
+
+            <div class="salvas-kpi-card">
+              <div class="salvas-kpi-icon" style="background:rgba(139,92,246,0.12); color:#8b5cf6;">
+                <i class="fa-solid fa-layer-group"></i>
+              </div>
+              <div>
+                <div class="salvas-kpi-val" id="kpiTopPagina">—</div>
+                <div class="salvas-kpi-lbl">Módulo Mais Analisado</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PAINEL DE FILTROS E BUSCA AVANÇADA -->
+          <section class="cartao" aria-label="Filtros de buscas"
+            style="margin-bottom:24px; background:var(--cartao); border:1px solid var(--borda);">
+            <div
+              style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-sliders" style="color:var(--primaria); font-size:1.1rem;"></i>
+                <h2 class="h2" style="margin:0;">Filtros & Busca Avançada</h2>
+              </div>
+
+              <span class="badge" id="badgeTotalAnalises"
+                style="background:rgba(59,130,246,0.12); color:#3b82f6; border:1px solid rgba(59,130,246,0.3); padding:5px 14px; border-radius:16px; font-weight:700; font-size:0.8rem;">
+                0 Registros Encontrados
+              </span>
+            </div>
+
+            <div class="grade grade--3" style="gap:16px;">
+              <!-- FILTRO 1: PÁGINA / MÓDULO -->
+              <div class="campo">
+                <label for="filtroPagina" style="font-weight:700; font-size:0.82rem;">
+                  <i class="fa-solid fa-layer-group" style="color:var(--primaria); margin-right:4px;"></i>
+                  Página / Módulo
+                </label>
+                <select class="entrada" id="filtroPagina" onchange="selecionarFiltroPagina(this.value)"
+                  style="font-weight:600;">
+                  <option value="todas">🌐 Todas as Páginas</option>
+                  <option value="home">🏠 Visão Geral (Home)</option>
+                  <option value="analises">📊 Análise de Métricas</option>
+                  <option value="dashboard">📈 Dashboard Gerencial</option>
+                  <option value="fluxo_caixa">💸 Fluxo de Caixa</option>
+                  <option value="planejamento">🎯 Planejamento Financeiro</option>
+                  <option value="dados">📁 Gestão de Dados</option>
+                  <option value="ia_financeiro">💰 IA Financeiro</option>
+                  <option value="ia_decisoes">🧠 IA Decisões</option>
+                  <option value="ia_operacional">📦 IA Operacional</option>
+                </select>
+              </div>
+
+              <!-- FILTRO 2: BUSCA POR TEXTO / NOME -->
+              <div class="campo">
+                <label for="filtroBusca" style="font-weight:700; font-size:0.82rem;">
+                  <i class="fa-solid fa-magnifying-glass" style="color:var(--primaria); margin-right:4px;"></i>
+                  Buscar por Título / Palavra-Chave
+                </label>
+                <input type="text" class="entrada" id="filtroBusca" placeholder="Digite o título ou palavra-chave..."
+                  oninput="debounceBusca()" style="font-weight:600;" />
+              </div>
+
+              <!-- FILTRO 3: DATA DE SALVAMENTO -->
+              <div class="campo">
+                <label for="filtroData" style="font-weight:700; font-size:0.82rem;">
+                  <i class="fa-solid fa-calendar-day" style="color:var(--primaria); margin-right:4px;"></i>
+                  Data de Salvamento
+                </label>
+                <input type="date" class="entrada" id="filtroData" onchange="carregarAnalisesSalvas()"
+                  style="font-weight:600;" />
+              </div>
+            </div>
+
+            <!-- PILLS DE SELEÇÃO RÁPIDA -->
+            <div class="pills-container">
+              <span
+                style="font-size:0.75rem; font-weight:700; color:var(--suave); text-transform:uppercase; letter-spacing:0.04em;">Filtrar
+                Rápido:</span>
+              <button type="button" class="pill-btn ativo" data-pill="todas"
+                onclick="selecionarFiltroPagina('todas')">🌐 Todas</button>
+              <button type="button" class="pill-btn" data-pill="home" onclick="selecionarFiltroPagina('home')">🏠
+                Home</button>
+              <button type="button" class="pill-btn" data-pill="dashboard"
+                onclick="selecionarFiltroPagina('dashboard')">📈 Dashboard</button>
+              <button type="button" class="pill-btn" data-pill="fluxo_caixa"
+                onclick="selecionarFiltroPagina('fluxo_caixa')">💸 Fluxo de Caixa</button>
+              <button type="button" class="pill-btn" data-pill="planejamento"
+                onclick="selecionarFiltroPagina('planejamento')">🎯 Planejamento</button>
+              <button type="button" class="pill-btn" data-pill="analises"
+                onclick="selecionarFiltroPagina('analises')">📊 Análises</button>
+              <button type="button" class="pill-btn" data-pill="ia_financeiro"
+                onclick="selecionarFiltroPagina('ia_financeiro')">💰 IA Financeiro</button>
+              <button type="button" class="pill-btn" data-pill="ia_decisoes"
+                onclick="selecionarFiltroPagina('ia_decisoes')">🧠 IA Decisões</button>
+              <button type="button" class="pill-btn" data-pill="ia_operacional"
+                onclick="selecionarFiltroPagina('ia_operacional')">📦 IA Operacional</button>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
+              <button type="button" class="botao botao--delet" onclick="limparFiltros()">✕ Limpar Filtros</button>
+              <button type="button" class="botao botao--primario" onclick="carregarAnalisesSalvas()"><i
+                  class="fa-solid fa-magnifying-glass"></i> Aplicar Filtros</button>
+            </div>
+          </section>
+
+          <!-- CARREGAMENTO HUD -->
+          <div id="loadingAnalisesSalvas"
+            style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:70px 20px; text-align:center;">
+            <i class="fa-solid fa-spinner fa-spin"
+              style="font-size:2.6rem; color:var(--primaria); margin-bottom:14px;"></i>
+            <p style="color:var(--suave); font-weight:600; font-size:0.95rem;">Carregando histórico de diagnósticos
+              salvos...</p>
+          </div>
+
+          <!-- ESTADO VAZIO -->
+          <div id="salvasEmptyState"
+            style="display:none; text-align:center; padding:70px 24px; background:var(--cartao); border:1px solid var(--borda); border-radius:16px;">
+            <div
+              style="width:72px; height:72px; border-radius:50%; background:rgba(59,130,246,0.1); color:#3b82f6; display:flex; align-items:center; justify-content:center; font-size:2rem; margin:0 auto 18px auto; box-shadow:0 0 20px rgba(59,130,246,0.2);">
+              <i class="fa-regular fa-bookmark"></i>
+            </div>
+            <h3 style="margin:0 0 8px 0; color:var(--texto); font-size:1.2rem; font-weight:800;">Nenhuma análise salva
+              encontrada</h3>
+            <p style="color:var(--suave); font-size:0.9rem; max-width:500px; margin:0 auto 24px auto; line-height:1.5;">
+              Nenhum diagnóstico corresponde aos critérios selecionados. Execute uma varredura de IA em qualquer página
+              do sistema e clique em <strong>"Salvar Análise"</strong>.
+            </p>
+
+          </div>
+
+          <!-- GRID DE CARDS DAS ANÁLISES SALVAS -->
+          <div class="salvas-grid" id="gridAnalisesSalvas" style="display:none;">
+            <!-- Injetado dinamicamente via JS -->
+          </div>
+
+          {% include 'partials/footer.html' %}
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- MODAL DE VISUALIZAÇÃO DA ANÁLISE SALVA -->
+  <div id="modalVisualizarAnalise" class="salvas-modal-backdrop" onclick="fecharModalDetalhesSeBackdrop(event)">
+    <div class="salvas-modal-container">
+      <div class="modal-ia-header">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div class="modal-ia-avatar"><i class="fa-solid fa-brain"></i></div>
+          <div>
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <h2 class="modal-ia-title" id="detalheModalTitulo">Análise Salva</h2>
+              <span class="badge-ia-status" id="detalheModalBadgeStatus">Salvo</span>
+            </div>
+            <p class="modal-ia-subtitle" id="detalheModalSubtitulo">Diagnóstico gerencial completo armazenado no
+              histórico.</p>
+          </div>
+        </div>
+        <button type="button" class="modal-ia-close-btn" onclick="fecharModalDetalhes()"><i
+            class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="modal-ia-body" id="detalheModalBody">
+        <!-- Renderizado dinamicamente -->
+      </div>
+
+      <div class="modal-ia-footer">
+        <div class="modal-ia-footer-left">
+          <span class="ia-timestamp" id="detalheModalData"><i class="fa-regular fa-clock"></i> Salvo em --</span>
+        </div>
+        <div class="modal-ia-footer-right">
+          <!-- <button type="button" class="btn-ia-action btn-ia-action--pdf" id="btnBaixarPdfAnalise" onclick="baixarPdfModalAnalise()">
+            <i class="fa-solid fa-file-pdf"></i> Baixar PDF
+          </button> -->
+          <button type="button" class="btn-ia-action btn-ia-action--secondary" onclick="copiarDetalheAtual()">
+            <i class="fa-regular fa-copy"></i> Copiar Resumo
+          </button>
+          <button type="button" class="btn-ia-action btn-ia-action--primary" onclick="fecharModalDetalhes()">
+            <i class="fa-solid fa-check"></i> Fechar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% include 'partials/navbar_mobile.html' %}
+  {% include 'partials/painel_acessibilidade.html' %}
+  {% include 'partials/chatbot.html' %}
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+  <script>
+    let analisesSalvasCache = [];
+    let analiseSelecionada = null;
+    let debounceTimer = null;
+
+    function abrirSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarOverlay').classList.add('active'); }
+    function fecharSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('active'); }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      carregarAnalisesSalvas();
+    });
+
+    function debounceBusca() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        carregarAnalisesSalvas();
+      }, 300);
+    }
+
+    function selecionarFiltroPagina(val) {
+      document.getElementById('filtroPagina').value = val;
+
+      // Atualizar atalhos em pill
+      document.querySelectorAll('.pill-btn').forEach(btn => {
+        if (btn.getAttribute('data-pill') === val) {
+          btn.classList.add('ativo');
+        } else {
+          btn.classList.remove('ativo');
+        }
+      });
+
+      carregarAnalisesSalvas();
+    }
+
+    function limparFiltros() {
+      document.getElementById('filtroPagina').value = 'todas';
+      document.getElementById('filtroBusca').value = '';
+      document.getElementById('filtroData').value = '';
+
+      document.querySelectorAll('.pill-btn').forEach(btn => {
+        btn.classList.toggle('ativo', btn.getAttribute('data-pill') === 'todas');
+      });
+
+      carregarAnalisesSalvas();
+    }
+
+    function carregarAnalisesSalvas() {
+      const loading = document.getElementById('loadingAnalisesSalvas');
+      const emptyState = document.getElementById('salvasEmptyState');
+      const grid = document.getElementById('gridAnalisesSalvas');
+      const badgeTotal = document.getElementById('badgeTotalAnalises');
+
+      loading.style.display = 'flex';
+      emptyState.style.display = 'none';
+      grid.style.display = 'none';
+
+      const pagina = document.getElementById('filtroPagina').value;
+      const busca = document.getElementById('filtroBusca').value;
+      const data = document.getElementById('filtroData').value;
+
+      const params = new URLSearchParams();
+      if (pagina && pagina !== 'todas') params.append('pagina', pagina);
+      if (busca) params.append('busca', busca);
+      if (data) params.append('data', data);
+
+      fetch(`/api/analises-salvas?${params.toString()}`)
+        .then(res => res.json())
+        .then(dataResp => {
+          loading.style.display = 'none';
+          if (dataResp.sucesso && Array.isArray(dataResp.analises)) {
+            analisesSalvasCache = dataResp.analises;
+            badgeTotal.textContent = `${analisesSalvasCache.length} Registro(s) Encontrado(s)`;
+
+            atualizarKpiSummary(analisesSalvasCache);
+
+            if (analisesSalvasCache.length === 0) {
+              emptyState.style.display = 'block';
+            } else {
+              renderizarGrid(analisesSalvasCache);
+              grid.style.display = 'grid';
+            }
+          } else {
+            emptyState.style.display = 'block';
+          }
+        })
+        .catch(err => {
+          console.error('Erro ao carregar análises salvas:', err);
+          loading.style.display = 'none';
+          emptyState.style.display = 'block';
+        });
+    }
+
+    function atualizarKpiSummary(lista) {
+      document.getElementById('kpiTotalAnalises').textContent = lista.length;
+
+      const altaPerf = lista.filter(a => (a.badge || '').toLowerCase().includes('alta') || (a.badge || '').toLowerCase().includes('saudável') || (a.badge || '').toLowerCase().includes('concluído')).length;
+      document.getElementById('kpiAltaPerf').textContent = altaPerf;
+
+      const comAlertas = lista.filter(a => Array.isArray(a.alertas_riscos) && a.alertas_riscos.length > 0).length;
+      document.getElementById('kpiAlertas').textContent = comAlertas;
+
+      // Calcular página mais frequente
+      const contagem = {};
+      lista.forEach(a => {
+        const p = a.pagina_nome || a.pagina;
+        contagem[p] = (contagem[p] || 0) + 1;
+      });
+
+      let topPag = '—';
+      let maxCount = 0;
+      for (const [pag, count] of Object.entries(contagem)) {
+        if (count > maxCount) {
+          maxCount = count;
+          topPag = pag.split(' ')[0];
+        }
+      }
+      document.getElementById('kpiTopPagina').textContent = topPag;
+    }
+
+    function renderizarGrid(lista) {
+      const grid = document.getElementById('gridAnalisesSalvas');
+      grid.innerHTML = lista.map((a, idx) => {
+        const veredito = a.veredito || {};
+        const cor = a.cor || veredito.cor || '#3b82f6';
+        const numFortes = Array.isArray(a.pontos_fortes) ? a.pontos_fortes.length : 0;
+        const numAlertas = Array.isArray(a.alertas_riscos) ? a.alertas_riscos.length : 0;
+        const numRecom = Array.isArray(a.recomendacoes) ? a.recomendacoes.length : 0;
+
+        return `
+          <div class="salva-card" style="border-left-color:${cor};">
+            <div>
+              <div class="salva-card-badges">
+                <span class="salva-badge salva-badge--pagina">
+                  <i class="fa-solid fa-layer-group"></i> ${a.pagina_nome || a.pagina.toUpperCase()}
+                </span>
+                <span class="salva-badge salva-badge--origem" title="${a.origem || ''}">
+                  <i class="fa-solid fa-database"></i> ${truncate(a.origem || 'Consolidada', 18)}
+                </span>
+                <span class="salva-badge salva-badge--periodo" title="${a.periodo || ''}">
+                  <i class="fa-solid fa-calendar-days"></i> ${truncate(a.periodo || 'Período', 16)}
+                </span>
+              </div>
+
+              <h3 class="salva-card-title">${a.titulo || 'Diagnóstico Executivo'}</h3>
+              
+              <p class="salva-card-desc">${a.diagnostico_geral ? a.diagnostico_geral.replace(/<[^>]+>/g, '') : 'Resumo executivo salvo do negócio.'}</p>
+              
+              <div class="salva-card-highlights">
+                <span style="color:#10b981;"><i class="fa-solid fa-circle-check"></i> ${numFortes} Fortes</span>
+                <span style="color:#f59e0b;"><i class="fa-solid fa-triangle-exclamation"></i> ${numAlertas} Alertas</span>
+                <span style="color:#6366f1;"><i class="fa-solid fa-bullseye"></i> ${numRecom} Decisões</span>
+              </div>
+            </div>
+
+            <div class="salva-card-footer">
+              <div class="salva-card-data">
+                <i class="fa-regular fa-clock"></i> ${a.criado_em_fmt || 'Salvo recente'}
+              </div>
+
+              <div class="salva-card-actions">
+                <button type="button" class="btn-salva-action btn-salva-action--ver" onclick="abrirModalDetalhes(${idx})" title="Visualizar Diagnóstico Completo">
+                  <i class="fa-solid fa-eye"></i> Ver
+                </button>
+                <button type="button" class="btn-salva-action btn-salva-action--copiar" onclick="copiarResumoRapido(${idx}, event)" title="Copiar Resumo">
+                  <i class="fa-regular fa-copy"></i>
+                </button>
+                <button type="button" class="btn-salva-action btn-salva-action--excluir" onclick="excluirAnaliseSalva('${a.id}', event)" title="Excluir Análise Salva">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function truncate(str, max) {
+      if (!str) return '';
+      return str.length > max ? str.substring(0, max - 2) + '...' : str;
+    }
+
+    function abrirModalDetalhes(index) {
+      const item = analisesSalvasCache[index];
+      if (!item) return;
+      analiseSelecionada = item;
+
+      document.getElementById('detalheModalTitulo').textContent = item.titulo || 'Análise Salva';
+      document.getElementById('detalheModalSubtitulo').textContent = item.subtitulo || `Origem: ${item.origem} | Período: ${item.periodo}`;
+
+      const badgeStatus = document.getElementById('detalheModalBadgeStatus');
+      badgeStatus.textContent = item.badge || 'Salvo';
+      badgeStatus.style.background = item.cor ? `${item.cor}25` : 'rgba(59,130,246,0.15)';
+      badgeStatus.style.color = item.cor || '#3b82f6';
+      badgeStatus.style.borderColor = item.cor ? `${item.cor}50` : 'rgba(59,130,246,0.3)';
+
+      document.getElementById('detalheModalData').innerHTML = `<i class="fa-regular fa-clock"></i> Salvo em ${item.criado_em_fmt || 'Data indisponível'}`;
+
+      const metricas = item.metricas || [];
+      const pontosFortes = item.pontos_fortes || [];
+      const alertas = item.alertas_riscos || [];
+      const recomendacoes = item.recomendacoes || [];
+
+      let metricasHtml = '';
+      if (metricas.length > 0) {
+        metricasHtml = `
+          <div class="ia-metrics-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:10px; margin-bottom:16px;">
+            ${metricas.map(m => `
+              <div class="ia-metric-card" style="padding:10px 12px; background:rgba(59,130,246,0.04); border:1px solid var(--borda); border-radius:10px;">
+                <div class="ia-metric-card-label" style="font-size:0.7rem; font-weight:700; color:var(--suave); display:flex; justify-content:space-between;">
+                  <span>${m.label || ''}</span>
+                  <i class="fa-solid ${m.icone || 'fa-chart-line'}" style="color:${m.cor || '#3b82f6'};"></i>
+                </div>
+                <div class="ia-metric-card-val" style="font-size:1.1rem; font-weight:800; color:${m.cor || 'var(--texto)'}; margin-top:2px;">${m.valor || '—'}</div>
+                <div class="ia-metric-card-sub" style="font-size:0.7rem; color:var(--suave);">${m.sub || ''}</div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      document.getElementById('detalheModalBody').innerHTML = `
+        ${metricasHtml}
+
+        <div class="ia-section-card" style="margin-bottom:14px;">
+          <h4 class="ia-section-card-title"><i class="fa-solid fa-brain" style="color:#3b82f6;"></i> Diagnóstico Executivo da IA</h4>
+          <p style="font-size:0.875rem; line-height:1.6; color:var(--texto); margin:0;">${item.diagnostico_geral || 'Diagnóstico não registrado.'}</p>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px; margin-bottom:14px;">
+          <div class="ia-section-card" style="border-left:3px solid #16a34a;">
+            <h4 class="ia-section-card-title"><i class="fa-solid fa-circle-check" style="color:#16a34a;"></i> Pontos Fortes Identificados</h4>
+            <ul class="ia-bullets-list">
+              ${pontosFortes.length > 0 ? pontosFortes.map(p => `<li class="ia-bullet-item"><span class="ia-bullet-icon" style="color:#16a34a;"><i class="fa-solid fa-check"></i></span><span>${p}</span></li>`).join('') : '<li class="ia-bullet-item" style="color:var(--suave);">Nenhum ponto destacado.</li>'}
+            </ul>
+          </div>
+
+          <div class="ia-section-card" style="border-left:3px solid #f59e0b;">
+            <h4 class="ia-section-card-title"><i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b;"></i> Alertas & Oportunidades</h4>
+            <ul class="ia-bullets-list">
+              ${alertas.length > 0 ? alertas.map(p => `<li class="ia-bullet-item"><span class="ia-bullet-icon" style="color:#f59e0b;"><i class="fa-solid fa-arrow-right"></i></span><span>${p}</span></li>`).join('') : '<li class="ia-bullet-item" style="color:var(--suave);">Nenhum alerta registrado.</li>'}
+            </ul>
+          </div>
+        </div>
+
+        <div class="ia-section-card" style="background:linear-gradient(135deg, rgba(59,130,246,0.04) 0%, rgba(99,102,241,0.02) 100%);">
+          <h4 class="ia-section-card-title"><i class="fa-solid fa-bullseye" style="color:#6366f1;"></i> Próximos Passos & Decisões Recomendadas</h4>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            ${recomendacoes.map((rec, i) => `<div style="font-size:0.85rem; color:var(--texto); line-height:1.5;"><strong>${i + 1}.</strong> ${rec}</div>`).join('')}
+          </div>
+        </div>
+      `;
+
+      const modal = document.getElementById('modalVisualizarAnalise');
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function fecharModalDetalhes() {
+      const modal = document.getElementById('modalVisualizarAnalise');
+      modal.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+
+    function fecharModalDetalhesSeBackdrop(e) {
+      if (e.target && e.target.id === 'modalVisualizarAnalise') {
+        fecharModalDetalhes();
+      }
+    }
+
+    function copiarResumoRapido(index, event) {
+      if (event) event.stopPropagation();
+      const item = analisesSalvasCache[index];
+      if (!item) return;
+
+      const texto = `[DATAINSIGHT - ANÁLISE SALVA: ${item.pagina_nome}]
+Título: ${item.titulo}
+Origem: ${item.origem} (${item.periodo})
+Data: ${item.criado_em_fmt}
+
+DIAGNÓSTICO:
+${item.diagnostico_geral}
+
+PONTOS FORTES:
+${(item.pontos_fortes || []).map(p => `• ${p}`).join('\n')}
+
+ALERTAS E RISCOS:
+${(item.alertas_riscos || []).map(p => `• ${p}`).join('\n')}
+
+RECOMENDAÇÕES:
+${(item.recomendacoes || []).map((r, i) => `${i + 1}. ${r}`).join('\n')}
+`;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(texto).then(() => alert('Resumo copiado com sucesso!'));
+      }
+    }
+
+    function escapeHtmlPdf(texto) {
+      return String(texto || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function nomeArquivoPdfAnalise(titulo) {
+      const base = String(titulo || 'analise-datainsight')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 60);
+      return `DataInsight-${base || 'analise'}.pdf`;
+    }
+
+    function baixarPdfModalAnalise() {
+      if (!analiseSelecionada) return;
+      if (typeof html2pdf === 'undefined') {
+        alert('Não foi possível carregar o gerador de PDF. Recarregue a página e tente novamente.');
+        return;
+      }
+
+      const btn = document.getElementById('btnBaixarPdfAnalise');
+      const corpo = document.getElementById('detalheModalBody');
+      if (!corpo) return;
+
+      const htmlOriginal = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gerando PDF...';
+      }
+
+      const wrap = document.createElement('div');
+      wrap.setAttribute('id', 'analisePdfExport');
+      wrap.style.cssText = [
+        'position:fixed',
+        'left:-10000px',
+        'top:0',
+        'width:794px',
+        'padding:28px 32px 36px',
+        'background:#ffffff',
+        'color:#111827',
+        'font-family:Inter,Arial,sans-serif',
+        'box-sizing:border-box'
+      ].join(';');
+
+      const subtitulo = analiseSelecionada.subtitulo
+        || `Origem: ${analiseSelecionada.origem || '—'} | Período: ${analiseSelecionada.periodo || '—'}`;
+
+      wrap.innerHTML = `
+        <div style="border-bottom:2px solid #3b82f6;padding-bottom:14px;margin-bottom:20px;">
+          <div style="font-size:11px;font-weight:800;letter-spacing:0.08em;color:#3b82f6;text-transform:uppercase;">DataInsight · Análise salva</div>
+          <h1 style="margin:8px 0 6px;font-size:22px;line-height:1.25;color:#0f172a;">${escapeHtmlPdf(analiseSelecionada.titulo || 'Análise Salva')}</h1>
+          <p style="margin:0;font-size:12px;color:#475569;">${escapeHtmlPdf(subtitulo)}</p>
+          <p style="margin:6px 0 0;font-size:12px;color:#64748b;">Salvo em ${escapeHtmlPdf(analiseSelecionada.criado_em_fmt || 'data indisponível')}</p>
+        </div>
+      `;
+
+      const clone = corpo.cloneNode(true);
+      clone.style.overflow = 'visible';
+      clone.style.maxHeight = 'none';
+      wrap.appendChild(clone);
+      document.body.appendChild(wrap);
+
+      const opcoes = {
+        margin: [10, 10, 12, 10],
+        filename: nomeArquivoPdfAnalise(analiseSelecionada.titulo),
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] }
+      };
+
+      html2pdf().set(opcoes).from(wrap).save()
+        .catch((err) => {
+          console.error('Erro ao gerar PDF da análise:', err);
+          alert('Não foi possível gerar o PDF. Tente novamente.');
+        })
+        .finally(() => {
+          wrap.remove();
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = htmlOriginal || '<i class="fa-solid fa-file-pdf"></i> Baixar PDF';
+          }
+        });
+    }
+
+    function copiarDetalheAtual() {
+      if (!analiseSelecionada) return;
+      const texto = `[DATAINSIGHT - ANÁLISE SALVA: ${analiseSelecionada.pagina_nome}]
+Título: ${analiseSelecionada.titulo}
+Origem: ${analiseSelecionada.origem} (${analiseSelecionada.periodo})
+Data: ${analiseSelecionada.criado_em_fmt}
+
+DIAGNÓSTICO:
+${analiseSelecionada.diagnostico_geral}
+
+PONTOS FORTES:
+${(analiseSelecionada.pontos_fortes || []).map(p => `• ${p}`).join('\n')}
+
+ALERTAS E RISCOS:
+${(analiseSelecionada.alertas_riscos || []).map(p => `• ${p}`).join('\n')}
+
+RECOMENDAÇÕES:
+${(analiseSelecionada.recomendacoes || []).map((r, i) => `${i + 1}. ${r}`).join('\n')}
+`;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(texto).then(() => alert('Resumo copiado com sucesso!'));
+      }
+    }
+
+    function excluirAnaliseSalva(id, event) {
+      if (event) event.stopPropagation();
+      if (!confirm('Deseja realmente excluir esta análise salva?')) return;
+
+      fetch(`/api/analises-salvas/${id}`, {
+        method: 'DELETE',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.sucesso) {
+            carregarAnalisesSalvas();
+          } else {
+            alert(data.mensagem || 'Erro ao excluir análise.');
+          }
+        })
+        .catch(err => {
+          console.error('Erro ao excluir análise salva:', err);
+          alert('Erro ao se comunicar com o servidor.');
+        });
+    }
+  </script>
+</body>
+
+</html>

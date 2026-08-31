@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="DataInsight — Módulo de Tomada de Decisão com IA: SWOT, cenários e recomendações estratégicas." />
+    <title>DataInsight • IA Decisões Estratégicas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='acessibilidade/acessibilidade.css') }}" />
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+    <style>
+        @keyframes ia-fade-in { from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);} }
+        @keyframes ia-shimmer { 0%{background-position:-200% 0;}100%{background-position:200% 0;} }
+        @keyframes ia-pulse { 0%,100%{opacity:1;}50%{opacity:.5;} }
+
+        .modulo-hero {
+            background: linear-gradient(135deg, rgba(124,58,237,0.08) 0%, rgba(59,130,246,0.05) 100%);
+            border: 1px solid rgba(124,58,237,0.2);
+            border-radius: 16px; padding: 28px 32px; margin-bottom: 24px;
+            display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+        }
+        .modulo-hero-icon {
+            width: 64px; height: 64px; border-radius: 18px;
+            background: linear-gradient(135deg, #7C3AED, #6D28D9);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem; color: white;
+            box-shadow: 0 8px 24px rgba(124,58,237,0.35); flex-shrink: 0;
+        }
+        .modulo-hero-body { flex: 1; }
+        .modulo-hero-title { font-size: 1.5rem; font-weight: 800; color: var(--texto); margin: 0 0 6px; }
+        .modulo-hero-desc { font-size: 0.9rem; color: var(--suave); line-height: 1.6; }
+        .modulo-hero-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+        .modulo-btn-primary {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 11px 22px;
+            background: linear-gradient(135deg, #7C3AED, #6D28D9);
+            color: white; border: none; border-radius: 10px;
+            font-size: 0.88rem; font-weight: 700;
+            cursor: pointer; font-family: var(--fonte);
+            box-shadow: 0 4px 14px rgba(124,58,237,0.3);
+            transition: all 0.22s;
+        }
+        .modulo-btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(124,58,237,0.4); }
+        .modulo-btn-primary:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+        .modulo-btn-secondary {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 11px 18px;
+            background: var(--cartao); color: var(--texto);
+            border: 1px solid var(--borda); border-radius: 10px;
+            font-size: 0.88rem; font-weight: 600;
+            cursor: pointer; font-family: var(--fonte);
+            transition: all 0.2s;
+        }
+        .modulo-btn-secondary:hover { border-color: #7C3AED; color: #7C3AED; }
+
+        /* SWOT GRID */
+        .swot-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid var(--borda);
+            margin-bottom: 24px;
+        }
+        .swot-cell {
+            padding: 20px;
+            position: relative;
+        }
+        .swot-cell::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 4px; height: 100%;
+        }
+        .swot-s { background: rgba(16,185,129,0.06); border-right: 1px solid var(--borda); border-bottom: 1px solid var(--borda); }
+        .swot-s::before { background: #10B981; }
+        .swot-w { background: rgba(239,68,68,0.05); border-bottom: 1px solid var(--borda); }
+        .swot-w::before { background: #EF4444; }
+        .swot-o { background: rgba(59,130,246,0.05); border-right: 1px solid var(--borda); }
+        .swot-o::before { background: #3B82F6; }
+        .swot-t { background: rgba(245,158,11,0.05); }
+        .swot-t::before { background: #F59E0B; }
+
+        .swot-label {
+            font-size: 0.72rem; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 0.08em; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+        }
+        .swot-s .swot-label { color: #10B981; }
+        .swot-w .swot-label { color: #EF4444; }
+        .swot-o .swot-label { color: #3B82F6; }
+        .swot-t .swot-label { color: #F59E0B; }
+
+        .swot-content { font-size: 0.85rem; color: var(--texto); line-height: 1.6; min-height: 60px; }
+        .swot-content.loading {
+            background: linear-gradient(90deg, var(--borda) 25%, rgba(255,255,255,0.08) 50%, var(--borda) 75%);
+            background-size: 200% 100%; animation: ia-shimmer 1.5s infinite;
+            border-radius: 6px; color: transparent;
+        }
+
+        /* CENÁRIOS */
+        .cenarios-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .cenario-card {
+            background: var(--cartao);
+            border: 1px solid var(--borda);
+            border-radius: 14px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .cenario-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+        .cenario-card.conservador { border-top: 3px solid #F59E0B; }
+        .cenario-card.moderado { border-top: 3px solid #3B82F6; }
+        .cenario-card.agressivo { border-top: 3px solid #10B981; }
+        .cenario-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+        .cenario-card.conservador .cenario-label { color: #F59E0B; }
+        .cenario-card.moderado .cenario-label { color: #3B82F6; }
+        .cenario-card.agressivo .cenario-label { color: #10B981; }
+        .cenario-valor { font-size: 1.5rem; font-weight: 800; color: var(--texto); margin-bottom: 6px; }
+        .cenario-desc { font-size: 0.78rem; color: var(--suave); line-height: 1.5; }
+
+        /* CHIPS / PROMPT */
+        .ia-modulo-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+        .ia-modulo-chip {
+            padding: 6px 13px; border: 1px solid var(--borda);
+            border-radius: 100px; font-size: 0.78rem; font-weight: 600;
+            color: var(--suave); background: transparent;
+            cursor: pointer; transition: all 0.2s; font-family: var(--fonte);
+        }
+        .ia-modulo-chip:hover, .ia-modulo-chip.active { background: #7C3AED; border-color: #7C3AED; color: white; }
+
+        #ia-modulo-prompt {
+            width: 100%; padding: 12px 16px;
+            background: var(--fundo); color: var(--texto);
+            border: 1px solid var(--borda); border-radius: 10px;
+            font-size: 0.88rem; line-height: 1.6;
+            font-family: var(--fonte); resize: vertical; min-height: 72px;
+            transition: border-color 0.2s;
+        }
+        #ia-modulo-prompt:focus { outline: none; border-color: #7C3AED; box-shadow: 0 0 0 3px rgba(124,58,237,0.12); }
+
+        #modulo-periodo {
+            padding: 8px 12px;
+            background: var(--fundo); color: var(--texto);
+            border: 1px solid var(--borda); border-radius: 8px;
+            font-size: 0.85rem; font-weight: 600;
+            cursor: pointer; font-family: var(--fonte);
+        }
+
+        .modulo-charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+        .modulo-chart-card { background: var(--cartao); border: 1px solid var(--borda); border-radius: 14px; padding: 20px; overflow: hidden; }
+        .modulo-chart-title { font-size: 0.88rem; font-weight: 700; color: var(--texto); margin-bottom: 16px; display: flex; align-items: center; gap: 7px; }
+        .modulo-chart-title i { color: #7C3AED; }
+        #ia-chart-1, #ia-chart-2 { min-height: 280px; width: 100%; }
+        .ia-chart-empty {
+            min-height: 280px; display: flex; align-items: center; justify-content: center;
+            text-align: center; color: var(--suave); font-size: 0.88rem; padding: 24px;
+        }
+
+        .modulo-result-area {
+            background: var(--cartao); border: 1px solid var(--borda);
+            border-radius: 14px; padding: 24px; margin-bottom: 24px;
+            display: none; animation: ia-fade-in 0.4s ease;
+        }
+        .ia-analysis-text { font-size: 0.9rem; line-height: 1.8; color: var(--texto); }
+        .ia-analysis-text strong { color: #7C3AED; }
+
+        #ia-modulo-skeleton { display:none; padding:24px; background:var(--cartao); border:1px solid var(--borda); border-radius:14px; margin-bottom:24px; }
+        .skeleton-line { height:14px; border-radius:6px; margin-bottom:12px; background:linear-gradient(90deg,var(--borda) 25%,rgba(255,255,255,.08) 50%,var(--borda) 75%); background-size:200% 100%; animation:ia-shimmer 1.5s infinite; }
+
+        .modulo-checklist-card { background:var(--cartao); border:1px solid var(--borda); border-radius:14px; padding:20px; margin-bottom:24px; }
+        .modulo-checklist-title { font-size:.88rem; font-weight:700; color:var(--texto); display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+        .modulo-checklist-title i { color:#7C3AED; }
+        #ia-checklist { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px; }
+        .ia-check-item label { display:flex; align-items:flex-start; gap:10px; cursor:pointer; font-size:.87rem; color:var(--texto); line-height:1.5; }
+        .ia-check-item input[type="checkbox"] { width:16px; height:16px; border-radius:4px; accent-color:#7C3AED; cursor:pointer; flex-shrink:0; margin-top:2px; }
+        .ia-check-item.done label { text-decoration:line-through; color:var(--suave); }
+
+        .modulo-export-row { display:flex; gap:10px; justify-content:flex-end; margin-bottom:24px; flex-wrap:wrap; }
+        .modulo-breadcrumb { display:flex; align-items:center; gap:8px; font-size:.8rem; color:var(--suave); margin-bottom:20px; }
+        .modulo-breadcrumb a { color:#7C3AED; text-decoration:none; }
+        .modulo-breadcrumb a:hover { text-decoration:underline; }
+
+        #ia-toast-container { position:fixed;bottom:24px;right:24px;z-index:99999;display:flex;flex-direction:column;gap:10px; }
+        .ia-toast { display:flex;align-items:center;gap:10px;padding:12px 18px;border-radius:12px;font-size:.85rem;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.15);opacity:0;transform:translateX(30px);transition:all .3s cubic-bezier(.4,0,.2,1); }
+        .ia-toast.visible { opacity:1;transform:translateX(0); }
+        .ia-toast-success{background:rgba(16,185,129,.92);color:white;}
+        .ia-toast-error{background:rgba(239,68,68,.92);color:white;}
+        .ia-toast-info{background:rgba(59,130,246,.92);color:white;}
+        .ia-toast-warning{background:rgba(245,158,11,.92);color:white;}
+
+        @media (max-width:768px) {
+            .modulo-charts-grid, .cenarios-grid { grid-template-columns: 1fr; }
+            .swot-grid { grid-template-columns: 1fr; }
+            .modulo-hero { flex-direction:column; text-align:center; }
+            .modulo-hero-actions { justify-content:center; }
+        }
+    </style>
+</head>
+<body>
+    <a href="#conteudo" class="skip-link">Ir para conteúdo</a>
+    <div class="layout">
+        <aside class="sidebar" id="sidebar" aria-label="Navegação principal">
+            {% include 'partials/navbar.html' %}
+        </aside>
+        <div class="main">
+            <header class="topbar" role="banner">
+                <div class="topbar__left">
+                    <button class="topbar__btn topbar__mobile-toggle" onclick="abrirSidebar()" aria-label="Abrir menu"><i class="fa-solid fa-bars"></i></button>
+                    <span class="topbar__greeting">Olá, <strong>{{ session.usuario_nome }}</strong></span>
+                </div>
+                <div class="topbar__actions">
+                    <button class="topbar__btn" onclick="alternarTema()" aria-label="Alternar tema" id="btnTema"><i class="fa-solid fa-moon"></i></button>
+                    <a class="topbar__btn" href="{{ url_for('pagina_configuracoes') }}" title="Configurações"><i class="fa-solid fa-gear"></i></a>
+                </div>
+            </header>
+
+            <main id="conteudo" class="pagina" role="main">
+                <div class="container">
+
+                    <!-- Breadcrumb -->
+                    <nav class="modulo-breadcrumb" aria-label="Navegação estrutural">
+                        <a href="{{ url_for('pagina_ia') }}"><i class="fa-solid fa-robot"></i> Centro de IA</a>
+                        <i class="fa-solid fa-chevron-right" style="font-size:0.7rem;"></i>
+                        <span>Decisões & Estratégia</span>
+                    </nav>
+
+                    <!-- Hero -->
+                    <div class="modulo-hero">
+                        <div class="modulo-hero-icon"><i class="fa-solid fa-brain"></i></div>
+                        <div class="modulo-hero-body">
+                            <h1 class="modulo-hero-title">Decisões & Estratégia com IA</h1>
+                            <p class="modulo-hero-desc">Simulações de cenários "E se...?", análises SWOT automáticas e recomendações de crescimento baseadas nos seus dados reais.</p>
+                        </div>
+                        <div class="modulo-hero-actions">
+                            <select id="modulo-periodo">
+                                <option value="7_dias">Últimos 7 dias</option>
+                                <option value="30_dias" selected>Últimos 30 dias</option>
+                                <option value="90_dias">Últimos 90 dias</option>
+                                <option value="ano_atual">Este ano</option>
+                            </select>
+                            <button class="modulo-btn-primary" id="ia-modulo-run">
+                                <i class="fa-solid fa-brain"></i> Analisar com IA
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Simulador de cenários -->
+                    <div class="cartao" style="border-radius:14px;padding:20px;margin-bottom:20px;">
+                        <div style="font-size:0.88rem;font-weight:700;color:var(--texto);margin-bottom:6px;display:flex;align-items:center;gap:7px;">
+                            <i class="fa-solid fa-sliders" style="color:#7C3AED;"></i> Simulador de Cenários
+                        </div>
+                        <p style="font-size:0.82rem;color:var(--suave);margin-bottom:16px;">Defina variáveis para simular diferentes estratégias de crescimento.</p>
+                        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:16px;">
+                            <div>
+                                <label style="font-size:0.75rem;font-weight:700;color:var(--suave);display:block;margin-bottom:5px;">Crescimento Meta (%)</label>
+                                <input type="number" id="sim-crescimento" value="15" min="0" max="200" style="width:100%;padding:8px 10px;background:var(--fundo);border:1px solid var(--borda);border-radius:8px;color:var(--texto);font-family:var(--fonte);font-size:0.88rem;">
+                            </div>
+                            <div>
+                                <label style="font-size:0.75rem;font-weight:700;color:var(--suave);display:block;margin-bottom:5px;">Redução de Custos (%)</label>
+                                <input type="number" id="sim-custos" value="10" min="0" max="100" style="width:100%;padding:8px 10px;background:var(--fundo);border:1px solid var(--borda);border-radius:8px;color:var(--texto);font-family:var(--fonte);font-size:0.88rem;">
+                            </div>
+                            <div>
+                                <label style="font-size:0.75rem;font-weight:700;color:var(--suave);display:block;margin-bottom:5px;">Novos Clientes/Mês</label>
+                                <input type="number" id="sim-clientes" value="50" min="0" style="width:100%;padding:8px 10px;background:var(--fundo);border:1px solid var(--borda);border-radius:8px;color:var(--texto);font-family:var(--fonte);font-size:0.88rem;">
+                            </div>
+                            <div>
+                                <label style="font-size:0.75rem;font-weight:700;color:var(--suave);display:block;margin-bottom:5px;">Investimento Previsto</label>
+                                <input type="text" id="sim-investimento" value="R$ 10.000" style="width:100%;padding:8px 10px;background:var(--fundo);border:1px solid var(--borda);border-radius:8px;color:var(--texto);font-family:var(--fonte);font-size:0.88rem;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Análise SWOT (placeholders) -->
+                    <div style="font-size:0.88rem;font-weight:700;color:var(--texto);margin-bottom:12px;display:flex;align-items:center;gap:7px;">
+                        <i class="fa-solid fa-table-cells-large" style="color:#7C3AED;"></i> Análise SWOT Automática
+                    </div>
+                    <div class="swot-grid">
+                        <div class="swot-cell swot-s">
+                            <div class="swot-label"><i class="fa-solid fa-shield-halved"></i> Forças (Strengths)</div>
+                            <div class="swot-content loading" id="swot-s">Execute a análise para visualizar</div>
+                        </div>
+                        <div class="swot-cell swot-w">
+                            <div class="swot-label"><i class="fa-solid fa-triangle-exclamation"></i> Fraquezas (Weaknesses)</div>
+                            <div class="swot-content loading" id="swot-w">Execute a análise para visualizar</div>
+                        </div>
+                        <div class="swot-cell swot-o">
+                            <div class="swot-label"><i class="fa-solid fa-star"></i> Oportunidades</div>
+                            <div class="swot-content loading" id="swot-o">Execute a análise para visualizar</div>
+                        </div>
+                        <div class="swot-cell swot-t">
+                            <div class="swot-label"><i class="fa-solid fa-bolt"></i> Ameaças (Threats)</div>
+                            <div class="swot-content loading" id="swot-t">Execute a análise para visualizar</div>
+                        </div>
+                    </div>
+
+                    <!-- Cenários -->
+                    <div style="font-size:0.88rem;font-weight:700;color:var(--texto);margin-bottom:12px;display:flex;align-items:center;gap:7px;">
+                        <i class="fa-solid fa-chart-gantt" style="color:#7C3AED;"></i> Projeção por Cenário (3 Meses)
+                    </div>
+                    <div class="cenarios-grid">
+                        <div class="cenario-card conservador">
+                            <div class="cenario-label">Conservador</div>
+                            <div class="cenario-valor" id="cen-conservador">—</div>
+                            <div class="cenario-desc">Crescimento mínimo, foco em estabilidade e controle de custos</div>
+                        </div>
+                        <div class="cenario-card moderado">
+                            <div class="cenario-label">Moderado</div>
+                            <div class="cenario-valor" id="cen-moderado">—</div>
+                            <div class="cenario-desc">Crescimento equilibrado com investimentos calculados</div>
+                        </div>
+                        <div class="cenario-card agressivo">
+                            <div class="cenario-label">Agressivo</div>
+                            <div class="cenario-valor" id="cen-agressivo">—</div>
+                            <div class="cenario-desc">Máximo crescimento com alto investimento e riscos calculados</div>
+                        </div>
+                    </div>
+
+                    <!-- Gráficos -->
+                    <div class="modulo-charts-grid">
+                        <div class="modulo-chart-card">
+                            <div class="modulo-chart-title"><i class="fa-solid fa-chart-line"></i> Tendência de Crescimento</div>
+                            <div id="ia-chart-1"></div>
+                        </div>
+                        <div class="modulo-chart-card">
+                            <div class="modulo-chart-title"><i class="fa-solid fa-chart-pie"></i> Mix de Receita</div>
+                            <div id="ia-chart-2"></div>
+                        </div>
+                    </div>
+
+                    <!-- Prompt personalizado -->
+                    <div class="cartao" style="border-radius:14px;padding:20px;margin-bottom:18px;">
+                        <div style="font-size:0.88rem;font-weight:700;color:var(--texto);margin-bottom:12px;display:flex;align-items:center;gap:7px;">
+                            <i class="fa-solid fa-wand-magic-sparkles" style="color:#7C3AED;"></i> Análise Personalizada
+                        </div>
+                        <div class="ia-modulo-chips">
+                            <button class="ia-modulo-chip" data-prompt="Gere uma análise SWOT completa do negócio com base nos dados disponíveis e sugira 3 estratégias prioritárias.">SWOT Completa</button>
+                            <button class="ia-modulo-chip" data-prompt="Simule um cenário onde o faturamento cresce 20% em 3 meses. Quais ações são necessárias?">Crescimento 20%</button>
+                            <button class="ia-modulo-chip" data-prompt="Quais são os maiores riscos para o negócio nos próximos 6 meses? Como mitigá-los?">Gestão de Riscos</button>
+                            <button class="ia-modulo-chip" data-prompt="Sugira uma estratégia de expansão para o negócio baseada nos dados de clientes e vendas.">Estratégia de Expansão</button>
+                            <button class="ia-modulo-chip" data-prompt="Qual produto ou serviço tem maior potencial de crescimento? Explique com dados.">Maior Potencial</button>
+                        </div>
+                        <textarea id="ia-modulo-prompt" rows="3" placeholder="Ex: Com base nos dados, sugira 3 estratégias para dobrar o faturamento em 6 meses..."></textarea>
+                    </div>
+
+                    <!-- Skeleton -->
+                    <div id="ia-modulo-skeleton">
+                        <div class="skeleton-line" style="width:55%;"></div>
+                        <div class="skeleton-line" style="width:90%;"></div>
+                        <div class="skeleton-line" style="width:75%;"></div>
+                        <div class="skeleton-line" style="width:88%;"></div>
+                        <div class="skeleton-line" style="width:65%;"></div>
+                    </div>
+
+                    <!-- Resultado -->
+                    <div class="modulo-result-area" id="ia-modulo-result"></div>
+
+                    <!-- Export -->
+                    <div class="modulo-export-row">
+                        <div id="ia-export-save-wrap" style="display:none; gap:10px; flex-wrap:wrap; align-items:center;">
+                            <button class="modulo-btn-primary" type="button" id="ia-export-save">
+                                <i class="fa-solid fa-bookmark"></i> Salvar análise
+                            </button>
+                        </div>
+                        <button class="modulo-btn-secondary" id="ia-export-copy"><i class="fa-solid fa-copy"></i> Copiar Análise</button>
+                        <button class="modulo-btn-secondary" id="ia-export-pdf"><i class="fa-solid fa-file-pdf"></i> Exportar PDF</button>
+                    </div>
+
+                    <!-- Checklist -->
+                    <div class="modulo-checklist-card">
+                        <div class="modulo-checklist-title"><i class="fa-solid fa-list-check"></i> Plano de Ação Estratégico</div>
+                        <p style="font-size:0.83rem;color:var(--suave);margin-bottom:14px;">Ações geradas automaticamente pela análise estratégica da IA.</p>
+                        <ul id="ia-checklist">
+                            <li class="ia-check-item"><label><input type="checkbox"><span>Gere uma análise para ver o plano de ação estratégico</span></label></li>
+                        </ul>
+                    </div>
+
+                    <!-- Navegação -->
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:8px;flex-wrap:wrap;">
+                        <a href="{{ url_for('pagina_ia_financeiro') }}" style="display:inline-flex;align-items:center;gap:7px;font-size:0.85rem;font-weight:600;color:var(--suave);text-decoration:none;padding:9px 14px;border:1px solid var(--borda);border-radius:9px;background:var(--cartao);transition:all .2s;">
+                            <i class="fa-solid fa-arrow-left"></i> Módulo Financeiro
+                        </a>
+                        <a href="{{ url_for('pagina_ia_operacional') }}" style="display:inline-flex;align-items:center;gap:7px;font-size:0.85rem;font-weight:600;color:white;text-decoration:none;padding:9px 16px;border-radius:9px;background:linear-gradient(135deg,#3B82F6,#2563EB);box-shadow:0 4px 12px rgba(59,130,246,.3);transition:all .2s;">
+                            Módulo Operacional <i class="fa-solid fa-arrow-right"></i>
+                        </a>
+                    </div>
+
+                    {% include 'partials/footer.html' %}
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="ia-toast-container"></div>
+    {% include 'partials/navbar_mobile.html' %}
+    {% include 'partials/painel_acessibilidade.html' %}
+    {% include 'partials/chatbot.html' %}
+
+    <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/ia-modulos.js') }}"></script>
+    <script>
+        function abrirSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sidebarOverlay').classList.add('active');}
+        function fecharSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active');}
+
+        // Preencher cenários com base nos inputs do simulador
+        function calcularCenarios() {
+            const crescimento = parseFloat(document.getElementById('sim-crescimento')?.value) || 15;
+            const custos = parseFloat(document.getElementById('sim-custos')?.value) || 10;
+
+            // Buscar faturamento atual e calcular cenários
+            fetch('/api/desempenho?periodo=30_dias')
+                .then(r => r.ok ? r.json() : null)
+                .then(data => {
+                    const rawFat = (typeof data?.faturamento === 'object' && data?.faturamento !== null) ? data.faturamento.valor : data?.faturamento;
+                    const fat = (Number(rawFat) || 0) * 3; // projeção 3 meses
+                    const fmt = v => 'R$ ' + Number(v).toLocaleString('pt-BR', {maximumFractionDigits:0});
+
+                    const conservador = fat * (1 + (crescimento * 0.4) / 100) * (1 + custos * 0.3 / 100);
+                    const moderado = fat * (1 + (crescimento * 0.7) / 100) * (1 + custos * 0.6 / 100);
+                    const agressivo = fat * (1 + crescimento / 100) * (1 + custos / 100);
+
+                    const cC = document.getElementById('cen-conservador');
+                    const cM = document.getElementById('cen-moderado');
+                    const cA = document.getElementById('cen-agressivo');
+                    if (cC) cC.textContent = fat > 0 ? fmt(conservador) : '+5% est.';
+                    if (cM) cM.textContent = fat > 0 ? fmt(moderado) : '+' + Math.round(crescimento * 0.7) + '% est.';
+                    if (cA) cA.textContent = fat > 0 ? fmt(agressivo) : '+' + crescimento + '% est.';
+                })
+                .catch(() => {
+                    ['cen-conservador','cen-moderado','cen-agressivo'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.textContent = '—';
+                    });
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', calcularCenarios);
+        ['sim-crescimento','sim-custos','sim-clientes'].forEach(id => {
+            document.getElementById(id)?.addEventListener('input', calcularCenarios);
+        });
+
+        // Interceptar análise para popular SWOT
+        const origRun = window.iaModulo?.runModuleAnalysis;
+        document.getElementById('ia-modulo-run')?.addEventListener('click', () => {
+            // Marcar SWOT como carregando
+            ['swot-s','swot-w','swot-o','swot-t'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) { el.textContent = 'Analisando...'; el.classList.add('loading'); }
+            });
+
+            // Montar prompt com parâmetros do simulador
+            const crescimento = document.getElementById('sim-crescimento')?.value || '15';
+            const custos = document.getElementById('sim-custos')?.value || '10';
+            const clientes = document.getElementById('sim-clientes')?.value || '50';
+            const investimento = document.getElementById('sim-investimento')?.value || 'R$ 10.000';
+            const customPrompt = document.getElementById('ia-modulo-prompt')?.value?.trim();
+
+            const basePrompt = customPrompt || `Com os parâmetros: meta de crescimento ${crescimento}%, redução de custos ${custos}%, ${clientes} novos clientes/mês e investimento de ${investimento} — gere: 1) Análise SWOT completa separando claramente Forças, Fraquezas, Oportunidades e Ameaças; 2) Projeção dos 3 cenários (conservador, moderado, agressivo); 3) Recomendação do caminho a seguir com justificativa.`;
+
+            if (window.iaModulo) {
+                window.iaModulo.runModuleAnalysis(basePrompt).then?.(() => {
+                    populateSWOT();
+                });
+            }
+        }, { capture: true });
+
+        function populateSWOT() {
+            const result = document.getElementById('ia-modulo-result')?.innerText || '';
+            if (!result) return;
+
+            const sections = { s: '', w: '', o: '', t: '' };
+            const text = result.toLowerCase();
+
+            // Extração heurística de seções SWOT
+            const lines = result.split('\n');
+            let current = null;
+            lines.forEach(line => {
+                const l = line.toLowerCase();
+                if (l.includes('força') || l.includes('strength')) current = 's';
+                else if (l.includes('fraqueza') || l.includes('weakness')) current = 'w';
+                else if (l.includes('oportunidade') || l.includes('opportunit')) current = 'o';
+                else if (l.includes('ameaça') || l.includes('threat')) current = 't';
+                else if (current && line.trim()) sections[current] += line + '\n';
+            });
+
+            ['s','w','o','t'].forEach(k => {
+                const el = document.getElementById(`swot-${k}`);
+                if (el) {
+                    el.classList.remove('loading');
+                    el.innerHTML = sections[k]
+                        ? sections[k].trim().replace(/\n/g,'<br>')
+                        : '<em style="color:var(--suave);">Não identificado na análise</em>';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

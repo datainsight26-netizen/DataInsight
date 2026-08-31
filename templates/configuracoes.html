@@ -5,22 +5,426 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>DataInsight • Configurações</title>
+  <meta name="description"
+    content="Gerencie preferências de acessibilidade, tema e aparência da plataforma DataInsight.">
+
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='acessibilidade/acessibilidade.css') }}" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <style>
+    /* ── Configurações: estilos da página ── */
+    .cfg-page-header {
+      margin-bottom: 28px;
+    }
+
+    .cfg-page-header .migalhas {
+      font-size: 0.75rem;
+      color: var(--suave);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      font-weight: 600;
+    }
+
+    .cfg-page-header h1 {
+      font-size: 1.65rem;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      margin: 0 0 6px;
+    }
+
+    .cfg-page-header p {
+      color: var(--suave);
+      font-size: 0.9rem;
+      margin: 0;
+    }
+
+    /* ── Card padrão das configurações ── */
+    .cfg-card {
+      background: var(--cartao, #111827);
+      border: 1px solid var(--borda, rgba(255, 255, 255, 0.07));
+      border-radius: 20px;
+      padding: 0;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+      overflow: hidden;
+      margin-bottom: 20px;
+      transition: box-shadow 0.3s;
+    }
+
+    .cfg-card:hover {
+      box-shadow: 0 8px 36px rgba(59, 130, 246, 0.1);
+    }
+
+    .cfg-card-header {
+      padding: 20px 24px 18px;
+      border-bottom: 1px solid var(--borda, rgba(255, 255, 255, 0.07));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .cfg-card-header-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .cfg-card-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      flex-shrink: 0;
+    }
+
+    .cfg-card-icon.azul {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(99, 102, 241, 0.15));
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+
+    .cfg-card-icon.roxo {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.15));
+      color: #c084fc;
+      border: 1px solid rgba(139, 92, 246, 0.2);
+    }
+
+    .cfg-card-icon.verde {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.15));
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .cfg-card-icon.laranja {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(234, 88, 12, 0.15));
+      color: #fb923c;
+      border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+
+    .cfg-card-title-wrap h2 {
+      font-size: 1rem;
+      font-weight: 800;
+      margin: 0 0 3px;
+      letter-spacing: -0.01em;
+    }
+
+    .cfg-card-title-wrap p {
+      font-size: 0.8rem;
+      color: var(--suave);
+      margin: 0;
+    }
+
+    .cfg-card-body {
+      padding: 20px 24px;
+    }
+
+    /* ── Toggle Switch (master acessibilidade) ── */
+    .cfg-master-switch {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .cfg-switch-label {
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      transition: color 0.3s;
+    }
+
+    .cfg-switch-label.on {
+      color: #10b981;
+    }
+
+    .cfg-switch-label.off {
+      color: var(--suave);
+    }
+
+    .cfg-switch-wrap {
+      position: relative;
+      width: 52px;
+      height: 28px;
+    }
+
+    .cfg-switch-wrap input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+
+    .cfg-switch-track {
+      position: absolute;
+      inset: 0;
+      background: rgba(100, 116, 139, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      cursor: pointer;
+      transition: background 0.3s, border-color 0.3s;
+    }
+
+    .cfg-switch-track::before {
+      content: "";
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      left: 2px;
+      top: 2px;
+      background: #94a3b8;
+      border-radius: 50%;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    .cfg-switch-wrap input:checked+.cfg-switch-track {
+      background: rgba(16, 185, 129, 0.3);
+      border-color: #10b981;
+    }
+
+    .cfg-switch-wrap input:checked+.cfg-switch-track::before {
+      transform: translateX(23px);
+      background: #10b981;
+    }
+
+    /* ── Grade de opções de acessibilidade ── */
+    .acc-opts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+      margin-top: 4px;
+    }
+
+    .acc-opt-panel {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--borda, rgba(255, 255, 255, 0.07));
+      border-radius: 14px;
+      overflow: hidden;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .acc-opt-panel:hover {
+      background: rgba(59, 130, 246, 0.04);
+      border-color: rgba(59, 130, 246, 0.15);
+    }
+
+    .acc-opt-panel-header {
+      padding: 10px 14px 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(59, 130, 246, 0.06);
+      border-bottom: 1px solid var(--borda, rgba(255, 255, 255, 0.06));
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: #60a5fa;
+    }
+
+    .acc-opt-panel-body {
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .acc-opt-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--borda, rgba(255, 255, 255, 0.05));
+      font-size: 0.83rem;
+      font-weight: 600;
+      color: var(--texto, #cbd5e1);
+      cursor: pointer;
+    }
+
+    .acc-opt-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .acc-opt-chk {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      accent-color: #3b82f6;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .acc-opt-select {
+      width: 100%;
+      padding: 7px 10px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--borda, rgba(255, 255, 255, 0.1));
+      border-radius: 9px;
+      color: var(--texto, #cbd5e1);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .acc-opt-select:focus {
+      border-color: #3b82f6;
+    }
+
+    .acc-test-btns {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .acc-test-btn {
+      flex: 1;
+      padding: 8px;
+      border-radius: 9px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      border: 1px solid;
+      transition: all 0.2s;
+    }
+
+    .acc-test-btn.verde {
+      background: rgba(16, 185, 129, 0.1);
+      border-color: rgba(16, 185, 129, 0.25);
+      color: #10b981;
+    }
+
+    .acc-test-btn.verde:hover {
+      background: rgba(16, 185, 129, 0.2);
+    }
+
+    .acc-test-btn.vermelho {
+      background: rgba(239, 68, 68, 0.08);
+      border-color: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+    }
+
+    .acc-test-btn.vermelho:hover {
+      background: rgba(239, 68, 68, 0.18);
+    }
+
+    .acc-fonte-btns {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .acc-fonte-btn {
+      flex: 1;
+      padding: 8px;
+      border-radius: 9px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--texto, #cbd5e1);
+      transition: all 0.2s;
+    }
+
+    .acc-fonte-btn:hover {
+      background: rgba(59, 130, 246, 0.12);
+      border-color: rgba(59, 130, 246, 0.25);
+      color: #60a5fa;
+    }
+
+    /* ── Grade de outras cards (2 col) ── */
+    .cfg-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .cfg-action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+
+    .cfg-action-btn.primario {
+      background: linear-gradient(135deg, #1e40af, #3b82f6);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+    }
+
+    .cfg-action-btn.primario:hover {
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+      transform: translateY(-1px);
+    }
+
+    .cfg-action-btn.suave {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--texto);
+    }
+
+    .cfg-action-btn.suave:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Separador de seção */
+    .cfg-section-label {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--suave);
+      margin: 28px 0 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .cfg-section-label::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--borda, rgba(255, 255, 255, 0.07));
+    }
+  </style>
 </head>
 
 <body>
-
+  <a href="#conteudo" class="skip-link"
+    style="position:absolute;left:-9999px;top:0;background:#000;color:#fff;padding:8px 16px;z-index:99999;border-radius:0 0 8px 0;font-weight:700;text-decoration:none;">
+    Pular para o conteúdo
+  </a>
 
   <div class="layout">
-    <!-- SIDEBAR - Navegação Fixa -->
     <aside class="sidebar" aria-label="Navegação principal" id="sidebar">
-      <!-- Navegação lateral -->
       {% include 'partials/navbar.html' %}
-
     </aside>
-
 
     <div class="main">
       <header class="topbar" role="banner">
@@ -43,177 +447,361 @@
         </div>
       </header>
 
-      <main id="conteudo" class="pagina" role="main" data-ia-help="page_configuracoes">
+      <main id="conteudo" class="pagina" role="main">
         <div class="container">
-          <header class="pagina__cabecalho">
+
+          <!-- Cabeçalho da página -->
+          <header class="cfg-page-header">
             <div class="migalhas">Início &gt; Configurações</div>
-            <h1 class="h1">Acessibilidade e preferências</h1>
-            <p class="p">Ajuste o site para melhor leitura e navegação.</p>
+            <h1 class="h1">Configurações</h1>
+            <p>Gerencie acessibilidade, aparência e preferências da plataforma.</p>
           </header>
 
-          <section class="grade grade--2" aria-label="Preferências">
-            <article class="cartao">
-              <h2 class="h2">Tema</h2>
-              <p class="p" style="margin-top:6px;">Controle de Tema.</p>
-
-              <div style="display:flex; gap: 12px; flex-wrap: wrap; margin-top: 16px;">
-                <button class="botao botao--primario" type="button" aria-label="Alternar modo claro/escuro"
-                  onclick="alternarTema()">Alternar</button>
+          <!-- ════ CARD ACESSIBILIDADE ════ -->
+          <div class="cfg-card">
+            <div class="cfg-card-header">
+              <div class="cfg-card-header-left">
+                <div class="cfg-card-icon azul">
+                  <i class="fa-solid fa-universal-access"></i>
+                </div>
+                <div class="cfg-card-title-wrap">
+                  <h2>Recursos de Acessibilidade & Inclusão Digital</h2>
+                  <p>Ative para habilitar o leitor de voz, filtros visuais e widget flutuante.</p>
+                </div>
               </div>
-            </article>
 
-            <article class="cartao">
-              <h2 class="h2">Modo acessibilidade</h2>
-              <p class="p" style="margin-top:6px;">Ative ou desative todos os recursos de acessibilidade.</p>
-
-              <div style="display:flex; align-items:center; gap: 12px; margin-top: 16px;">
-                <span>Ativar acessibilidade</span>
-                <label class="switch">
-                  <input type="checkbox" id="toggleAcessibilidade">
-                  <span class="slider"></span>
+              <div class="cfg-master-switch" id="cfg-master-switch-container">
+                <span class="cfg-switch-label off" id="cfgAccLabel">Desativado</span>
+                <label class="cfg-switch-wrap" aria-label="Ativar ou desativar recursos de acessibilidade">
+                  <input type="checkbox" id="cfgToggleAcc">
+                  <span class="cfg-switch-track"></span>
                 </label>
               </div>
-            </article>
+            </div>
 
+            <!-- Sub-opções (ficam visíveis apenas quando ativado) -->
+            <div class="cfg-card-body" id="cfgAccOpts" style="display:none;">
+              <div class="acc-opts-grid">
 
+                <!-- LEITOR DE VOZ -->
+                <div class="acc-opt-panel">
+                  <div class="acc-opt-panel-header">
+                    <i class="fa-solid fa-volume-high"></i> Leitor por Voz
+                  </div>
+                  <div class="acc-opt-panel-body">
+                    <p style="font-size:0.78rem; color:var(--suave); margin:0 0 8px;">Ouve o conteúdo com destaque
+                      visual do trecho ativo.</p>
+                    <div class="acc-test-btns">
+                      <button type="button" class="acc-test-btn verde" id="cfgBtnLer">
+                        <i class="fa-solid fa-play"></i> Testar
+                      </button>
+                      <button type="button" class="acc-test-btn vermelho" id="cfgBtnParar">
+                        <i class="fa-solid fa-stop"></i> Parar
+                      </button>
+                    </div>
+                    <select class="acc-opt-select" id="cfgVelocidadeVoz" aria-label="Velocidade da voz"
+                      style="margin-top:10px;">
+                      <option value="0.7">🐢 Lenta (0.7x)</option>
+                      <option value="1.0" selected>▶ Normal (1.0x)</option>
+                      <option value="1.3">⚡ Rápida (1.3x)</option>
+                      <option value="1.6">🚀 Muito Rápida (1.6x)</option>
+                    </select>
+                  </div>
+                </div>
 
-            <article class="cartao">
-              <h2 class="h2">Leitura</h2>
-              <p class="p" style="margin-top:6px;">Controle de fonte.</p>
+                <!-- TAMANHO DE TEXTO -->
+                <div class="acc-opt-panel">
+                  <div class="acc-opt-panel-header">
+                    <i class="fa-solid fa-text-height"></i> Tamanho do Texto
+                  </div>
+                  <div class="acc-opt-panel-body">
+                    <p style="font-size:0.78rem; color:var(--suave); margin:0 0 8px;">Ajusta a tipografia de toda a
+                      plataforma.</p>
+                    <div class="acc-fonte-btns">
+                      <button type="button" class="acc-fonte-btn" id="cfgBtnAumentar">
+                        <i class="fa-solid fa-plus"></i> A+
+                      </button>
+                      <button type="button" class="acc-fonte-btn" id="cfgBtnDiminuir">
+                        <i class="fa-solid fa-minus"></i> A−
+                      </button>
+                      <button type="button" class="acc-fonte-btn" id="cfgBtnResetar" title="Resetar fonte">
+                        <i class="fa-solid fa-rotate-left"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
 
-              <div style="display:flex; gap: 12px; flex-wrap: wrap; margin-top: 16px;">
-                <button id="botaoAumentar" class="botao botao-func" type="button"
-                  aria-label="Aumentar fonte">A+</button>
-                <button id="botaoDiminuir" class="botao botao-func" type="button"
-                  aria-label="Diminuir fonte">A-</button>
-                <button class="botao botao--suave" type="button" aria-label="Redefinir fonte"
-                  onclick="localStorage.removeItem('escalaFonte'); location.reload();">Reset</button>
+                <!-- VISÃO & DALTONISMO -->
+                <div class="acc-opt-panel">
+                  <div class="acc-opt-panel-header">
+                    <i class="fa-solid fa-eye"></i> Visão & Daltonismo
+                  </div>
+                  <div class="acc-opt-panel-body">
+                    <label class="acc-opt-row">
+                      <span>Alto Contraste Visual</span>
+                      <input type="checkbox" class="acc-opt-chk" id="cfgAltoContraste">
+                    </label>
+                    <label class="acc-opt-row">
+                      <span>Fonte para Dislexia</span>
+                      <input type="checkbox" class="acc-opt-chk" id="cfgDyslexia">
+                    </label>
+                    <label class="acc-opt-row">
+                      <span>Cursor Ampliado</span>
+                      <input type="checkbox" class="acc-opt-chk" id="cfgCursorGrande">
+                    </label>
+                    <select class="acc-opt-select" id="cfgDaltonismo" aria-label="Filtro de daltonismo">
+                      <option value="nenhum">— Sem filtro —</option>
+                      <option value="deuteranopia">Deuteranopia (verde)</option>
+                      <option value="protanopia">Protanopia (vermelho)</option>
+                      <option value="tritanopia">Tritanopia (azul)</option>
+                      <option value="acromatopsia">Acromatopsia</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- NAVEGAÇÃO & INCLUSÃO -->
+                <div class="acc-opt-panel">
+                  <div class="acc-opt-panel-header">
+                    <i class="fa-solid fa-keyboard"></i> Navegação & Inclusão
+                  </div>
+                  <div class="acc-opt-panel-body">
+                    <label class="acc-opt-row">
+                      <span>Destaque de Foco (Tab)</span>
+                      <input type="checkbox" class="acc-opt-chk" id="cfgFocoAlto">
+                    </label>
+                    <label class="acc-opt-row">
+                      <span>Reduzir Animações</span>
+                      <input type="checkbox" class="acc-opt-chk" id="cfgSemAnimacoes">
+                    </label>
+                    <label class="acc-opt-row">
+                      <span>Tradutor VLibras (LIBRAS)</span>
+                      <input type="checkbox" class="acc-opt-chk" id="cfgVlibras">
+                    </label>
+                    <p style="font-size:0.72rem; color:var(--suave); margin:4px 0 0;">
+                      <i class="fa-solid fa-circle-info"></i>
+                      Atalhos: <strong>Alt+A</strong> painel · <strong>Alt+L</strong> ler · <strong>Alt+C</strong>
+                      contraste
+                    </p>
+                  </div>
+                </div>
+
               </div>
-            </article>
+            </div>
+          </div>
 
+          <!-- ════ DEMAIS CONFIGURAÇÕES ════ -->
+          <div class="cfg-section-label">Preferências gerais</div>
+          <div class="cfg-cards-grid">
 
-            <article class="cartao">
-              <h2 class="h2">Contato</h2>
-              <p class="p" style="margin-top:6px;">Clique para entrar em contato.</p>
-
-              <div style="display:flex; gap: 12px; flex-wrap: wrap; margin-top: 16px;">
-                <a style="text-decoration: none" href="{{ url_for('pagina_contato') }}" class="botao botao--primario"
-                  aria-label="Abrir página de contato">Entrar em Contato</a>
+            <!-- TEMA -->
+            <div class="cfg-card">
+              <div class="cfg-card-header">
+                <div class="cfg-card-header-left">
+                  <div class="cfg-card-icon roxo">
+                    <i class="fa-solid fa-palette"></i>
+                  </div>
+                  <div class="cfg-card-title-wrap">
+                    <h2>Aparência & Tema</h2>
+                    <p>Alterne entre modo claro e escuro.</p>
+                  </div>
+                </div>
               </div>
-            </article>
-          </section>
+              <div class="cfg-card-body">
+                <button class="cfg-action-btn primario" type="button" onclick="alternarTema()"
+                  aria-label="Alternar modo claro/escuro">
+                  <i class="fa-solid fa-moon" id="iconeTema"></i>
+                  <span id="textoTema">Alternar para Modo Escuro</span>
+                </button>
+              </div>
+            </div>
 
+            <!-- CONTATO / SUPORTE -->
+            <div class="cfg-card">
+              <div class="cfg-card-header">
+                <div class="cfg-card-header-left">
+                  <div class="cfg-card-icon verde">
+                    <i class="fa-solid fa-headset"></i>
+                  </div>
+                  <div class="cfg-card-title-wrap">
+                    <h2>Suporte & Contato</h2>
+                    <p>Dúvidas ou problemas com a plataforma.</p>
+                  </div>
+                </div>
+              </div>
+              <div class="cfg-card-body">
+                <a href="{{ url_for('pagina_contato') }}" class="cfg-action-btn primario"
+                  aria-label="Ir para a página de contato">
+                  <i class="fa-solid fa-envelope"></i> Falar com o Suporte
+                </a>
+              </div>
+            </div>
+
+          </div>
+
+          {% include 'partials/footer.html' %}
         </div>
-
-        <!-- Footer -->
-        {% include 'partials/footer.html' %}
-
       </main>
     </div>
   </div>
 
-
-  <!-- Painel Acessibilidade -->
+  <!-- Partials universais -->
   {% include 'partials/painel_acessibilidade.html' %}
-
-  <!-- Chatbot Flutuante -->
   {% include 'partials/chatbot.html' %}
-
-  <!-- Navegação móvel -->
   {% include 'partials/navbar_mobile.html' %}
 
-  <div vw class="enabled" id="Vlibras">
-    <div vw-access-button class="active"></div>
-    <div vw-plugin-wrapper>
-      <div class="vw-plugin-top-wrapper"></div>
-    </div>
+  <!-- VLibras (oculto por padrão, ativado via acc) -->
   </div>
-
-  <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
-
-  <script>
-    new window.VLibras.Widget('https://vlibras.gov.br/app');
-  </script>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
   <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 
   <script>
-    // Controle de configurações e acessibilidade
-    document.addEventListener('DOMContentLoaded', function() {
-      const checkboxAcessibilidade = document.getElementById('toggleAcessibilidade');
-      const botaoAumentar = document.getElementById('botaoAumentar');
-      const botaoDiminuir = document.getElementById('botaoDiminuir');
-      
-      const acessibilidadeAtiva = localStorage.getItem('acessibilidadeAtiva') !== 'false';
-      if (checkboxAcessibilidade) {
-        checkboxAcessibilidade.checked = acessibilidadeAtiva;
-        checkboxAcessibilidade.addEventListener('change', function() {
-          setAcessibilidadeAtiva(this.checked);
+    function sincronizarTema() {
+      const icone = document.getElementById('iconeTema');
+      const texto = document.getElementById('textoTema');
+      const isDark = document.body.classList.contains('tema-escuro');
+      if (icone) icone.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+      if (texto) texto.textContent = isDark ? 'Alternar para Modo Claro' : 'Alternar para Modo Escuro';
+      const btnTema = document.getElementById('btnTema');
+      if (btnTema) {
+        btnTema.innerHTML = isDark ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
+      }
+    }
+
+    function atualizarMasterUI(ativo) {
+      const label = document.getElementById('cfgAccLabel');
+      const optsBlock = document.getElementById('cfgAccOpts');
+      if (label) {
+        label.textContent = ativo ? 'ATIVADO' : 'Desativado';
+        label.className = 'cfg-switch-label ' + (ativo ? 'on' : 'off');
+      }
+      if (optsBlock) {
+        optsBlock.style.display = ativo ? 'block' : 'none';
+      }
+    }
+
+    function sincronizarFormulario() {
+      const acc = window.Acessibilidade;
+      if (!acc) return;
+
+      const chaves = [
+        ['cfgAltoContraste', 'altoContraste'],
+        ['cfgDyslexia', 'dyslexia'],
+        ['cfgCursorGrande', 'cursorGrande'],
+        ['cfgFocoAlto', 'focoAlto'],
+        ['cfgSemAnimacoes', 'semAnimacoes'],
+        ['cfgVlibras', 'vlibras'],
+      ];
+      chaves.forEach(([id, pref]) => {
+        const el = document.getElementById(id);
+        if (el) el.checked = Boolean(acc.getPref(pref));
+      });
+
+      const selDal = document.getElementById('cfgDaltonismo');
+      if (selDal) selDal.value = acc.getPref('daltonismo') || 'nenhum';
+
+      const selVel = document.getElementById('cfgVelocidadeVoz');
+      if (selVel) selVel.value = String(acc.getPref('velocidadeVoz') || 1.0);
+    }
+
+    function vincularChkCfg(id, pref) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('change', () => {
+        if (window.Acessibilidade) {
+          window.Acessibilidade.setPref(pref, el.checked);
+        }
+        const idMapa = {
+          altoContraste: 'toggleAltoContraste',
+          dyslexia: 'toggleDyslexia',
+          cursorGrande: 'toggleCursorGrande',
+          focoAlto: 'toggleFocoAlto',
+          semAnimacoes: 'toggleMovimento',
+          vlibras: 'toggleVlibras',
+        };
+        const painelToggle = document.getElementById(idMapa[pref]);
+        if (painelToggle) painelToggle.checked = el.checked;
+      });
+    }
+
+    function iniciarConfiguracoes() {
+      const acc = window.Acessibilidade;
+      if (!acc) return;
+
+      const toggle = document.getElementById('cfgToggleAcc');
+      const estaAtivado = acc.isAtivado();
+
+      if (toggle) {
+        toggle.checked = estaAtivado;
+        toggle.addEventListener('change', () => {
+          if (toggle.checked) {
+            acc.ativar();
+          } else {
+            acc.desativar();
+          }
+          atualizarMasterUI(toggle.checked);
+          sincronizarFormulario();
         });
       }
 
+      atualizarMasterUI(estaAtivado);
+      sincronizarFormulario();
 
-      const obterEscalaFonte = () => {
-        const escala = document.documentElement.style.getPropertyValue('--escala-fonte') || '1';
-        return parseFloat(escala);
-      };
+      // Botões de Voz
+      const btnLer = document.getElementById('cfgBtnLer');
+      const btnParar = document.getElementById('cfgBtnParar');
+      if (btnLer) btnLer.addEventListener('click', () => acc.iniciarLeitura());
+      if (btnParar) btnParar.addEventListener('click', () => acc.pararLeitura());
 
-      const definirEscalaFonte = (escala) => {
-        const novaEscala = Math.max(0.8, Math.min(1.5, escala));
-        document.documentElement.style.setProperty('--escala-fonte', novaEscala);
-        localStorage.setItem('escalaFonte', novaEscala);
-      };
-
-      if (botaoAumentar) {
-        botaoAumentar.addEventListener('click', () => {
-          const escalaAtual = obterEscalaFonte();
-          definirEscalaFonte(escalaAtual + 0.1);
+      // Seletor de velocidade
+      const selVel = document.getElementById('cfgVelocidadeVoz');
+      if (selVel) {
+        selVel.addEventListener('change', () => {
+          acc.setPref('velocidadeVoz', parseFloat(selVel.value));
+          const sp = document.getElementById('selectorVelocidade');
+          if (sp) sp.value = selVel.value;
         });
       }
 
-      if (botaoDiminuir) {
-        botaoDiminuir.addEventListener('click', () => {
-          const escalaAtual = obterEscalaFonte();
-          definirEscalaFonte(escalaAtual - 0.1);
+      // Botões de Fonte
+      const btnAumentar = document.getElementById('cfgBtnAumentar');
+      const btnDiminuir = document.getElementById('cfgBtnDiminuir');
+      const btnResetar = document.getElementById('cfgBtnResetar');
+      if (btnAumentar) btnAumentar.addEventListener('click', () => acc.aumentarFonte());
+      if (btnDiminuir) btnDiminuir.addEventListener('click', () => acc.diminuirFonte());
+      if (btnResetar) btnResetar.addEventListener('click', () => acc.resetarFonte());
+
+      // Checkboxes
+      vincularChkCfg('cfgAltoContraste', 'altoContraste');
+      vincularChkCfg('cfgDyslexia', 'dyslexia');
+      vincularChkCfg('cfgCursorGrande', 'cursorGrande');
+      vincularChkCfg('cfgFocoAlto', 'focoAlto');
+      vincularChkCfg('cfgSemAnimacoes', 'semAnimacoes');
+      vincularChkCfg('cfgVlibras', 'vlibras');
+
+      // Seletor de daltonismo
+      const selDal = document.getElementById('cfgDaltonismo');
+      if (selDal) {
+        selDal.addEventListener('change', () => {
+          acc.setPref('daltonismo', selDal.value);
+          const sp = document.getElementById('selectorDaltonismo');
+          if (sp) sp.value = selDal.value;
         });
       }
+    }
 
-      const escalaSalva = localStorage.getItem('escalaFonte');
-      if (escalaSalva) {
-        document.documentElement.style.setProperty('--escala-fonte', escalaSalva);
-      }
+    document.addEventListener('DOMContentLoaded', () => {
+      sincronizarTema();
+      iniciarConfiguracoes();
     });
 
-    // Sidebar mobile toggle
     function abrirSidebar() {
       const sidebar = document.getElementById('sidebar');
       const overlay = document.getElementById('sidebarOverlay');
       if (sidebar) sidebar.classList.add('open');
       if (overlay) overlay.classList.add('active');
     }
-    function fecharSidebar() {
-      const sidebar = document.getElementById('sidebar');
-      const overlay = document.getElementById('sidebarOverlay');
-      if (sidebar) sidebar.classList.remove('open');
-      if (overlay) overlay.classList.remove('active');
-    }
-
-    // Ícone tema
-    document.addEventListener('DOMContentLoaded', () => {
-      const btn = document.getElementById('btnTema');
-      if (btn) {
-        const update = () => {
-          const dark = document.body.classList.contains('tema-escuro');
-          btn.innerHTML = dark
-            ? '<i class="fa-solid fa-sun"></i>'
-            : '<i class="fa-solid fa-moon"></i>';
-        };
-        update();
-        btn.addEventListener('click', () => setTimeout(update, 50));
-      }
-    });
   </script>
 </body>
 

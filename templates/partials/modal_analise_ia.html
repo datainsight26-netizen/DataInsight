@@ -1,0 +1,99 @@
+{# ================================================================
+   PARTIAL: MODAL UNIVERSAL DE ANÁLISE COMPLETA COM IA (GEMINI)
+   Parâmetro esperado: page_id (ex: 'home', 'dados', 'analises', 'dashboard', 'planejamento', 'fluxo_caixa')
+   ================================================================ #}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ia_analise_modal.css') }}" />
+
+<div id="modalIaAnalise_{{ page_id }}" 
+     class="modal-ia-backdrop" 
+     style="display:none;" 
+     onclick="IaAnaliseModal.fecharSeBackdrop(event, '{{ page_id }}')">
+  <div class="modal-ia-container" role="dialog" aria-modal="true" aria-labelledby="modalIaTitulo_{{ page_id }}">
+    
+    <!-- HEADER DO MODAL -->
+    <div class="modal-ia-header">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div class="modal-ia-avatar">
+          <i class="fa-solid fa-brain"></i>
+        </div>
+        <div>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <h2 id="modalIaTitulo_{{ page_id }}" class="modal-ia-title">Análise Completa com IA</h2>
+            <span class="badge-ia-status" id="modalIaBadgeStatus_{{ page_id }}">
+              <span class="pulse-dot"></span> <span id="modalIaBadgeTexto_{{ page_id }}">Processando</span>
+            </span>
+          </div>
+          <p class="modal-ia-subtitle" id="modalIaSubtitle_{{ page_id }}">Diagnóstico inteligente sintetizado em tempo real pelo Gemini.</p>
+        </div>
+      </div>
+      <button type="button" class="modal-ia-close-btn" onclick="IaAnaliseModal.fechar('{{ page_id }}')" aria-label="Fechar modal">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- CORPO DO MODAL -->
+    <div class="modal-ia-body" id="modalIaBody_{{ page_id }}">
+      
+      <!-- ESTADO 1: SIMULAÇÃO DA ANÁLISE / SCANNER HUD -->
+      <div id="modalIaStateLoading_{{ page_id }}" class="modal-ia-loading-view">
+        <div class="ia-scanner-radar">
+          <div class="ia-scanner-ring ring-1"></div>
+          <div class="ia-scanner-ring ring-2"></div>
+          <div class="ia-scanner-ring ring-3"></div>
+          <div class="ia-scanner-core">
+            <i class="fa-solid fa-microchip"></i>
+          </div>
+        </div>
+        <h3 class="ia-loading-title" id="iaLoadingCurrentStep_{{ page_id }}">Examinando indicadores de desempenho...</h3>
+        <p class="ia-loading-desc" id="iaLoadingDesc_{{ page_id }}">A IA está cruzando dados métricos, comportamento temporal e estrutura da página.</p>
+        
+        <div class="ia-progress-bar-container">
+          <div class="ia-progress-bar-fill" id="iaProgressBarFill_{{ page_id }}"></div>
+        </div>
+
+        <div class="ia-steps-checklist" id="iaStepsChecklist_{{ page_id }}">
+          <div class="ia-step-item active" id="iaStep1_{{ page_id }}">
+            <i class="fa-solid fa-spinner fa-spin"></i> <span>Leitura das métricas e contexto da página ativa</span>
+          </div>
+          <div class="ia-step-item" id="iaStep2_{{ page_id }}">
+            <i class="fa-regular fa-circle"></i> <span>Processamento neural e cálculo de indicadores</span>
+          </div>
+          <div class="ia-step-item" id="iaStep3_{{ page_id }}">
+            <i class="fa-regular fa-circle"></i> <span>Consulta ao modelo Gemini e detecção de padrões</span>
+          </div>
+          <div class="ia-step-item" id="iaStep4_{{ page_id }}">
+            <i class="fa-regular fa-circle"></i> <span>Sintetização de diagnóstico executivo e plano de ação</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ESTADO 2: RELATÓRIO EXECUTIVO COMPLETO E DIRETO -->
+      <div id="modalIaStateResult_{{ page_id }}" class="modal-ia-result-view" style="display:none;">
+        <!-- Conteúdo dinâmico injetado pela engine da IA -->
+      </div>
+
+    </div>
+
+    <!-- FOOTER DO MODAL -->
+    <div class="modal-ia-footer" id="modalIaFooter_{{ page_id }}" style="display:none;">
+      <div class="modal-ia-footer-left">
+        <span class="ia-timestamp" id="modalIaTimestamp_{{ page_id }}"><i class="fa-regular fa-clock"></i> Gerado agora</span>
+      </div>
+      <div class="modal-ia-footer-right">
+        <button type="button" class="btn-ia-action btn-ia-action--salvar" id="btnSalvarAnalise_{{ page_id }}" onclick="IaAnaliseModal.salvar('{{ page_id }}')" title="Salvar este diagnóstico para consultar posteriormente">
+          <i class="fa-regular fa-bookmark"></i> Salvar Análise
+        </button>
+        <button type="button" class="btn-ia-action btn-ia-action--secondary" onclick="IaAnaliseModal.copiar('{{ page_id }}')" title="Copiar diagnóstico para a área de transferência">
+          <i class="fa-regular fa-copy"></i> Copiar Resumo
+        </button>
+        <button type="button" class="btn-ia-action btn-ia-action--reanalisar" onclick="IaAnaliseModal.reanalisar('{{ page_id }}')" title="Executar nova varredura de dados">
+          <i class="fa-solid fa-rotate"></i> Reanalisar
+        </button>
+        <button type="button" class="btn-ia-action btn-ia-action--primary" onclick="IaAnaliseModal.fechar('{{ page_id }}')">
+          <i class="fa-solid fa-check"></i> Concluir
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

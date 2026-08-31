@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='acessibilidade/acessibilidade.css') }}" />
   <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
 
   <style>
@@ -82,10 +83,24 @@
 
       <main id="conteudo" class="pagina" role="main" data-ia-help="page_graficos_avancados">
         <div class="container">
-          <header class="pagina__cabecalho">
-            <div class="migalhas" aria-label="Você está em">Início &gt; Dashboard</div>
-            <h1 class="h1">Dashboard</h1>
-            <p class="p">Visão estratégica completa do desempenho e métricas de sua empresa.</p>
+          <header class="pagina__cabecalho" style="display: flex !important; flex-direction: row !important; align-items: flex-start !important; justify-content: space-between !important; gap: 16px; margin-bottom: 24px; width: 100%;">
+            <div style="flex: 1; min-width: 0;">
+              <div class="migalhas" aria-label="Você está em">Início &gt; Dashboard</div>
+              <h1 class="h1" style="margin-bottom: 4px;">Dashboard</h1>
+              <p class="p" style="margin: 0;">Visão estratégica completa do desempenho e métricas de sua empresa.</p>
+            </div>
+            <!-- BOTÃO DE IA BRILHANTE AZUL COM ANIMAÇÃO E PULSANDO -->
+            <div style="display: flex; align-items: center; gap: 12px; flex-shrink: 0;">
+              <button type="button" 
+                      id="btnIaAnaliseDashboard" 
+                      class="btn-ia-glow-blue" 
+                      onclick="IaAnaliseModal.abrir('dashboard', coletarContextoIaDashboard)" 
+                      title="Executar Análise Completa e Direta do Dashboard com IA"
+                      aria-label="Executar Análise Completa com IA">
+                <span class="btn-ia-glow-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+                <span class="btn-ia-glow-text">IA</span>
+              </button>
+            </div>
           </header>
 
           <!-- Filtros e Período com Seletor Multi-Planilha -->
@@ -178,7 +193,6 @@
             </div>
           </section>
 
-
           <!-- Gráficos Principais - Layout Otimizado -->
           <section style="margin-top: 48px;">
             <h2 class="h2" style="margin-bottom: 24px;">Análise de Desempenho</h2>
@@ -231,6 +245,137 @@
             </div>
           </section>
 
+          
+          <!-- SEÇÃO DE PROJEÇÃO FINANCEIRA PREDITIVA (6 MESES - REGRESSÃO LINEAR) -->
+          <section aria-label="Projeção Financeira Preditiva" style="margin-top: 48px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
+              <div>
+               
+                <h2 class="h2" style="margin: 0; font-size: 22px;">Estimativa de <strong>Lucro ou Prejuízo</strong> dos últimos 3 meses.</h2>
+               
+              </div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <span class="badge" style="background: rgba(59, 130, 246, 0.12); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.25); padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                  <i class="fa-solid fa-chart-line"></i> Regressão Linear
+                </span>
+                <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25); padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                  <i class="fa-solid fa-scale-balanced"></i> Linha de Break-even
+                </span>
+              </div>
+            </div>
+
+            <!-- Cards dos 3 Cenários Preditivos -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 20px;">
+              <!-- Cenário Pessimista -->
+              <article class="cartao" style="border-top: 4px solid #EF4444; position: relative; background: var(--cartao);">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                  <div>
+                    <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #EF4444;">
+                      <i class="fa-solid fa-triangle-exclamation"></i> Cenário Pessimista
+                    </span>
+                    <div style="font-size: 24px; font-weight: 800; color: #EF4444; margin-top: 4px;" id="projPessimistaTotal">--</div>
+                  </div>
+                  <span id="projPessimistaBadge" class="badge" style="background: rgba(239, 68, 68, 0.12); color: #EF4444; border: 1px solid rgba(239, 68, 68, 0.25); font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: 12px;">
+                    Carregando...
+                  </span>
+                </div>
+                <div style="font-size: 12px; color: var(--texto-suave); display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--borda); padding-top: 10px;">
+                  <div style="display: flex; justify-content: space-between;">
+                    <span>Média Mensal Estimada:</span>
+                    <strong id="projPessimistaMedia" style="color: var(--texto);">--</strong>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span>Meses no Prejuízo:</span>
+                    <strong id="projPessimistaMeses" style="color: #EF4444;">--</strong>
+                  </div>
+                </div>
+              </article>
+
+              <!-- Cenário Provável -->
+              <article class="cartao" style="border-top: 4px solid #3B82F6; position: relative; background: var(--cartao); box-shadow: 0 4px 20px rgba(59, 130, 246, 0.08);">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                  <div>
+                    <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #3B82F6;">
+                      <i class="fa-solid fa-bullseye"></i> Cenário Provável (Tendência)
+                    </span>
+                    <div style="font-size: 24px; font-weight: 800; color: #3B82F6; margin-top: 4px;" id="projProvavelTotal">--</div>
+                  </div>
+                  <span id="projProvavelBadge" class="badge" style="background: rgba(59, 130, 246, 0.12); color: #3B82F6; border: 1px solid rgba(59, 130, 246, 0.25); font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: 12px;">
+                    Carregando...
+                  </span>
+                </div>
+                <div style="font-size: 12px; color: var(--texto-suave); display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--borda); padding-top: 10px;">
+                  <div style="display: flex; justify-content: space-between;">
+                    <span>Média Mensal Estimada:</span>
+                    <strong id="projProvavelMedia" style="color: var(--texto);">--</strong>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span>R² Aderência Estatística:</span>
+                    <strong id="projProvavelR2" style="color: #3B82F6;">--</strong>
+                  </div>
+                </div>
+              </article>
+
+              <!-- Cenário Otimista -->
+              <article class="cartao" style="border-top: 4px solid #10B981; position: relative; background: var(--cartao);">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                  <div>
+                    <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #10B981;">
+                      <i class="fa-solid fa-arrow-trend-up"></i> Cenário Otimista
+                    </span>
+                    <div style="font-size: 24px; font-weight: 800; color: #10B981; margin-top: 4px;" id="projOtimistaTotal">--</div>
+                  </div>
+                  <span id="projOtimistaBadge" class="badge" style="background: rgba(16, 185, 129, 0.12); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.25); font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: 12px;">
+                    Carregando...
+                  </span>
+                </div>
+                <div style="font-size: 12px; color: var(--texto-suave); display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--borda); padding-top: 10px;">
+                  <div style="display: flex; justify-content: space-between;">
+                    <span>Média Mensal Estimada:</span>
+                    <strong id="projOtimistaMedia" style="color: var(--texto);">--</strong>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span>Lucro Projetado 100%:</span>
+                    <strong id="projOtimistaStatus" style="color: #10B981;">Sim</strong>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <!-- Gráfico de Linha de Projeção -->
+            <article class="cartao" style="margin-bottom: 24px; padding: 22px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 18px;">
+                <h3 class="h2" style="font-size: 17px; margin: 0; display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-chart-line" style="color: var(--primaria);"></i>
+                  Curva de Projeção de 6 Meses: Lucro vs Prejuízo por Cenário
+                </h3>
+                
+                <!-- Seletor de Visão do Gráfico de Projeção -->
+                <div id="botoesFiltroProjecao" style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <button type="button" class="btn-proj-filtro active" data-modo="cenarios" style="padding: 5px 12px; font-size: 12px; border-radius: 6px; border: 1px solid var(--borda); background: #3B82F6; color: #FFFFFF; font-weight: 600; cursor: pointer;">
+                    <i class="fa-solid fa-layer-group"></i> Comparar 3 Cenários
+                  </button>
+                  <button type="button" class="btn-proj-filtro" data-modo="provavel_detalhado" style="padding: 5px 12px; font-size: 12px; border-radius: 6px; border: 1px solid var(--borda); background: var(--fundo-corpo); color: var(--texto); font-weight: 600; cursor: pointer;">
+                    <i class="fa-solid fa-chart-area"></i> Detalhe Provável (R/D/L)
+                  </button>
+                </div>
+              </div>
+
+              <!-- Container ApexCharts da Projeção -->
+              <div id="graficoProjecaoGaleria" style="min-height: 420px;"></div>
+
+              <!-- Diagnóstico Executivo Estatístico -->
+              <div id="boxDiagnosticoProjecao" style="margin-top: 18px; padding: 14px 18px; border-radius: 10px; background: rgba(59, 130, 246, 0.08); border-left: 4px solid #3B82F6; display: flex; align-items: center; gap: 14px;">
+                <div style="font-size: 22px; color: #3B82F6; flex-shrink: 0;">
+                  <i class="fa-solid fa-lightbulb"></i>
+                </div>
+                <div style="font-size: 13px; color: var(--texto); line-height: 1.5;" id="textoDiagnosticoProjecao">
+                  Calculando projeção estatística de 6 meses a partir do histórico dos últimos 3 meses...
+                </div>
+              </div>
+            </article>
+          </section>
+
 
           <!-- Insights e Recomendações -->
           <!-- <section class="cartao"
@@ -264,22 +409,21 @@
   {% include 'partials/painel_acessibilidade.html' %}
   {% include 'partials/chatbot.html' %}
 
-  <div vw class="enabled" id="Vlibras">
-    <div vw-access-button class="active"></div>
-    <div vw-plugin-wrapper>
-      <div class="vw-plugin-top-wrapper"></div>
-    </div>
-  </div>
+</div>
 
-  <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
-  <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
-  <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+<script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ia_analise_modal.js') }}"></script>
   <script src="{{ url_for('static', filename='js/graficos-avancados.js') }}"></script>
   <script>
     function abrirSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarOverlay').classList.add('active'); }
     function fecharSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('active'); }
   </script>
+
+  <!-- MODAL DE ANÁLISE COMPLETA COM IA -->
+  {% with page_id='dashboard' %}
+    {% include 'partials/modal_analise_ia.html' %}
+  {% endwith %}
 </body>
 
 </html>

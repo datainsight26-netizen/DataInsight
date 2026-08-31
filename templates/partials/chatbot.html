@@ -871,7 +871,17 @@ body.tema-escuro .chatbot-input-area input {
             if (!select) return;
             try {
                 const resp = await fetch('/api/planilhas/sumario');
-                if (!resp.ok) return;
+                if (!resp.ok) {
+                    console.warn('Erro ao carregar planilhas:', resp.status);
+                    return;
+                }
+                
+                const contentType = resp.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    console.warn('Resposta não é JSON, pode ser página de login');
+                    return;
+                }
+                
                 const json = await resp.json();
                 const planilhas = json.planilhas || [];
                 
@@ -1025,7 +1035,15 @@ body.tema-escuro .chatbot-input-area input {
             },
             perfil_resumo: {
                 title: 'Resumo do Perfil',
-                description: 'Mostra o nome do usuário e ações rápidas para editar perfil ou sair da conta.'
+                description: 'Mostra nome, e-mail, tempo na plataforma e ações para editar a conta ou sair.'
+            },
+            perfil_progresso: {
+                title: 'Progresso de uso',
+                description: 'Barra com as etapas concluídas: dados, mapeamento, análise, relatório e uso da IA.'
+            },
+            perfil_contribuicao: {
+                title: 'Contribuição ao negócio',
+                description: 'Exibe faturamento, lucro e despesas visíveis nos últimos 30 dias e explica o que o uso da plataforma já revelou.'
             },
             perfil_ultimas_analises: {
                 title: 'Últimas análises',
@@ -1113,7 +1131,7 @@ body.tema-escuro .chatbot-input-area input {
             },
             page_perfil: {
                 title: 'Perfil',
-                description: 'Página de perfil do usuário. Atualize seus dados pessoais, email e configurações de conta.'
+                description: 'Acompanhe o progresso de uso da plataforma, o impacto nos números do negócio e o histórico de análises e relatórios.'
             },
             page_configuracoes: {
                 title: 'Configurações',
@@ -1933,7 +1951,12 @@ body.tema-escuro .chatbot-input-area input {
                     method: 'POST',
                     credentials: 'same-origin',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ mensagem: textoLimpo, sessao_id: currentSessionId, tabela_id: tabelaId }),
+                    body: JSON.stringify({
+                        mensagem: textoLimpo,
+                        sessao_id: currentSessionId,
+                        tabela_id: tabelaId,
+                        incluir_voz: !!vozAtiva
+                    }),
                     signal: abortController.signal
                 });
 

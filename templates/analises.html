@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='acessibilidade/acessibilidade.css') }}" />
     <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
     
     <style>
@@ -80,10 +81,24 @@
             </header>
             <main id="conteudo" class="pagina" role="main" data-ia-help="page_analises">
                 <div class="container">
-                    <header class="pagina__cabecalho">
-                        <div class="migalhas">Início &gt; Métricas</div>
-                        <h1 class="h1">Análise de Métricas</h1>
-                        <p class="p">Análise detalhada de desempenho com comparação entre períodos.</p>
+                    <header class="pagina__cabecalho" style="display: flex !important; flex-direction: row !important; align-items: flex-start !important; justify-content: space-between !important; gap: 16px; margin-bottom: 24px; width: 100%;">
+                        <div style="flex: 1; min-width: 0;">
+                            <div class="migalhas">Início &gt; Métricas</div>
+                            <h1 class="h1" style="margin-bottom: 4px;">Análise de Métricas</h1>
+                            <p class="p" style="margin: 0;">Análise detalhada de desempenho com comparação entre períodos.</p>
+                        </div>
+                        <!-- BOTÃO DE IA BRILHANTE AZUL COM ANIMAÇÃO E PULSANDO -->
+                        <div style="display: flex; align-items: center; gap: 12px; flex-shrink: 0;">
+                            <button type="button" 
+                                    id="btnIaAnaliseAnalises" 
+                                    class="btn-ia-glow-blue" 
+                                    onclick="IaAnaliseModal.abrir('analises', coletarContextoIaAnalises)" 
+                                    title="Executar Análise Completa e Direta das Métricas com IA"
+                                    aria-label="Executar Análise Completa com IA">
+                                <span class="btn-ia-glow-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+                                <span class="btn-ia-glow-text">IA</span>
+                            </button>
+                        </div>
                     </header>
 
                     <!-- FILTROS AVANÇADOS COM SELETOR MULTI-PLANILHA -->
@@ -534,16 +549,9 @@
     {% include 'partials/painel_acessibilidade.html' %}
     {% include 'partials/chatbot.html' %}
 
-    <div vw class="enabled" id="Vlibras">
-        <div vw-access-button class="active"></div>
-        <div vw-plugin-wrapper>
-            <div class="vw-plugin-top-wrapper"></div>
-        </div>
-    </div>
+</div>
 
-    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
-    <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
-    <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+<script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     <script>
         function abrirSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarOverlay').classList.add('active'); }
@@ -556,8 +564,14 @@
         };
         {% endif %}
     </script>
+    <script src="{{ url_for('static', filename='js/ia_analise_modal.js') }}"></script>
     <script src="{{ url_for('static', filename='js/home.js') }}"></script>
     <script src="{{ url_for('static', filename='js/analise.js') }}"></script>
+
+    <!-- MODAL DE ANÁLISE COMPLETA COM IA -->
+    {% with page_id='analises' %}
+        {% include 'partials/modal_analise_ia.html' %}
+    {% endwith %}
 </body>
 
 </html>
