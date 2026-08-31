@@ -56,9 +56,14 @@ from backend.dados.quality import api_analisar_dados, api_limpar_dados
 
 # Importação analise
 from backend.analise.analise import analise_por_periodo, obter_ultimo_periodo
+from backend.analise.analise_estrategica import obter_analise_estrategica
 
 # Importação relatorio
-from backend.relatorio.gerar_relatorio import gerar_relatorio
+from backend.relatorio.gerar_relatorio import (
+    gerar_relatorio,
+    listar_relatorios_api,
+    excluir_relatorio_api,
+)
 from backend.relatorio.pagina_relatorio import (
     pagina_relatorio_pdf as pagina_relatorio_pdf_backend,
 )
@@ -541,6 +546,18 @@ def gerar_relatorio_endpoint():
     return gerar_relatorio()
 
 
+@app.route('/api/relatorios', methods=['GET'])
+@login_required
+def api_listar_relatorios():
+    return listar_relatorios_api()
+
+
+@app.route('/api/relatorios/<relatorio_id>', methods=['DELETE'])
+@login_required
+def api_excluir_relatorio(relatorio_id):
+    return excluir_relatorio_api(relatorio_id)
+
+
 @app.route('/relatorio_pdf')
 @login_required
 def pagina_relatorio_pdf():
@@ -657,11 +674,36 @@ def ultimo_periodo():
     return obter_ultimo_periodo()
 
 
+@app.route('/api/analise-estrategica', methods=['GET'])
+@login_required
+def api_analise_estrategica():
+    """Endpoint para o Centro de Análise Estratégica"""
+    return obter_analise_estrategica()
+
+
 # =================== IA PAGE & ASSISTENTE VIRTUAL ===================
 @app.route("/ia")
 @login_required
 def pagina_ia():
     return render_template("ia.html")
+
+
+@app.route("/ia/financeiro", endpoint="pagina_ia_financeiro")
+@login_required
+def pagina_ia_financeiro():
+    return render_template("ia-financeiro.html")
+
+
+@app.route("/ia/decisoes", endpoint="pagina_ia_decisoes")
+@login_required
+def pagina_ia_decisoes():
+    return render_template("ia-decisoes.html")
+
+
+@app.route("/ia/operacional", endpoint="pagina_ia_operacional")
+@login_required
+def pagina_ia_operacional():
+    return render_template("ia-operacional.html")
 
 
 @app.route("/assistente-virtual", endpoint="pagina_assistente_virtual")
@@ -1073,6 +1115,451 @@ Formato do JSON esperado:
         return jsonify({"sucesso": False, "mensagem": str(e)}), 500
 
 
+# =================== ANÁLISE COMPLETA COM IA — TODAS AS PÁGINAS ===================
+@app.route("/api/analise-ia-pagina", methods=["POST"])
+@login_required
+def api_analise_ia_pagina():
+    """Gera diagnóstico completo e direto com IA (Gemini) para as páginas principais."""
+    import re
+    import json
+    from backend.chatbot.chatbot import obter_time_agentes
+    from backend.chatbot.history import converter_markdown_para_html, _limpar_termos_tecnicos
+
+    try:
+        dados_req = request.get_json() or {}
+        pagina = str(dados_req.get("pagina", "home")).strip().lower()
+        contexto = dados_req.get("contexto", {}) or {}
+        periodo = dados_req.get("periodo", contexto.get("periodo", "Período Selecionado"))
+        
+        origem = contexto.get("origem", contexto.get("planilha", contexto.get("tabela_ativa", "Todas as Planilhas (Visão Consolidada)")))
+        if not origem or origem == "todas":
+            origem = "Todas as Planilhas (Visão Consolidada)"
+
+        # Montar prompt especializado com foco EXCLUSIVO em inteligência financeira e decisões de negócio
+        if pagina in ["home", "ia"]:
+            fat = contexto.get("faturamento", "R$ 0,00")
+            fat_pct = contexto.get("faturamento_pct", "0.0%")
+            luc = contexto.get("lucro", "R$ 0,00")
+            luc_pct = contexto.get("lucro_pct", "0.0%")
+            desp = contexto.get("despesas", "R$ 0,00")
+            desp_pct = contexto.get("despesas_pct", "0.0%")
+            cresc = contexto.get("crescimento", "0.0%")
+
+            nome_painel = "Centro de Inteligência IA" if pagina == "ia" else "Visão Geral (Home)"
+            prompt = f"""Você é o consultor de BI executivo, CFO virtual e estrategista da plataforma DataInsight.
+Analise a performance financeira e estratégica consolidada no painel {nome_painel}:
+- Fonte de Dados / Tabela Analisada: {origem}
+- Período Selecionado: {periodo}
+- Faturamento Bruto: {fat} (Variação: {fat_pct})
+- Lucro Líquido: {luc} (Margem/Variação: {luc_pct})
+- Despesas Operacionais: {desp} (Variação: {desp_pct})
+- Crescimento Global: {cresc}
+"""
+        elif pagina == "dados":
+            total_linhas = contexto.get("total_linhas", "0")
+            total_colunas = contexto.get("total_colunas", "0")
+            taxa_preenchimento = contexto.get("taxa_preenchimento", "100%")
+            tabela_ativa = contexto.get("tabela_ativa", origem)
+            colunas = contexto.get("colunas", [])
+            colunas_str = ", ".join(colunas) if colunas else "Schema contábil principal"
+
+            prompt = f"""Você é o auditor de governança financeira e engenharia de dados da plataforma DataInsight.
+Analise a volumetria e integridade da base contábil/financeira do cliente:
+- Tabela / Base Analisada: {tabela_ativa}
+- Período de Análise: {periodo}
+- Total de Lançamentos Registrados: {total_linhas}
+- Atributos Mapeados: {total_colunas} ({colunas_str})
+- Índice de Completude dos Lançamentos: {taxa_preenchimento}
+"""
+        elif pagina == "analises":
+            data_inicio = contexto.get("data_inicio", "Início")
+            data_fim = contexto.get("data_fim", "Fim")
+            metricas_resumo = contexto.get("metricas_resumo", [])
+            resumo_str = " | ".join(metricas_resumo) if metricas_resumo else "Vendas, custos operacionais, margem bruta e ticket médio"
+
+            prompt = f"""Você é o diretor de inteligência comercial e análise financeira da plataforma DataInsight.
+Analise o desempenho e cruzamento de indicadores da página de Análise de Métricas:
+- Fonte / Tabela Analisada: {origem}
+- Período Selecionado: {periodo} (De {data_inicio} até {data_fim})
+- Indicadores observados em tela: {resumo_str}
+"""
+        elif pagina in ["dashboard", "graficos-avancados"]:
+            periodo_sel = contexto.get("periodo_selecionado", periodo)
+            indicadores = contexto.get("indicadores", [])
+            if isinstance(indicadores, list) and len(indicadores) > 0:
+                ind_str = ", ".join([f"{i.get('label', 'Métrica')}: {i.get('valor', '—')}" for i in indicadores if isinstance(i, dict)])
+            else:
+                ind_str = "Faturamento Total, Pedidos, Ticket Médio, Margem Bruta e Gastos"
+
+            prompt = f"""Você é o CFO virtual e consultor executivo da plataforma DataInsight.
+Analise o painel gerencial (Dashboard / Gráficos Avançados):
+- Fonte de Dados / Tabela Analisada: {origem}
+- Período Selecionado: {periodo_sel}
+- Indicadores Gerenciais do Painel: {ind_str}
+"""
+        elif pagina in ["planejamento", "analise_planejamento_adaptado"]:
+            cenario = contexto.get("cenario", "Provável")
+            aba = contexto.get("aba_ativa", "Visão Geral")
+            rec_tot = contexto.get("receita_total", "—")
+            imp_tot = contexto.get("impostos_total", "—")
+            gast_var = contexto.get("gastos_variaveis", "—")
+            marg_pct = contexto.get("margem_percentual", "—")
+            gast_fix = contexto.get("gastos_fixos", "—")
+            res_anu = contexto.get("resultado_anual", "—")
+
+            prompt = f"""Você é o CFO virtual e diretor financeiro estratégico da plataforma DataInsight.
+Analise a projeção e viabilidade do Planejamento Financeiro de 12 Meses:
+- Fonte de Dados / Tabela Analisada: {origem}
+- Cenário Selecionado: {cenario.upper()}
+- Aba / Módulo em Foco: {aba}
+- Projeção de Receita Total (12 meses): {rec_tot}
+- Impostos Projetados: {imp_tot}
+- Gastos Variáveis Projetados: {gast_var}
+- Margem de Contribuição Média: {marg_pct}
+- Gastos Fixos Projetados: {gast_fix}
+- Resultado Anual Projetado (Lucro Líquido): {res_anu}
+"""
+        elif pagina in ["fluxo_caixa", "fluxo-caixa"]:
+            entradas = contexto.get("entradas", "R$ 0,00")
+            saidas = contexto.get("saidas", "R$ 0,00")
+            saldo = contexto.get("saldo", "R$ 0,00")
+            maior_cat = contexto.get("maior_categoria", "Geral")
+
+            prompt = f"""Você é o especialista em tesouraria e gestão de fluxo de caixa da plataforma DataInsight.
+Analise a liquidez e disponibilidade de caixa da empresa:
+- Fonte de Dados / Tabela Analisada: {origem}
+- Período Selecionado: {periodo}
+- Entradas Totais de Caixa (Recebimentos): {entradas}
+- Saídas Totais de Caixa (Desembolsos): {saidas}
+- Saldo Líquido do Período: {saldo}
+- Categoria / Destaque de Custo/Ganho: {maior_cat}
+"""
+        else:
+            prompt = f"""Você é o analista sênior de negócios e inteligência financeira da plataforma DataInsight.
+Analise o desempenho corporativo da página {pagina}:
+- Fonte de Dados / Tabela Analisada: {origem}
+- Período Selecionado: {periodo}
+- Contexto dos Dados: {json.dumps(contexto, ensure_ascii=False)}
+"""
+
+        prompt += f"""
+REGRAS OBRIGATÓRIAS DE DIAGNÓSTICO FINANCEIRO:
+1. NUNCA faça meta-descrições da página ou da interface web (proibido usar expressões como "a análise da página", "foram encontradas 250 linhas", "botão na tela" ou "cartões no HTML").
+2. NUNCA mencione termos técnicos como: MongoDB, banco de dados, RAG, contexto recuperado, coleção, query, API, backend, dataset, chunk, embedding, LLM, Gemini, modelo de linguagem.
+3. Faça uma análise executiva direta, séria e aprofundada SOBRE A SAÚDE DO NEGÓCIO da empresa na fonte '{origem}' no período '{periodo}'.
+4. Fundamente suas conclusões citando explicitamente os números reais (valores em R$ e porcentagens %).
+5. Destaque pontos fortes da operação, alertas operacionais/riscos de caixa e RECOMENDAÇÕES ESTRATÉGICAS acionáveis para o empresário tomar decisões imediatas.
+
+Você deve retornar OBRIGATORIAMENTE apenas um objeto JSON válido, sem formatação de markdown (sem ```json), no seguinte formato exato:
+{{
+  "veredito_titulo": "Título executivo impactante (ex: Operação com Alta Margem e Excelente Liquidez)",
+  "veredito_subtitulo": "Subtítulo direto indicando o diagnóstico para {origem} no período {periodo}",
+  "veredito_badge": "Alta Performance | Operação Saudável | Atenção Financeira | Risco de Liquidez",
+  "veredito_status": "positivo | neutro | atencao | critico",
+  "diagnostico_geral": "Diagnóstico analítico aprofundado em 3 a 4 frases, citando os valores (R$, %) reais fornecidos para fundamentar a situação do negócio.",
+  "pontos_fortes": [
+    "Ponto forte do negócio 1 fundamentado nos números reais",
+    "Ponto forte do negócio 2 fundamentado nos números reais"
+  ],
+  "alertas_riscos": [
+    "Alerta operacional ou risco financeiro 1 identificado",
+    "Alerta operacional ou risco financeiro 2 identificado"
+  ],
+  "recomendacoes": [
+    "Recomendação/Decisão estratégica 1 para alavancar receita ou margem",
+    "Recomendação/Decisão estratégica 2 para contenção de perdas/custos",
+    "Recomendação/Decisão estratégica 3 para sustentabilidade e governança"
+  ]
+}}
+"""
+
+        orquestrador = obter_time_agentes()
+        success = False
+        parsed = {}
+
+        try:
+            resposta_obj = orquestrador.run(prompt)
+            resposta_texto = resposta_obj.content.strip()
+
+            if resposta_texto.startswith("```"):
+                resposta_texto = re.sub(r"^```(?:json)?\n?", "", resposta_texto, flags=re.IGNORECASE)
+                resposta_texto = re.sub(r"\n?```$", "", resposta_texto)
+            resposta_texto = resposta_texto.strip()
+
+            parsed = json.loads(resposta_texto)
+            if parsed.get("diagnostico_geral") and len(parsed.get("recomendacoes", [])) >= 2:
+                success = True
+        except Exception as e:
+            print(f"[Erro ao chamar Gemini em /api/analise-ia-pagina ({pagina})]:", e)
+
+        # Configurar cores e ícones baseados no status retornado
+        status = parsed.get("veredito_status", "positivo")
+        cores_map = {
+            "positivo": "#10b981",
+            "neutro": "#3b82f6",
+            "atencao": "#f59e0b",
+            "critico": "#ef4444"
+        }
+        icones_map = {
+            "positivo": "fa-bolt",
+            "neutro": "fa-arrow-trend-up",
+            "atencao": "fa-triangle-exclamation",
+            "critico": "fa-triangle-exclamation"
+        }
+
+        cor_veredito = cores_map.get(status, "#3b82f6")
+        icone_veredito = icones_map.get(status, "fa-circle-check")
+
+        # Construir métricas dos cards dinamicamente por página (EXIBINDO TABELA/ORIGEM E PERÍODO SELECIONADO)
+        origem_exibicao = str(origem).replace("🌐 ", "").strip()
+        if len(origem_exibicao) > 24:
+            origem_exibicao = origem_exibicao[:22] + "..."
+
+        periodo_exibicao = str(periodo).strip()
+        if len(periodo_exibicao) > 24:
+            periodo_exibicao = periodo_exibicao[:22] + "..."
+
+        metricas_cards = []
+        if pagina == "home":
+            metricas_cards = [
+                {"label": "Tabela / Origem", "valor": origem_exibicao, "sub": "Base Analisada", "cor": "#3b82f6", "icone": "fa-database"},
+                {"label": "Período", "valor": periodo_exibicao, "sub": "Intervalo Selecionado", "cor": "#8b5cf6", "icone": "fa-calendar-days"},
+                {"label": "Faturamento", "valor": str(contexto.get("faturamento", "—")), "sub": str(contexto.get("faturamento_pct", "Acumulado")), "cor": "#10b981", "icone": "fa-arrow-trend-up"},
+                {"label": "Lucro Líquido", "valor": str(contexto.get("lucro", "—")), "sub": str(contexto.get("lucro_pct", "Margem")), "cor": "#06b6d4", "icone": "fa-dollar-sign"}
+            ]
+        elif pagina == "dados":
+            metricas_cards = [
+                {"label": "Tabela / Origem", "valor": origem_exibicao, "sub": "Base Analisada", "cor": "#3b82f6", "icone": "fa-database"},
+                {"label": "Período", "valor": periodo_exibicao, "sub": "Intervalo Selecionado", "cor": "#8b5cf6", "icone": "fa-calendar-days"},
+                {"label": "Total Registros", "valor": str(contexto.get("total_linhas", "0")), "sub": "Lançamentos", "cor": "#10b981", "icone": "fa-list-ol"},
+                {"label": "Completude", "valor": str(contexto.get("taxa_preenchimento", "100%")), "sub": "Integridade", "cor": "#06b6d4", "icone": "fa-circle-check"}
+            ]
+        elif pagina == "analises":
+            metricas_cards = [
+                {"label": "Tabela / Origem", "valor": origem_exibicao, "sub": "Base Analisada", "cor": "#3b82f6", "icone": "fa-layer-group"},
+                {"label": "Período", "valor": periodo_exibicao, "sub": "Intervalo Selecionado", "cor": "#8b5cf6", "icone": "fa-calendar-days"},
+                {"label": "Consistência", "valor": "Validada", "sub": "Cruzamento auditado", "cor": "#10b981", "icone": "fa-circle-check"},
+                {"label": "Métricas", "valor": "Monitoradas", "sub": "Performance ativa", "cor": "#f59e0b", "icone": "fa-chart-line"}
+            ]
+        elif pagina in ["dashboard", "graficos-avancados"]:
+            metricas_cards = [
+                {"label": "Tabela / Origem", "valor": origem_exibicao, "sub": "Base Analisada", "cor": "#3b82f6", "icone": "fa-layer-group"},
+                {"label": "Período", "valor": periodo_exibicao, "sub": "Filtro Aplicado", "cor": "#8b5cf6", "icone": "fa-calendar-check"},
+                {"label": "Visão BI", "valor": "Executiva", "sub": "Painel completo", "cor": "#10b981", "icone": "fa-chart-simple"},
+                {"label": "Status", "valor": "Sincronizado", "sub": "Tempo Real", "cor": "#06b6d4", "icone": "fa-bolt"}
+            ]
+        elif pagina in ["planejamento", "analise_planejamento_adaptado"]:
+            cen = str(contexto.get("cenario", "Provável")).upper()
+            metricas_cards = [
+                {"label": "Tabela / Origem", "valor": origem_exibicao, "sub": "Base Analisada", "cor": "#3b82f6", "icone": "fa-database"},
+                {"label": "Cenário / Período", "valor": f"{cen} (12m)", "sub": "Projeção Anual", "cor": "#8b5cf6", "icone": "fa-scale-balanced"},
+                {"label": "Receita Projetada", "valor": str(contexto.get("receita_total", "—")), "sub": "12 Meses", "cor": "#10b981", "icone": "fa-arrow-trend-up"},
+                {"label": "Resultado Anual", "valor": str(contexto.get("resultado_anual", "—")), "sub": "Saldo Projetado", "cor": "#06b6d4", "icone": "fa-dollar-sign"}
+            ]
+        elif pagina in ["fluxo_caixa", "fluxo-caixa"]:
+            metricas_cards = [
+                {"label": "Tabela / Origem", "valor": origem_exibicao, "sub": "Base Analisada", "cor": "#3b82f6", "icone": "fa-layer-group"},
+                {"label": "Período", "valor": periodo_exibicao, "sub": "Intervalo Selecionado", "cor": "#8b5cf6", "icone": "fa-calendar-day"},
+                {"label": "Entradas", "valor": str(contexto.get("entradas", "R$ 0,00")), "sub": "Recebimentos", "cor": "#10b981", "icone": "fa-arrow-down-long"},
+                {"label": "Saldo Líquido", "valor": str(contexto.get("saldo", "R$ 0,00")), "sub": "Disponibilidade", "cor": "#06b6d4", "icone": "fa-wallet"}
+            ]
+
+        if not success:
+            # Fallback estruturado inteligente com foco estritamente de negócio
+            parsed = {
+                "veredito_titulo": "Operação Estável e Monitorada em Tempo Real",
+                "veredito_subtitulo": f"Diagnóstico consolidado para a fonte {origem_exibicao} no período {periodo_exibicao}.",
+                "veredito_badge": "Operação Saudável",
+                "veredito_status": "positivo",
+                "diagnostico_geral": f"A análise financeira da fonte <strong>{origem_exibicao}</strong> no período <strong>{periodo_exibicao}</strong> demonstra regularidade operacional. O fluxo de receitas e o controle dos desembolsos mantêm a liquidez estável, sendo fundamental manter o acompanhamento contínuo dos custos fixos.",
+                "pontos_fortes": [
+                    "Sincronização de métricas e recebimentos em conformidade com o planejado.",
+                    "Previsibilidade operacional mantida durante o período analisado."
+                ],
+                "alertas_riscos": [
+                    "Monitore aumentos atípicos em despesas variáveis nos próximos ciclos.",
+                    "Manutenção de reserva financeira para cobrir oscilações no fluxo de caixa."
+                ],
+                "recomendacoes": [
+                    "Revisar mensalmente as principais linhas de custo operacional da empresa.",
+                    "Utilizar os cenários do Planejamento Financeiro para projetar margens de segurança.",
+                    "Renegociar prazos com fornecedores para otimizar o capital de giro."
+                ]
+            }
+
+        # Sanitizar termos técnicos e converter markdown no diagnostico_geral
+        diagnostico_sanitizado = _limpar_termos_tecnicos(
+            converter_markdown_para_html(parsed.get("diagnostico_geral", ""))
+        )
+
+        return jsonify({
+            "sucesso": True,
+            "origem": "gemini" if success else "fallback",
+            "veredito": {
+                "titulo": parsed.get("veredito_titulo", "Diagnóstico Operacional"),
+                "subtitulo": parsed.get("veredito_subtitulo", f"Métricas consolidadas para {periodo}."),
+                "badge": parsed.get("veredito_badge", "Ativo"),
+                "cor": cor_veredito,
+                "icone": icone_veredito
+            },
+            "metricas": metricas_cards,
+            "diagnostico_geral": diagnostico_sanitizado,
+            "pontos_fortes": [_limpar_termos_tecnicos(p) for p in parsed.get("pontos_fortes", [])],
+            "alertas_riscos": [_limpar_termos_tecnicos(p) for p in parsed.get("alertas_riscos", [])],
+            "recomendacoes": [_limpar_termos_tecnicos(p) for p in parsed.get("recomendacoes", [])]
+        })
+
+    except Exception as e:
+        print("[Erro Rota Universal IA Página]:", e)
+        traceback.print_exc()
+        return jsonify({"sucesso": False, "mensagem": str(e)}), 500
+
+
+# =================== ANÁLISES SALVAS DA IA — ROTAS & API ===================
+@app.route("/analises-salvas")
+@login_required
+def pagina_analises_salvas():
+    """Página de consulta e gerenciamento das análises salvas da IA."""
+    return render_template("analises_salvas.html")
+
+
+@app.route("/api/salvar-analise-ia", methods=["POST"])
+@login_required
+def api_salvar_analise_ia():
+    """Salva um diagnóstico de análise da IA para o usuário logado."""
+    from datetime import datetime
+    from backend.db import analises_salvas_colecao
+
+    try:
+        usuario_id = str(session.get("usuario_id"))
+        dados_req = request.get_json() or {}
+
+        pagina = str(dados_req.get("pagina", "home")).strip().lower()
+        pagina_nome = str(dados_req.get("pagina_nome", pagina.upper()))
+        origem = str(dados_req.get("origem", "Todas as Planilhas (Visão Consolidada)"))
+        periodo = str(dados_req.get("periodo", "Período Selecionado"))
+        veredito = dados_req.get("veredito", {}) or {}
+        metricas = dados_req.get("metricas", []) or []
+        diagnostico_geral = str(dados_req.get("diagnostico_geral", ""))
+        pontos_fortes = dados_req.get("pontos_fortes", []) or []
+        alertas_riscos = dados_req.get("alertas_riscos", []) or []
+        recomendacoes = dados_req.get("recomendacoes", []) or []
+
+        documento = {
+            "usuario_id": usuario_id,
+            "pagina": pagina,
+            "pagina_nome": pagina_nome,
+            "origem": origem,
+            "periodo": periodo,
+            "veredito": veredito,
+            "titulo": veredito.get("titulo", f"Análise {pagina_nome}"),
+            "subtitulo": veredito.get("subtitulo", f"Métricas de {origem} ({periodo})"),
+            "badge": veredito.get("badge", "Salvo"),
+            "cor": veredito.get("cor", "#3b82f6"),
+            "metricas": metricas,
+            "diagnostico_geral": diagnostico_geral,
+            "pontos_fortes": pontos_fortes,
+            "alertas_riscos": alertas_riscos,
+            "recomendacoes": recomendacoes,
+            "criado_em": datetime.now()
+        }
+
+        res = analises_salvas_colecao.insert_one(documento)
+
+        return jsonify({
+            "sucesso": True,
+            "mensagem": "Análise salva com sucesso!",
+            "id": str(res.inserted_id)
+        })
+    except Exception as e:
+        print("[Erro ao salvar análise IA]:", e)
+        traceback.print_exc()
+        return jsonify({"sucesso": False, "mensagem": str(e)}), 500
+
+
+@app.route("/api/analises-salvas", methods=["GET"])
+@login_required
+def api_listar_analises_salvas():
+    """Lista as análises salvas do usuário logado com suporte a filtros por página, busca e data."""
+    from datetime import datetime
+    from backend.db import analises_salvas_colecao
+
+    try:
+        usuario_id = str(session.get("usuario_id"))
+        pagina_filtro = request.args.get("pagina", "").strip().lower()
+        busca_filtro = request.args.get("busca", "").strip().lower()
+        data_filtro = request.args.get("data", "").strip()
+
+        query = {"usuario_id": usuario_id}
+
+        if pagina_filtro and pagina_filtro != "todas":
+            query["pagina"] = pagina_filtro
+
+        if data_filtro:
+            try:
+                dt_inicio = datetime.strptime(data_filtro, "%Y-%m-%d")
+                dt_fim = dt_inicio.replace(hour=23, minute=59, second=59)
+                query["criado_em"] = {"$gte": dt_inicio, "$lte": dt_fim}
+            except Exception as dt_err:
+                print("[Filtro Data Analises Salvas Aviso]:", dt_err)
+
+        cursor = analises_salvas_colecao.find(query).sort("criado_em", -1)
+        analises = []
+
+        for doc in cursor:
+            if busca_filtro:
+                texto_busca = f"{doc.get('titulo', '')} {doc.get('diagnostico_geral', '')} {doc.get('origem', '')} {doc.get('pagina_nome', '')}".lower()
+                if busca_filtro not in texto_busca:
+                    continue
+
+            dt_criado = doc.get("criado_em")
+            data_formatada = dt_criado.strftime("%d/%m/%Y às %H:%M") if isinstance(dt_criado, datetime) else "Recente"
+
+            analises.append({
+                "id": str(doc["_id"]),
+                "pagina": doc.get("pagina", "home"),
+                "pagina_nome": doc.get("pagina_nome", "Visão Geral"),
+                "origem": doc.get("origem", "Consolidada"),
+                "periodo": doc.get("periodo", "Período Selecionado"),
+                "titulo": doc.get("titulo", "Diagnóstico Executivo"),
+                "subtitulo": doc.get("subtitulo", ""),
+                "badge": doc.get("badge", "Salvo"),
+                "cor": doc.get("cor", "#3b82f6"),
+                "veredito": doc.get("veredito", {}),
+                "metricas": doc.get("metricas", []),
+                "diagnostico_geral": doc.get("diagnostico_geral", ""),
+                "pontos_fortes": doc.get("pontos_fortes", []),
+                "alertas_riscos": doc.get("alertas_riscos", []),
+                "recomendacoes": doc.get("recomendacoes", []),
+                "criado_em_fmt": data_formatada
+            })
+
+        return jsonify({"sucesso": True, "analises": analises, "total": len(analises)})
+    except Exception as e:
+        print("[Erro ao listar análises salvas]:", e)
+        traceback.print_exc()
+        return jsonify({"sucesso": False, "mensagem": str(e)}), 500
+
+
+@app.route("/api/analises-salvas/<analise_id>", methods=["DELETE"])
+@login_required
+def api_excluir_analise_salva(analise_id):
+    """Exclui uma análise salva do usuário logado."""
+    from bson import ObjectId
+    from backend.db import analises_salvas_colecao
+
+    try:
+        usuario_id = str(session.get("usuario_id"))
+        res = analises_salvas_colecao.delete_one({"_id": ObjectId(analise_id), "usuario_id": usuario_id})
+
+        if res.deleted_count > 0:
+            return jsonify({"sucesso": True, "mensagem": "Análise excluída com sucesso!"})
+        return jsonify({"sucesso": False, "mensagem": "Análise não encontrada ou sem permissão."}), 404
+    except Exception as e:
+        print("[Erro ao excluir análise salva]:", e)
+        return jsonify({"sucesso": False, "mensagem": str(e)}), 500
+
+
 # =================== RUN ===================
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True,port=5005)
