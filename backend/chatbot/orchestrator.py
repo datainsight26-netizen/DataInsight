@@ -3,6 +3,11 @@ import os
 import urllib.request
 from types import SimpleNamespace
 from typing import List, Optional
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except Exception:
+    pass
 
 
 _ORQUESTRADOR = None
@@ -13,7 +18,7 @@ class GeminiOrchestrator:
 
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         self.api_key = api_key or os.getenv("GOOGLE_API_KEY")
-        self.model = model or os.getenv("GOOGLE_GEMINI_MODEL", "gemini-flash-lite-latest")
+        self.model = model or os.getenv("GOOGLE_GEMINI_MODEL", "gemini-3.5-flash-lite")
         self.candidate_models = self._montar_candidatos()
         self._modelo_ok = self.candidate_models[0] if self.candidate_models else self.model
         self._client = None
@@ -22,8 +27,11 @@ class GeminiOrchestrator:
         vistos = []
         for nome in (
             self.model,
+            "gemini-3.5-flash-lite",
+            "gemini-3.5-flash",
+            "gemini-3.6-flash",
             "gemini-flash-lite-latest",
-            "gemini-2.5-flash-lite",
+            "gemini-flash-latest",
         ):
             if nome and nome not in vistos:
                 vistos.append(nome)
@@ -54,10 +62,6 @@ class GeminiOrchestrator:
                 "temperature": 0.2,
                 "max_output_tokens": 1536,
             }
-            try:
-                kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
-            except Exception:
-                pass
             return types.GenerateContentConfig(**kwargs)
         except Exception:
             return None
@@ -113,7 +117,6 @@ class GeminiOrchestrator:
             "generationConfig": {
                 "temperature": 0.2,
                 "maxOutputTokens": 1536,
-                "thinkingConfig": {"thinkingBudget": 0},
             },
         }
         data = json.dumps(payload).encode("utf-8")
@@ -147,9 +150,6 @@ class GeminiOrchestrator:
                         return "\n".join(textos).strip()
             except Exception as err:
                 print(f"[Gemini REST ({m}) Erro]: {err}")
-                if "thinking" in str(err).lower() or "thinkingConfig" in str(err):
-                    payload["generationConfig"].pop("thinkingConfig", None)
-                    data = json.dumps(payload).encode("utf-8")
                 continue
         return None
 
