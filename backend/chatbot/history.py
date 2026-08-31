@@ -190,7 +190,15 @@ def buscar_historico_chatbot():
         return jsonify({"erro": "Não autorizado"}), 401
 
     sessao_id = request.args.get("sessao_id")
-    query = {"usuario_id": usuario_id}
+    u_ids = [usuario_id, str(usuario_id)]
+    try:
+        from bson import ObjectId
+        if ObjectId.is_valid(str(usuario_id)):
+            u_ids.append(ObjectId(str(usuario_id)))
+    except Exception:
+        pass
+
+    query = {"usuario_id": {"$in": u_ids}}
     if sessao_id:
         query["sessao_id"] = sessao_id
 
@@ -199,7 +207,7 @@ def buscar_historico_chatbot():
         {
             "remetente": doc["remetente"],
             "mensagem": doc["mensagem"],
-            "data": doc["data"].strftime("%d/%m %H:%M"),
+            "data": doc["data"].strftime("%d/%m %H:%M") if doc.get("data") else "",
         }
         for doc in docs
     ]
@@ -211,7 +219,15 @@ def buscar_ultima_resposta_chatbot():
     if not usuario_id:
         return jsonify({"erro": "Não autorizado"}), 401
 
-    doc = chat_historico.find({"usuario_id": usuario_id, "remetente": "bot"}).sort("data", -1).limit(1)
+    u_ids = [usuario_id, str(usuario_id)]
+    try:
+        from bson import ObjectId
+        if ObjectId.is_valid(str(usuario_id)):
+            u_ids.append(ObjectId(str(usuario_id)))
+    except Exception:
+        pass
+
+    doc = chat_historico.find({"usuario_id": {"$in": u_ids}, "remetente": "bot"}).sort("data", -1).limit(1)
     ultima = None
     for item in doc:
         ultima = item
@@ -225,6 +241,7 @@ def buscar_ultima_resposta_chatbot():
         "sessao_id": ultima.get("sessao_id"),
         "data": ultima.get("data").strftime("%d/%m %H:%M") if ultima.get("data") else None,
     })
+
 
 
 def limpar_historico_chatbot():
