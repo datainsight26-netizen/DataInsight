@@ -1976,6 +1976,11 @@ body.tema-escuro .chatbot-input-area input {
                 adicionarMensagem(dados.resposta, 'bot');
                 exibirRespostaNoPainel(dados.resposta);
 
+                if (typeof window.carregarUltimaRespostaIA === 'function') {
+                    window.carregarUltimaRespostaIA();
+                }
+                window.dispatchEvent(new CustomEvent('chatbot:nova-resposta', { detail: dados }));
+
                 if (voiceStatus) voiceStatus.textContent = 'Resposta pronta.';
 
                 // Reproduzir áudio da resposta com proteção de microfone
