@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="DataInsight — Centro de Inteligência Estratégica com IA: Copiloto, Módulos Especializados, Agentes Automáticos." />
+    <meta name="description"
+        content="DataInsight — Centro de Inteligência Estratégica com IA: Copiloto, Módulos Especializados, Agentes Automáticos." />
     <title>DataInsight • Centro de Inteligência com IA</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
@@ -19,27 +21,69 @@
 
         /* Animação keyframes */
         @keyframes ia-pulse {
-            0%,100% { opacity:1; }
-            50% { opacity:0.5; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
         }
+
         @keyframes ia-glow-pulse {
-            0%,100% { box-shadow: 0 0 12px rgba(59,130,246,0.15); }
-            50% { box-shadow: 0 0 28px rgba(59,130,246,0.4); }
+
+            0%,
+            100% {
+                box-shadow: 0 0 12px rgba(59, 130, 246, 0.15);
+            }
+
+            50% {
+                box-shadow: 0 0 28px rgba(59, 130, 246, 0.4);
+            }
         }
+
         @keyframes ia-spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
+
         @keyframes ia-fade-in {
-            from { opacity:0; transform:translateY(16px); }
-            to   { opacity:1; transform:translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
+
         @keyframes ia-shimmer {
-            0%   { background-position: -200% 0; }
-            100% { background-position:  200% 0; }
+            0% {
+                background-position: -200% 0;
+            }
+
+            100% {
+                background-position: 200% 0;
+            }
         }
+
         @keyframes badge-dot-pulse {
-            0%,100% { transform:scale(1); opacity:1; }
-            50% { transform:scale(1.6); opacity:0.6; }
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.6);
+                opacity: 0.6;
+            }
         }
 
         /* ----------------------------------------------------------------
@@ -56,7 +100,10 @@
             overflow-x: auto;
             scrollbar-width: none;
         }
-        .ia-hub-nav::-webkit-scrollbar { display:none; }
+
+        .ia-hub-nav::-webkit-scrollbar {
+            display: none;
+        }
 
         .ia-hub-tab {
             display: flex;
@@ -75,21 +122,24 @@
             white-space: nowrap;
             flex-shrink: 0;
         }
+
         .ia-hub-tab:hover {
-            background: rgba(59,130,246,0.08);
+            background: rgba(59, 130, 246, 0.08);
             color: var(--primaria);
         }
+
         .ia-hub-tab.active {
             background: var(--primaria);
             color: #fff;
-            box-shadow: 0 4px 14px rgba(59,130,246,0.35);
+            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
         }
+
         .ia-hub-tab .ia-tab-badge {
             font-size: 0.7rem;
             font-weight: 700;
             padding: 2px 6px;
             border-radius: 20px;
-            background: rgba(255,255,255,0.25);
+            background: rgba(255, 255, 255, 0.25);
             line-height: 1;
         }
 
@@ -101,6 +151,7 @@
             opacity: 0;
             transition: opacity 0.3s ease;
         }
+
         .ia-hub-panel.active {
             opacity: 1;
             animation: ia-fade-in 0.35s ease forwards;
@@ -118,18 +169,46 @@
             font-size: 0.78rem;
             font-weight: 600;
         }
+
         .ia-status-badge::before {
             content: '';
-            width: 8px; height: 8px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
             flex-shrink: 0;
         }
-        .ia-status-online { background: rgba(16,185,129,0.1); color: #10B981; border: 1px solid rgba(16,185,129,0.25); }
-        .ia-status-online::before { background: #10B981; animation: badge-dot-pulse 1.5s ease infinite; }
-        .ia-status-loading { background: rgba(245,158,11,0.1); color: #F59E0B; border: 1px solid rgba(245,158,11,0.25); }
-        .ia-status-loading::before { background: #F59E0B; animation: ia-pulse 1s linear infinite; }
-        .ia-status-offline { background: rgba(239,68,68,0.08); color: #EF4444; border: 1px solid rgba(239,68,68,0.2); }
-        .ia-status-offline::before { background: #EF4444; }
+
+        .ia-status-online {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10B981;
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        .ia-status-online::before {
+            background: #10B981;
+            animation: badge-dot-pulse 1.5s ease infinite;
+        }
+
+        .ia-status-loading {
+            background: rgba(245, 158, 11, 0.1);
+            color: #F59E0B;
+            border: 1px solid rgba(245, 158, 11, 0.25);
+        }
+
+        .ia-status-loading::before {
+            background: #F59E0B;
+            animation: ia-pulse 1s linear infinite;
+        }
+
+        .ia-status-offline {
+            background: rgba(239, 68, 68, 0.08);
+            color: #EF4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .ia-status-offline::before {
+            background: #EF4444;
+        }
 
         /* ----------------------------------------------------------------
            OVERVIEW — KPI GRID
@@ -140,6 +219,7 @@
             gap: 16px;
             margin-bottom: 24px;
         }
+
         .ia-kpi-card {
             background: var(--cartao);
             border: 1px solid var(--borda);
@@ -150,38 +230,75 @@
             gap: 12px;
             transition: transform 0.2s, box-shadow 0.2s;
         }
-        .ia-kpi-card:hover { transform:translateY(-3px); box-shadow: var(--shadow-lg); }
-        .ia-kpi-icon {
-            width: 42px; height: 42px;
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.1rem; flex-shrink: 0;
+
+        .ia-kpi-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
         }
-        .ia-kpi-body { flex: 1; min-width: 0; }
-        .ia-kpi-label { display: block; font-size: 0.75rem; color: var(--suave); font-weight: 500; margin-bottom: 4px; }
-        .ia-kpi-value { display: block; font-size: 1.25rem; font-weight: 800; color: var(--texto); line-height: 1.2; }
-        .ia-kpi-var { display: block; font-size: 0.75rem; font-weight: 600; margin-top: 4px; }
+
+        .ia-kpi-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .ia-kpi-body {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .ia-kpi-label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--suave);
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .ia-kpi-value {
+            display: block;
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--texto);
+            line-height: 1.2;
+        }
+
+        .ia-kpi-var {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 4px;
+        }
 
         /* ----------------------------------------------------------------
            INSIGHT DIÁRIO
         ---------------------------------------------------------------- */
         .ia-insight-card {
-            background: linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(124,58,237,0.06) 100%);
-            border: 1px solid rgba(59,130,246,0.25);
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(124, 58, 237, 0.06) 100%);
+            border: 1px solid rgba(59, 130, 246, 0.25);
             border-radius: 14px;
             padding: 20px 24px;
             margin-bottom: 24px;
             position: relative;
             overflow: hidden;
         }
+
         .ia-insight-card::before {
             content: '';
             position: absolute;
-            top: 0; left: 0;
-            width: 4px; height: 100%;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
             background: linear-gradient(180deg, #3B82F6, #7C3AED);
             border-radius: 4px 0 0 4px;
         }
+
         .ia-insight-header {
             display: flex;
             align-items: center;
@@ -189,6 +306,7 @@
             margin-bottom: 12px;
             gap: 12px;
         }
+
         .ia-insight-title {
             font-size: 0.8rem;
             font-weight: 700;
@@ -199,14 +317,16 @@
             align-items: center;
             gap: 7px;
         }
+
         #ia-daily-insight {
             font-size: 0.93rem;
             line-height: 1.7;
             color: var(--texto);
             min-height: 60px;
         }
+
         #ia-daily-insight:not(.loaded) {
-            background: linear-gradient(90deg, var(--borda) 25%, rgba(255,255,255,0.1) 50%, var(--borda) 75%);
+            background: linear-gradient(90deg, var(--borda) 25%, rgba(255, 255, 255, 0.1) 50%, var(--borda) 75%);
             background-size: 200% 100%;
             animation: ia-shimmer 1.5s infinite;
             border-radius: 6px;
@@ -221,6 +341,7 @@
             flex-direction: column;
             gap: 10px;
         }
+
         .ia-alert-item {
             display: flex;
             align-items: flex-start;
@@ -233,7 +354,10 @@
             color: var(--texto);
             transition: transform 0.2s;
         }
-        .ia-alert-item:hover { transform: translateX(4px); }
+
+        .ia-alert-item:hover {
+            transform: translateX(4px);
+        }
 
         /* ----------------------------------------------------------------
            MODULE CARDS (Grid)
@@ -243,6 +367,7 @@
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 20px;
         }
+
         .ia-module-card {
             background: var(--cartao);
             border: 1px solid var(--borda);
@@ -253,6 +378,7 @@
             position: relative;
             overflow: hidden;
         }
+
         .ia-module-card::after {
             content: '';
             position: absolute;
@@ -261,49 +387,89 @@
             opacity: 0;
             transition: opacity 0.25s;
         }
+
         .ia-module-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 16px 40px rgba(0,0,0,0.12);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
             border-color: var(--primaria);
         }
-        .ia-module-card:hover::after { opacity: 1; }
 
-        .ia-module-card.financeiro { --mod-color: #10B981; }
-        .ia-module-card.decisoes  { --mod-color: #7C3AED; }
-        .ia-module-card.operacional { --mod-color: #3B82F6; }
+        .ia-module-card:hover::after {
+            opacity: 1;
+        }
+
+        .ia-module-card.financeiro {
+            --mod-color: #10B981;
+        }
+
+        .ia-module-card.decisoes {
+            --mod-color: #7C3AED;
+        }
+
+        .ia-module-card.operacional {
+            --mod-color: #3B82F6;
+        }
 
         .ia-module-stripe {
             position: absolute;
-            top: 0; left: 0; right: 0;
+            top: 0;
+            left: 0;
+            right: 0;
             height: 3px;
             background: var(--mod-color, var(--primaria));
             border-radius: 16px 16px 0 0;
         }
+
         .ia-module-icon-wrap {
-            width: 52px; height: 52px;
+            width: 52px;
+            height: 52px;
             border-radius: 14px;
-            display: flex; align-items: center; justify-content: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-size: 1.4rem;
             margin-bottom: 16px;
             background: color-mix(in srgb, var(--mod-color, #3B82F6) 12%, transparent);
             color: var(--mod-color, var(--primaria));
         }
-        .ia-module-title { font-size: 1.05rem; font-weight: 700; color: var(--texto); margin-bottom: 8px; }
-        .ia-module-desc { font-size: 0.85rem; color: var(--suave); line-height: 1.6; margin-bottom: 16px; }
-        .ia-module-features {
-            display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px;
+
+        .ia-module-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--texto);
+            margin-bottom: 8px;
         }
+
+        .ia-module-desc {
+            font-size: 0.85rem;
+            color: var(--suave);
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .ia-module-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 18px;
+        }
+
         .ia-module-feature {
-            font-size: 0.73rem; font-weight: 600;
+            font-size: 0.73rem;
+            font-weight: 600;
             padding: 3px 9px;
             border-radius: 100px;
             background: color-mix(in srgb, var(--mod-color, #3B82F6) 10%, transparent);
             color: var(--mod-color, var(--primaria));
             border: 1px solid color-mix(in srgb, var(--mod-color, #3B82F6) 25%, transparent);
         }
+
         .ia-module-cta {
-            display: flex; align-items: center; justify-content: space-between;
-            font-size: 0.85rem; font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            font-weight: 700;
             color: var(--mod-color, var(--primaria));
         }
 
@@ -311,281 +477,1699 @@
            COPILOTO CONTEXT CHIPS
         ---------------------------------------------------------------- */
         .ia-copiloto-header {
-            display: flex; align-items: center; justify-content: space-between;
-            margin-bottom: 14px; gap: 12px; flex-wrap: wrap;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+            gap: 12px;
+            flex-wrap: wrap;
         }
+
         .ia-copiloto-chips {
-            display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
         }
+
         .ia-prompt-chip {
-            display: inline-flex; align-items: center; gap: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
             padding: 6px 12px;
             border: 1px solid var(--borda);
             border-radius: 100px;
-            font-size: 0.78rem; font-weight: 600;
+            font-size: 0.78rem;
+            font-weight: 600;
             color: var(--suave);
             background: transparent;
             cursor: pointer;
             transition: all 0.2s;
             font-family: var(--fonte);
         }
-        .ia-prompt-chip:hover, .ia-prompt-chip.active {
+
+        .ia-prompt-chip:hover,
+        .ia-prompt-chip.active {
             background: var(--primaria);
             border-color: var(--primaria);
             color: #fff;
         }
 
         /* ----------------------------------------------------------------
-           AGENTS
+           AGENTS — REDESIGN COMPLETO
         ---------------------------------------------------------------- */
+        @keyframes agent-pulse-ring {
+            0% {
+                transform: scale(1);
+                opacity: 0.8;
+            }
+
+            70% {
+                transform: scale(1.5);
+                opacity: 0;
+            }
+
+            100% {
+                transform: scale(1.5);
+                opacity: 0;
+            }
+        }
+
+        @keyframes agent-scan {
+            0% {
+                transform: translateY(-100%);
+            }
+
+            100% {
+                transform: translateY(300%);
+            }
+        }
+
+        @keyframes progress-fill {
+            from {
+                width: 0%;
+            }
+
+            to {
+                width: var(--target-width, 100%);
+            }
+        }
+
+        @keyframes log-entry-in {
+            from {
+                opacity: 0;
+                transform: translateX(-8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Central Hub Banner */
+        .agents-hub-banner {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(124, 58, 237, 0.06) 100%);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .agents-hub-banner::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, #3B82F6, #7C3AED);
+        }
+
+        .agents-hub-stats {
+            display: flex;
+            gap: 28px;
+            flex-wrap: wrap;
+        }
+
+        .agents-hub-stat {
+            text-align: center;
+        }
+
+        .agents-hub-stat-val {
+            display: block;
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--texto);
+            line-height: 1;
+        }
+
+        .agents-hub-stat-lbl {
+            font-size: 0.72rem;
+            color: var(--suave);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 4px;
+        }
+
+        .agents-hub-feed {
+            flex: 1;
+            min-width: 220px;
+            max-width: 420px;
+        }
+
+        .agents-hub-feed-title {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--suave);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .agents-hub-feed-title .feed-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #10B981;
+            animation: badge-dot-pulse 1.5s ease infinite;
+        }
+
+        .agents-global-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            max-height: 80px;
+            overflow: hidden;
+        }
+
+        .global-feed-item {
+            font-size: 0.78rem;
+            color: var(--texto);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            animation: log-entry-in 0.3s ease;
+        }
+
+        .global-feed-item .gfi-time {
+            color: var(--suave);
+            font-size: 0.7rem;
+            flex-shrink: 0;
+        }
+
+        .global-feed-item .gfi-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        /* Grid */
         .ia-agents-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
             gap: 20px;
         }
+
+        /* Card base */
         .ia-agent-card {
             background: var(--cartao);
             border: 1px solid var(--borda);
-            border-radius: 16px;
-            padding: 20px;
-            transition: all 0.25s;
+            border-radius: 18px;
+            padding: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
+            overflow: hidden;
         }
+
         .ia-agent-card.active {
-            border-color: rgba(59,130,246,0.4);
-            box-shadow: 0 4px 20px rgba(59,130,246,0.08);
+            border-color: rgba(59, 130, 246, 0.35);
+            box-shadow: 0 6px 30px rgba(59, 130, 246, 0.1);
         }
+
+        .ia-agent-card.running {
+            border-color: rgba(16, 185, 129, 0.5);
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.12), 0 8px 32px rgba(16, 185, 129, 0.12);
+        }
+
+        /* Scan line effect when running */
+        .ia-agent-card.running::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.6), transparent);
+            animation: agent-scan 2s linear infinite;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Color accent strip */
+        .agent-strip {
+            height: 3px;
+            width: 100%;
+            background: var(--agent-color, #3B82F6);
+            flex-shrink: 0;
+        }
+
+        .agent-card-inner {
+            padding: 18px 20px 20px;
+        }
+
+        /* Header */
         .ia-agent-header {
-            display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
         }
+
+        .ia-agent-icon-wrap {
+            position: relative;
+            flex-shrink: 0;
+        }
+
         .ia-agent-icon {
-            width: 44px; height: 44px;
-            border-radius: 12px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.2rem; flex-shrink: 0;
+            width: 46px;
+            height: 46px;
+            border-radius: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            position: relative;
+            z-index: 1;
         }
-        .ia-agent-meta { flex: 1; min-width: 0; }
-        .ia-agent-name { font-size: 0.97rem; font-weight: 700; color: var(--texto); margin: 0 0 3px; }
+
+        .agent-pulse-ring {
+            position: absolute;
+            inset: -4px;
+            border-radius: 17px;
+            border: 2px solid var(--agent-color, #10B981);
+            opacity: 0;
+        }
+
+        .ia-agent-card.active .agent-pulse-ring {
+            animation: agent-pulse-ring 2s ease infinite;
+        }
+
+        .ia-agent-meta {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .ia-agent-name {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--texto);
+            margin: 0 0 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ia-agent-badges {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
         .ia-agent-badge {
-            display: inline-flex; align-items: center; gap: 5px;
-            font-size: 0.72rem; font-weight: 700;
-            padding: 2px 8px; border-radius: 100px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 100px;
         }
-        .ia-agent-badge.online { background: rgba(16,185,129,0.12); color: #10B981; }
-        .ia-agent-badge.offline { background: rgba(107,114,128,0.12); color: var(--suave); }
+
+        .ia-agent-badge.online {
+            background: rgba(16, 185, 129, 0.12);
+            color: #10B981;
+        }
+
+        .ia-agent-badge.offline {
+            background: rgba(107, 114, 128, 0.12);
+            color: var(--suave);
+        }
+
+        .ia-agent-badge.running {
+            background: rgba(59, 130, 246, 0.12);
+            color: #3B82F6;
+        }
+
         .ia-badge-dot {
-            width: 6px; height: 6px; border-radius: 50%;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
             background: currentColor;
         }
-        .ia-agent-badge.online .ia-badge-dot { animation: badge-dot-pulse 1.5s ease infinite; }
 
-        .ia-agent-desc {
-            font-size: 0.84rem; color: var(--suave); line-height: 1.6; margin-bottom: 14px;
-        }
-        .ia-agent-details { margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px; }
-        .ia-agent-detail-group {}
-        .ia-detail-label {
-            font-size: 0.72rem; font-weight: 700;
-            color: var(--suave); text-transform: uppercase; letter-spacing: 0.05em;
-            display: flex; align-items: center; gap: 5px; margin-bottom: 6px;
-        }
-        .ia-detail-tags { display: flex; flex-wrap: wrap; gap: 5px; }
-        .ia-tag {
-            font-size: 0.72rem; padding: 2px 8px; border-radius: 100px;
-            background: var(--fundo); border: 1px solid var(--borda); color: var(--suave);
-        }
-        .ia-tag-action {
-            background: rgba(59,130,246,0.08);
-            border-color: rgba(59,130,246,0.2);
-            color: var(--primaria);
+        .ia-agent-badge.online .ia-badge-dot {
+            animation: badge-dot-pulse 1.5s ease infinite;
         }
 
-        /* Toggle Switch */
-        .ia-toggle { position: relative; display: inline-block; width: 42px; height: 24px; flex-shrink: 0; }
-        .ia-toggle-input { opacity: 0; width: 0; height: 0; position: absolute; }
+        .ia-agent-badge.running .ia-badge-dot {
+            animation: ia-pulse 0.8s ease infinite;
+        }
+
+        /* Toggle */
+        .ia-toggle {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 25px;
+            flex-shrink: 0;
+        }
+
+        .ia-toggle-input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            position: absolute;
+        }
+
         .ia-toggle-slider {
-            position: absolute; inset: 0; border-radius: 100px;
-            background: var(--borda); cursor: pointer;
+            position: absolute;
+            inset: 0;
+            border-radius: 100px;
+            background: var(--borda);
+            cursor: pointer;
             transition: 0.25s;
         }
+
         .ia-toggle-slider::before {
             content: '';
             position: absolute;
-            height: 18px; width: 18px;
-            left: 3px; bottom: 3px;
+            height: 19px;
+            width: 19px;
+            left: 3px;
+            bottom: 3px;
             background: white;
             border-radius: 50%;
             transition: 0.25s;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
         }
-        .ia-toggle-input:checked + .ia-toggle-slider { background: var(--primaria); }
-        .ia-toggle-input:checked + .ia-toggle-slider::before { transform: translateX(18px); }
+
+        .ia-toggle-input:checked+.ia-toggle-slider {
+            background: #10B981;
+        }
+
+        .ia-toggle-input:checked+.ia-toggle-slider::before {
+            transform: translateX(19px);
+        }
+
+        /* Description */
+        .ia-agent-desc {
+            font-size: 0.83rem;
+            color: var(--suave);
+            line-height: 1.6;
+            margin-bottom: 14px;
+        }
+
+        /* Stats row */
+        .agent-stats-row {
+            display: flex;
+            gap: 0;
+            border: 1px solid var(--borda);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 14px;
+        }
+
+        .agent-stat-cell {
+            flex: 1;
+            padding: 8px 6px;
+            text-align: center;
+            border-right: 1px solid var(--borda);
+        }
+
+        .agent-stat-cell:last-child {
+            border-right: none;
+        }
+
+        .agent-stat-val {
+            display: block;
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--texto);
+            line-height: 1.1;
+        }
+
+        .agent-stat-lbl {
+            font-size: 0.65rem;
+            color: var(--suave);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        /* Next run progress */
+        .agent-next-run {
+            margin-bottom: 14px;
+        }
+
+        .agent-next-run-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .agent-next-run-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--suave);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .agent-countdown {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: var(--texto);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .agent-progress-bar {
+            height: 5px;
+            background: var(--borda);
+            border-radius: 100px;
+            overflow: hidden;
+        }
+
+        .agent-progress-fill {
+            height: 100%;
+            border-radius: 100px;
+            background: linear-gradient(90deg, var(--agent-color, #3B82F6), color-mix(in srgb, var(--agent-color, #3B82F6) 70%, #fff));
+            transition: width 1s linear;
+        }
+
+        /* Live log */
+        .agent-log-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .agent-log-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--suave);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .agent-log-live-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #10B981;
+        }
+
+        .ia-agent-card.active .agent-log-live-dot {
+            animation: badge-dot-pulse 1.2s ease infinite;
+        }
+
+        .agent-log-clear-btn {
+            font-size: 0.68rem;
+            color: var(--suave);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-family: var(--fonte);
+            padding: 0;
+            transition: color 0.2s;
+        }
+
+        .agent-log-clear-btn:hover {
+            color: var(--perigo);
+        }
+
+        .agent-live-log {
+            background: var(--fundo);
+            border: 1px solid var(--borda);
+            border-radius: 9px;
+            padding: 10px;
+            min-height: 72px;
+            max-height: 110px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-bottom: 14px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--borda) transparent;
+        }
+
+        .agent-log-entry {
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+            font-size: 0.75rem;
+            line-height: 1.4;
+            animation: log-entry-in 0.25s ease;
+        }
+
+        .agent-log-entry .log-time {
+            color: var(--suave);
+            flex-shrink: 0;
+            font-variant-numeric: tabular-nums;
+            padding-top: 1px;
+        }
+
+        .agent-log-entry .log-icon {
+            flex-shrink: 0;
+            font-size: 0.7rem;
+            padding-top: 1px;
+        }
+
+        .agent-log-entry .log-msg {
+            color: var(--texto);
+            flex: 1;
+        }
+
+        .agent-log-empty {
+            color: var(--suave);
+            font-size: 0.78rem;
+            font-style: italic;
+            margin: auto;
+            text-align: center;
+            padding: 8px;
+        }
+
+        /* Action buttons */
+        .agent-btn-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
 
         .ia-agent-run-btn {
-            width: 100%;
-            padding: 9px;
+            padding: 9px 10px;
             border: 1px solid var(--borda);
             border-radius: 9px;
             background: transparent;
             color: var(--texto);
-            font-size: 0.84rem; font-weight: 600;
+            font-size: 0.8rem;
+            font-weight: 600;
             cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 7px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
             transition: all 0.2s;
             font-family: var(--fonte);
         }
-        .ia-agent-run-btn:hover:not(:disabled) {
-            background: var(--primaria);
-            border-color: var(--primaria);
+
+        .ia-agent-run-btn.primary {
+            background: var(--agent-color, var(--primaria));
+            border-color: var(--agent-color, var(--primaria));
             color: #fff;
         }
-        .ia-agent-run-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .ia-agent-run-btn.primary:hover:not(:disabled) {
+            filter: brightness(1.1);
+        }
+
+        .ia-agent-run-btn:hover:not(.primary):not(:disabled) {
+            background: rgba(59, 130, 246, 0.08);
+            border-color: var(--primaria);
+            color: var(--primaria);
+        }
+
+        .ia-agent-run-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* History modal */
+        #agent-history-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 10000;
+            backdrop-filter: blur(6px);
+            align-items: center;
+            justify-content: center;
+        }
+
+        #agent-history-modal.open {
+            display: flex;
+        }
+
+        .agent-history-window {
+            background: var(--cartao);
+            border: 1px solid var(--borda);
+            border-radius: 18px;
+            width: 92%;
+            max-width: 680px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            animation: ia-fade-in 0.3s ease;
+            box-shadow: 0 32px 80px rgba(0, 0, 0, 0.2);
+        }
+
+        .agent-history-header {
+            padding: 18px 22px 14px;
+            border-bottom: 1px solid var(--borda);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .agent-history-header h2 {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--texto);
+            margin: 0;
+        }
+
+        .agent-history-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .history-exec-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--borda);
+        }
+
+        .history-exec-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-exec-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+
+        .history-exec-body {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .history-exec-title {
+            font-size: 0.87rem;
+            font-weight: 700;
+            color: var(--texto);
+            margin-bottom: 3px;
+        }
+
+        .history-exec-meta {
+            font-size: 0.75rem;
+            color: var(--suave);
+        }
+
+        .history-exec-preview {
+            font-size: 0.78rem;
+            color: var(--suave);
+            margin-top: 5px;
+            line-height: 1.5;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .ia-agents-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .agents-hub-banner {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
 
         /* ----------------------------------------------------------------
            AGENT RESULT MODAL
         ---------------------------------------------------------------- */
         #ia-agent-result-modal {
             display: none;
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,0.75);
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
             z-index: 9999;
             backdrop-filter: blur(6px);
-            align-items: center; justify-content: center;
+            align-items: center;
+            justify-content: center;
         }
-        #ia-agent-result-modal.open { display: flex; }
+
+        #ia-agent-result-modal.open {
+            display: flex;
+        }
+
         .ia-agent-result-window {
             background: var(--cartao);
             border: 1px solid var(--borda);
             border-radius: 18px;
-            width: 90%; max-width: 720px;
+            width: 90%;
+            max-width: 720px;
             max-height: 82vh;
-            display: flex; flex-direction: column;
+            display: flex;
+            flex-direction: column;
             animation: ia-fade-in 0.3s ease;
-            box-shadow: 0 32px 80px rgba(0,0,0,0.2);
+            box-shadow: 0 32px 80px rgba(0, 0, 0, 0.2);
         }
+
         .ia-agent-result-header {
             padding: 18px 22px 14px;
             border-bottom: 1px solid var(--borda);
-            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
         }
-        .ia-agent-result-header h2 { font-size: 1rem; font-weight: 700; color: var(--texto); margin: 0; }
+
+        .ia-agent-result-header h2 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--texto);
+            margin: 0;
+        }
+
         .ia-modal-close-btn {
-            background: transparent; border: none; cursor: pointer;
-            color: var(--suave); font-size: 1.2rem; padding: 4px; line-height: 1;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: var(--suave);
+            font-size: 1.2rem;
+            padding: 4px;
+            line-height: 1;
             transition: color 0.2s;
         }
-        .ia-modal-close-btn:hover { color: var(--perigo); }
-        .ia-agent-result-body {
-            flex: 1; overflow-y: auto;
-            padding: 22px;
-            font-size: 0.9rem; line-height: 1.75; color: var(--texto);
+
+        .ia-modal-close-btn:hover {
+            color: var(--perigo);
         }
+
+        .ia-agent-result-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 22px;
+            font-size: 0.9rem;
+            line-height: 1.75;
+            color: var(--texto);
+        }
+
         .ia-agent-result-footer {
             padding: 14px 22px;
             border-top: 1px solid var(--borda);
-            display: flex; gap: 10px; justify-content: flex-end;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
         }
 
         /* ----------------------------------------------------------------
            TOAST
         ---------------------------------------------------------------- */
         #ia-toast-container {
-            position: fixed; bottom: 24px; right: 24px;
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
             z-index: 99999;
-            display: flex; flex-direction: column; gap: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
             pointer-events: none;
         }
+
         .ia-toast {
-            display: flex; align-items: center; gap: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
             padding: 12px 18px;
             border-radius: 12px;
-            font-size: 0.85rem; font-weight: 600;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            font-size: 0.85rem;
+            font-weight: 600;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
             pointer-events: all;
-            opacity: 0; transform: translateX(30px);
-            transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+            opacity: 0;
+            transform: translateX(30px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             backdrop-filter: blur(12px);
         }
-        .ia-toast.visible { opacity: 1; transform: translateX(0); }
-        .ia-toast-success { background: rgba(16,185,129,0.92); color: white; }
-        .ia-toast-error   { background: rgba(239,68,68,0.92); color: white; }
-        .ia-toast-info    { background: rgba(59,130,246,0.92); color: white; }
-        .ia-toast-warning { background: rgba(245,158,11,0.92); color: white; }
+
+        .ia-toast.visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .ia-toast-success {
+            background: rgba(16, 185, 129, 0.92);
+            color: white;
+        }
+
+        .ia-toast-error {
+            background: rgba(239, 68, 68, 0.92);
+            color: white;
+        }
+
+        .ia-toast-info {
+            background: rgba(59, 130, 246, 0.92);
+            color: white;
+        }
+
+        .ia-toast-warning {
+            background: rgba(245, 158, 11, 0.92);
+            color: white;
+        }
 
         /* ----------------------------------------------------------------
            ANIMATE
         ---------------------------------------------------------------- */
-        .ia-animate { opacity: 0; transform: translateY(20px); }
-        .ia-anim-in { animation: ia-fade-in 0.4s ease forwards; }
+        .ia-animate {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .ia-anim-in {
+            animation: ia-fade-in 0.4s ease forwards;
+        }
 
         /* ----------------------------------------------------------------
            SECTION TITLES
         ---------------------------------------------------------------- */
         .ia-section-header {
-            display: flex; align-items: center; justify-content: space-between;
-            margin-bottom: 16px; gap: 12px; flex-wrap: wrap;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            gap: 12px;
+            flex-wrap: wrap;
         }
-        .ia-section-title {
-            font-size: 1rem; font-weight: 700; color: var(--texto);
-            display: flex; align-items: center; gap: 8px;
-        }
-        .ia-section-title i { color: var(--primaria); }
 
-        /* ----------------------------------------------------------------
-           CHAT AREA (preservada do original)
-        ---------------------------------------------------------------- */
+        .ia-section-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--texto);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ia-section-title i {
+            color: var(--primaria);
+        }
+
+        /* ================================================================
+           CHAT AREA — COPILOTO IA (Dual-Theme: Dark + Light)
+        ================================================================ */
+
+        /* ---- Variáveis internas do chat --- */
+        :root {
+            --chat-bg: #f0f4f8;
+            --chat-sidebar-bg: #ffffff;
+            --chat-sidebar-border: #e2e8f0;
+            --chat-msg-area-bg: #f7f9fc;
+            --chat-msg-area-gradient: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.05) 0%, transparent 65%), #f7f9fc;
+            --chat-input-bg: rgba(255, 255, 255, 0.95);
+            --chat-input-border: rgba(0, 0, 0, 0.1);
+            --chat-input-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            --chat-pill-bg: rgba(0, 0, 0, 0.05);
+            --chat-pill-border: rgba(0, 0, 0, 0.08);
+            --chat-pill-color: #64748b;
+            --chat-user-bubble-bg: var(--primaria, #3B82F6);
+            --chat-user-bubble-color: #ffffff;
+            --chat-user-bubble-border: transparent;
+            --chat-bot-text: #1e293b;
+            --chat-timeline-bg: #e2e8f0;
+            --chat-timeline-color: #64748b;
+            --chat-history-color: #475569;
+            --chat-history-hover: rgba(0, 0, 0, 0.05);
+            --chat-dropdown-bg: #ffffff;
+            --chat-dropdown-border: rgba(0, 0, 0, 0.1);
+            --chat-table-bg: rgba(248, 250, 252, 0.8);
+            --chat-table-th-bg: rgba(59, 130, 246, 0.08);
+            --chat-table-th-color: #2563eb;
+            --chat-table-td-color: #374151;
+            --chat-table-border: rgba(0, 0, 0, 0.07);
+            --chat-action-color: #94a3b8;
+            --chat-action-hover-bg: rgba(0, 0, 0, 0.06);
+            --chat-action-hover-color: #374151;
+            --chat-brand-color: #1e293b;
+            --chat-toggle-hover: rgba(0, 0, 0, 0.06);
+            --chat-agent-color: #475569;
+            --chat-agent-hover: rgba(59, 130, 246, 0.08);
+            --chat-icon-btn-hover: rgba(0, 0, 0, 0.07);
+            --chat-icon-btn-color: #64748b;
+        }
+
+        .tema-escuro {
+            --chat-bg: #0d121f;
+            --chat-sidebar-bg: rgba(15, 23, 42, 0.75);
+            --chat-sidebar-border: rgba(255, 255, 255, 0.06);
+            --chat-msg-area-bg: #0a0e1a;
+            --chat-msg-area-gradient: radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.05) 0%, transparent 65%), #0a0e1a;
+            --chat-input-bg: rgba(22, 28, 44, 0.85);
+            --chat-input-border: rgba(255, 255, 255, 0.1);
+            --chat-input-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+            --chat-pill-bg: rgba(30, 41, 59, 0.6);
+            --chat-pill-border: rgba(255, 255, 255, 0.07);
+            --chat-pill-color: #94a3b8;
+            --chat-user-bubble-bg: #1e293b;
+            --chat-user-bubble-color: #f8fafc;
+            --chat-user-bubble-border: rgba(255, 255, 255, 0.08);
+            --chat-bot-text: #e2e8f0;
+            --chat-timeline-bg: rgba(255, 255, 255, 0.06);
+            --chat-timeline-color: #94a3b8;
+            --chat-history-color: #cbd5e1;
+            --chat-history-hover: rgba(255, 255, 255, 0.05);
+            --chat-dropdown-bg: #151c2c;
+            --chat-dropdown-border: rgba(255, 255, 255, 0.12);
+            --chat-table-bg: rgba(15, 23, 42, 0.5);
+            --chat-table-th-bg: rgba(59, 130, 246, 0.12);
+            --chat-table-th-color: #93c5fd;
+            --chat-table-td-color: #cbd5e1;
+            --chat-table-border: rgba(255, 255, 255, 0.06);
+            --chat-action-color: #64748b;
+            --chat-action-hover-bg: rgba(255, 255, 255, 0.07);
+            --chat-action-hover-color: #cbd5e1;
+            --chat-brand-color: #f8fafc;
+            --chat-toggle-hover: rgba(255, 255, 255, 0.08);
+            --chat-agent-color: #cbd5e1;
+            --chat-agent-hover: rgba(59, 130, 246, 0.12);
+            --chat-icon-btn-hover: rgba(255, 255, 255, 0.08);
+            --chat-icon-btn-color: #64748b;
+        }
+
         .page-ia-container {
-            display: flex; flex-direction: row; gap: 20px;
+            display: flex;
+            flex-direction: row;
+            gap: 0;
+            background: var(--chat-bg);
+            border: 1px solid var(--borda);
+            border-radius: 20px;
+            overflow: hidden;
+            height: 720px;
+            box-shadow: var(--sombra);
+            position: relative;
         }
-        @keyframes pulse-border {
-            0%,100% { border-color:rgba(59,130,246,0.2); box-shadow:0 0 10px rgba(59,130,246,0.1); }
-            50% { border-color:rgba(59,130,246,0.6); box-shadow:0 0 25px rgba(59,130,246,0.3); }
+
+        .page-ia-container.fullscreen {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            border-radius: 0;
+            z-index: 99999;
+            border: none;
+            box-shadow: none;
         }
-        @keyframes button-pulse {
-            0%,100% { box-shadow:0 0 0px rgba(59,130,246,0); }
-            50% { box-shadow:0 0 15px rgba(59,130,246,0.5); }
-        }
-        .chat-box {
-            border: 1px solid rgba(59,130,246,0.3) !important;
-            background: var(--cartao) !important;
-            border-radius: 12px;
-            animation: pulse-border 2s ease-in-out infinite;
-            transition: all 0.3s ease;
-        }
-        .chat-box:hover { animation:none; border-color:rgba(59,130,246,0.8)!important; box-shadow:0 0 20px rgba(59,130,246,0.3); }
+
+        /* SIDEBAR COPILOT */
         .chat-sidebar {
-            border: 1px solid rgba(59,130,246,0.2) !important;
-            animation: pulse-border 2.5s ease-in-out infinite;
+            width: 280px;
+            background: var(--chat-sidebar-bg);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--chat-sidebar-border);
+            display: flex;
+            flex-direction: column;
+            padding: 18px 14px;
+            gap: 10px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            z-index: 10;
         }
-        .chat-input-area {
-            border-top: 1px solid rgba(59,130,246,0.2);
-            padding: 15px;
-            animation: none;
+
+        .chat-sidebar.collapsed {
+            width: 68px;
+            padding: 18px 10px;
         }
+
+        .chat-sidebar.collapsed .sidebar-hide-on-collapse {
+            display: none !important;
+        }
+
+        .chat-sidebar.collapsed #btn-nova-conversa {
+            padding: 10px 0;
+            justify-content: center;
+        }
+
+        .copilot-brand-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .copilot-brand-title {
+            font-size: 0.98rem;
+            font-weight: 800;
+            color: var(--chat-brand-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: -0.02em;
+        }
+
+        .copilot-brand-title i {
+            color: var(--primaria);
+            font-size: 1.1rem;
+        }
+
+        .sidebar-toggle-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--suave);
+            border-radius: 8px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .sidebar-toggle-btn:hover {
+            background: var(--chat-toggle-hover);
+            color: var(--texto);
+        }
+
         #btn-nova-conversa {
-            animation: button-pulse 2s ease-in-out infinite;
-            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+            transition: all 0.22s ease;
         }
-        #btn-nova-conversa:hover { animation:none; transform:translateY(-2px); box-shadow:0 0 20px rgba(59,130,246,0.6)!important; }
-        #gallery-box { border: 1px solid rgba(59,130,246,0.2)!important; animation: pulse-border 2.5s ease-in-out infinite; }
-        #ia-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:9999; backdrop-filter:blur(5px); overflow:hidden; }
-        .ia-modal-window { position:absolute; top:10%; left:7.5%; width:85%; height:85%; min-width:360px; min-height:280px; max-width:calc(100% - 40px); max-height:calc(100% - 40px); }
+
+        #btn-nova-conversa:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+        }
+
+        .sidebar-history-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 10px;
+            border-radius: 8px;
+            color: var(--chat-history-color);
+            font-size: 0.82rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-align: left;
+            border: none;
+            background: transparent;
+            width: 100%;
+        }
+
+        .sidebar-history-item:hover {
+            background: var(--chat-history-hover);
+            color: var(--texto);
+        }
+
+        .sidebar-history-item.active {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--primaria);
+            font-weight: 700;
+        }
+
+        /* MAIN CHAT STREAM */
+        .chat-box {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--chat-msg-area-gradient);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px 20px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            scroll-behavior: smooth;
+        }
+
+        /* Scrollbar custom (light) */
+        .chat-messages::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: var(--borda);
+            border-radius: 10px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-stream-inner {
+            max-width: 860px;
+            width: 100%;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .timeline-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 8px 0 14px;
+            position: relative;
+        }
+
+        .timeline-divider::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--borda);
+            z-index: 1;
+        }
+
+        .timeline-pill {
+            background: var(--cartao);
+            border: 1px solid var(--borda);
+            border-radius: 20px;
+            padding: 3px 14px;
+            font-size: 0.72rem;
+            color: var(--suave);
+            font-weight: 600;
+            z-index: 2;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .chat-msg {
+            display: flex;
+            flex-direction: column;
+            animation: ia-fade-in 0.25s ease;
+        }
+
+        .chat-msg.user {
+            align-self: flex-end;
+            max-width: 78%;
+        }
+
+        .chat-msg.user .user-bubble {
+            background: var(--chat-user-bubble-bg);
+            color: var(--chat-user-bubble-color);
+            border: 1px solid var(--chat-user-bubble-border);
+            padding: 12px 18px;
+            border-radius: 18px 18px 4px 18px;
+            font-size: 0.92rem;
+            line-height: 1.5;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            word-break: break-word;
+        }
+
+        /* Light mode: usuario usa azul primário */
+        :root .chat-msg.user .user-bubble {
+            background: var(--primaria);
+            color: #ffffff;
+            border-color: transparent;
+        }
+
+        .tema-escuro .chat-msg.user .user-bubble {
+            background: #1e293b;
+            color: #f8fafc;
+            border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        .chat-msg.bot {
+            align-self: flex-start;
+            width: 100%;
+            max-width: 860px;
+        }
+
+        .bot-header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            padding: 3px 10px;
+            border-radius: 12px;
+            width: fit-content;
+            border: 1px solid;
+        }
+
+        .bot-msg-content {
+            color: var(--chat-bot-text);
+            font-size: 0.94rem;
+            line-height: 1.7;
+            word-break: break-word;
+        }
+
+        .bot-msg-content p {
+            margin: 0 0 10px;
+        }
+
+        .bot-msg-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .bot-msg-content h1,
+        .bot-msg-content h2,
+        .bot-msg-content h3 {
+            color: var(--texto);
+            margin: 14px 0 6px;
+            font-weight: 700;
+        }
+
+        .bot-msg-content ul,
+        .bot-msg-content ol {
+            padding-left: 20px;
+            margin: 8px 0;
+        }
+
+        .bot-msg-content li {
+            margin-bottom: 4px;
+        }
+
+        .bot-msg-content code {
+            background: var(--borda);
+            color: var(--primaria);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.84em;
+        }
+
+        .bot-msg-content pre {
+            background: var(--fundo);
+            border: 1px solid var(--borda);
+            border-radius: 8px;
+            padding: 12px;
+            overflow-x: auto;
+        }
+
+        .bot-msg-content strong {
+            color: var(--texto);
+        }
+
+        .bot-msg-content a {
+            color: var(--primaria);
+        }
+
+        /* Toolbar de ações abaixo da resposta do bot */
+        .bot-action-bar {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 10px;
+            padding-top: 6px;
+            border-top: 1px solid var(--borda);
+        }
+
+        .bot-action-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--chat-action-color);
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.18s ease;
+        }
+
+        .bot-action-btn:hover {
+            background: var(--chat-action-hover-bg);
+            color: var(--chat-action-hover-color);
+        }
+
+        .bot-action-btn.active {
+            color: var(--primaria);
+            background: rgba(59, 130, 246, 0.12);
+        }
+
+        /* FLOATING INPUT CONTAINER */
+        .copilot-input-wrap {
+            padding: 0 20px 18px;
+            position: relative;
+        }
+
+        /* Fade gradient acima do input para mascarar o scroll */
+        .copilot-input-wrap::before {
+            content: "";
+            position: absolute;
+            top: -30px;
+            left: 0;
+            right: 0;
+            height: 30px;
+            background: linear-gradient(180deg, transparent 0%, var(--chat-msg-area-bg) 100%);
+            pointer-events: none;
+        }
+
+        .copilot-quick-pills {
+            max-width: 860px;
+            margin: 0 auto 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            padding-bottom: 4px;
+        }
+
+        .copilot-quick-pills::-webkit-scrollbar {
+            display: none;
+        }
+
+        .copilot-tool-pill {
+            background: var(--chat-pill-bg);
+            border: 1px solid var(--chat-pill-border);
+            color: var(--chat-pill-color);
+            font-size: 0.78rem;
+            font-weight: 600;
+            padding: 6px 13px;
+            border-radius: 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            font-family: var(--fonte);
+        }
+
+        .copilot-tool-pill:hover {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: rgba(59, 130, 246, 0.35);
+            color: var(--primaria);
+            transform: translateY(-1px);
+        }
+
+        .copilot-pill-box {
+            max-width: 860px;
+            margin: 0 auto;
+            background: var(--chat-input-bg);
+            border: 1px solid var(--chat-input-border);
+            border-radius: 20px;
+            padding: 10px 14px 10px 16px;
+            box-shadow: var(--chat-input-shadow);
+            backdrop-filter: blur(16px);
+            transition: border-color 0.25s ease, box-shadow 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .copilot-pill-box:focus-within {
+            border-color: rgba(59, 130, 246, 0.5);
+            box-shadow: 0 12px 36px rgba(59, 130, 246, 0.15);
+        }
+
+        .copilot-textarea {
+            width: 100%;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--texto);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            resize: none;
+            min-height: 38px;
+            max-height: 160px;
+            font-family: var(--fonte);
+        }
+
+        .copilot-textarea::placeholder {
+            color: var(--suave);
+        }
+
+        .copilot-box-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .copilot-box-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            position: relative;
+        }
+
+        .copilot-box-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* SELETOR DE AGENTES */
+        .agent-selector-pill {
+            background: var(--chat-pill-bg);
+            border: 1px solid var(--chat-pill-border);
+            color: var(--texto);
+            padding: 5px 12px;
+            border-radius: 14px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.18s;
+            position: relative;
+            font-family: var(--fonte);
+        }
+
+        .agent-selector-pill:hover {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: rgba(59, 130, 246, 0.35);
+            color: var(--primaria);
+        }
+
+        .agent-dropdown-menu {
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 0;
+            background: var(--chat-dropdown-bg);
+            border: 1px solid var(--chat-dropdown-border);
+            border-radius: 14px;
+            padding: 6px;
+            min-width: 260px;
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.2);
+            display: none;
+            flex-direction: column;
+            gap: 3px;
+            z-index: 1000;
+            backdrop-filter: blur(12px);
+        }
+
+        .agent-dropdown-menu.open {
+            display: flex;
+            animation: ia-fade-in 0.2s ease;
+        }
+
+        .agent-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: transparent;
+            border: none;
+            color: var(--chat-agent-color);
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.15s;
+            width: 100%;
+            font-family: var(--fonte);
+        }
+
+        .agent-menu-item:hover {
+            background: var(--chat-agent-hover);
+            color: var(--texto);
+        }
+
+        .agent-menu-item.active {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--primaria);
+            font-weight: 700;
+        }
+
+        .copilot-icon-btn {
+            background: transparent;
+            border: none;
+            color: var(--chat-icon-btn-color);
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.92rem;
+        }
+
+        .copilot-icon-btn:hover {
+            background: var(--chat-icon-btn-hover);
+            color: var(--texto);
+        }
+
+        .copilot-send-btn {
+            background: var(--primaria);
+            color: #fff;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .copilot-send-btn:hover {
+            transform: scale(1.06);
+            box-shadow: 0 6px 18px rgba(59, 130, 246, 0.55);
+        }
+
+        .copilot-send-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* TABELAS RENDERIZADAS PELA IA */
+        .ia-table-render {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border: 1px solid var(--chat-table-border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 14px 0;
+            background: var(--chat-table-bg);
+        }
+
+        .ia-table-render th {
+            background: var(--chat-table-th-bg);
+            color: var(--chat-table-th-color);
+            padding: 10px 14px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            border-bottom: 1px solid var(--chat-table-border);
+        }
+
+        .ia-table-render td {
+            padding: 9px 14px;
+            font-size: 0.86rem;
+            color: var(--chat-table-td-color);
+            border-bottom: 1px solid var(--chat-table-border);
+        }
+
+        .ia-table-render tr:last-child td {
+            border-bottom: none;
+        }
+
+        .ia-table-render tr:nth-child(even) {
+            background: rgba(59, 130, 246, 0.02);
+        }
+
+        .ia-table-render tr:hover td {
+            background: rgba(59, 130, 246, 0.04);
+        }
+
+        #ia-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 9999;
+            backdrop-filter: blur(5px);
+            overflow: hidden;
+        }
+
+        .ia-modal-window {
+            position: absolute;
+            top: 10%;
+            left: 7.5%;
+            width: 85%;
+            height: 85%;
+            min-width: 360px;
+            min-height: 280px;
+            max-width: calc(100% - 40px);
+            max-height: calc(100% - 40px);
+        }
 
         /* ----------------------------------------------------------------
            RESPONSIVE
         ---------------------------------------------------------------- */
         @media (max-width: 768px) {
-            .ia-hub-tab { padding: 8px 14px; font-size: 0.8rem; }
-            .ia-kpi-grid { grid-template-columns: repeat(2, 1fr); }
-            .ia-modules-grid { grid-template-columns: 1fr; }
-            .ia-agents-grid { grid-template-columns: 1fr; }
-            .page-ia-container { flex-direction: column; }
+            .ia-hub-tab {
+                padding: 8px 14px;
+                font-size: 0.8rem;
+            }
+
+            .ia-kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .ia-modules-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .ia-agents-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .page-ia-container {
+                flex-direction: column;
+            }
         }
+
         @media (max-width: 480px) {
-            .ia-kpi-grid { grid-template-columns: 1fr; }
+            .ia-kpi-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
+
 <body>
     <a href="#conteudo" class="skip-link">Ir para conteúdo</a>
     <div class="layout">
@@ -595,7 +2179,8 @@
         <div class="main">
             <header class="topbar" role="banner">
                 <div class="topbar__left">
-                    <button class="topbar__btn topbar__mobile-toggle" onclick="abrirSidebar()" aria-label="Abrir menu"><i class="fa-solid fa-bars"></i></button>
+                    <button class="topbar__btn topbar__mobile-toggle" onclick="abrirSidebar()"
+                        aria-label="Abrir menu"><i class="fa-solid fa-bars"></i></button>
                     <span class="topbar__greeting">Olá, <strong>{{ session.usuario_nome }}</strong></span>
                 </div>
                 <div class="topbar__actions">
@@ -603,45 +2188,54 @@
                     <span id="ia-status-badge" class="ia-status-badge ia-status-loading">
                         <span class="ia-status-text">Iniciando IA...</span>
                     </span>
-                    <button class="topbar__btn" onclick="alternarTema()" aria-label="Alternar tema" id="btnTema"><i class="fa-solid fa-moon"></i></button>
-                    <a class="topbar__btn" href="{{ url_for('pagina_configuracoes') }}" title="Configurações"><i class="fa-solid fa-gear"></i></a>
+                    <button class="topbar__btn" onclick="alternarTema()" aria-label="Alternar tema" id="btnTema"><i
+                            class="fa-solid fa-moon"></i></button>
+                    <a class="topbar__btn" href="{{ url_for('pagina_configuracoes') }}" title="Configurações"><i
+                            class="fa-solid fa-gear"></i></a>
                 </div>
             </header>
 
             <main id="conteudo" class="pagina" role="main">
                 <div class="container">
                     <!-- CABEÇALHO COM BOTÃO DE ANÁLISE IA -->
-                    <header class="pagina__cabecalho" style="margin-bottom: 20px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                    <header class="pagina__cabecalho"
+                        style="margin-bottom: 20px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
                         <div style="flex: 1; min-width: 0;">
                             <div class="migalhas" aria-label="Você está em">Inteligência IA</div>
                             <h1 class="h1" style="margin-bottom: 4px;">Centro de Inteligência Estratégica</h1>
-                            <p class="p" style="margin: 0;">Copiloto de IA, módulos especializados e agentes autônomos para decisões inteligentes.</p>
+                            <p class="p" style="margin: 0;">Copiloto de IA, módulos especializados e agentes autônomos
+                                para decisões inteligentes.</p>
                         </div>
-                       
+
                     </header>
 
                     <!-- FILTRO DE PERÍODO E ORIGEM DOS DADOS (TABELA) -->
-                    <section class="cartao" style="margin-bottom: 20px; padding: 14px 20px; border-radius: 12px;" aria-label="Filtros da IA">
-                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                    <section class="cartao" style="margin-bottom: 20px; padding: 14px 20px; border-radius: 12px;"
+                        aria-label="Filtros da IA">
+                        <div
+                            style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
                             <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
                                 <div style="display: flex; align-items: center; gap: 8px;">
-                                    <label for="seletorPlanilhaIaHub" style="font-size: 0.8rem; font-weight: 700; white-space: nowrap; display: flex; align-items: center; gap: 5px; color: var(--texto);">
+                                    <label for="seletorPlanilhaIaHub"
+                                        style="font-size: 0.8rem; font-weight: 700; white-space: nowrap; display: flex; align-items: center; gap: 5px; color: var(--texto);">
                                         <i class="fa-solid fa-table-list" style="color: var(--primaria);"></i>
                                         Base de Dados:
                                     </label>
-                                    <select class="selecao" id="seletorPlanilhaIaHub" aria-label="Selecionar planilha ou consolidado"
-                                            style="min-width: 240px; padding: 7px 12px; font-size: 0.8rem; font-weight: 600;">
+                                    <select class="selecao" id="seletorPlanilhaIaHub"
+                                        aria-label="Selecionar planilha ou consolidado"
+                                        style="min-width: 240px; padding: 7px 12px; font-size: 0.8rem; font-weight: 600;">
                                         <option value="todas">🌐 Todas as Planilhas (Visão Consolidada)</option>
                                     </select>
                                 </div>
 
                                 <div style="display: flex; align-items: center; gap: 8px;">
-                                    <label for="seletorPeriodoIaHub" style="font-size: 0.8rem; font-weight: 700; white-space: nowrap; display: flex; align-items: center; gap: 5px; color: var(--texto);">
+                                    <label for="seletorPeriodoIaHub"
+                                        style="font-size: 0.8rem; font-weight: 700; white-space: nowrap; display: flex; align-items: center; gap: 5px; color: var(--texto);">
                                         <i class="fa-solid fa-calendar-days" style="color: var(--primaria);"></i>
                                         Período:
                                     </label>
                                     <select class="selecao" id="seletorPeriodoIaHub" aria-label="Selecionar período"
-                                            style="width: auto; padding: 7px 12px; font-size: 0.8rem; font-weight: 600;">
+                                        style="width: auto; padding: 7px 12px; font-size: 0.8rem; font-weight: 600;">
                                         <option value="7_dias">Últimos 7 dias</option>
                                         <option value="30_dias" selected>Últimos 30 dias</option>
                                         <option value="90_dias">Últimos 90 dias</option>
@@ -652,7 +2246,8 @@
                             </div>
 
                             <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
-                                <span class="badge" style="background: rgba(59,130,246,0.1); color: var(--primaria); border: 1px solid rgba(59,130,246,0.25); padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">
+                                <span class="badge"
+                                    style="background: rgba(59,130,246,0.1); color: var(--primaria); border: 1px solid rgba(59,130,246,0.25); padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">
                                     <i class="fa-solid fa-microchip"></i> Motor Gemini Conectado
                                 </span>
                             </div>
@@ -661,7 +2256,8 @@
 
                     <!-- TAB NAVIGATION -->
                     <nav class="ia-hub-nav" aria-label="Seções do Centro de IA" role="tablist">
-                        <button class="ia-hub-tab" data-tab="overview" role="tab" aria-selected="true" id="tab-overview">
+                        <button class="ia-hub-tab" data-tab="overview" role="tab" aria-selected="true"
+                            id="tab-overview">
                             <i class="fa-solid fa-gauge-high"></i> Visão Geral
                         </button>
                         <button class="ia-hub-tab" data-tab="copiloto" role="tab" id="tab-copiloto">
@@ -672,7 +2268,7 @@
                         </button>
                         <button class="ia-hub-tab" data-tab="agents" role="tab" id="tab-agents">
                             <i class="fa-solid fa-robot"></i> Agentes & Automação
-                            <span class="ia-tab-badge">4</span>
+                            <span class="ia-tab-badge">5</span>
                         </button>
                     </nav>
 
@@ -687,9 +2283,13 @@
                                 <span class="ia-insight-title">
                                     <i class="fa-solid fa-wand-magic-sparkles"></i> Insight do Dia
                                 </span>
-                                <button onclick="loadDailyInsight()" style="background:transparent;border:none;cursor:pointer;color:var(--primaria);font-size:0.8rem;font-weight:600;display:flex;align-items:center;gap:5px;" title="Atualizar Insight">
-                                    <i class="fa-solid fa-rotate-right"></i> Atualizar
-                                </button>
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <button onclick="loadDailyInsight()"
+                                        style="background:transparent;border:none;cursor:pointer;color:var(--primaria);font-size:0.8rem;font-weight:600;display:flex;align-items:center;gap:5px;"
+                                        title="Atualizar Insight">
+                                        <i class="fa-solid fa-rotate-right"></i> Atualizar
+                                    </button>
+                                </div>
                             </div>
                             <div id="ia-daily-insight">Carregando análise automática do negócio...</div>
                         </div>
@@ -736,7 +2336,8 @@
                             <!-- Alertas -->
                             <div class="cartao" style="border-radius:14px;padding:20px;">
                                 <div class="ia-section-header" style="margin-bottom:14px;">
-                                    <span class="ia-section-title"><i class="fa-solid fa-triangle-exclamation"></i> Alertas & Anomalias</span>
+                                    <span class="ia-section-title"><i class="fa-solid fa-triangle-exclamation"></i>
+                                        Alertas & Anomalias</span>
                                 </div>
                                 <div class="ia-alerts-grid" id="ia-status-alerts">
                                     <div class="ia-alert-item" style="opacity:0.5;">
@@ -751,25 +2352,33 @@
                                     <span class="ia-section-title"><i class="fa-solid fa-bolt"></i> Ações Rápidas</span>
                                 </div>
                                 <div style="display:flex;flex-direction:column;gap:9px;">
-                                    <a href="{{ url_for('pagina_ia_financeiro') }}" class="ia-alert-item" style="text-decoration:none;color:inherit;cursor:pointer;">
+                                    <a href="{{ url_for('pagina_ia_financeiro') }}" class="ia-alert-item"
+                                        style="text-decoration:none;color:inherit;cursor:pointer;">
                                         <i class="fa-solid fa-coins" style="color:#10B981;"></i>
                                         <span>Análise Financeira Completa</span>
-                                        <i class="fa-solid fa-arrow-right" style="margin-left:auto;color:var(--suave);font-size:0.8rem;"></i>
+                                        <i class="fa-solid fa-arrow-right"
+                                            style="margin-left:auto;color:var(--suave);font-size:0.8rem;"></i>
                                     </a>
-                                    <a href="{{ url_for('pagina_ia_decisoes') }}" class="ia-alert-item" style="text-decoration:none;color:inherit;cursor:pointer;">
+                                    <a href="{{ url_for('pagina_ia_decisoes') }}" class="ia-alert-item"
+                                        style="text-decoration:none;color:inherit;cursor:pointer;">
                                         <i class="fa-solid fa-brain" style="color:#7C3AED;"></i>
                                         <span>Gerar Análise SWOT</span>
-                                        <i class="fa-solid fa-arrow-right" style="margin-left:auto;color:var(--suave);font-size:0.8rem;"></i>
+                                        <i class="fa-solid fa-arrow-right"
+                                            style="margin-left:auto;color:var(--suave);font-size:0.8rem;"></i>
                                     </a>
-                                    <a href="{{ url_for('pagina_ia_operacional') }}" class="ia-alert-item" style="text-decoration:none;color:inherit;cursor:pointer;">
+                                    <a href="{{ url_for('pagina_ia_operacional') }}" class="ia-alert-item"
+                                        style="text-decoration:none;color:inherit;cursor:pointer;">
                                         <i class="fa-solid fa-chart-bar" style="color:#3B82F6;"></i>
                                         <span>Diagnóstico Operacional</span>
-                                        <i class="fa-solid fa-arrow-right" style="margin-left:auto;color:var(--suave);font-size:0.8rem;"></i>
+                                        <i class="fa-solid fa-arrow-right"
+                                            style="margin-left:auto;color:var(--suave);font-size:0.8rem;"></i>
                                     </a>
-                                    <a href="{{ url_for('pagina_analises_salvas') }}" class="ia-alert-item" style="text-decoration:none;color:inherit;cursor:pointer;">
+                                    <a href="{{ url_for('pagina_analises_salvas') }}" class="ia-alert-item"
+                                        style="text-decoration:none;color:inherit;cursor:pointer;">
                                         <i class="fa-solid fa-bookmark" style="color:#F59E0B;"></i>
                                         <span>Ver Análises Salvas</span>
-                                        <i class="fa-solid fa-arrow-right" style="margin-left:auto;color:var(--suave);font-size:0.8rem;"></i>
+                                        <i class="fa-solid fa-arrow-right"
+                                            style="margin-left:auto;color:var(--suave);font-size:0.8rem;"></i>
                                     </a>
                                 </div>
                             </div>
@@ -777,106 +2386,274 @@
 
                         <style>
                             @media (max-width: 768px) {
-                                #panel-overview > div:last-child { grid-template-columns: 1fr !important; }
+                                #panel-overview>div:last-child {
+                                    grid-template-columns: 1fr !important;
+                                }
                             }
                         </style>
                     </div>
 
                     <!-- ================================================
-                         PANEL 2 — COPILOTO IA
+                         PANEL 2 — COPILOTO IA (Redesigned: Copilot/ChatGPT Style)
                     ================================================ -->
                     <div class="ia-hub-panel" id="panel-copiloto" role="tabpanel">
 
-                        <!-- Chips de contexto -->
-                        <div class="cartao ia-animate" style="border-radius:14px;padding:18px 20px;margin-bottom:18px;">
-                            <div class="ia-copiloto-header">
-                                <span class="ia-section-title"><i class="fa-solid fa-wand-sparkles"></i> Prompt Rápido</span>
-                                <span style="font-size:0.78rem;color:var(--suave);">Clique para preencher automaticamente</span>
+                        <!-- Barra superior do Copiloto -->
+                        <div
+                            style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:0 2px;">
+                            <div style="display:flex;align-items:center;gap:10px;">
+
                             </div>
-                            <div class="ia-copiloto-chips">
-                                <button class="ia-prompt-chip" data-prompt="Faça uma análise completa do faturamento dos últimos 30 dias com gráficos.">
-                                    <i class="fa-solid fa-chart-line"></i> Análise de Faturamento
-                                </button>
-                                <button class="ia-prompt-chip" data-prompt="Quais são os 5 produtos mais lucrativos? Mostre em formato de ranking com valores e percentuais.">
-                                    <i class="fa-solid fa-trophy"></i> Top Produtos
-                                </button>
-                                <button class="ia-prompt-chip" data-prompt="Identifique gargalos no fluxo de caixa e sugira 3 ações para melhorar a liquidez.">
-                                    <i class="fa-solid fa-right-left"></i> Fluxo de Caixa
-                                </button>
-                                <button class="ia-prompt-chip" data-prompt="Gere uma análise SWOT do negócio com base nos dados disponíveis.">
-                                    <i class="fa-solid fa-brain"></i> Análise SWOT
-                                </button>
-                                <button class="ia-prompt-chip" data-prompt="Qual é a tendência de crescimento para os próximos 3 meses? Baseie-se nos dados históricos.">
-                                    <i class="fa-solid fa-arrow-trend-up"></i> Projeção
-                                </button>
-                                <button class="ia-prompt-chip" data-prompt="Existe alguma anomalia ou dado suspeito nos registros? Analise e explique.">
-                                    <i class="fa-solid fa-magnifying-glass-chart"></i> Anomalias
-                                </button>
-                            </div>
+
                         </div>
 
-                        <!-- Container do Chat (preservado do original) -->
-                        <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-                            <button id="btn-fullscreen" class="fullscreen-btn" title="Tela Cheia" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--cartao);border:1px solid var(--borda);border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:600;color:var(--texto);font-family:var(--fonte);">
-                                <i class="fa-solid fa-expand"></i> Tela Cheia
-                            </button>
-                        </div>
+                        <!-- Container principal do Chat (Estilo Copilot) -->
+                        <div class="page-ia-container" id="copilot-main-container">
 
-                        <div class="page-ia-container" style="flex-direction:row;gap:20px;">
-                            <div class="chat-sidebar"
-                                style="width:220px;background:var(--cartao);border-radius:12px;border:1px solid var(--borda);padding:15px;display:flex;flex-direction:column;gap:12px;">
+                            <!-- ====== SIDEBAR ====== -->
+                            <div class="chat-sidebar" id="chat-sidebar">
+                                <!-- Cabeçalho da Sidebar -->
+                                <div class="copilot-brand-row">
+                                    <span class="copilot-brand-title sidebar-hide-on-collapse">
+                                    </span>
+                                    <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" title="Recolher">
+                                        <i class="fa-solid fa-sidebar fa-flip-horizontal"></i>
+                                    </button>
+                                </div>
 
-                                <div>
-                                    <label for="seletorPlanilhaIa" style="font-size:11.5px;font-weight:700;color:var(--suave);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:flex;align-items:center;gap:5px;">
-                                        <i class="fa-solid fa-database" style="color:var(--primaria);"></i> Base de Dados:
+                                <!-- Nova Conversa -->
+                                <button id="btn-nova-conversa">
+                                    <i class="fa-solid fa-plus"></i>
+                                    <span class="sidebar-hide-on-collapse">Nova Conversa</span>
+                                </button>
+
+                                <!-- Seletor de Planilha -->
+                                <div class="sidebar-hide-on-collapse">
+                                    <label for="seletorPlanilhaIa"
+                                        style="font-size:10.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px;display:flex;align-items:center;gap:5px;">
+                                        <i class="fa-solid fa-database" style="color:#3B82F6;"></i> Base de Dados
                                     </label>
-                                    <select id="seletorPlanilhaIa" class="entrada" style="width:100%;font-size:12px;font-weight:600;padding:6px 8px;border-radius:6px;">
+                                    <select id="seletorPlanilhaIa"
+                                        style="width:100%;background:#1e293b;border:1px solid rgba(255,255,255,0.09);color:#e2e8f0;border-radius:10px;padding:7px 10px;font-size:0.8rem;font-weight:600;cursor:pointer;outline:none;">
                                         <option value="todas">🌐 Todas as Planilhas</option>
                                     </select>
                                 </div>
 
-                                <button id="btn-nova-conversa" style="background:var(--primaria);color:white;border:none;padding:10px;border-radius:8px;width:100%;cursor:pointer;">
-                                    <i class="fa-solid fa-plus"></i> Nova Conversa
-                                </button>
+                                <!-- Divisor -->
+                                <div style="border-top:1px solid rgba(255,255,255,0.06);margin:4px 0;"></div>
 
-                                <button id="btn-exit-fullscreen" class="exit-fullscreen-btn" title="Sair da Tela Cheia" style="display:none;background:transparent;border:1px solid var(--borda);color:var(--texto);padding:8px;border-radius:8px;width:100%;cursor:pointer;font-size:0.82rem;">
-                                    <i class="fa-solid fa-compress"></i> Sair da Tela Cheia
-                                </button>
-
-                                <hr style="border-color:var(--borda);margin:0;">
-                                <div style="flex:1;overflow-y:auto;">
-                                    <p style="font-size:13px;color:var(--suave);font-weight:bold;margin-bottom:10px;margin-top:10px;">HISTÓRICO</p>
-                                    <div id="historico-lista" style="font-size:14px;color:var(--texto);display:flex;flex-direction:column;gap:5px;">
-                                        <span style="color:var(--suave);"><i class="fa-solid fa-message"></i> Conversa Atual</span>
+                                <!-- Histórico de Conversas -->
+                                <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:2px;"
+                                    class="sidebar-hide-on-collapse">
+                                    <p
+                                        style="font-size:10px;color:#475569;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 8px 4px;">
+                                        Conversas</p>
+                                    <div id="historico-lista" style="display:flex;flex-direction:column;gap:2px;">
+                                        <span style="color:#475569;font-size:0.8rem;padding:6px 10px;"><i
+                                                class="fa-solid fa-message"></i> Conversa Atual</span>
                                     </div>
                                 </div>
-                                <button id="btn-apagar-historico" style="background:transparent;color:var(--perigo);border:1px solid var(--perigo);padding:10px;border-radius:8px;width:100%;cursor:pointer;">
-                                    <i class="fa-solid fa-trash"></i> Apagar Histórico
-                                </button>
-                            </div>
 
-                            <div class="chat-box" id="chat-box" style="flex:1;">
-                                <div class="chat-messages" id="chat-messages"></div>
-                                <div class="chat-input-area">
-                                    <input type="text" id="chat-input"
-                                        placeholder="Ex: Faça uma análise do faturamento dos últimos 30 dias com gráficos..."
-                                        autocomplete="off">
-                                    <button id="chat-send"><i class="fa-solid fa-paper-plane"></i> Enviar</button>
+                                <!-- Rodapé da Sidebar -->
+                                <div
+                                    style="border-top:1px solid rgba(255,255,255,0.06);padding-top:10px;display:flex;flex-direction:column;gap:6px;">
+                                    <button id="btn-apagar-historico"
+                                        style="background:transparent;color:#ef4444;border:1px solid rgba(239,68,68,0.25);padding:8px 10px;border-radius:10px;width:100%;cursor:pointer;font-size:0.78rem;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s;"
+                                        class="sidebar-hide-on-collapse">
+                                        <i class="fa-solid fa-trash"></i> Apagar Histórico
+                                    </button>
+                                    <button id="btn-exit-fullscreen" class="exit-fullscreen-btn"
+                                        style="display:none;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:#94a3b8;padding:8px 10px;border-radius:10px;width:100%;cursor:pointer;font-size:0.78rem;font-weight:600;align-items:center;justify-content:center;gap:6px;">
+                                        <i class="fa-solid fa-compress"></i> <span class="sidebar-hide-on-collapse">Sair
+                                            da Tela Cheia</span>
+                                    </button>
+                                    <div class="sidebar-hide-on-collapse"
+                                        style="padding:6px 4px 0;font-size:0.72rem;color:#334155;display:flex;align-items:center;gap:6px;">
+                                        <i class="fa-brands fa-google" style="color:#4285F4;"></i>
+                                        <span>Gemini · DataInsight IA</span>
+                                    </div>
                                 </div>
                             </div>
+                            <!-- ====== FIM SIDEBAR ====== -->
+
+                            <!-- ====== ÁREA DO CHAT ====== -->
+                            <div class="chat-box" id="chat-box">
+                                <!-- Stream de mensagens -->
+                                <div class="chat-messages" id="chat-messages">
+                                    <div class="chat-stream-inner" id="chat-stream-inner">
+                                        <!-- Divisor de data -->
+                                        <div class="timeline-divider" id="chat-timeline-today">
+                                            <span class="timeline-pill">Hoje</span>
+                                        </div>
+                                        <!-- Mensagens aparecem aqui -->
+                                    </div>
+                                </div>
+
+                                <!-- Input Flutuante (Estilo Copilot/ChatGPT) -->
+                                <div class="copilot-input-wrap">
+                                    <!-- Ferramentas rápidas acima do input -->
+                                    <div class="copilot-quick-pills">
+                                        <button class="copilot-tool-pill" data-tool="grafico"
+                                            data-prompt="Crie um gráfico interativo com a evolução do faturamento e lucro dos últimos 30 dias.">
+                                            <i class="fa-solid fa-chart-area"></i> Criar Gráfico
+                                        </button>
+                                        <button class="copilot-tool-pill" data-tool="tabela"
+                                            data-prompt="Gere uma tabela comparativa com os principais indicadores financeiros dos últimos 3 meses.">
+                                            <i class="fa-solid fa-table"></i> Gerar Tabela
+                                        </button>
+                                        <button class="copilot-tool-pill"
+                                            data-prompt="Faça um diagnóstico completo do fluxo de caixa com principais gargalos e 3 recomendações.">
+                                            <i class="fa-solid fa-right-left"></i> Fluxo de Caixa
+                                        </button>
+                                        <button class="copilot-tool-pill"
+                                            data-prompt="Gere análise SWOT completa do negócio com base nos dados disponíveis e tendências identificadas.">
+                                            <i class="fa-solid fa-brain"></i> SWOT
+                                        </button>
+                                        <button class="copilot-tool-pill"
+                                            data-prompt="Detecte anomalias, variações atípicas e dados suspeitos nos registros financeiros.">
+                                            <i class="fa-solid fa-bell"></i> Anomalias
+                                        </button>
+                                        <button class="copilot-tool-pill"
+                                            data-prompt="Liste os 5 produtos ou serviços mais lucrativos com percentual de contribuição e ticket médio.">
+                                            <i class="fa-solid fa-trophy"></i> Top 5 Produtos
+                                        </button>
+                                    </div>
+
+                                    <!-- Caixa pill flutuante -->
+                                    <div class="copilot-pill-box" id="copilot-pill-box">
+                                        <textarea id="chat-input" class="copilot-textarea"
+                                            placeholder="Pergunte ao Copiloto IA... (Enter para enviar, Shift+Enter para nova linha)"
+                                            rows="1" autocomplete="off"></textarea>
+
+                                        <div class="copilot-box-footer">
+                                            <div class="copilot-box-left">
+                                                <!-- Menu + -->
+
+
+                                                <!-- Seletor de Agente (Estilo "Smart ∨") -->
+                                                <div style="position:relative;">
+                                                    <button class="agent-selector-pill" id="agent-selector-btn">
+                                                        <i class="fa-solid fa-robot" id="agent-icon-pill"></i>
+                                                        <span id="agent-label-pill">Smart</span>
+                                                        <i class="fa-solid fa-chevron-down"
+                                                            style="font-size:0.65rem;opacity:0.7;"></i>
+                                                    </button>
+                                                    <!-- Dropdown menu de agentes -->
+                                                    <div class="agent-dropdown-menu" id="agent-dropdown-menu">
+                                                        <button class="agent-menu-item active" data-agent="smart"
+                                                            data-icon="fa-robot" data-label="Smart"
+                                                            data-color="#3B82F6">
+                                                            <i class="fa-solid fa-robot"
+                                                                style="color:#3B82F6;width:16px;"></i>
+                                                            <div>
+                                                                <div>Smart Copiloto IA</div>
+                                                                <div
+                                                                    style="font-size:0.7rem;color:#64748b;font-weight:500;">
+                                                                    Equipe completa de especialistas</div>
+                                                            </div>
+                                                        </button>
+                                                        <button class="agent-menu-item" data-agent="agente_financeiro"
+                                                            data-icon="fa-coins" data-label="Financeiro"
+                                                            data-color="#10B981">
+                                                            <i class="fa-solid fa-coins"
+                                                                style="color:#10B981;width:16px;"></i>
+                                                            <div>
+                                                                <div>Agente Financeiro</div>
+                                                                <div
+                                                                    style="font-size:0.7rem;color:#64748b;font-weight:500;">
+                                                                    Custos, margem, fluxo de caixa</div>
+                                                            </div>
+                                                        </button>
+                                                        <button class="agent-menu-item" data-agent="agente_vendas"
+                                                            data-icon="fa-chart-bar" data-label="Vendas"
+                                                            data-color="#3B82F6">
+                                                            <i class="fa-solid fa-chart-bar"
+                                                                style="color:#3B82F6;width:16px;"></i>
+                                                            <div>
+                                                                <div>Agente de Vendas</div>
+                                                                <div
+                                                                    style="font-size:0.7rem;color:#64748b;font-weight:500;">
+                                                                    Top produtos, sazonalidade, ticket</div>
+                                                            </div>
+                                                        </button>
+                                                        <button class="agent-menu-item" data-agent="agente_decisao"
+                                                            data-icon="fa-brain" data-label="Estratégico"
+                                                            data-color="#7C3AED">
+                                                            <i class="fa-solid fa-brain"
+                                                                style="color:#7C3AED;width:16px;"></i>
+                                                            <div>
+                                                                <div>Agente Estratégico</div>
+                                                                <div
+                                                                    style="font-size:0.7rem;color:#64748b;font-weight:500;">
+                                                                    SWOT, metas e projeções</div>
+                                                            </div>
+                                                        </button>
+                                                        <button class="agent-menu-item" data-agent="agente_dados"
+                                                            data-icon="fa-broom" data-label="Dados"
+                                                            data-color="#06B6D4">
+                                                            <i class="fa-solid fa-broom"
+                                                                style="color:#06B6D4;width:16px;"></i>
+                                                            <div>
+                                                                <div>Agente de Dados</div>
+                                                                <div
+                                                                    style="font-size:0.7rem;color:#64748b;font-weight:500;">
+                                                                    Auditoria e integridade dos dados</div>
+                                                            </div>
+                                                        </button>
+                                                        <button class="agent-menu-item" data-agent="agente_alertas"
+                                                            data-icon="fa-bell" data-label="Sentinela"
+                                                            data-color="#F59E0B">
+                                                            <i class="fa-solid fa-bell"
+                                                                style="color:#F59E0B;width:16px;"></i>
+                                                            <div>
+                                                                <div>Sentinela de Alertas</div>
+                                                                <div
+                                                                    style="font-size:0.7rem;color:#64748b;font-weight:500;">
+                                                                    Anomalias e alertas críticos</div>
+                                                            </div>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="copilot-box-right">
+                                                <!-- Microfone -->
+                                                <button class="copilot-icon-btn" id="copilot-mic-btn"
+                                                    title="Ditado por voz">
+                                                    <i class="fa-solid fa-microphone"></i>
+                                                </button>
+                                                <!-- Botão Enviar -->
+                                                <button class="copilot-send-btn" id="chat-send" title="Enviar mensagem">
+                                                    <i class="fa-solid fa-paper-plane"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- ====== FIM ÁREA DO CHAT ====== -->
 
                             <!-- Galeria (oculta por padrão) -->
-                            <div id="gallery-box" style="flex:1;display:none;flex-direction:column;background:var(--fundo);border-radius:12px;border:1px solid var(--borda);overflow:hidden;">
-                                <div style="padding:20px;border-bottom:1px solid var(--borda);display:flex;justify-content:space-between;align-items:center;background:var(--cartao);">
-                                    <h2 id="gallery-main-title" style="margin:0;font-size:1.2rem;color:var(--texto);">Galeria</h2>
-                                    <select id="gallery-period-select" style="padding:8px;border-radius:6px;border:1px solid var(--borda);background:var(--fundo);color:var(--texto);cursor:pointer;">
+                            <div id="gallery-box"
+                                style="flex:1;display:none;flex-direction:column;background:#0a0e1a;border-left:1px solid rgba(255,255,255,0.06);overflow:hidden;">
+                                <div
+                                    style="padding:20px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center;background:rgba(15,23,42,0.8);">
+                                    <h2 id="gallery-main-title"
+                                        style="margin:0;font-size:1.1rem;color:#f8fafc;font-weight:700;">
+                                        <i class="fa-solid fa-images"
+                                            style="color:#3B82F6;margin-right:8px;"></i>Galeria de Gráficos
+                                    </h2>
+                                    <select id="gallery-period-select"
+                                        style="padding:7px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.09);background:#1e293b;color:#e2e8f0;cursor:pointer;font-size:0.8rem;">
                                         <option value="7_dias">Últimos 7 Dias</option>
                                         <option value="30_dias" selected>Últimos 30 Dias</option>
                                         <option value="90_dias">Últimos 90 Dias</option>
                                         <option value="ano_atual">Este Ano</option>
                                     </select>
                                 </div>
-                                <div id="gallery-grid" style="flex:1;padding:20px;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;align-content:start;"></div>
+                                <div id="gallery-grid"
+                                    style="flex:1;padding:20px;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;align-content:start;">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -888,20 +2665,25 @@
 
                         <div class="ia-section-header ia-animate" style="margin-bottom:20px;">
                             <div>
-                                <span class="ia-section-title" style="font-size:1.1rem;"><i class="fa-solid fa-grid-2"></i> Módulos de Análise Especializada</span>
-                                <p style="font-size:0.84rem;color:var(--suave);margin-top:4px;">Ferramentas de IA especializadas para cada área do seu negócio. Clique para acessar análises aprofundadas.</p>
+                                <span class="ia-section-title" style="font-size:1.1rem;"><i
+                                        class="fa-solid fa-grid-2"></i> Módulos de Análise Especializada</span>
+                                <p style="font-size:0.84rem;color:var(--suave);margin-top:4px;">Ferramentas de IA
+                                    especializadas para cada área do seu negócio. Clique para acessar análises
+                                    aprofundadas.</p>
                             </div>
                         </div>
 
                         <div class="ia-modules-grid ia-animate">
                             <!-- Card Financeiro -->
-                            <div class="ia-module-card financeiro" data-href="{{ url_for('pagina_ia_financeiro') }}" role="button" tabindex="0" aria-label="Módulo de Análise Financeira">
+                            <div class="ia-module-card financeiro" data-href="{{ url_for('pagina_ia_financeiro') }}"
+                                role="button" tabindex="0" aria-label="Módulo de Análise Financeira">
                                 <div class="ia-module-stripe"></div>
                                 <div class="ia-module-icon-wrap">
                                     <i class="fa-solid fa-coins"></i>
                                 </div>
                                 <h2 class="ia-module-title">Fluxo de Caixa & Finanças</h2>
-                                <p class="ia-module-desc">Análise preditiva de saldo, identificação de gargalos financeiros, projeções de receita e diagnóstico de saúde financeira do negócio.</p>
+                                <p class="ia-module-desc">Análise preditiva de saldo, identificação de gargalos
+                                    financeiros, projeções de receita e diagnóstico de saúde financeira do negócio.</p>
                                 <div class="ia-module-features">
                                     <span class="ia-module-feature">Análise Preditiva</span>
                                     <span class="ia-module-feature">Gargalos Financeiros</span>
@@ -915,13 +2697,15 @@
                             </div>
 
                             <!-- Card Decisões -->
-                            <div class="ia-module-card decisoes" data-href="{{ url_for('pagina_ia_decisoes') }}" role="button" tabindex="0" aria-label="Módulo de Tomada de Decisão">
+                            <div class="ia-module-card decisoes" data-href="{{ url_for('pagina_ia_decisoes') }}"
+                                role="button" tabindex="0" aria-label="Módulo de Tomada de Decisão">
                                 <div class="ia-module-stripe"></div>
                                 <div class="ia-module-icon-wrap">
                                     <i class="fa-solid fa-brain"></i>
                                 </div>
                                 <h2 class="ia-module-title">Decisões & Estratégia</h2>
-                                <p class="ia-module-desc">Simulações de cenários "E se...?", análises SWOT automáticas, recomendações estratégicas de crescimento e planejamento baseado em dados.</p>
+                                <p class="ia-module-desc">Simulações de cenários "E se...?", análises SWOT automáticas,
+                                    recomendações estratégicas de crescimento e planejamento baseado em dados.</p>
                                 <div class="ia-module-features">
                                     <span class="ia-module-feature">Análise SWOT</span>
                                     <span class="ia-module-feature">Cenários "E se"</span>
@@ -935,13 +2719,15 @@
                             </div>
 
                             <!-- Card Operacional -->
-                            <div class="ia-module-card operacional" data-href="{{ url_for('pagina_ia_operacional') }}" role="button" tabindex="0" aria-label="Módulo Operacional">
+                            <div class="ia-module-card operacional" data-href="{{ url_for('pagina_ia_operacional') }}"
+                                role="button" tabindex="0" aria-label="Módulo Operacional">
                                 <div class="ia-module-stripe"></div>
                                 <div class="ia-module-icon-wrap">
                                     <i class="fa-solid fa-chart-bar"></i>
                                 </div>
                                 <h2 class="ia-module-title">Vendas & Operações</h2>
-                                <p class="ia-module-desc">Diagnóstico de produtos e serviços mais lucrativos, análise de comportamento de clientes, sazonalidade e mapa de oportunidades operacionais.</p>
+                                <p class="ia-module-desc">Diagnóstico de produtos e serviços mais lucrativos, análise de
+                                    comportamento de clientes, sazonalidade e mapa de oportunidades operacionais.</p>
                                 <div class="ia-module-features">
                                     <span class="ia-module-feature">Top Produtos</span>
                                     <span class="ia-module-feature">Comportamento</span>
@@ -977,19 +2763,64 @@
                     ================================================ -->
                     <div class="ia-hub-panel" id="panel-agents" role="tabpanel">
 
-                        <div class="ia-section-header ia-animate" style="margin-bottom:8px;">
+                        <!-- Banner Central dos Agentes -->
+                        <div class="agents-hub-banner ia-animate">
                             <div>
-                                <span class="ia-section-title" style="font-size:1.1rem;">Agentes de IA</span>
-                                <p style="font-size:0.84rem;color:var(--suave);margin-top:4px;">Agentes autônomos especializados. Ative, configure e execute análises automáticas.</p>
+                                <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+
+                                    <span style="font-size:1rem;font-weight:800;color:var(--texto);">Central de Agentes
+                                        Autônomos</span>
+                                </div>
+                                <p style="font-size:0.82rem;color:var(--suave);margin:0;">Robôs de IA trabalhando 24/7
+                                    para monitorar, analisar e automatizar o seu negócio.</p>
+                            </div>
+                            <div class="agents-hub-stats">
+                                <div class="agents-hub-stat">
+                                    <span class="agents-hub-stat-val" id="hub-stat-online">0</span>
+                                    <span class="agents-hub-stat-lbl">Online</span>
+                                </div>
+                                <div class="agents-hub-stat">
+                                    <span class="agents-hub-stat-val" id="hub-stat-acoes">0</span>
+                                    <span class="agents-hub-stat-lbl">Ações Hoje</span>
+                                </div>
+                                <div class="agents-hub-stat">
+                                    <span class="agents-hub-stat-val" id="hub-stat-alertas">0</span>
+                                    <span class="agents-hub-stat-lbl">Alertas</span>
+                                </div>
+                            </div>
+                            <div class="agents-hub-feed">
+                                <div class="agents-hub-feed-title">
+                                    <span class="feed-dot"></span>
+                                    Atividade Recente
+                                </div>
+                                <div class="agents-global-feed" id="agents-global-feed">
+                                    <div class="global-feed-item">
+                                        <span class="gfi-dot" style="background:#6b7280;"></span>
+                                        <span style="color:var(--suave);font-size:0.78rem;font-style:italic;">Ative um
+                                            agente para ver atividade ao vivo...</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
+                        <!-- Grid de Agentes -->
                         <div class="ia-agents-grid ia-animate" id="ia-agents-grid">
-                            <!-- Agentes renderizados via JS -->
-                            <div style="padding:40px;text-align:center;color:var(--suave);">
+                            <div style="padding:40px;text-align:center;color:var(--suave);grid-column:1/-1;">
                                 <i class="fa-solid fa-spinner fa-spin" style="font-size:1.5rem;margin-bottom:12px;"></i>
-                                <p>Carregando agentes...</p>
+                                <p>Inicializando agentes...</p>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal Histórico do Agente -->
+                    <div id="agent-history-modal" role="dialog" aria-modal="true">
+                        <div class="agent-history-window">
+                            <div class="agent-history-header">
+                                <h2 id="agent-history-title">Histórico de Execuções</h2>
+                                <button class="ia-modal-close-btn agent-hist-close" aria-label="Fechar"><i
+                                        class="fa-solid fa-xmark"></i></button>
+                            </div>
+                            <div class="agent-history-body" id="agent-history-body"></div>
                         </div>
                     </div>
 
@@ -1004,14 +2835,17 @@
         <div class="ia-agent-result-window">
             <div class="ia-agent-result-header">
                 <h2 id="ia-agent-result-title">Resultado do Agente</h2>
-                <button class="ia-modal-close-btn" title="Fechar" aria-label="Fechar modal"><i class="fa-solid fa-xmark"></i></button>
+                <button class="ia-modal-close-btn" title="Fechar" aria-label="Fechar modal"><i
+                        class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="ia-agent-result-body" id="ia-agent-result-body"></div>
             <div class="ia-agent-result-footer">
-                <button id="ia-agent-result-copy" class="btn-ia-glow-blue" style="padding:9px 16px;font-size:0.82rem;display:inline-flex;align-items:center;gap:7px;">
+                <button id="ia-agent-result-copy" class="btn-ia-glow-blue"
+                    style="padding:9px 16px;font-size:0.82rem;display:inline-flex;align-items:center;gap:7px;">
                     <i class="fa-solid fa-copy"></i> Copiar Análise
                 </button>
-                <button class="ia-modal-close-btn" style="padding:9px 16px;background:var(--fundo);border:1px solid var(--borda);border-radius:8px;font-size:0.82rem;color:var(--texto);cursor:pointer;font-family:var(--fonte);">
+                <button class="ia-modal-close-btn"
+                    style="padding:9px 16px;background:var(--fundo);border:1px solid var(--borda);border-radius:8px;font-size:0.82rem;color:var(--texto);cursor:pointer;font-family:var(--fonte);">
                     Fechar
                 </button>
             </div>
@@ -1034,8 +2868,8 @@
     <script src="{{ url_for('static', filename='js/ia.js') }}"></script>
     <script src="{{ url_for('static', filename='js/ia-hub.js') }}"></script>
     <script>
-        function abrirSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sidebarOverlay').classList.add('active');}
-        function fecharSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active');}
+        function abrirSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarOverlay').classList.add('active'); }
+        function fecharSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('active'); }
 
         // Reload insight button
         function loadDailyInsight() {
@@ -1045,11 +2879,12 @@
                 .then(r => r.json())
                 .then(data => {
                     if (el && data.insight) {
-                        el.innerHTML = data.insight.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+                        el.innerHTML = data.insight.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
                         el.classList.add('loaded');
                     }
-                }).catch(() => { if(el){el.textContent='Erro ao carregar insight.';el.classList.add('loaded');} });
+                }).catch(() => { if (el) { el.textContent = 'Erro ao carregar insight.'; el.classList.add('loaded'); } });
         }
     </script>
 </body>
+
 </html>

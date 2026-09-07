@@ -31,13 +31,6 @@
     <span>Análises</span>
   </a>
 
-  <a class="navbar-bottom__item {% if request.endpoint=='pagina_analises_salvas' %}active{% endif %}"
-     href="{{ url_for('pagina_analises_salvas') }}" aria-label="Análises Salvas"
-     {% if request.endpoint=='pagina_analises_salvas' %}aria-current="page"{% endif %}>
-    <i class="fa-solid fa-bookmark"></i>
-    <span>Salvas</span>
-  </a>
-
   <a class="navbar-bottom__item {% if request.endpoint=='pagina_fluxo_caixa' %}active{% endif %}"
    href="{{ url_for('pagina_fluxo_caixa') }}"
    aria-label="Fluxo de Caixa"
@@ -67,6 +60,13 @@
     <i class="fa-solid fa-robot"></i>
     <span>IA</span>
   </a>
+
+    <a href="{{ url_for('pagina_analises_salvas') }}"
+     {% if request.endpoint=='pagina_analises_salvas' %}aria-current="page"{% endif %}>
+    <i class="fa-solid fa-bookmark"></i>
+    Análises Salvas
+  </a>
+
 
   <a class="navbar-bottom__item {% if request.endpoint=='pagina_perfil' %}active{% endif %}"
      href="{{ url_for('pagina_perfil') }}" aria-label="Perfil"

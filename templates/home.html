@@ -289,15 +289,42 @@
           </section>
 
           <section class="cartao anim-fade-up anim-fade-up-d5"
+            id="secao-banco-mensagens-ia"
             style="margin-top: 20px; border-left:4px solid var(--primaria); background:linear-gradient(135deg, rgba(59,130,246,0.03) 0%, rgba(99,102,241,0.02) 100%);"
-            aria-label="Última resposta da IA">
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
-              <div
-                style="width:28px; height:28px; background:var(--primaria); border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px;">
-                <i class="fa-solid fa-comments"></i>
+            aria-label="Banco de mensagens da IA">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:12px;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div
+                  style="width:32px; height:32px; background:var(--primaria); border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; box-shadow:0 2px 8px rgba(59,130,246,0.25);">
+                  <i class="fa-solid fa-robot"></i>
+                </div>
+                <div>
+                  <h2 style="font-size:0.95rem; font-weight:700; margin:0; color:var(--texto);">Últimas Perguntas Feitas a IA</h2>
+                  <p style="font-size:0.75rem; color:var(--suave); margin:0;">Histórico recente de diagnósticos e gráficos gerados pela IA</p>
+                </div>
               </div>
-              <h2 style="font-size:0.9rem; font-weight:700; margin:0; color:var(--texto);">Última resposta da IA</h2>
+
+              <!-- Controles de Navegação no Banco de Mensagens -->
+              <div id="controles-banco-ia" style="display:none; align-items:center; gap:8px; flex-wrap:wrap;">
+                <span id="badge-msg-grafico" class="badge" style="display:none; background:rgba(16,185,129,0.12); color:#10B981; border:1px solid rgba(16,185,129,0.3); font-size:0.72rem; font-weight:700; border-radius:20px; padding:3px 9px;">
+                  <i class="fa-solid fa-chart-line"></i> Contém Gráfico
+                </span>
+
+                <div style="display:inline-flex; align-items:center; background:var(--fundo); border:1px solid var(--borda); border-radius:8px; padding:2px;">
+                  <button type="button" id="btn-msg-anterior" class="botao bAotao--suave" style="padding:4px 9px; font-size:0.75rem; border:none; background:transparent;" title="Mensagem anterior" disabled>
+                    <i class="fa-solid fa-chevron-left"></i>
+                  </button>
+                  <span id="contador-mensagens-ia" style="font-size:0.75rem; font-weight:600; color:var(--texto); padding:0 8px; min-width:48px; text-align:center;">
+                    1 de 1
+                  </span>
+                  <button type="button" id="btn-msg-proxima" class="botao botao--suave" style="padding:4px 9px; font-size:0.75rem; border:none; background:transparent;" title="Próxima mensagem" disabled>
+                    <i class="fa-solid fa-chevron-right"></i>
+                  </button>
+                </div>
+
+              </div>
             </div>
+
             <div id="container-ultima-resposta-ia" style="display:flex; flex-direction:column; gap:12px; color:var(--texto);">
               <div class="skeleton" style="height:16px; width:85%; border-radius:6px;"></div>
               <div class="skeleton" style="height:16px; width:65%; border-radius:6px;"></div>

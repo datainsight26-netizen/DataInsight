@@ -274,9 +274,9 @@
   <div class="auth-wrapper" data-ia-help="page_cadastro">
 
     <!-- Painel visual esquerdo -->
-    <div class="auth-panel" aria-hidden="true">
+    <div class="auth-panel" aria-hidden="true" >
       <div class="auth-panel__logo">
-        <div class="auth-panel__logo-icon">
+        <div class="auth-panel__logo-icon" style="border-radius:100px;">
           <i class="fa-solid fa-chart-column"></i>
         </div>
         DataInsight
@@ -294,9 +294,10 @@
       <ul class="auth-panel__features">
         <li><i class="fa-solid fa-check"></i> Dashboard completo com KPIs</li>
         <li><i class="fa-solid fa-check"></i> Análises automáticas por IA</li>
-        <li><i class="fa-solid fa-check"></i> Relatórios em PDF e Excel</li>
+        <li><i class="fa-solid fa-check"></i> Relatórios em PDF</li>
         <li><i class="fa-solid fa-check"></i> Upload de CSV e dados manuais</li>
         <li><i class="fa-solid fa-check"></i> Gráficos interativos avançados</li>
+        <li><i class="fa-solid fa-check"></i> Agentes de IA</li>
       </ul>
     </div>
 
@@ -341,6 +342,8 @@
                      autocomplete="email" required />
             </div>
           </div>
+
+       
 
           <div class="auth-field">
             <label for="senha">Senha <span style="color:#DC2626">*</span></label>
@@ -426,14 +429,44 @@
       }
     }
 
+    const telInput      = document.getElementById('telefone');
     const senhaInput    = document.getElementById('senha');
     const confirmaInput = document.getElementById('confirmar');
     const msgEl         = document.getElementById('mensagem');
     const form          = document.getElementById('formularioCadastro');
 
+    // Máscara automática de telefone (BR: (XX) XXXXX-XXXX ou fixo (XX) XXXX-XXXX)
+    if (telInput) {
+      telInput.addEventListener('input', (e) => {
+        let v = e.target.value.replace(/\D/g, '');
+        if (v.length > 11) v = v.slice(0, 11);
+        if (v.length > 10) {
+          e.target.value = v.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+        } else if (v.length > 6) {
+          e.target.value = v.replace(/^(\d{2})(\d{4})(\d{0,4})$/, '($1) $2-$3');
+        } else if (v.length > 2) {
+          e.target.value = v.replace(/^(\d{2})(\d{0,5})$/, '($1) $2');
+        } else if (v.length > 0) {
+          e.target.value = '(' + v;
+        } else {
+          e.target.value = '';
+        }
+      });
+    }
+
     function validar() {
       const s = senhaInput.value;
       const c = confirmaInput.value;
+      const telDigitos = telInput ? telInput.value.replace(/\D/g, '') : '';
+
+      if (telInput && (telDigitos.length < 10 || telDigitos.length > 11)) {
+        msgEl.textContent = '✕ Informe um número de celular válido com DDD';
+        msgEl.className = 'auth-field-msg auth-field-msg--error';
+        telInput.classList.add('auth-input--error');
+        telInput.focus();
+        return false;
+      }
+      if (telInput) telInput.classList.remove('auth-input--error');
 
       if (s.length > 0 && s.length < 8) {
         msgEl.textContent = '✕ Senha deve ter no mínimo 8 caracteres';
@@ -448,7 +481,7 @@
         return false;
       }
       if (s.length >= 8 && s === c) {
-        msgEl.textContent = '✓ Senhas válidas';
+        msgEl.textContent = '✓ Dados válidos';
         msgEl.className = 'auth-field-msg auth-field-msg--success';
         senhaInput.classList.remove('auth-input--error');
         senhaInput.classList.add('auth-input--success');
