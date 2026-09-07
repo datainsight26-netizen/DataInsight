@@ -2320,9 +2320,8 @@ async function _salvarProdutosNoHistorico(colunas, dados) {
                 })
             });
             salvos++;
-        } catch (e) { console.warn('Aviso ao salvar produto:', e); }
+        } catch (e) { }
     }
-    if (salvos > 0) console.log(`✅ ${salvos} produto(s) salvos no histórico`);
 }
 
 // ───────────────────────────────
@@ -2342,7 +2341,7 @@ async function carregarDadosIniciais() {
             return;
         }
     } catch (e) {
-        console.log('Nenhum dado anterior encontrado:', e.message);
+        // Nenhum dado anterior salvo
     }
     inicializarTabelaPadrao();
 }

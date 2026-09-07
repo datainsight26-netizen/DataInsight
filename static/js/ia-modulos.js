@@ -158,12 +158,16 @@
             reloadCharts();
             if (resposta) showSaveButton();
 
+            window.dispatchEvent(new CustomEvent('ia:analise-concluida', { detail: { resposta, prompt, data } }));
+            return resposta;
+
         } catch (e) {
             if (skeleton) skeleton.style.display = 'none';
             if (resultArea) {
                 resultArea.style.display = 'block';
                 resultArea.innerHTML = `<div class="ia-error-msg"><i class="fa-solid fa-circle-exclamation"></i> Erro ao conectar com o servidor de IA. Verifique sua conexão e tente novamente.</div>`;
             }
+            throw e;
         } finally {
             if (runBtn) {
                 runBtn.disabled = false;

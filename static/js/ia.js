@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const messagesDiv = document.getElementById('chat-messages');
+    const streamInner = document.getElementById('chat-stream-inner');
     const input = document.getElementById('chat-input');
     const sendBtn = document.getElementById('chat-send');
 
@@ -8,24 +9,23 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('chatbotSessionId', currentSessionId);
 
     let tabelaIaAtualId = 'todas';
+    let agenteAtual = 'smart';
+    let ferramentaAtual = null;
 
+    // ==================== SELETOR DE PLANILHA ====================
     async function configurarSeletorPlanilhaIa() {
         const select = document.getElementById('seletorPlanilhaIa');
         if (!select) return;
-
         try {
             const resp = await fetch('/api/planilhas/sumario');
             if (!resp.ok) return;
             const json = await resp.json();
             const planilhas = json.planilhas || [];
-
             select.innerHTML = '';
-
             const optTodas = document.createElement('option');
             optTodas.value = 'todas';
             optTodas.textContent = `🌐 Todas as Planilhas (${planilhas.length})`;
             select.appendChild(optTodas);
-
             planilhas.forEach(p => {
                 const opt = document.createElement('option');
                 opt.value = p.id;
@@ -33,13 +33,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 opt.textContent = `${icone} [${p.dominio_label}] ${p.nome}`;
                 select.appendChild(opt);
             });
-
             const salva = localStorage.getItem('DataInsight_DashboardPlanilha');
             if (salva && (salva === 'todas' || planilhas.some(p => p.id === salva))) {
                 select.value = salva;
                 tabelaIaAtualId = salva;
             }
-
             select.addEventListener('change', e => {
                 tabelaIaAtualId = e.target.value;
                 localStorage.setItem('DataInsight_DashboardPlanilha', tabelaIaAtualId);
@@ -55,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const CHATBOT_SESSION_KEY = 'chatbotSessionId';
     const CHATBOT_TRANSITION_DONE_KEY = 'chatbotIaTransitionDone';
 
-    // ==================== FUNÇÕES DE TELA CHEIA ====================
+    // ==================== TELA CHEIA ====================
     const pageContainer = document.querySelector('.page-ia-container');
     const btnFullscreen = document.getElementById('btn-fullscreen');
     const btnExitFullscreen = document.getElementById('btn-exit-fullscreen');
@@ -63,23 +61,126 @@ document.addEventListener('DOMContentLoaded', () => {
     function entrarTelaCheia() {
         pageContainer.classList.add('fullscreen');
         document.body.style.overflow = 'hidden';
+        if (btnExitFullscreen) btnExitFullscreen.style.display = 'flex';
     }
-
     function sairTelaCheia() {
         pageContainer.classList.remove('fullscreen');
         document.body.style.overflow = '';
+        if (btnExitFullscreen) btnExitFullscreen.style.display = 'none';
     }
-
-    btnFullscreen.addEventListener('click', entrarTelaCheia);
-    btnExitFullscreen.addEventListener('click', sairTelaCheia);
-
-    // Tecla ESC para sair da tela cheia
+    if (btnFullscreen) btnFullscreen.addEventListener('click', entrarTelaCheia);
+    if (btnExitFullscreen) btnExitFullscreen.addEventListener('click', sairTelaCheia);
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && pageContainer.classList.contains('fullscreen')) {
-            sairTelaCheia();
-        }
+        if (e.key === 'Escape' && pageContainer && pageContainer.classList.contains('fullscreen')) sairTelaCheia();
     });
 
+    // ==================== SIDEBAR TOGGLE ====================
+    const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+    const chatSidebar = document.getElementById('chat-sidebar');
+    if (sidebarToggleBtn && chatSidebar) {
+        sidebarToggleBtn.addEventListener('click', () => {
+            chatSidebar.classList.toggle('collapsed');
+        });
+    }
+
+    // ==================== SELETOR DE AGENTES ====================
+    const agentSelectorBtn = document.getElementById('agent-selector-btn');
+    const agentDropdown = document.getElementById('agent-dropdown-menu');
+    const agentIconPill = document.getElementById('agent-icon-pill');
+    const agentLabelPill = document.getElementById('agent-label-pill');
+
+    if (agentSelectorBtn && agentDropdown) {
+        agentSelectorBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            agentDropdown.classList.toggle('open');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!agentSelectorBtn.contains(e.target) && !agentDropdown.contains(e.target)) {
+                agentDropdown.classList.remove('open');
+            }
+        });
+
+        agentDropdown.querySelectorAll('.agent-menu-item').forEach(item => {
+            item.addEventListener('click', () => {
+                agentDropdown.querySelectorAll('.agent-menu-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                agenteAtual = item.dataset.agent;
+                const icon = item.dataset.icon;
+                const label = item.dataset.label;
+                const color = item.dataset.color;
+                if (agentIconPill) {
+                    agentIconPill.className = `fa-solid ${icon}`;
+                    agentIconPill.style.color = color;
+                }
+                if (agentLabelPill) agentLabelPill.textContent = label;
+                agentDropdown.classList.remove('open');
+            });
+        });
+    }
+
+    // ==================== FERRAMENTAS RÁPIDAS (PILLS) ====================
+    document.querySelectorAll('.copilot-tool-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+            const prompt = pill.dataset.prompt;
+            const tool = pill.dataset.tool || null;
+            if (prompt && input) {
+                input.value = prompt;
+                ferramentaAtual = tool;
+                autoResizeTextarea();
+                input.focus();
+            }
+        });
+    });
+
+    // ==================== TEXTAREA AUTO RESIZE ====================
+    function autoResizeTextarea() {
+        if (!input) return;
+        input.style.height = 'auto';
+        input.style.height = Math.min(input.scrollHeight, 160) + 'px';
+    }
+    if (input) {
+        input.addEventListener('input', autoResizeTextarea);
+    }
+
+    // ==================== MICROFONE (Web Speech API) ====================
+    const micBtn = document.getElementById('copilot-mic-btn');
+    let isRecording = false;
+    if (micBtn && 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'pt-BR';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            if (input) { input.value = transcript; autoResizeTextarea(); }
+        };
+        recognition.onend = () => {
+            isRecording = false;
+            if (micBtn) { micBtn.style.color = ''; micBtn.title = 'Ditado por voz'; }
+        };
+        recognition.onerror = () => {
+            isRecording = false;
+            if (micBtn) micBtn.style.color = '';
+        };
+
+        if (micBtn) {
+            micBtn.addEventListener('click', () => {
+                if (isRecording) {
+                    recognition.stop();
+                } else {
+                    recognition.start();
+                    isRecording = true;
+                    micBtn.style.color = '#ef4444';
+                    micBtn.title = 'Clique para parar';
+                }
+            });
+        }
+    }
+
+    // ==================== RENDERIZAR GRÁFICOS ====================
     function renderizarGraficosDaMensagem() {
         const containers = document.querySelectorAll('.grafico-ia-render:not(.renderizado)');
         containers.forEach(container => {
@@ -88,117 +189,163 @@ document.addEventListener('DOMContentLoaded', () => {
             let tipoChart = 'area';
             if (tipoRaw === 'barras' || tipoRaw === 'barra') tipoChart = 'bar';
             if (tipoRaw === 'pizza') tipoChart = 'pie';
-
             const metricasRaw = container.getAttribute('data-metricas') || 'faturamento,lucro';
             const metricasFiltro = metricasRaw.split(',').map(m => m.trim().toLowerCase());
-
-            container.innerHTML = '<div style="text-align:center; padding: 20px;">Carregando dados interativos...</div>';
+            container.innerHTML = '<div style="text-align:center;padding:20px;color:#64748b;font-size:0.85rem;"><i class="fa-solid fa-spinner fa-spin"></i> Gerando gráfico interativo...</div>';
             container.classList.add('renderizado');
+
+            // Detectar tema atual
+            const isDark = document.body.classList.contains('tema-escuro');
+            const txtColor = isDark ? '#94a3b8' : '#6b7280';
+            const bgBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+            const bgCard  = isDark ? 'rgba(15,23,42,0.5)' : 'rgba(248,250,252,0.8)';
+            const legendColor = isDark ? '#e2e8f0' : '#374151';
+            const themeMode = isDark ? 'dark' : 'light';
+            container.style.cssText = `min-height:320px;border:1px solid ${bgBorder};border-radius:14px;padding:12px;margin:14px 0;background:${bgCard};`;
 
             fetch(`/api/graficos?periodo=${periodo}`)
                 .then(res => res.json())
                 .then(data => {
                     container.innerHTML = '';
-                    let chartData;
-                    let options;
-                    const isDarkMode = document.body.classList.contains('tema-escuro');
-
+                    let chartData, options;
                     if (tipoChart === 'pie') {
                         chartData = data.grafico_pizza;
                         if (!chartData || !chartData.labels || chartData.series.length === 0) {
-                            container.innerHTML = '<p style="color:var(--muted);">Sem dados suficientes para este período.</p>';
+                            container.innerHTML = '<p style="color:#64748b;text-align:center;padding:20px;">Sem dados suficientes para este período.</p>';
                             return;
                         }
                         const indices = [];
                         chartData.labels.forEach((lbl, i) => {
                             const nome = lbl.toLowerCase();
-                            if (metricasFiltro.some(m => nome.includes(m) || m.includes(nome) || m.replace('s', '') === nome.replace('s', '')) || metricasFiltro.includes('todos')) {
-                                indices.push(i);
-                            }
+                            if (metricasFiltro.some(m => nome.includes(m) || m.includes(nome)) || metricasFiltro.includes('todos')) indices.push(i);
                         });
-                        const seriesFiltradas = indices.map(i => chartData.series[i]);
-                        const labelsFiltrados = indices.map(i => chartData.labels[i]);
-
                         options = {
-                            chart: { type: 'pie', height: 300, background: 'transparent', foreColor: isDarkMode ? '#9ca3af' : '#4b5563' },
-                            series: seriesFiltradas,
-                            labels: labelsFiltrados,
-                            colors: ['#3B82F6', '#EF4444', '#10B981'].slice(0, seriesFiltradas.length),
-                            legend: { show: true, position: 'right', labels: { colors: isDarkMode ? '#e5e7eb' : '#1f2937' } },
+                            chart: { type: 'pie', height: 300, background: 'transparent', foreColor: txtColor },
+                            series: indices.map(i => chartData.series[i]),
+                            labels: indices.map(i => chartData.labels[i]),
+                            colors: ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#7C3AED'],
+                            legend: { show: true, position: 'right', labels: { colors: legendColor } },
                             dataLabels: { enabled: true },
-                            theme: { mode: isDarkMode ? 'dark' : 'light' }
+                            theme: { mode: themeMode }
                         };
                     } else {
                         chartData = tipoChart === 'bar' ? data.grafico_barras : data.grafico_linha;
                         if (!chartData || !chartData.labels) {
-                            container.innerHTML = '<p style="color:var(--muted);">Sem dados suficientes para este período.</p>';
+                            container.innerHTML = '<p style="color:#64748b;text-align:center;padding:20px;">Sem dados suficientes para este período.</p>';
                             return;
                         }
-
                         let seriesFiltradas = chartData.series;
                         if (!metricasFiltro.includes('todos')) {
                             seriesFiltradas = chartData.series.filter(s => {
                                 const nome = s.name.toLowerCase();
-                                return metricasFiltro.some(m => nome.includes(m) || m.includes(nome) || m.replace('s', '') === nome.replace('s', ''));
+                                return metricasFiltro.some(m => nome.includes(m) || m.includes(nome));
                             });
                         }
-
                         options = {
-                            chart: {
-                                type: tipoChart,
-                                height: 300,
-                                toolbar: { show: false },
-                                background: 'transparent',
-                                foreColor: isDarkMode ? '#9ca3af' : '#4b5563'
-                            },
+                            chart: { type: tipoChart, height: 300, toolbar: { show: false }, background: 'transparent', foreColor: txtColor },
                             series: seriesFiltradas,
-                            xaxis: {
-                                categories: chartData.labels,
-                                labels: { style: { colors: isDarkMode ? '#9ca3af' : '#4b5563' } }
-                            },
-                            yaxis: {
-                                labels: {
-                                    style: { colors: isDarkMode ? '#9ca3af' : '#4b5563' },
-                                    formatter: function (value) { return "R$ " + value.toLocaleString('pt-BR'); }
-                                }
-                            },
-                            legend: {
-                                show: true,
-                                position: 'top',
-                                horizontalAlign: 'left',
-                                labels: { colors: isDarkMode ? '#e5e7eb' : '#1f2937' }
-                            },
-                            colors: ['#3B82F6', '#EF4444', '#10B981'],
+                            xaxis: { categories: chartData.labels, labels: { style: { colors: txtColor } } },
+                            yaxis: { labels: { style: { colors: txtColor }, formatter: v => 'R$ ' + v.toLocaleString('pt-BR') } },
+                            legend: { show: true, position: 'top', horizontalAlign: 'left', labels: { colors: legendColor } },
+                            colors: ['#3B82F6', '#10B981', '#F59E0B'],
                             dataLabels: { enabled: false },
                             stroke: { curve: tipoChart === 'area' ? 'smooth' : 'straight', width: tipoChart === 'area' ? 2 : 0 },
-                            theme: { mode: isDarkMode ? 'dark' : 'light' }
+                            fill: { type: tipoChart === 'area' ? 'gradient' : 'solid', gradient: { shadeIntensity: 0.1, opacityFrom: 0.3, opacityTo: 0 } },
+                            grid: { borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)' },
+                            theme: { mode: themeMode }
                         };
                     }
-
                     const chart = new ApexCharts(container, options);
                     chart.render();
                 })
                 .catch(err => {
                     console.error(err);
-                    container.innerHTML = '<p style="color:var(--perigo);">Erro ao gerar gráfico interativo.</p>';
+                    container.innerHTML = '<p style="color:#ef4444;padding:20px;text-align:center;">Erro ao gerar gráfico interativo.</p>';
                 });
         });
     }
 
-    function appendMessage(texto, remetente) {
+    // ==================== APPEND MESSAGE (NOVO DESIGN) ====================
+    function appendMessage(texto, remetente, agenteInfo) {
+        const wrapper = streamInner || messagesDiv;
         const msgDiv = document.createElement('div');
         msgDiv.className = `chat-msg ${remetente}`;
+
         if (remetente === 'bot') {
-            msgDiv.innerHTML = marked.parse(texto);
+            const agNome = (agenteInfo && agenteInfo.agente_nome) || 'Copiloto IA';
+            const agIcone = (agenteInfo && agenteInfo.agente_icone) ? `fa-${agenteInfo.agente_icone}` : 'fa-robot';
+            const agCor = (agenteInfo && agenteInfo.agente_cor) || '#3B82F6';
+
+            const badge = `<div class="bot-header-badge" style="border-color:${agCor}33;color:${agCor};background:${agCor}14;">
+                <i class="fa-solid ${agIcone}"></i> ${agNome}
+            </div>`;
+
+            const conteudo = texto;
+            const actionBar = `<div class="bot-action-bar">
+                <button class="bot-action-btn btn-thumbs-up" title="Útil"><i class="fa-regular fa-thumbs-up"></i></button>
+                <button class="bot-action-btn btn-thumbs-down" title="Não útil"><i class="fa-regular fa-thumbs-down"></i></button>
+                <button class="bot-action-btn btn-copy-msg" title="Copiar"><i class="fa-regular fa-copy"></i></button>
+                <button class="bot-action-btn btn-speak-msg" title="Ouvir resposta"><i class="fa-solid fa-volume-high"></i></button>
+                <button class="bot-action-btn btn-regen-msg" title="Regenerar resposta"><i class="fa-solid fa-rotate-right"></i></button>
+            </div>`;
+
+            msgDiv.innerHTML = `${badge}<div class="bot-msg-content">${conteudo}</div>${actionBar}`;
+
+            // Bindings da toolbar
+            const el = msgDiv;
+            el.querySelector('.btn-thumbs-up').addEventListener('click', function() {
+                this.classList.toggle('active');
+                el.querySelector('.btn-thumbs-down').classList.remove('active');
+            });
+            el.querySelector('.btn-thumbs-down').addEventListener('click', function() {
+                this.classList.toggle('active');
+                el.querySelector('.btn-thumbs-up').classList.remove('active');
+            });
+            el.querySelector('.btn-copy-msg').addEventListener('click', function() {
+                const body = el.querySelector('.bot-msg-content');
+                if (body) {
+                    navigator.clipboard.writeText(body.innerText).then(() => {
+                        this.innerHTML = '<i class="fa-solid fa-check"></i>';
+                        setTimeout(() => { this.innerHTML = '<i class="fa-regular fa-copy"></i>'; }, 1500);
+                    });
+                }
+            });
+            el.querySelector('.btn-speak-msg').addEventListener('click', function() {
+                const body = el.querySelector('.bot-msg-content');
+                if (body && 'speechSynthesis' in window) {
+                    const utter = new SpeechSynthesisUtterance(body.innerText);
+                    utter.lang = 'pt-BR';
+                    window.speechSynthesis.speak(utter);
+                }
+            });
+            el.querySelector('.btn-regen-msg').addEventListener('click', function() {
+                const userMsgs = wrapper.querySelectorAll('.chat-msg.user');
+                if (userMsgs.length > 0) {
+                    const lastUserText = userMsgs[userMsgs.length - 1].querySelector('.user-bubble');
+                    if (lastUserText) {
+                        input.value = lastUserText.innerText;
+                        ferramentaAtual = null;
+                        sendMessage();
+                    }
+                }
+            });
+
             msgDiv.querySelectorAll('a').forEach(a => a.target = '_blank');
         } else {
-            msgDiv.textContent = texto;
+            msgDiv.innerHTML = `<div class="user-bubble">${escapeHtml(texto)}</div>`;
         }
-        messagesDiv.appendChild(msgDiv);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        if (remetente === 'bot') {
-            setTimeout(renderizarGraficosDaMensagem, 100);
-        }
+
+        wrapper.appendChild(msgDiv);
+        if (messagesDiv) messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+        if (remetente === 'bot') setTimeout(renderizarGraficosDaMensagem, 100);
+        return msgDiv;
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(text));
+        return div.innerHTML;
     }
 
     function persistSessionId() {
@@ -208,32 +355,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function restoreChatbotSession() {
         const savedSession = sessionStorage.getItem(CHATBOT_SESSION_KEY) || localStorage.getItem(CHATBOT_SESSION_KEY);
-        if (savedSession) {
-            currentSessionId = savedSession;
-            persistSessionId();
-        }
+        if (savedSession) { currentSessionId = savedSession; persistSessionId(); }
     }
 
     function restoreChatbotConversationToPage() {
-        let saved = sessionStorage.getItem(CHATBOT_MESSAGES_KEY);
-        if (!saved) {
-            saved = localStorage.getItem(CHATBOT_MESSAGES_KEY);
-        }
+        let saved = sessionStorage.getItem(CHATBOT_MESSAGES_KEY) || localStorage.getItem(CHATBOT_MESSAGES_KEY);
         if (!saved) return false;
         try {
             const messages = JSON.parse(saved);
             if (!Array.isArray(messages) || messages.length === 0) return false;
-            messagesDiv.innerHTML = '';
+            const wrapper = streamInner || messagesDiv;
+            const existing = wrapper.querySelectorAll('.chat-msg');
+            existing.forEach(el => el.remove());
             messages.forEach(m => {
                 const msgDiv = document.createElement('div');
                 msgDiv.className = `chat-msg ${m.remetente}`;
                 msgDiv.innerHTML = m.html;
-                messagesDiv.appendChild(msgDiv);
+                wrapper.appendChild(msgDiv);
             });
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            if (messagesDiv) messagesDiv.scrollTop = messagesDiv.scrollHeight;
             return true;
         } catch (err) {
-            console.warn('Falha ao restaurar conversa do chatbot:', err);
+            console.warn('Falha ao restaurar conversa:', err);
             return false;
         }
     }
@@ -243,33 +386,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const chatBox = document.getElementById('chat-box');
         if (!chatbotCard || !chatBox) return;
         if (!chatbotCard.classList.contains('active')) return;
-
         const cardRect = chatbotCard.getBoundingClientRect();
         const targetRect = chatBox.getBoundingClientRect();
         const clone = chatbotCard.cloneNode(true);
-        clone.style.position = 'fixed';
-        clone.style.margin = '0';
-        clone.style.top = `${cardRect.top}px`;
-        clone.style.left = `${cardRect.left}px`;
-        clone.style.width = `${cardRect.width}px`;
-        clone.style.height = `${cardRect.height}px`;
-        clone.style.transition = 'all 0.7s cubic-bezier(0.22, 1, 0.36, 1)';
-        clone.style.zIndex = '25000';
-        clone.style.pointerEvents = 'none';
-        clone.style.borderRadius = '28px';
-        clone.style.boxShadow = '0 30px 90px rgba(15, 23, 42, 0.35)';
-        document.body.appendChild(clone);
-
-        requestAnimationFrame(() => {
-            clone.style.top = `${targetRect.top}px`;
-            clone.style.left = `${targetRect.left}px`;
-            clone.style.width = `${targetRect.width}px`;
-            clone.style.height = `${targetRect.height}px`;
-            clone.style.borderRadius = '16px';
-            clone.style.opacity = '0.95';
-            clone.style.boxShadow = '0 35px 120px rgba(59, 130, 246, 0.35)';
+        Object.assign(clone.style, {
+            position: 'fixed', margin: '0',
+            top: `${cardRect.top}px`, left: `${cardRect.left}px`,
+            width: `${cardRect.width}px`, height: `${cardRect.height}px`,
+            transition: 'all 0.7s cubic-bezier(0.22, 1, 0.36, 1)',
+            zIndex: '25000', pointerEvents: 'none', borderRadius: '28px',
+            boxShadow: '0 30px 90px rgba(15, 23, 42, 0.35)'
         });
-
+        document.body.appendChild(clone);
+        requestAnimationFrame(() => {
+            Object.assign(clone.style, {
+                top: `${targetRect.top}px`, left: `${targetRect.left}px`,
+                width: `${targetRect.width}px`, height: `${targetRect.height}px`,
+                borderRadius: '16px', opacity: '0.95',
+                boxShadow: '0 35px 120px rgba(59, 130, 246, 0.35)'
+            });
+        });
         clone.addEventListener('transitionend', () => {
             if (clone.parentNode) clone.parentNode.removeChild(clone);
             chatBox.classList.add('chatbox-highlight');
@@ -286,25 +422,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const openState = sessionStorage.getItem(CHATBOT_OPEN_KEY) || localStorage.getItem(CHATBOT_OPEN_KEY);
         if (openState !== 'true') return;
         if (sessionStorage.getItem(CHATBOT_TRANSITION_DONE_KEY) === 'true') return;
-
         const chatbotCard = document.getElementById('chatbot-card');
         if (!chatbotCard || !chatbotCard.classList.contains('active')) {
-            if (attempt < 15) {
-                setTimeout(() => tryAnimateChatbotTransition(attempt + 1), 120);
-            }
+            if (attempt < 15) setTimeout(() => tryAnimateChatbotTransition(attempt + 1), 120);
             return;
         }
-
         const restored = restoreChatbotConversationToPage();
-        if (restored) {
-            animateChatbotIntoPage();
-            sessionStorage.setItem(CHATBOT_TRANSITION_DONE_KEY, 'true');
-        }
+        if (restored) { animateChatbotIntoPage(); sessionStorage.setItem(CHATBOT_TRANSITION_DONE_KEY, 'true'); }
     }
 
     function saveChatbotConversationToState() {
+        const wrapper = streamInner || messagesDiv;
         const messages = [];
-        messagesDiv.querySelectorAll('.chat-msg').forEach(el => {
+        wrapper.querySelectorAll('.chat-msg').forEach(el => {
             messages.push({ html: el.innerHTML, remetente: el.classList.contains('bot') ? 'bot' : 'user' });
         });
         if (messages.length) {
@@ -314,100 +444,130 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    const observer = new MutationObserver(saveChatbotConversationToState);
-    observer.observe(messagesDiv, { childList: true, subtree: true });
+    const mutationObserver = new MutationObserver(saveChatbotConversationToState);
+    if (streamInner) mutationObserver.observe(streamInner, { childList: true, subtree: true });
+    else if (messagesDiv) mutationObserver.observe(messagesDiv, { childList: true, subtree: true });
 
+    // ==================== SESSÕES & HISTÓRICO ====================
     function carregarSessoes() {
         fetch('/api/chatbot/sessoes')
             .then(res => res.json())
             .then(data => {
                 const lista = document.getElementById('historico-lista');
+                if (!lista) return;
                 lista.innerHTML = '';
                 if (data.sessoes && data.sessoes.length > 0) {
                     data.sessoes.forEach(s => {
                         const btn = document.createElement('button');
-                        btn.style.cssText = "background: transparent; border: none; color: var(--texto); text-align: left; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 13px; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;";
-                        btn.innerHTML = `<i class="fa-solid fa-message"></i> ${s.titulo}`;
-                        btn.onmouseover = () => btn.style.background = 'var(--fundo)';
-                        btn.onmouseout = () => btn.style.background = 'transparent';
-
+                        btn.className = `sidebar-history-item ${s.sessao_id === currentSessionId ? 'active' : ''}`;
+                        btn.innerHTML = `<span style="display:flex;align-items:center;gap:7px;overflow:hidden;"><i class="fa-regular fa-message" style="flex-shrink:0;"></i><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.titulo}</span></span>`;
                         btn.onclick = () => {
                             currentSessionId = s.sessao_id;
                             persistSessionId();
-                            mostrarChat();
                             carregarHistorico();
+                            carregarSessoes();
                         };
                         lista.appendChild(btn);
                     });
                 } else {
-                    lista.innerHTML = '<span style="color: var(--muted); font-size: 13px;">Nenhuma conversa.</span>';
+                    lista.innerHTML = '<span style="color:#475569;font-size:0.8rem;padding:6px 10px;">Nenhuma conversa.</span>';
                 }
             });
     }
 
     function carregarHistorico() {
-        messagesDiv.innerHTML = '';
+        const wrapper = streamInner || messagesDiv;
+        const existingMsgs = wrapper.querySelectorAll('.chat-msg');
+        existingMsgs.forEach(el => el.remove());
+
         fetch(`/api/chatbot/historico?sessao_id=${currentSessionId}`)
             .then(res => res.json())
             .then(data => {
                 if (data.historico && data.historico.length > 0) {
                     data.historico.forEach(h => appendMessage(h.mensagem, h.remetente));
                 } else {
-                    appendMessage("Olá! Sou seu Time Virtual de Dados. Posso analisar suas finanças, gerar relatórios em PDF/Excel, ou desenhar gráficos interativos na tela. O que você precisa?", "bot");
+                    appendMessage(
+                        "<p>Olá! Sou seu <strong>Copiloto IA DataInsight</strong>. Posso analisar suas finanças, criar gráficos interativos, gerar tabelas de indicadores e muito mais.</p><p>Use os atalhos abaixo para começar ou escreva sua pergunta!</p>",
+                        'bot',
+                        { agente_nome: 'Smart Copiloto IA', agente_icone: 'robot', agente_cor: '#3B82F6' }
+                    );
                 }
             });
     }
 
+    // ==================== ENVIAR MENSAGEM ====================
     function sendMessage() {
-        const text = input.value.trim();
+        const text = input ? input.value.trim() : '';
         if (!text) return;
+
         persistSessionId();
         appendMessage(text, 'user');
-        input.value = '';
+        if (input) { input.value = ''; input.style.height = 'auto'; }
+        if (sendBtn) sendBtn.disabled = true;
 
+        const wrapper = streamInner || messagesDiv;
         const typingDiv = document.createElement('div');
-        typingDiv.className = 'chat-msg bot';
-        typingDiv.innerHTML = '<i><i class="fa-solid fa-spinner fa-spin"></i> Processando dados...</i>';
-        messagesDiv.appendChild(typingDiv);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        typingDiv.className = 'chat-msg bot typing-msg';
+        typingDiv.innerHTML = `<div class="bot-header-badge" style="color:#3B82F6;background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.2);">
+            <i class="fa-solid fa-robot"></i> Pensando...
+        </div>
+        <div class="bot-msg-content" style="display:flex;align-items:center;gap:8px;color:#64748b;">
+            <i class="fa-solid fa-circle-notch fa-spin" style="color:#3B82F6;"></i> Analisando seus dados e preparando a resposta...
+        </div>`;
+        wrapper.appendChild(typingDiv);
+        if (messagesDiv) messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
         fetch('/api/chatbot/perguntar', {
             method: 'POST',
             credentials: 'same-origin',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ mensagem: text, sessao_id: currentSessionId, tabela_id: tabelaIaAtualId })
+            body: JSON.stringify({
+                mensagem: text,
+                sessao_id: currentSessionId,
+                tabela_id: tabelaIaAtualId,
+                agente_selecionado: agenteAtual,
+                ferramenta: ferramentaAtual
+            })
         })
             .then(res => {
-                if (!res.ok) return res.text().then(t => { throw new Error(`HTTP ${res.status}: ${t.slice(0,200)}`); });
+                if (!res.ok) return res.text().then(t => { throw new Error(`HTTP ${res.status}: ${t.slice(0, 200)}`); });
                 const ct = res.headers.get('content-type') || '';
                 if (ct.includes('application/json')) return res.json();
                 return res.text().then(t => ({ _rawText: t }));
             })
             .then(data => {
-                if (messagesDiv.contains(typingDiv)) messagesDiv.removeChild(typingDiv);
+                if (wrapper.contains(typingDiv)) wrapper.removeChild(typingDiv);
                 if (data && data._rawText) {
-                    appendMessage('Resposta inválida do servidor (esperado JSON).', 'bot');
-                    console.error('Resposta bruta:', data._rawText);
+                    appendMessage('Resposta inválida do servidor.', 'bot');
                 } else {
-                    appendMessage((data && data.resposta) ? data.resposta : 'Resposta vazia do servidor', 'bot');
+                    const resposta = (data && data.resposta) ? data.resposta : 'Resposta vazia do servidor.';
+                    appendMessage(resposta, 'bot', data);
                     carregarSessoes();
                 }
+                ferramentaAtual = null;
             })
             .catch(err => {
                 console.error('Erro ao chamar /api/chatbot/perguntar:', err);
-                if (messagesDiv.contains(typingDiv)) messagesDiv.removeChild(typingDiv);
-                appendMessage(`Erro ao contactar a IA (${err.message})`, 'bot');
+                if (wrapper.contains(typingDiv)) wrapper.removeChild(typingDiv);
+                appendMessage(`<p style="color:#ef4444;">Erro ao contactar a IA: ${err.message}</p>`, 'bot');
+            })
+            .finally(() => {
+                if (sendBtn) sendBtn.disabled = false;
             });
     }
 
-    sendBtn.addEventListener('click', sendMessage);
-    input.addEventListener('keypress', e => { if (e.key === 'Enter') sendMessage(); });
+    if (sendBtn) sendBtn.addEventListener('click', sendMessage);
+    if (input) {
+        input.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+        });
+    }
 
     document.getElementById('btn-nova-conversa').addEventListener('click', () => {
         currentSessionId = Date.now().toString();
         persistSessionId();
-        mostrarChat();
         carregarHistorico();
+        carregarSessoes();
     });
 
     document.getElementById('btn-apagar-historico').addEventListener('click', () => {
@@ -744,31 +904,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 divPizza.onclick = () => abrirModalGrafico('pizza', pizzaData);
                 galleryGrid.appendChild(divPizza);
 
-                new ApexCharts(document.getElementById('grid-linha'), {
-                    chart: { type: 'area', height: '100%', toolbar: { show: false }, background: 'transparent', foreColor: isDarkMode ? '#9ca3af' : '#4b5563' },
-                    series: linhaData.series,
-                    xaxis: { categories: linhaData.labels, labels: { show: false } },
-                    yaxis: { show: false },
-                    legend: { show: false },
-                    colors: ['#3B82F6', '#EF4444', '#10B981'],
-                    dataLabels: { enabled: false },
-                    stroke: { curve: 'smooth', width: 2 },
-                    theme: { mode: isDarkMode ? 'dark' : 'light' }
-                }).render();
+                const elLinha = document.getElementById('grid-linha');
+                if (elLinha) {
+                    new ApexCharts(elLinha, {
+                        chart: { type: 'area', height: '100%', toolbar: { show: false }, background: 'transparent', foreColor: isDarkMode ? '#9ca3af' : '#4b5563' },
+                        series: linhaData.series,
+                        xaxis: { categories: linhaData.labels, labels: { show: false } },
+                        yaxis: { show: false },
+                        legend: { show: false },
+                        colors: ['#3B82F6', '#EF4444', '#10B981'],
+                        dataLabels: { enabled: false },
+                        stroke: { curve: 'smooth', width: 2 },
+                        theme: { mode: isDarkMode ? 'dark' : 'light' }
+                    }).render();
+                }
 
-                new ApexCharts(document.getElementById('grid-barras'), {
-                    chart: { type: 'bar', height: '100%', toolbar: { show: false }, background: 'transparent', foreColor: isDarkMode ? '#9ca3af' : '#4b5563' },
-                    series: barrasData.series,
-                    xaxis: { categories: barrasData.labels, labels: { show: false } },
-                    yaxis: { show: false },
-                    legend: { show: false },
-                    colors: ['#3B82F6', '#EF4444', '#10B981'],
-                    dataLabels: { enabled: false },
-                    theme: { mode: isDarkMode ? 'dark' : 'light' }
-                }).render();
+                const elBarras = document.getElementById('grid-barras');
+                if (elBarras) {
+                    new ApexCharts(elBarras, {
+                        chart: { type: 'bar', height: '100%', toolbar: { show: false }, background: 'transparent', foreColor: isDarkMode ? '#9ca3af' : '#4b5563' },
+                        series: barrasData.series,
+                        xaxis: { categories: barrasData.labels, labels: { show: false } },
+                        yaxis: { show: false },
+                        legend: { show: false },
+                        colors: ['#3B82F6', '#EF4444', '#10B981'],
+                        dataLabels: { enabled: false },
+                        theme: { mode: isDarkMode ? 'dark' : 'light' }
+                    }).render();
+                }
 
-                if (pizzaData && pizzaData.labels) {
-                    new ApexCharts(document.getElementById('grid-pizza'), {
+                const elPizza = document.getElementById('grid-pizza');
+                if (elPizza && pizzaData && pizzaData.labels) {
+                    new ApexCharts(elPizza, {
                         chart: { type: 'pie', height: '100%', toolbar: { show: false }, background: 'transparent', foreColor: isDarkMode ? '#9ca3af' : '#4b5563' },
                         series: pizzaData.series,
                         labels: pizzaData.labels,
@@ -913,7 +1080,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 theme: { mode: isDarkMode ? 'dark' : 'light' }
             };
         }
-        new ApexCharts(document.getElementById('chart-modal-render'), options).render();
+        const modalRenderEl = document.getElementById('chart-modal-render');
+        if (modalRenderEl) {
+            new ApexCharts(modalRenderEl, options).render();
+        }
     }
 
     // --- GALERIA DE ARQUIVOS ---

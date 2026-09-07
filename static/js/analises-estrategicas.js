@@ -266,16 +266,23 @@ class AnalisesEstrategicas {
         
         if (itensSaude.length >= 4 && indicadores) {
             if (indicadores.crescimento_receita !== undefined) {
-                itensSaude[0].querySelector('.saude-item-value').textContent = 
-                    `${indicadores.crescimento_receita >= 0 ? '+' : ''}${indicadores.crescimento_receita}%`;
+                if (indicadores.crescimento_receita !== null) {
+                    const cresc = Number(indicadores.crescimento_receita);
+                    itensSaude[0].querySelector('.saude-item-value').textContent = 
+                        `${cresc >= 0 ? '+' : ''}${cresc.toFixed(1)}%`;
+                } else {
+                    itensSaude[0].querySelector('.saude-item-value').textContent = 'N/A';
+                }
             }
-            if (indicadores.margem !== undefined) {
+            if (indicadores.margem !== undefined && indicadores.margem !== null) {
                 itensSaude[1].querySelector('.saude-item-value').textContent = 
-                    `${indicadores.margem}%`;
+                    `${Number(indicadores.margem).toFixed(1)}%`;
             }
-            if (indicadores.fluxo_caixa !== undefined) {
+            if (indicadores.fluxo_caixa !== undefined && indicadores.fluxo_caixa !== null) {
+                const fc = Number(indicadores.fluxo_caixa);
+                const prefixo = fc >= 0 ? 'Positivo' : 'Negativo';
                 itensSaude[2].querySelector('.saude-item-value').textContent = 
-                    `Positivo: R$ ${indicadores.fluxo_caixa.toLocaleString('pt-BR')}`;
+                    `${prefixo}: R$ ${Math.abs(fc).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             }
             if (indicadores.controle_despesas !== undefined) {
                 itensSaude[3].querySelector('.saude-item-value').textContent = 

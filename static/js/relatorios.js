@@ -34,13 +34,18 @@ function somaValores(valores = []) {
 }
 
 function calcCrescimento(valores = []) {
-  if (valores.length < 2) return '0%';
+  if (!valores || valores.length < 2) return '0.0%';
 
-  const primeiro = valores[0];
-  const ultimo = valores[valores.length - 1];
-  if (primeiro === 0) return '0%';
+  const primeiro = Number(valores[0]) || 0;
+  const ultimo = Number(valores[valores.length - 1]) || 0;
 
-  return `${(((ultimo - primeiro) / primeiro) * 100).toFixed(1)}%`;
+  if (primeiro === 0) {
+    return ultimo === 0 ? '0.0%' : 'N/A';
+  }
+
+  const variacao = ((ultimo - primeiro) / Math.abs(primeiro)) * 100;
+  const sinal = variacao > 0 ? '+' : '';
+  return `${sinal}${variacao.toFixed(1)}%`;
 }
 
 // =============================
@@ -82,10 +87,10 @@ function montarDadosApp(dadosSalvos) {
     let mar = numeroValido(campoMargem ? linha[campoMargem] : '');
 
     if (!desp && fat && luc) {
-      desp = Math.max(0, fat - luc);
+      desp = fat - luc;
     }
     if (!luc && fat && desp) {
-      luc = Math.max(0, fat - desp);
+      luc = fat - desp;
     }
     if (!mar && fat) {
       mar = (luc / fat) * 100;

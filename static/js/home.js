@@ -150,7 +150,13 @@ function atualizarIndicadores(data) {
   atualizarCard('lucro', data.lucro);
   atualizarCard('despesa', data.despesa, true);
 
-  setTexto('crescimento-valor', `+${data.crescimento.valor.toFixed(1)}%`);
+  if (data.crescimento && data.crescimento.valor !== null && data.crescimento.valor !== undefined) {
+    const val = Number(data.crescimento.valor);
+    const sinal = val >= 0 ? '+' : '';
+    setTexto('crescimento-valor', `${sinal}${val.toFixed(1)}%`);
+  } else {
+    setTexto('crescimento-valor', 'N/A', '#9ca3af');
+  }
 
   // Feedback sobre mapeamento
   if (!data.mapeamento_ativo) {
@@ -178,13 +184,18 @@ function exibirAlertaMapeamento() {
 function atualizarCard(nome, dados, inverter = false) {
   setTexto(`${nome}-valor`, formatarMoeda(dados.valor));
 
+  if (!dados || dados.percentual === null || dados.percentual === undefined) {
+    setTexto(`${nome}-percent`, 'N/A', '#9ca3af');
+    return;
+  }
+
   const percentual = inverter ? Math.abs(dados.percentual) : dados.percentual;
   const positivo = inverter ? dados.percentual <= 0 : dados.percentual >= 0;
 
   const sinal = positivo ? '↑' : '↓';
   const cor = positivo ? '#10b981' : '#ef4444';
 
-  setTexto(`${nome}-percent`, `${sinal} ${percentual.toFixed(1)}%`, cor);
+  setTexto(`${nome}-percent`, `${sinal} ${Number(percentual).toFixed(1)}%`, cor);
 }
 
 function setTexto(dataId, texto, cor = null) {
@@ -385,7 +396,12 @@ function _converterTabelaMarkdownParaHtml(texto) {
 function _renderizarHtmlSeguro(container, html) {
   const marcador = document.createElement('div');
   marcador.innerHTML = html;
-  const tagsPermitidas = ['DIV','SPAN','P','TABLE','THEAD','TBODY','TR','TD','TH','UL','OL','LI','B','STRONG','I','EM','BR','HR','A','IMG','SECTION','ARTICLE'];
+  const tagsPermitidas = [
+    'DIV','SPAN','P','H1','H2','H3','H4','H5','H6',
+    'TABLE','THEAD','TBODY','TR','TD','TH','UL','OL','LI',
+    'B','STRONG','I','EM','BR','HR','A','IMG','SECTION','ARTICLE',
+    'CODE','PRE','BLOCKQUOTE','SMALL','U','S'
+  ];
   const scripts = marcador.querySelectorAll('script,iframe,object,embed');
   scripts.forEach(el => el.remove());
   for (const node of Array.from(marcador.querySelectorAll('*'))) {
@@ -402,13 +418,312 @@ function _renderizarHtmlSeguro(container, html) {
   container.appendChild(marcador);
 }
 
+// ============================================================
+// BANCO DE MENSAGENS DA IA COM SUPORTE A GRÁFICOS APEXCHARTS
+// ============================================================
+
+let listaMensagensIa = [];
+let indiceMensagemIaAtual = 0;
+let chartInstanciasIa = [];
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function limparGraficosIaHome() {
+  if (chartInstanciasIa && chartInstanciasIa.length > 0) {
+    chartInstanciasIa.forEach(c => {
+      try {
+        if (c && typeof c.destroy === 'function') c.destroy();
+      } catch (e) {}
+    });
+    chartInstanciasIa = [];
+  }
+}
+
+function renderizarGraficosMensagemIa(container) {
+  if (!container) return;
+  const graficos = container.querySelectorAll('.grafico-ia-render:not(.renderizado)');
+  if (graficos.length === 0) return;
+
+  if (typeof ApexCharts === 'undefined') {
+    aguardarApexCharts(() => renderizarGraficosMensagemIa(container));
+    return;
+  }
+
+  const isDark = document.body.classList.contains('tema-escuro');
+  const txtColor = isDark ? '#94a3b8' : '#64748b';
+  const bgBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+  const bgCard = isDark ? 'rgba(15,23,42,0.6)' : 'rgba(248,250,252,0.95)';
+  const legendColor = isDark ? '#e2e8f0' : '#374151';
+  const themeMode = isDark ? 'dark' : 'light';
+
+  graficos.forEach((chartEl) => {
+    chartEl.classList.add('renderizado');
+    const periodo = chartEl.getAttribute('data-periodo') || '30_dias';
+    const tipoRaw = (chartEl.getAttribute('data-tipo') || 'linha').toLowerCase();
+    const metricasRaw = chartEl.getAttribute('data-metricas') || 'faturamento,lucro';
+    const titulo = chartEl.getAttribute('data-titulo') || 'Análise Visual da IA';
+    const metricasFiltro = metricasRaw.split(',').map(m => m.trim().toLowerCase());
+
+    let tipoChart = 'area';
+    if (tipoRaw === 'barras' || tipoRaw === 'barra' || tipoRaw === 'bar') tipoChart = 'bar';
+    if (tipoRaw === 'pizza' || tipoRaw === 'pie') tipoChart = 'pie';
+
+    chartEl.style.cssText = `min-height:280px; border:1px solid ${bgBorder}; border-radius:12px; padding:14px; margin:14px 0 10px 0; background:${bgCard}; position:relative; box-shadow:0 4px 16px rgba(0,0,0,0.05);`;
+    chartEl.innerHTML = `<div style="text-align:center; padding:35px 20px; color:var(--suave); font-size:0.85rem;"><i class="fa-solid fa-spinner fa-spin" style="margin-right:8px; color:var(--primaria);"></i> Carregando gráfico interativo da IA...</div>`;
+
+    fetch(`/api/graficos?periodo=${encodeURIComponent(periodo)}`)
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        if (!chartEl || !document.body.contains(chartEl)) return;
+        chartEl.innerHTML = '';
+        let options = null;
+
+        if (tipoChart === 'pie') {
+          const chartData = data.grafico_pizza;
+          if (!chartData || !chartData.labels || chartData.series.length === 0) {
+            chartEl.innerHTML = '<p style="color:var(--suave);text-align:center;padding:24px;font-size:0.85rem;"><i class="fa-solid fa-circle-info" style="margin-right:6px;"></i>Sem dados suficientes para o gráfico neste período.</p>';
+            return;
+          }
+          const indices = [];
+          chartData.labels.forEach((lbl, i) => {
+            const nome = lbl.toLowerCase();
+            if (metricasFiltro.some(m => nome.includes(m) || m.includes(nome)) || metricasFiltro.includes('todos')) {
+              indices.push(i);
+            }
+          });
+          const series = indices.length > 0 ? indices.map(i => chartData.series[i]) : chartData.series;
+          const labels = indices.length > 0 ? indices.map(i => chartData.labels[i]) : chartData.labels;
+
+          options = {
+            chart: {
+              type: 'pie',
+              height: 270,
+              background: 'transparent',
+              foreColor: txtColor,
+              toolbar: { show: false }
+            },
+            title: {
+              text: titulo,
+              align: 'left',
+              style: { fontSize: '13px', fontWeight: 700, color: txtColor }
+            },
+            series: series,
+            labels: labels,
+            colors: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'],
+            legend: { show: true, position: 'bottom', labels: { colors: legendColor } },
+            dataLabels: { enabled: true, formatter: (val) => `${val.toFixed(1)}%` },
+            tooltip: {
+              y: {
+                formatter: (val) => 'R$ ' + Number(val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+              }
+            },
+            theme: { mode: themeMode }
+          };
+        } else {
+          const chartData = tipoChart === 'bar' ? data.grafico_barras : data.grafico_linha;
+          if (!chartData || !chartData.labels || !chartData.series) {
+            chartEl.innerHTML = '<p style="color:var(--suave);text-align:center;padding:24px;font-size:0.85rem;"><i class="fa-solid fa-circle-info" style="margin-right:6px;"></i>Sem dados suficientes para o gráfico neste período.</p>';
+            return;
+          }
+
+          let seriesFiltradas = chartData.series;
+          if (!metricasFiltro.includes('todos')) {
+            const filtradas = chartData.series.filter(s => {
+              const nome = (s.name || '').toLowerCase();
+              return metricasFiltro.some(m => nome.includes(m) || m.includes(nome));
+            });
+            if (filtradas.length > 0) seriesFiltradas = filtradas;
+          }
+
+          options = {
+            chart: {
+              type: tipoChart,
+              height: 270,
+              toolbar: { show: false },
+              background: 'transparent',
+              foreColor: txtColor
+            },
+            title: {
+              text: titulo,
+              align: 'left',
+              style: { fontSize: '13px', fontWeight: 700, color: txtColor }
+            },
+            series: seriesFiltradas,
+            xaxis: {
+              categories: chartData.labels,
+              labels: { style: { colors: txtColor, fontSize: '11px' } }
+            },
+            yaxis: {
+              labels: {
+                style: { colors: txtColor, fontSize: '11px' },
+                formatter: v => 'R$ ' + Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 0 })
+              }
+            },
+            legend: { show: true, position: 'top', horizontalAlign: 'right', labels: { colors: legendColor } },
+            colors: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'],
+            dataLabels: { enabled: false },
+            stroke: { curve: tipoChart === 'area' ? 'smooth' : 'straight', width: tipoChart === 'area' ? 2.5 : 0 },
+            fill: {
+              type: tipoChart === 'area' ? 'gradient' : 'solid',
+              gradient: { shadeIntensity: 0.1, opacityFrom: 0.35, opacityTo: 0.05 }
+            },
+            grid: { borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' },
+            tooltip: {
+              y: {
+                formatter: (val) => 'R$ ' + Number(val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+              }
+            },
+            theme: { mode: themeMode }
+          };
+        }
+
+        const chart = new ApexCharts(chartEl, options);
+        chart.render();
+        chartInstanciasIa.push(chart);
+      })
+      .catch(err => {
+        console.error('Erro ao renderizar gráfico no card da IA:', err);
+        chartEl.innerHTML = '<p style="color:#ef4444;text-align:center;padding:20px;font-size:0.85rem;"><i class="fa-solid fa-triangle-exclamation" style="margin-right:6px;"></i>Erro ao carregar gráfico interativo.</p>';
+      });
+  });
+}
+
+function exibirMensagemIaPorIndice(indice) {
+  const container = document.getElementById('container-ultima-resposta-ia');
+  if (!container || !listaMensagensIa || listaMensagensIa.length === 0) return;
+
+  indiceMensagemIaAtual = Math.max(0, Math.min(indice, listaMensagensIa.length - 1));
+  const msg = listaMensagensIa[indiceMensagemIaAtual];
+
+  limparGraficosIaHome();
+
+  const controles = document.getElementById('controles-banco-ia');
+  const contador = document.getElementById('contador-mensagens-ia');
+  const btnAnt = document.getElementById('btn-msg-anterior');
+  const btnProx = document.getElementById('btn-msg-proxima');
+  const badgeGrafico = document.getElementById('badge-msg-grafico');
+
+  if (controles) controles.style.display = 'flex';
+  if (contador) contador.textContent = `${indiceMensagemIaAtual + 1} de ${listaMensagensIa.length}`;
+  if (btnAnt) btnAnt.disabled = (indiceMensagemIaAtual === 0);
+  if (btnProx) btnProx.disabled = (indiceMensagemIaAtual === listaMensagensIa.length - 1);
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'p-3 rounded';
+  wrapper.style.background = 'var(--cartao)';
+  wrapper.style.borderRadius = '12px';
+  container.innerHTML = '';
+  container.appendChild(wrapper);
+
+  // Pergunta original do usuário caso exista
+  if (msg.pergunta && msg.pergunta.trim()) {
+    const boxPergunta = document.createElement('div');
+    boxPergunta.style.cssText = 'font-size:0.82rem; background:rgba(59,130,246,0.08); border-left:3px solid var(--primaria); border-radius:6px; padding:8px 12px; margin-bottom:12px; color:var(--texto); display:flex; align-items:flex-start; gap:8px;';
+    boxPergunta.innerHTML = `<i class="fa-solid fa-circle-question" style="color:var(--primaria); margin-top:2px;"></i><div><strong>Pergunta:</strong> ${escapeHtml(msg.pergunta)}</div>`;
+    wrapper.appendChild(boxPergunta);
+  }
+
+  let texto = msg.resposta || '';
+
+  // Converte blocos de código markdown como ```chart ou ```grafico se houver
+  texto = texto.replace(/```(?:chart|grafico|apexchart)\s*([\s\S]*?)```/gi, (match, p1) => {
+    let tipo = 'linha', metricas = 'faturamento,lucro', periodo = '30_dias', tit = 'Gráfico da IA';
+    try {
+      const parsed = JSON.parse(p1);
+      tipo = parsed.type || parsed.tipo || tipo;
+      metricas = parsed.metrics || parsed.metricas || metricas;
+      periodo = parsed.period || parsed.periodo || periodo;
+      tit = parsed.title || parsed.titulo || tit;
+    } catch(e) {}
+    return `<div class="grafico-ia-render" data-periodo="${periodo}" data-tipo="${tipo}" data-metricas="${metricas}" data-titulo="${tit}"></div>`;
+  });
+
+  // Se o backend indicou gráfico associado via galeria e não há container de gráfico no HTML
+  if (msg.grafico_info && !texto.includes('grafico-ia-render')) {
+    const gi = msg.grafico_info;
+    texto += `\n\n<div class="grafico-ia-render" data-periodo="${gi.periodo || '30_dias'}" data-tipo="${gi.tipo || 'linha'}" data-metricas="${gi.metricas || 'faturamento,lucro'}" data-titulo="${gi.titulo || 'Análise Visual da IA'}"></div>`;
+  }
+
+  const contemHtml = /<\/?(div|table|thead|tbody|tr|td|th|ul|ol|li|p|img|svg|h[1-6]|strong|em|b|i|code|pre|blockquote|section|article)[\s>]/i.test(texto);
+  const contemTabelaMarkdown = /\n\s*\|.+\|\s*\n\s*\|?\s*[:-]+\s*\|/.test(texto);
+
+  let htmlConteudo = texto;
+  if (contemTabelaMarkdown) {
+    htmlConteudo = _converterTabelaMarkdownParaHtml(htmlConteudo);
+  }
+
+  const corpoMsg = document.createElement('div');
+  corpoMsg.style.lineHeight = '1.6';
+  corpoMsg.style.color = 'var(--texto)';
+  if (contemHtml || contemTabelaMarkdown) {
+    _renderizarHtmlSeguro(corpoMsg, htmlConteudo);
+  } else {
+    corpoMsg.innerHTML = `<div style="white-space: pre-wrap; font-family: inherit;">${texto}</div>`;
+  }
+  wrapper.appendChild(corpoMsg);
+
+  // Renderiza gráficos que existam no conteúdo
+  const temGraficosNoCorpo = wrapper.querySelectorAll('.grafico-ia-render').length > 0;
+  if (temGraficosNoCorpo) {
+    if (badgeGrafico) badgeGrafico.style.display = 'inline-flex';
+    renderizarGraficosMensagemIa(wrapper);
+  } else {
+    if (badgeGrafico) badgeGrafico.style.display = 'none';
+
+    // Botão para gerar gráfico sob demanda
+    const btnBox = document.createElement('div');
+    btnBox.style.cssText = 'margin-top:14px; display:flex; align-items:center; gap:8px;';
+    btnBox.innerHTML = `
+      <button type="button" class="botao botao--suave" style="font-size:0.75rem; padding:6px 14px; display:inline-flex; align-items:center; gap:6px; border-radius:8px;" title="Plotar gráfico das métricas desta resposta">
+        <i class="fa-solid fa-chart-area" style="color:var(--primaria);"></i> Visualizar Métricas em Gráfico
+      </button>
+    `;
+    const btnGerar = btnBox.querySelector('button');
+    btnGerar.addEventListener('click', () => {
+      btnBox.remove();
+      const divGrafico = document.createElement('div');
+      divGrafico.className = 'grafico-ia-render';
+      divGrafico.setAttribute('data-periodo', '30_dias');
+      divGrafico.setAttribute('data-tipo', 'area');
+      divGrafico.setAttribute('data-metricas', 'faturamento,lucro,despesas');
+      divGrafico.setAttribute('data-titulo', 'Evolução e Métricas Financeiras');
+      wrapper.appendChild(divGrafico);
+      if (badgeGrafico) badgeGrafico.style.display = 'inline-flex';
+      renderizarGraficosMensagemIa(wrapper);
+    });
+    wrapper.appendChild(btnBox);
+  }
+
+  // Rodapé da mensagem: data e ações
+  const footerMsg = document.createElement('div');
+  footerMsg.style.cssText = 'font-size:0.75rem; color:var(--suave); margin-top:14px; display:flex; align-items:center; justify-content:space-between; border-top:1px solid var(--borda); padding-top:8px;';
+  
+  const sessaoLabel = msg.sessao_id ? `Sessão: ${msg.sessao_id.slice(0, 8)}...` : 'Chat IA';
+  footerMsg.innerHTML = `
+    <span><i class="fa-solid fa-layer-group" style="margin-right:4px;"></i>${sessaoLabel}</span>
+    ${msg.data ? `<span><i class="fa-regular fa-clock" style="margin-right:4px;"></i>${msg.data}</span>` : ''}
+  `;
+  wrapper.appendChild(footerMsg);
+}
+
 function carregarUltimaRespostaIA() {
   const container = document.getElementById('container-ultima-resposta-ia');
   if (!container) return;
 
   container.innerHTML = `
     <div class="p-3 rounded" style="background: var(--cartao); animation: pulse 2s infinite;">
-      <p class="p mb-0" style="color: var(--texto-secundario);">Buscando a última resposta gerada pela IA...</p>
+      <p class="p mb-0" style="color: var(--texto-secundario);"><i class="fa-solid fa-spinner fa-spin" style="margin-right:6px;"></i>Buscando mensagens e gráficos no banco da IA...</p>
     </div>
   `;
 
@@ -426,40 +741,54 @@ function carregarUltimaRespostaIA() {
         return;
       }
 
-      if (data.resposta) {
-        let texto = data.resposta.replace(/\*/g, '');
-        const contemHtml = /<\/?(div|table|thead|tbody|tr|td|th|ul|ol|li|p|img|svg)[\s>]/i.test(texto);
-        const contemTabelaMarkdown = /\n\s*\|.+\|\s*\n\s*\|?\s*[:-]+\s*\|/.test(texto);
-
-        if (contemHtml || contemTabelaMarkdown) {
-          const wrapper = document.createElement('div');
-          wrapper.className = 'p-3 rounded';
-          wrapper.style.background = 'var(--cartao)';
-          container.innerHTML = '';
-          container.appendChild(wrapper);
-
-          const htmlConteudo = contemTabelaMarkdown
-            ? _converterTabelaMarkdownParaHtml(texto)
-            : texto;
-
-          _renderizarHtmlSeguro(wrapper, htmlConteudo);
-        } else {
-          container.innerHTML = `
-            <div class="p-3 rounded" style="background: var(--cartao);">
-              <pre style="white-space: pre-wrap; margin: 0; font-family: inherit; line-height: 1.6;">${texto}</pre>
-            </div>
-          `;
-        }
+      if (data && data.mensagens && data.mensagens.length > 0) {
+        listaMensagensIa = data.mensagens;
+        exibirMensagemIaPorIndice(0);
+      } else if (data && data.resposta) {
+        listaMensagensIa = [{
+          resposta: data.resposta,
+          data: data.data,
+          sessao_id: data.sessao_id,
+          pergunta: '',
+          tem_grafico: false,
+          grafico_info: null
+        }];
+        exibirMensagemIaPorIndice(0);
       } else {
-        container.innerHTML = "<div class='p-3 rounded' style='background: var(--cartao);'><p class='p mb-0'>Nenhuma resposta da IA encontrada ainda.</p></div>";
+        container.innerHTML = "<div class='p-3 rounded' style='background: var(--cartao);'><p class='p mb-0' style='color:var(--texto-secundario);'>Nenhuma resposta da IA encontrada ainda no banco de dados.</p></div>";
       }
     })
     .catch(error => {
-      console.error('Erro ao buscar última resposta IA:', error);
+      console.error('Erro ao buscar mensagens do banco da IA:', error);
       const msg = (error && error.message) ? error.message : 'Erro desconhecido';
-      container.innerHTML = `<div class='p-3 rounded' style='background: var(--cartao);'><p class='p mb-0 text-danger'>Falha ao buscar última resposta da IA: ${msg}</p></div>`;
+      container.innerHTML = `<div class='p-3 rounded' style='background: var(--cartao);'><p class='p mb-0 text-danger'>Falha ao buscar mensagens da IA: ${msg}</p></div>`;
     });
 }
+
+// Configuração dos botões de navegação
+document.addEventListener('DOMContentLoaded', () => {
+  const btnAnt = document.getElementById('btn-msg-anterior');
+  const btnProx = document.getElementById('btn-msg-proxima');
+  if (btnAnt) {
+    btnAnt.addEventListener('click', () => {
+      if (indiceMensagemIaAtual > 0) {
+        exibirMensagemIaPorIndice(indiceMensagemIaAtual - 1);
+      }
+    });
+  }
+  if (btnProx) {
+    btnProx.addEventListener('click', () => {
+      if (indiceMensagemIaAtual < listaMensagensIa.length - 1) {
+        exibirMensagemIaPorIndice(indiceMensagemIaAtual + 1);
+      }
+    });
+  }
+});
+
+window.carregarUltimaRespostaIA = carregarUltimaRespostaIA;
+window.addEventListener('chatbot:nova-resposta', () => {
+  carregarUltimaRespostaIA();
+});
 
 function carregarOverviewProdutos() {
   const loading = document.getElementById('produtos-overview-loading');

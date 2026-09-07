@@ -18,7 +18,17 @@
 
   function aplicarVariacao(el, valor) {
     if (!el) return;
-    const n = Number(valor) || 0;
+    if (valor === null || valor === undefined) {
+      el.textContent = 'N/A vs período anterior';
+      el.classList.remove('kpi-card-premium__change--up', 'kpi-card-premium__change--down');
+      return;
+    }
+    const n = Number(valor);
+    if (!Number.isFinite(n)) {
+      el.textContent = 'N/A vs período anterior';
+      el.classList.remove('kpi-card-premium__change--up', 'kpi-card-premium__change--down');
+      return;
+    }
     el.textContent = pct(n) + ' vs período anterior';
     el.classList.toggle('kpi-card-premium__change--up', n >= 0);
     el.classList.toggle('kpi-card-premium__change--down', n < 0);

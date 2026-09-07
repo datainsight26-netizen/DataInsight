@@ -11,13 +11,15 @@
 
         const $ = (id) => document.getElementById(id);
         const brl = (value) => {
+            if (value === null || value === undefined || value === '') return 'N/A';
             const n = Number(value);
-            if (!Number.isFinite(n)) return '--';
+            if (!Number.isFinite(n)) return 'N/A';
             return n.toLocaleString('pt-BR', { style:'currency', currency:'BRL', minimumFractionDigits:2, maximumFractionDigits:2 });
         };
         const pct = (value) => {
+            if (value === null || value === undefined || value === '') return 'N/A';
             const n = Number(value);
-            return Number.isFinite(n) ? `${n.toLocaleString('pt-BR',{ minimumFractionDigits:2, maximumFractionDigits:2 })}%` : '--';
+            return Number.isFinite(n) ? `${n.toLocaleString('pt-BR',{ minimumFractionDigits:2, maximumFractionDigits:2 })}%` : 'N/A';
         };
         const num = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
         const sum = (arr) => arr.reduce((a,b) => a + num(b), 0);
@@ -692,7 +694,10 @@
             function scenarioBarChart(selector, name, seriesData, colors) {
                 const opts = baseChartOptions('bar');
                 Object.assign(opts, {
-                    series: seriesData.map(s => ({ name: s.name, data: s.data.map(v => Number(v.toFixed(2))) })),
+                    series: seriesData.map(s => ({
+                        name: s.name,
+                        data: s.data.map(v => (v === null || v === undefined) ? null : Number(Number(v).toFixed(2)))
+                    })),
                     colors: colors || ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'],
                     chart: { ...opts.chart, height: 260 },
                     plotOptions: {
@@ -721,8 +726,11 @@
             function scenarioBarPctChart(selector, name, seriesData, colors) {
                 const opts = baseChartOptions('bar');
                 Object.assign(opts, {
-                    series: seriesData.map(s => ({ name: s.name, data: s.data.map(v => Number(v.toFixed(2))) })),
-                    colors: colors || ['#f59e0b', '#3b82f6'],
+                    series: seriesData.map(s => ({
+                        name: s.name,
+                        data: s.data.map(v => (v === null || v === undefined) ? null : Number(Number(v).toFixed(2)))
+                    })),
+                    colors: colors || ['#10b981', '#6366f1'],
                     chart: { ...opts.chart, height: 260 },
                     plotOptions: {
                         bar: {
@@ -776,17 +784,25 @@
             ], ['#10b981', '#06b6d4']);
 
             // 5. ÍNDICES
-            const rentProv = tProv.receita ? (tProv.resultado / tProv.receita) * 100 : 0;
-            const rentOti = tOti.receita ? (tOti.resultado / tOti.receita) * 100 : 0;
-            const rentPes = tPes.receita ? (tPes.resultado / tPes.receita) * 100 : 0;
-            const lucratProv = despProv ? (tProv.resultado / despProv) * 100 : 0;
-            const lucratOti = despOti ? (tOti.resultado / despOti) * 100 : 0;
-            const lucratPes = despPes ? (tPes.resultado / despPes) * 100 : 0;
+            // Lucratividade (%) = (Resultado / Receita) * 100
+            const lucratProv = tProv.receita ? (tProv.resultado / tProv.receita) * 100 : 0;
+            const lucratOti = tOti.receita ? (tOti.resultado / tOti.receita) * 100 : 0;
+            const lucratPes = tPes.receita ? (tPes.resultado / tPes.receita) * 100 : 0;
+
+            // Rentabilidade (%) = (Resultado / Investimentos) * 100. Se investimentos <= 0, retorna null
+            const rentProv = tProv.investimentos > 0 ? (tProv.resultado / tProv.investimentos) * 100 : null;
+            const rentOti = tOti.investimentos > 0 ? (tOti.resultado / tOti.investimentos) * 100 : null;
+            const rentPes = tPes.investimentos > 0 ? (tPes.resultado / tPes.investimentos) * 100 : null;
+
+            // Margem de Contribuição (%)
+            const mcPctProv = tProv.receita ? (tProv.margem / tProv.receita) * 100 : 0;
+            const mcPctOti = tOti.receita ? (tOti.margem / tOti.receita) * 100 : 0;
+            const mcPctPes = tPes.receita ? (tPes.margem / tPes.receita) * 100 : 0;
 
             scenarioBarPctChart('#pf-chart-cenario-indices', 'cenIdx', [
-                { name: 'Rentabilidade (%)', data: [rentProv, rentOti, rentPes] },
-                { name: 'Lucratividade (%)', data: [lucratProv, lucratOti, lucratPes] }
-            ], ['#f59e0b', '#3b82f6']);
+                { name: 'Lucratividade (%)', data: [lucratProv, lucratOti, lucratPes] },
+                { name: 'Rentabilidade (%)', data: [rentProv, rentOti, rentPes] }
+            ], ['#10b981', '#6366f1']);
 
             // 6. TABELA RESUMO GERAL EM LARGURA TOTAL COM FORMATAÇÃO
             const resumoBody = $('pf-cenario-resumo-body');
@@ -797,12 +813,14 @@
                     ['Gastos Totais', brl(despProv), brl(despOti), brl(despPes)],
                     ['Gasto Fixo Mensal Médio', brl(tProv.fixos / nProv), brl(tOti.fixos / nOti), brl(tPes.fixos / nPes)],
                     ['Gasto Variável Mensal Médio', brl(tProv.variaveis / nProv), brl(tOti.variaveis / nOti), brl(tPes.variaveis / nPes)],
+                    ['Margem de Contribuição', brl(tProv.margem), brl(tOti.margem), brl(tPes.margem)],
+                    ['Índice Margem de Contribuição', pct(mcPctProv), pct(mcPctOti), pct(mcPctPes)],
                     ['Investimento Total', brl(tProv.investimentos), brl(tOti.investimentos), brl(tPes.investimentos)],
                     ['Investimento Mensal Médio', brl(tProv.investimentos / nProv), brl(tOti.investimentos / nOti), brl(tPes.investimentos / nPes)],
                     ['Lucro Total', brl(tProv.resultado), brl(tOti.resultado), brl(tPes.resultado)],
                     ['Lucro Mensal Médio', brl(tProv.resultado / nProv), brl(tOti.resultado / nOti), brl(tPes.resultado / nPes)],
-                    ['Rentabilidade', pct(rentProv), pct(rentOti), pct(rentPes)],
-                    ['Lucratividade', pct(lucratProv), pct(lucratOti), pct(lucratPes)]
+                    ['Lucratividade (Margem Líquida)', pct(lucratProv), pct(lucratOti), pct(lucratPes)],
+                    ['Rentabilidade sobre Investimento', pct(rentProv), pct(rentOti), pct(rentPes)]
                 ];
                 resumoBody.innerHTML = rows.map(r =>
                     `<tr><th style="text-align:left;font-weight:700;padding:11px 18px;border-bottom:1px solid var(--borda);">${r[0]}</th>` +

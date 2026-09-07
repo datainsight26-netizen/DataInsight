@@ -15,11 +15,9 @@ class AutocompleteProdutos {
         this.inputProduto = configuracao.inputProduto;
         
         if (!this.inputProduto) {
-            console.warn('❌ Input de produto não fornecido');
             return;
         }
         
-        console.log('🔧 Configurando autocomplete para:', this.inputProduto.getAttribute('name') || this.inputProduto.placeholder);
         
         // ✨ NOVO: Procura pelos campos na mesma linha (TR)
         const linha = this.inputProduto.closest('tr');
@@ -129,7 +127,6 @@ class AutocompleteProdutos {
      */
     inicializar() {
         if (!this.inputProduto) {
-            console.warn('Input de produto não encontrado');
             return;
         }
         
@@ -234,7 +231,6 @@ class AutocompleteProdutos {
      */
     async buscarProdutos(termo) {
         try {
-            console.log(`🔍 Buscando: "${termo}"`);
             
             const response = await fetch(`/api/produtos/buscar?termo=${encodeURIComponent(termo)}&limite=15`);
             const dados = await response.json();
@@ -243,7 +239,6 @@ class AutocompleteProdutos {
                 this.mostrarSugestoes(dados.produtos, termo);
                 this.ultimaBusca = termo;
                 
-                console.log(`✓ ${dados.produtos.length} produto(s) encontrado(s)`);
             } else {
                 this.esconderSugestoes();
             }
@@ -356,7 +351,6 @@ class AutocompleteProdutos {
             
             if (dados.sucesso && dados.produto) {
                 const p = dados.produto;
-                console.log('📝 Auto-preenchendo campos:', p);
 
                 // Preenche TODOS os inputs de cada tipo na linha
                 this.preencherCampos(this.inputsCategoria, p.categoria, '📁');
@@ -370,9 +364,7 @@ class AutocompleteProdutos {
                     this.preencherCampos(this.inputsDesconto, desconto, '🏷');
                 }
                 
-                console.log(`✅ Auto-preenchido com sucesso: ${produto.nome_produto}`);
             } else {
-                console.warn('⚠️ Produto não encontrado:', produto.nome_produto);
             }
         } catch (erro) {
             console.error('❌ Erro ao auto-preencher:', erro);
@@ -474,7 +466,6 @@ class AutocompleteProdutos {
      * Trata seleção de um produto
      */
     async selecionarProduto(produto) {
-        console.log(`✅ Produto selecionado: ${produto.nome_produto}`);
         
         this.inputProduto.value = produto.nome_produto;
         this.triggerChange(this.inputProduto);
@@ -531,7 +522,6 @@ class AutocompleteProdutos {
             campo.value = valor;
             this.triggerChange(campo);
             
-            console.log(`  ✓ ${label}: ${valor}`);
             
             // Remove animação após 1s
             setTimeout(() => {
@@ -563,7 +553,6 @@ class AutocompleteProdutos {
             const resultado = await response.json();
             
             if (resultado.sucesso) {
-                console.log('💾 Produto salvo no histórico');
             }
         } catch (erro) {
             console.error('Erro ao salvar produto:', erro);
@@ -625,7 +614,6 @@ async function salvarProdutoAutomaticamente(dados) {
         const resultado = await response.json();
         
         if (resultado.sucesso) {
-            console.log('✅ Produto salvo:', resultado.produto_id);
             return resultado.produto_id;
         } else {
             console.error('❌ Erro:', resultado.erro);
@@ -711,7 +699,6 @@ const AutocompleteManager = {
             // Cria nova instância
             const instancia = new AutocompleteProdutos({ inputProduto: input });
             this.instancias.set(input, instancia);
-            console.log('✅ Autocomplete inicializado para:', input.getAttribute('name') || input.placeholder);
             return true;
         } catch (erro) {
             console.error('❌ Erro ao inicializar autocomplete:', erro);
@@ -734,7 +721,6 @@ const AutocompleteManager = {
      * Inicializa todos os inputs existentes
      */
     inicializarTodos() {
-        console.log('🔍 Procurando por inputs de produto...');
         
         // Procura por inputs com atributo name="produto"
         const inputs = document.querySelectorAll(
@@ -748,7 +734,6 @@ const AutocompleteManager = {
             }
         });
         
-        console.log(`📝 ${inicializados} input(s) de produto inicializado(s)`);
         return inicializados > 0;
     },
     
@@ -758,18 +743,15 @@ const AutocompleteManager = {
     monitorarDOM() {
         const tbody = document.querySelector('#dados-tbody');
         if (!tbody) {
-            console.warn('⚠️ tbody não encontrado');
             return;
         }
         
         const observer = new MutationObserver((mutations) => {
-            console.log('👀 DOM alterado detectado');
             
             mutations.forEach((mutation) => {
                 if (mutation.type === 'childList') {
                     // Se adicionou novos elementos
                     if (mutation.addedNodes.length > 0) {
-                        console.log(`  Adicionados ${mutation.addedNodes.length} nó(s)`);
                         
                         // Procura por inputs de produto nos nós adicionados
                         mutation.addedNodes.forEach((node) => {
@@ -801,7 +783,6 @@ const AutocompleteManager = {
             subtree: false // Apenas verificar mudanças diretas no tbody
         });
         
-        console.log('🔍 Monitor de DOM ativado para tbody');
     }
 };
 
@@ -809,7 +790,6 @@ const AutocompleteManager = {
  * Inicialização automática quando o DOM está pronto
  */
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('📄 DOM carregado - Inicializando sistema de autocomplete');
     
     // Aguarda um pouco para garantir que tudo foi carregado
     setTimeout(() => {
@@ -820,7 +800,6 @@ document.addEventListener('DOMContentLoaded', () => {
         AutocompleteManager.monitorarDOM();
         
         AutocompleteManager.inicializado = true;
-        console.log('✅ Sistema de autocomplete pronto!');
     }, 500);
 });
 
@@ -829,7 +808,6 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 window.addEventListener('load', () => {
     if (!AutocompleteManager.inicializado) {
-        console.log('⚡ Tentando inicializar no evento load');
         AutocompleteManager.inicializarTodos();
     }
 });

@@ -191,8 +191,9 @@ window.addEventListener("load", () => {
 
   // Função genérica para criar gráficos ApexCharts com suporte a dark mode
   function initApexChart(containerSelector, options) {
+    if (typeof ApexCharts === 'undefined') return
     const chartContainer = document.querySelector(containerSelector)
-    if (!chartContainer) return
+    if (!chartContainer || !document.body.contains(chartContainer)) return
 
     // garante altura padrão
     const colors = getThemeColorsChart();
