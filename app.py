@@ -800,6 +800,7 @@ def api_insight_diario():
     return gerar_insight_diario()
 
 
+
 # =================== PRODUTOS - AUTOCOMPLETE ===================
 
 
@@ -1562,4 +1563,4 @@ def api_excluir_analise_salva(analise_id):
 
 # =================== RUN ===================
 if __name__ == "__main__":
-    app.run(debug=True,port=5005)
+    app.run(debug=True)
