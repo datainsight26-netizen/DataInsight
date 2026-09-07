@@ -19,11 +19,13 @@ def gerar_arquivo_download(tipo: str = "pdf", periodo: str = "30_dias", **kwargs
             kpis_data = resp_kpi_obj.get_json() if hasattr(resp_kpi_obj, "get_json") else resp_kpi_obj
 
             if isinstance(kpis_data, dict):
+                cres_val = kpis_data.get('crescimento', {}).get('valor')
+                cres_fmt = f"{cres_val:.1f}%" if cres_val is not None else "Sem base comparável"
                 kpis = {
                     "faturamento": f"{kpis_data.get('faturamento', {}).get('valor', 0):,.2f}",
                     "lucro": f"{kpis_data.get('lucro', {}).get('valor', 0):,.2f}",
                     "despesas": f"{kpis_data.get('despesa', {}).get('valor', 0):,.2f}",
-                    "crescimento": f"{kpis_data.get('crescimento', {}).get('valor', 0):.1f}%",
+                    "crescimento": cres_fmt,
                 }
             else:
                 kpis = {"faturamento": "0,00", "lucro": "0,00", "despesas": "0,00", "crescimento": "0%"}

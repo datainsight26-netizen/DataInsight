@@ -231,7 +231,7 @@ def preparar_dataframe_financeiro(df, mapeamento):
                 df_calc["_investimentos"] = df_calc["_investimentos"] + df_calc[f"_custom_{cid}"]
 
     # Saldo Operacional e Resultado
-    df_calc["_saidas_totais"] = df_calc["_variaveis"] + df_calc["_fixos"]
+    df_calc["_saidas_totais"] = df_calc["_variaveis"] + df_calc["_fixos"] + df_calc["_impostos"]
     df_calc["_saldo"] = df_calc["_receita"] - df_calc["_saidas_totais"]
 
     return df_calc

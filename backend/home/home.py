@@ -41,10 +41,13 @@ def calcular_total(df, colunas):
     return 0
 
 
-def percentual(anterior, atual):
+def variacao_percentual(anterior, atual):
     if anterior == 0:
-        return 0 if atual == 0 else 100
-    return ((atual - anterior) / anterior) * 100
+        return 0.0 if atual == 0 else None
+    return ((atual - anterior) / abs(anterior)) * 100
+
+
+percentual = variacao_percentual
 
 
 def filtrar_periodo(df, col, periodo):
@@ -382,24 +385,30 @@ def calcular_desempenho(periodo="30_dias", tabela_id="todas"):
         desp_ant = calcular_total_dinamico(anterior, "despesa", mapeamento, COL_DESPESA)
         luc_ant = calcular_total_dinamico(anterior, "lucro", mapeamento, COL_LUCRO) or (fat_ant - desp_ant)
 
+        fat_pct = percentual(fat_ant, fat)
+        luc_pct = percentual(luc_ant, luc)
+        desp_pct = percentual(desp_ant, desp)
+        if desp_pct is not None:
+            desp_pct = desp_pct * -1
+
         return jsonify({
             "faturamento": {
                 "valor": round(fat, 2),
-                "percentual": round(percentual(fat_ant, fat), 1),
+                "percentual": round(fat_pct, 1) if fat_pct is not None else None,
                 "valor_anterior": round(fat_ant, 2)
             },
             "lucro": {
                 "valor": round(luc, 2),
-                "percentual": round(percentual(luc_ant, luc), 1),
+                "percentual": round(luc_pct, 1) if luc_pct is not None else None,
                 "valor_anterior": round(luc_ant, 2)
             },
             "despesa": {
                 "valor": round(desp, 2),
-                "percentual": round(percentual(desp_ant, desp) * -1, 1),
+                "percentual": round(desp_pct, 1) if desp_pct is not None else None,
                 "valor_anterior": round(desp_ant, 2)
             },
             "crescimento": {
-                "valor": round(percentual(fat_ant, fat), 1)
+                "valor": round(fat_pct, 1) if fat_pct is not None else None
             },
             "mapeamento_ativo": bool(mapeamento),
             "mapeamento": mapeamento
@@ -731,9 +740,9 @@ def gerar_status_negocio(periodo="30_dias", tabela_id="todas"):
         despesa = dados.get('despesa', {})
 
         lucro_valor = lucro.get('valor', 0)
-        lucro_percentual = lucro.get('percentual', 0)
-        faturamento_percentual = faturamento.get('percentual', 0)
-        despesa_percentual = despesa.get('percentual', 0)
+        lucro_percentual = lucro.get('percentual')
+        faturamento_percentual = faturamento.get('percentual')
+        despesa_percentual = despesa.get('percentual')
 
         # Análise de saúde do negócio
         status = "indefinido"
@@ -742,24 +751,25 @@ def gerar_status_negocio(periodo="30_dias", tabela_id="todas"):
         descricao = "Sem dados suficientes para análise"
 
         if lucro_valor > 0:
-            if lucro_percentual >= 10 and faturamento_percentual >= 5:
+            if (lucro_percentual is not None and lucro_percentual >= 10) and (faturamento_percentual is not None and faturamento_percentual >= 5):
                 # Saudável: Lucro positivo com crescimento forte
                 status = "saudavel"
                 cor = "#10b981"
                 emoji = "🟢"
                 descricao = f"O negócio está saudável com lucro de R$ {lucro_valor:,.2f} e crescimento de {faturamento_percentual:.1f}%."
-            elif lucro_percentual >= 0 or faturamento_percentual >= 0:
-                # Estável: Lucro positivo mas crescimento moderado
+            elif (lucro_percentual is not None and lucro_percentual >= 0) or (faturamento_percentual is not None and faturamento_percentual >= 0) or (lucro_percentual is None and faturamento_percentual is None):
+                # Estável: Lucro positivo mas crescimento moderado ou sem base anterior
                 status = "estavel"
                 cor = "#f59e0b"
                 emoji = "🟡"
-                descricao = f"O negócio está estável. Lucro de R$ {lucro_valor:,.2f}, mas o crescimento pode ser melhorado."
+                descricao = f"O negócio está estável. Lucro de R$ {lucro_valor:,.2f}."
             else:
                 # Em Perigo: Lucro positivo mas em queda
                 status = "em_perigo"
                 cor = "#ef4444"
                 emoji = "🔴"
-                descricao = f"O negócio está em perigo com redução de {abs(lucro_percentual):.1f}%. Revise as despesas."
+                queda_txt = f"{abs(lucro_percentual):.1f}%" if lucro_percentual is not None else "queda"
+                descricao = f"O negócio está em perigo com redução de {queda_txt}. Revise as despesas."
         else:
             # Em Perigo: Lucro negativo (prejuízo)
             status = "em_perigo"
@@ -784,13 +794,13 @@ def gerar_status_negocio(periodo="30_dias", tabela_id="todas"):
                 "texto": f"Comprometimento de caixa: despesas consomem {(desp_valor / fat_valor) * 100:.1f}% do faturamento."
             })
 
-        if lucro_percentual < -5:
+        if lucro_percentual is not None and lucro_percentual < -5:
             alertas.append({
                 "tipo": "alerta",
                 "nivel": "alto",
                 "texto": f"Queda de {abs(lucro_percentual):.1f}% no lucro em relação ao período anterior."
             })
-        elif faturamento_percentual < -5:
+        elif faturamento_percentual is not None and faturamento_percentual < -5:
             alertas.append({
                 "tipo": "alerta",
                 "nivel": "medio",
@@ -823,9 +833,9 @@ def gerar_status_negocio(periodo="30_dias", tabela_id="todas"):
             "cor": cor,
             "descricao": descricao,
             "lucro_valor": round(lucro_valor, 2),
-            "lucro_percentual": round(lucro_percentual, 1),
+            "lucro_percentual": round(lucro_percentual, 1) if lucro_percentual is not None else None,
             "faturamento_valor": round(fat_valor, 2),
-            "faturamento_percentual": round(faturamento_percentual, 1),
+            "faturamento_percentual": round(faturamento_percentual, 1) if faturamento_percentual is not None else None,
             "despesa_valor": round(desp_valor, 2),
             "alertas": alertas,
             "periodo": periodo

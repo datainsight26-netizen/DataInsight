@@ -33,8 +33,8 @@ def calcular_total(df, colunas):
 
 def variacao_percentual(anterior, atual):
     if anterior == 0:
-        return 0.0 if atual == 0 else 100.0
-    return round(((atual - anterior) / anterior) * 100, 2)
+        return 0.0 if atual == 0 else None
+    return round(((atual - anterior) / abs(anterior)) * 100, 2)
 
 
 def filtrar_por_periodo(df, col_data, inicio, fim):
@@ -79,10 +79,10 @@ def calcular_regressao_linear(series):
     return inclinacao, intercepto
 
 
-def projetar_valor(series, horizonte=1):
+def projetar_valor(series, horizonte=1, permitir_negativo=False):
     inclinacao, intercepto = calcular_regressao_linear(series)
     valor = intercepto + inclinacao * (len(series) + horizonte)
-    return round(max(0.0, valor), 2)
+    return round(valor if permitir_negativo else max(0.0, valor), 2)
 
 
 # ======================
@@ -110,26 +110,32 @@ def calcular_saude_negocio(faturamento, despesas, lucro, margem, faturamento_ant
         score += 5
     
     # Crescimento de faturamento (até 15 pontos)
-    if crescimento_faturamento >= 15:
-        score += 15
-    elif crescimento_faturamento >= 10:
-        score += 12
-    elif crescimento_faturamento >= 5:
-        score += 8
-    elif crescimento_faturamento >= 0:
-        score += 5
+    if crescimento_faturamento is not None:
+        if crescimento_faturamento >= 15:
+            score += 15
+        elif crescimento_faturamento >= 10:
+            score += 12
+        elif crescimento_faturamento >= 5:
+            score += 8
+        elif crescimento_faturamento >= 0:
+            score += 5
+        else:
+            score -= 5
     else:
-        score -= 5
+        score += 5
     
     # Crescimento de lucro (até 10 pontos)
-    if crescimento_lucro >= 10:
-        score += 10
-    elif crescimento_lucro >= 5:
-        score += 7
-    elif crescimento_lucro >= 0:
-        score += 4
+    if crescimento_lucro is not None:
+        if crescimento_lucro >= 10:
+            score += 10
+        elif crescimento_lucro >= 5:
+            score += 7
+        elif crescimento_lucro >= 0:
+            score += 4
+        else:
+            score -= 3
     else:
-        score -= 3
+        score += 4
     
     # Limitar score entre 0 e 100
     score = max(0, min(100, score))
@@ -179,7 +185,7 @@ def gerar_alertas(faturamento, despesas, lucro, margem, faturamento_anterior, lu
             "descricao": f"Sua margem de {margem}% está abaixo do nível saudável de 15%. Isso indica baixa rentabilidade.",
             "acao": "Ver análise de custos"
         })
-    elif margem < 20 and crescimento_lucro < 0:
+    elif margem < 20 and (crescimento_lucro is not None and crescimento_lucro < 0):
         alertas.append({
             "tipo": "critico",
             "titulo": "Margem em Queda",
@@ -188,7 +194,7 @@ def gerar_alertas(faturamento, despesas, lucro, margem, faturamento_anterior, lu
         })
     
     # Alerta de crescimento positivo
-    if crescimento_faturamento > 10 and crescimento_lucro > 5:
+    if (crescimento_faturamento is not None and crescimento_faturamento > 10) and (crescimento_lucro is not None and crescimento_lucro > 5):
         alertas.append({
             "tipo": "sucesso",
             "titulo": "Crescimento Sustentável",
@@ -227,7 +233,7 @@ def gerar_recomendacoes(faturamento, despesas, lucro, margem, crescimento_fatura
         })
     
     # Recomendação de preços
-    if crescimento_faturamento > 0 and margem < 25:
+    if (crescimento_faturamento is not None and crescimento_faturamento > 0) and margem < 25:
         recomendacoes.append({
             "prioridade": "media",
             "titulo": "Revisar Política de Preços",
@@ -253,39 +259,47 @@ def gerar_recomendacoes(faturamento, despesas, lucro, margem, crescimento_fatura
 # CENÁRIOS DE ANÁLISE
 # ======================
 def calcular_cenarios(faturamento, despesas, lucro, margem, series_faturamento, series_lucro):
-    """Calcula projeções para diferentes cenários"""
+    """Calcula projeções para diferentes cenários obedecendo Lucro = Receita - Despesas"""
     
-    # Tendência atual
-    tendencia_faturamento = calcular_regressao_linear(series_faturamento)
-    tendencia_lucro = calcular_regressao_linear(series_lucro)
+    # Série de despesas implícita ou calculada
+    series_despesas = [max(0.0, float(f) - float(l)) for f, l in zip(series_faturamento, series_lucro)] if series_faturamento and series_lucro else []
     
-    # Cenário provável (tendência atual)
+    # Cenário provável (tendência da reta de regressão)
     proximo_fat_provavel = projetar_valor(series_faturamento, 1)
-    proximo_luc_provavel = projetar_valor(series_lucro, 1)
+    if series_despesas:
+        proxima_desp_provavel = projetar_valor(series_despesas, 1)
+    else:
+        proxima_desp_provavel = round(max(0.0, float(despesas)), 2)
+    proximo_luc_provavel = round(proximo_fat_provavel - proxima_desp_provavel, 2)
     
-    # Cenário otimista (tendência + 20%)
-    proximo_fat_otimista = proximo_fat_provavel * 1.2
-    proximo_luc_otimista = proximo_luc_provavel * 1.3
+    # Cenário otimista (+15% expansão de vendas, custos otimizados / escala -5%)
+    proximo_fat_otimista = round(proximo_fat_provavel * 1.15, 2)
+    proxima_desp_otimista = round(proxima_desp_provavel * 0.95, 2)
+    proximo_luc_otimista = round(proximo_fat_otimista - proxima_desp_otimista, 2)
     
-    # Cenário pessimista (tendência - 20%)
-    proximo_fat_pessimista = proximo_fat_provavel * 0.8
-    proximo_luc_pessimista = proximo_luc_provavel * 0.7
+    # Cenário pessimista (-15% retração de receita, rigidez de custos operacionais +5%)
+    proximo_fat_pessimista = round(max(0.0, proximo_fat_provavel * 0.85), 2)
+    proxima_desp_pessimista = round(proxima_desp_provavel * 1.05, 2)
+    proximo_luc_pessimista = round(proximo_fat_pessimista - proxima_desp_pessimista, 2)
     
     return {
         "provavel": {
             "faturamento": proximo_fat_provavel,
+            "despesas": proxima_desp_provavel,
             "lucro": proximo_luc_provavel,
-            "margem": (proximo_luc_provavel / proximo_fat_provavel * 100) if proximo_fat_provavel > 0 else 0
+            "margem": round((proximo_luc_provavel / proximo_fat_provavel * 100), 2) if proximo_fat_provavel > 0 else 0
         },
         "otimista": {
             "faturamento": proximo_fat_otimista,
+            "despesas": proxima_desp_otimista,
             "lucro": proximo_luc_otimista,
-            "margem": (proximo_luc_otimista / proximo_fat_otimista * 100) if proximo_fat_otimista > 0 else 0
+            "margem": round((proximo_luc_otimista / proximo_fat_otimista * 100), 2) if proximo_fat_otimista > 0 else 0
         },
         "pessimista": {
             "faturamento": proximo_fat_pessimista,
+            "despesas": proxima_desp_pessimista,
             "lucro": proximo_luc_pessimista,
-            "margem": (proximo_luc_pessimista / proximo_fat_pessimista * 100) if proximo_fat_pessimista > 0 else 0
+            "margem": round((proximo_luc_pessimista / proximo_fat_pessimista * 100), 2) if proximo_fat_pessimista > 0 else 0
         }
     }
 

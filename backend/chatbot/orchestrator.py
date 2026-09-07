@@ -14,11 +14,11 @@ _ORQUESTRADOR = None
 
 
 class GeminiOrchestrator:
-    """Integração Gemini com cliente reutilizado e modelo que já funcionou."""
+    """Integração Gemini robusta com alta resiliência, fallback automático e tokens expandidos."""
 
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         self.api_key = api_key or os.getenv("GOOGLE_API_KEY")
-        self.model = model or os.getenv("GOOGLE_GEMINI_MODEL", "gemini-3.5-flash-lite")
+        self.model = model or os.getenv("GOOGLE_GEMINI_MODEL", "gemini-3.6-flash")
         self.candidate_models = self._montar_candidatos()
         self._modelo_ok = self.candidate_models[0] if self.candidate_models else self.model
         self._client = None
@@ -27,11 +27,9 @@ class GeminiOrchestrator:
         vistos = []
         for nome in (
             self.model,
+            "gemini-3.6-flash",
             "gemini-3.5-flash-lite",
             "gemini-3.5-flash",
-            "gemini-3.6-flash",
-            "gemini-flash-lite-latest",
-            "gemini-flash-latest",
         ):
             if nome and nome not in vistos:
                 vistos.append(nome)
@@ -49,7 +47,7 @@ class GeminiOrchestrator:
         try:
             self._client = genai.Client(
                 api_key=self.api_key,
-                http_options={"timeout": 20000},
+                http_options={"timeout": 35000},
             )
         except TypeError:
             self._client = genai.Client(api_key=self.api_key)
@@ -59,8 +57,8 @@ class GeminiOrchestrator:
         try:
             from google.genai import types
             kwargs = {
-                "temperature": 0.2,
-                "max_output_tokens": 1536,
+                "temperature": 0.25,
+                "max_output_tokens": 4096,
             }
             return types.GenerateContentConfig(**kwargs)
         except Exception:
@@ -115,8 +113,8 @@ class GeminiOrchestrator:
         payload = {
             "contents": [{"role": "user", "parts": [{"text": prompt}]}],
             "generationConfig": {
-                "temperature": 0.2,
-                "maxOutputTokens": 1536,
+                "temperature": 0.25,
+                "maxOutputTokens": 4096,
             },
         }
         data = json.dumps(payload).encode("utf-8")
@@ -133,7 +131,7 @@ class GeminiOrchestrator:
                 method="POST",
             )
             try:
-                with urllib.request.urlopen(req, timeout=18) as response:
+                with urllib.request.urlopen(req, timeout=30) as response:
                     body = json.loads(response.read().decode("utf-8"))
                     candidatos = body.get("candidates") or []
                     if not candidatos:

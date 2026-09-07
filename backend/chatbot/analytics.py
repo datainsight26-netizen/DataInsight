@@ -34,12 +34,17 @@ def obter_resumo_financeiro(periodo: str = "30_dias", **kwargs) -> str:
         desp = dados["despesa"]
         cres = dados["crescimento"]
 
+        def _fmt_pct(p):
+            if p is None:
+                return "Sem base comparável"
+            return f"{p:+.1f}%" if isinstance(p, (int, float)) else f"{p}%"
+
         return (
             f"Resumo do período ({periodo}):\n"
-            f"- Faturamento: R$ {fat.get('valor', 0):,.2f} ({fat.get('percentual', 0)}%)\n"
-            f"- Lucro: R$ {luc.get('valor', 0):,.2f} ({luc.get('percentual', 0)}%)\n"
-            f"- Despesas: R$ {desp.get('valor', 0):,.2f} ({desp.get('percentual', 0)}%)\n"
-            f"- Crescimento: {cres.get('valor', 0)}%"
+            f"- Faturamento: R$ {fat.get('valor', 0):,.2f} ({_fmt_pct(fat.get('percentual'))})\n"
+            f"- Lucro: R$ {luc.get('valor', 0):,.2f} ({_fmt_pct(luc.get('percentual'))})\n"
+            f"- Despesas: R$ {desp.get('valor', 0):,.2f} ({_fmt_pct(desp.get('percentual'))})\n"
+            f"- Crescimento: {_fmt_pct(cres.get('valor'))}"
         )
     except Exception as err:
         return f"Erro ao processar resumo financeiro: {err}"
@@ -154,7 +159,69 @@ def detectar_anomalias_despesas(**kwargs) -> str:
         return f"Erro na análise de anomalias: {err}"
 
 
-def calcular_ponto_equilibrio(**kwargs) -> str:
+class PontoEquilibrioResultado(str):
+    def __new__(cls, texto, pe=None, imc=None, mc=None, calculavel=True):
+        obj = str.__new__(cls, texto)
+        obj.pe = pe
+        obj.valor = pe
+        obj.imc = imc
+        obj.mc = mc
+        obj.calculavel = calculavel
+        return obj
+
+    def __float__(self):
+        if self.pe is not None:
+            return float(self.pe)
+        raise ValueError(f"Ponto de equilíbrio incalculável: {self}")
+
+
+def calcular_ponto_equilibrio(receita: float = None, impostos: float = None, custos_variaveis: float = None, gastos_fixos: float = None, **kwargs):
+    rec = kwargs.get("receita", receita)
+    if rec is None:
+        rec = kwargs.get("faturamento")
+    fix = kwargs.get("gastos_fixos", gastos_fixos)
+    if fix is None:
+        fix = kwargs.get("despesas_fixas") or kwargs.get("fixos")
+    var = kwargs.get("custos_variaveis", custos_variaveis)
+    if var is None:
+        var = kwargs.get("variaveis")
+    imp = kwargs.get("impostos", impostos)
+
+    # Se parâmetros numéricos foram fornecidos diretamente (testes/chamadas programáticas)
+    if rec is not None and fix is not None:
+        try:
+            fat_total = float(rec)
+            fix_total = float(fix)
+            var_total = float(var) if var is not None else 0.0
+            imp_total = float(imp) if imp is not None else 0.0
+
+            if fat_total <= 0:
+                msg = "Faturamento nulo ou insuficiente para cálculo do ponto de equilíbrio."
+                return PontoEquilibrioResultado(msg, pe=None, imc=0.0, mc=0.0, calculavel=False)
+
+            mc = fat_total - imp_total - var_total
+            imc = mc / fat_total
+
+            if imc <= 0:
+                msg = (
+                    "A margem de contribuição é nula ou negativa. "
+                    "O ponto de equilíbrio é incalculável na estrutura atual de custos."
+                )
+                return PontoEquilibrioResultado(msg, pe=None, imc=imc, mc=mc, calculavel=False)
+
+            if fix_total == 0:
+                pe = 0.0
+            else:
+                pe = fix_total / imc
+
+            msg = (
+                f"Ponto de Equilíbrio Estimado: É necessário faturar ~R$ {pe:,.2f} "
+                f"para cobrir os gastos fixos (Índice de Margem de Contribuição: {imc * 100:.1f}%)."
+            )
+            return PontoEquilibrioResultado(msg, pe=pe, imc=imc, mc=mc, calculavel=True)
+        except Exception as err:
+            return PontoEquilibrioResultado(f"Erro no cálculo do Ponto de Equilíbrio: {err}", pe=None, calculavel=False)
+
     usuario_id = session.get("usuario_id")
     if not usuario_id:
         return "Usuário não autenticado."
@@ -167,25 +234,37 @@ def calcular_ponto_equilibrio(**kwargs) -> str:
         df = pd.DataFrame(documento["dados"])
         mapeamento = obter_colunas_mapeadas(usuario_id)
 
-        fat_total = calcular_total_dinamico(df, "faturamento", mapeamento, COL_FATURAMENTO)
-        desp_total = calcular_total_dinamico(df, "despesa", mapeamento, COL_DESPESA)
+        from backend.dados.classificacao_financeira import calcular_preview_financeiro
+        prev = calcular_preview_financeiro(mapeamento, df)
+
+        fat_total = prev.get("receita_total", 0.0)
+        fix_total = prev.get("gastos_fixos", 0.0)
+        var_total = prev.get("custo_variavel", 0.0)
+        imp_total = prev.get("impostos", 0.0)
 
         if fat_total <= 0:
-            return "Faturamento nulo ou insuficiente para cálculo do ponto de equilíbrio."
+            msg = "Faturamento nulo ou insuficiente para cálculo do ponto de equilíbrio."
+            return PontoEquilibrioResultado(msg, pe=None, imc=0.0, mc=0.0, calculavel=False)
 
-        lucro = fat_total - desp_total
-        margem = lucro / fat_total
+        mc = fat_total - imp_total - var_total
+        imc = mc / fat_total
 
-        if margem <= 0:
-            return (
-                "A margem de lucro histórica é negativa/nula. "
-                "O ponto de equilíbrio é inatingível na estrutura atual."
+        if imc <= 0:
+            msg = (
+                "A margem de contribuição histórica é nula ou negativa. "
+                "O ponto de equilíbrio é incalculável na estrutura atual de custos."
             )
+            return PontoEquilibrioResultado(msg, pe=None, imc=imc, mc=mc, calculavel=False)
 
-        pe = desp_total / margem
-        return (
+        if fix_total == 0:
+            pe = 0.0
+        else:
+            pe = fix_total / imc
+
+        msg = (
             f"Ponto de Equilíbrio Estimado: É necessário faturar ~R$ {pe:,.2f} "
-            f"para cobrir os custos totais (Margem histórica: {margem * 100:.1f}%)."
+            f"para cobrir os custos fixos totais (Margem de contribuição: {imc * 100:.1f}%)."
         )
+        return PontoEquilibrioResultado(msg, pe=pe, imc=imc, mc=mc, calculavel=True)
     except Exception as err:
         return f"Erro no cálculo do Ponto de Equilíbrio: {err}"

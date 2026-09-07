@@ -77,6 +77,16 @@ def validar_senha(senha):
     return True, ""
 
 
+def validar_telefone(telefone):
+    """Valida se o telefone possui quantidade mínima de dígitos (DDD + número)"""
+    if not telefone:
+        return False, "Telefone / Celular é obrigatório"
+    digitos = re.sub(r"\D", "", telefone)
+    if len(digitos) < 10 or len(digitos) > 13:
+        return False, "Informe um número de celular válido com DDD (10 ou 11 dígitos)"
+    return True, digitos
+
+
 # =================== CADASTRO ===================
 
 def tela_cadastro():
@@ -84,6 +94,7 @@ def tela_cadastro():
 
         nome = request.form.get("nome", "").strip()
         email = request.form.get("email", "").strip()
+        telefone = request.form.get("telefone", "").strip()
         senha = request.form.get("senha", "")
         confirmar = request.form.get("confirmar", "")
 
@@ -92,6 +103,10 @@ def tela_cadastro():
 
         if not validar_email(email):
             return render_template("cadastro.html", error_cad=True, msg="Email inválido")
+
+        valido_tel, tel_res = validar_telefone(telefone)
+        if not valido_tel:
+            return render_template("cadastro.html", error_cad=True, msg=tel_res)
 
         valido, msg = validar_senha(senha)
         if not valido:
@@ -108,7 +123,11 @@ def tela_cadastro():
         usuario.insert_one({
             "nome": nome,
             "email": email,
-            "senha": senha_hash
+            "telefone": tel_res,
+            "telefone_formatado": telefone,
+            "senha": senha_hash,
+            "criado_em": datetime.now(),
+            "atualizado_em": datetime.now()
         })
 
         return redirect(url_for("pagina_login"))
@@ -136,6 +155,7 @@ def login():
             session["usuario_id"] = str(user["_id"])
             session["usuario_nome"] = user["nome"]
             session["usuario_email"] = user["email"]
+            session["usuario_telefone"] = user.get("telefone_formatado") or user.get("telefone") or ""
             
             # Lógica Lembrar de mim
             lembrar = request.form.get("lembrar")

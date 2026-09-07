@@ -63,6 +63,7 @@ def obter_uso_plataforma():
     usuario_id = session.get("usuario_id")
     nome = session.get("usuario_nome") or "Usuário"
     email = session.get("usuario_email") or ""
+    telefone = session.get("usuario_telefone") or ""
 
     user_doc = None
     mapeamento = {}
@@ -77,6 +78,8 @@ def obter_uso_plataforma():
             mapeamento_fin = user_doc.get("mapeamento_financeiro") or {}
             if not email:
                 email = user_doc.get("email") or ""
+            if not telefone:
+                telefone = user_doc.get("telefone_formatado") or user_doc.get("telefone") or ""
 
     total_planilhas, total_linhas = _contar_linhas_planilhas(usuario_id) if usuario_id else (0, 0)
 
@@ -198,6 +201,7 @@ def obter_uso_plataforma():
     return {
         "nome": nome,
         "email": email,
+        "telefone": telefone,
         "iniciais": _iniciais(nome),
         "membro_desde": _membro_desde(usuario_id, user_doc),
         "total_planilhas": total_planilhas,

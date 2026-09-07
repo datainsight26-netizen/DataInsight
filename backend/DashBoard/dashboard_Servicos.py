@@ -672,33 +672,29 @@ def calcular_cenarios_projecao_6_meses(historico_3m, meses_projecao=6):
         x_futuro = n_hist + i
 
         # Projeção da reta base
-        l_prov = intercept_l + (slope_l * x_futuro)
-        r_prov = max(0.0, intercept_r + (slope_r * x_futuro))
-        d_prov = max(0.0, intercept_d + (slope_d * x_futuro))
-
-        # Margem de dispersão progressiva ao longo do horizonte de 6 meses
-        fator_horizonte = 1.0 + (0.12 * (i - 1))
-        spread_mes = volatilidade_l * fator_horizonte + (abs(slope_l) * 0.3 * i)
+        r_prov = round(max(0.0, intercept_r + (slope_r * x_futuro)), 2)
+        d_prov = round(max(0.0, intercept_d + (slope_d * x_futuro)), 2)
+        l_prov = round(r_prov - d_prov, 2)
 
         # Otimista: Aceleração comercial (+15% a +30% na margem)
         r_otim = round(r_prov * (1.0 + (0.04 * i)), 2)
         d_otim = round(d_prov * max(0.75, 1.0 - (0.02 * i)), 2)
-        l_otim = round(l_prov + spread_mes, 2)
+        l_otim = round(r_otim - d_otim, 2)
 
         # Pessimista: Contração de mercado e aumento de custos (-15% a -30% na receita / aumento em custos)
         r_pess = round(max(0.0, r_prov * (1.0 - (0.04 * i))), 2)
         d_pess = round(d_prov * (1.0 + (0.03 * i)), 2)
-        l_pess = round(l_prov - spread_mes, 2)
+        l_pess = round(r_pess - d_pess, 2)
 
-        proj_provavel_l.append(round(l_prov, 2))
+        proj_provavel_l.append(l_prov)
         proj_otimista_l.append(l_otim)
         proj_pessimista_l.append(l_pess)
 
-        proj_provavel_r.append(round(r_prov, 2))
+        proj_provavel_r.append(r_prov)
         proj_otimista_r.append(r_otim)
         proj_pessimista_r.append(r_pess)
 
-        proj_provavel_d.append(round(d_prov, 2))
+        proj_provavel_d.append(d_prov)
         proj_otimista_d.append(d_otim)
         proj_pessimista_d.append(d_pess)
 

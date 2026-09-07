@@ -32,8 +32,8 @@ def calcular_total(df, colunas):
 
 def variacao_percentual(anterior, atual):
     if anterior == 0:
-        return 0.0 if atual == 0 else 100.0
-    return round(((atual - anterior) / anterior) * 100, 2)
+        return 0.0 if atual == 0 else None
+    return round(((atual - anterior) / abs(anterior)) * 100, 2)
 
 
 def filtrar_por_periodo(df, col_data, inicio, fim):
@@ -78,23 +78,23 @@ def calcular_regressao_linear(series):
     return inclinacao, intercepto
 
 
-def projetar_valor(series, horizonte=1):
+def projetar_valor(series, horizonte=1, permitir_negativo=False):
     inclinacao, intercepto = calcular_regressao_linear(series)
     valor = intercepto + inclinacao * (len(series) + horizonte)
-    return round(max(0.0, valor), 2)
+    return round(valor if permitir_negativo else max(0.0, valor), 2)
 
 
 def montar_analises_decisao(faturamento, despesas, lucro, margem, faturamento_anterior, lucro_anterior, series_faturamento, series_lucro):
     crescimento_faturamento = variacao_percentual(faturamento_anterior, faturamento)
     crescimento_lucro = variacao_percentual(lucro_anterior, lucro)
 
-    if margem >= 25 and crescimento_lucro >= 5:
+    if margem >= 25 and (crescimento_lucro is not None and crescimento_lucro >= 5):
         nivel = "Saudável"
         score = 92
         descricao = "Margem forte e tendência positiva, com espaço para expansão e investimento em vendas."
         recomendacao = "Priorize campanhas de retenção, upsell e aumento de ticket médio."
         prioridade = "Alta"
-    elif margem >= 15 and crescimento_lucro >= 0:
+    elif margem >= 15 and (crescimento_lucro is not None and crescimento_lucro >= 0):
         nivel = "Estável"
         score = 78
         descricao = "O negócio está controlado, mas ainda há ganho ao otimizar custos e aumentar eficiência."
@@ -108,7 +108,7 @@ def montar_analises_decisao(faturamento, despesas, lucro, margem, faturamento_an
         prioridade = "Alta"
 
     projeção_faturamento = projetar_valor(series_faturamento, horizonte=1)
-    projeção_lucro = projetar_valor(series_lucro, horizonte=1)
+    projeção_lucro = projetar_valor(series_lucro, horizonte=1, permitir_negativo=True)
 
     return {
         "classificacao": {

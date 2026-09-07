@@ -441,34 +441,31 @@ def calcular_preview_financeiro(mapeamento_usuario: dict, df: pd.DataFrame) -> d
                 return 0.0
         return 0.0
 
-    receita = (
-        soma_coluna("receita_total")
-        or soma_coluna("receita_produtos") + soma_coluna("receita_servicos") + soma_coluna("receita_outros")
-    )
+    rec_tot = soma_coluna("receita_total")
+    subs_rec = soma_coluna("receita_produtos") + soma_coluna("receita_servicos") + soma_coluna("receita_outros")
+    receita = rec_tot if rec_tot > 0 else subs_rec
 
     taxa_raw = mapeamento_usuario.get("taxa_imposto_manual")
     taxa = float(taxa_raw) / 100 if taxa_raw else 0.08
 
     impostos = soma_coluna("impostos") or (receita * taxa)
 
-    custos_var = (
-        soma_coluna("custo_variavel")
-        or soma_coluna("fornecedores") + soma_coluna("publicidade") + soma_coluna("custo_variavel_outros")
-    )
+    subs_var = soma_coluna("fornecedores") + soma_coluna("publicidade") + soma_coluna("custo_variavel_outros")
+    col_custo_var = soma_coluna("custo_variavel")
+    custos_var = (subs_var + col_custo_var) if (subs_var > 0 and col_custo_var > 0) else (subs_var or col_custo_var)
 
     margem = receita - impostos - custos_var
 
-    gastos_fixos = (
-        soma_coluna("gasto_fixo_outros")
-        or soma_coluna("aluguel") + soma_coluna("folha_pagamento") + soma_coluna("pro_labore")
-    )
+    subs_fixos = soma_coluna("aluguel") + soma_coluna("folha_pagamento") + soma_coluna("pro_labore")
+    outros_fixos = soma_coluna("gasto_fixo_outros")
+    gastos_fixos = subs_fixos + outros_fixos
 
-    resultado_val = soma_coluna("resultado") or (margem - gastos_fixos)
+    col_res = soma_coluna("resultado")
+    resultado_val = col_res if (mapeamento_usuario.get("resultado") and col_res != 0) else (margem - gastos_fixos)
 
-    investimentos = (
-        soma_coluna("investimento_outros")
-        or soma_coluna("investimento_infra") + soma_coluna("investimento_equipamentos")
-    )
+    subs_inv = soma_coluna("investimento_infra") + soma_coluna("investimento_equipamentos")
+    outros_inv = soma_coluna("investimento_outros")
+    investimentos = subs_inv + outros_inv
 
     margem_pct = round((margem / receita * 100), 2) if receita > 0 else 0.0
 
