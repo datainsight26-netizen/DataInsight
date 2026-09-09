@@ -18,16 +18,29 @@ def gerar_relatorio():
     agora = datetime.now()
     documento = {
         'usuario_id': str(usuario_id),
+        'tipo_relatorio': dados.get('tipo_relatorio', 'consolidado'),
         'nome': dados.get('nome', 'Relatório sem nome'),
+        'subtitulo': dados.get('subtitulo', ''),
+        'origem_nome': dados.get('origem_nome', 'Geral'),
+        'analise_id': dados.get('analise_id', ''),
+        'badge': dados.get('badge', ''),
+        'cor': dados.get('cor', '#3b82f6'),
         'periodo': dados.get('periodo', ''),
         'data': dados.get('data', agora.strftime('%d/%m/%Y')),
         'kpis': dados.get('kpis', {}),
+        'kpis_lista': dados.get('kpis_lista', []) or [],
         'grafico': bool(dados.get('grafico', False)),
+        'grafico_tipo': dados.get('grafico_tipo', 'linha'),
+        'grafico_series': dados.get('grafico_series', []) or [],
+        'grafico_labels': dados.get('grafico_labels', []) or [],
         'tabela': dados.get('tabela', []),
+        'tabela_colunas': dados.get('tabela_colunas', []) or [],
         'tendencias': bool(dados.get('tendencias', False)),
         'margem': bool(dados.get('margem', False)),
         'dadosDetalhados': bool(dados.get('dadosDetalhados', False)),
         'insights': dados.get('insights', []) or [],
+        'insights_estruturados': dados.get('insights_estruturados', {}) or {},
+        'conteudo_html': dados.get('conteudo_html', ''),
         'criado_em': agora,
         'atualizado_em': agora
     }
@@ -41,23 +54,31 @@ def gerar_relatorio():
         relatorio_id = ""
 
     # Armazenar no session para renderizar em /relatorio_pdf como fallback rápido
-    dados_com_id = {**dados, '_id': relatorio_id, 'id': relatorio_id}
+    dados_com_id = {**dados, **documento, '_id': relatorio_id, 'id': relatorio_id}
     session['relatorio_dados'] = dados_com_id
 
     # Histórico na sessão (compatibilidade retroativa)
     historico = session.get('relatorios_gerados', [])
     item_historico = {
         'id': relatorio_id,
+        'tipo_relatorio': documento['tipo_relatorio'],
         'nome': documento['nome'],
+        'subtitulo': documento['subtitulo'],
+        'origem_nome': documento['origem_nome'],
         'periodo': documento['periodo'],
         'data': documento['data'],
         'kpis': documento['kpis'],
+        'kpis_lista': documento['kpis_lista'],
         'grafico': documento['grafico'],
+        'grafico_series': documento['grafico_series'],
+        'grafico_labels': documento['grafico_labels'],
         'tabela': documento['tabela'],
+        'tabela_colunas': documento['tabela_colunas'],
         'tendencias': documento['tendencias'],
         'margem': documento['margem'],
         'dadosDetalhados': documento['dadosDetalhados'],
         'insights': documento['insights'],
+        'insights_estruturados': documento['insights_estruturados'],
     }
     historico.insert(0, item_historico)
     session['relatorios_gerados'] = historico[:10]
@@ -88,6 +109,11 @@ def listar_relatorios_api():
             relatorios.append({
                 'id': doc_id,
                 'nome': doc.get('nome', 'Relatório'),
+                'tipo_relatorio': doc.get('tipo_relatorio', 'consolidado'),
+                'subtitulo': doc.get('subtitulo', ''),
+                'origem_nome': doc.get('origem_nome', ''),
+                'badge': doc.get('badge', ''),
+                'cor': doc.get('cor', '#3b82f6'),
                 'periodo': doc.get('periodo', ''),
                 'data': data_iso,
                 'dataFormatada': data_formatada,
