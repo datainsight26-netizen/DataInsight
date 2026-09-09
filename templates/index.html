@@ -33,16 +33,12 @@
   <header class="bg-white border-b border-gray-100 sticky top-0 z-50" role="banner">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-16">
-        <a class="flex items-center" href="#" aria-label="Plataforma - Página inicial">
-          <div class="flex items-center gap-2">
-            <span
-              class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-blue-400 text-white flex items-center justify-center text-sm"
-              aria-hidden="true" style="border-radius: 100px;">
-              <i class="fa-solid fa-chart-column"></i>
-            </span>
-            <span class="text-xl font-semibold text-gray-900">DataInsight</span>
-          </div>
-        </a>
+        <div class="sidebar__header" style="border:none; padding:0; height:auto; background:transparent;">
+          <a class="sidebar__logo flex items-center gap-2" href="{{ url_for('pagina_landing') }}" aria-label="DataInsight - Início">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo DataInsight" style="max-width: 65px; height: auto;">
+            <span class="sidebar__logo-text text-xl font-semibold text-gray-900">DataInsight</span>
+          </a>
+        </div>
         <div class="flex items-center gap-2 sm:gap-4">
           <a href="{{ url_for('pagina_assinaturas') }}"
             class="px-3 sm:px-4 py-2 text-blue-600 font-bold hover:text-blue-800 transition-colors inline-flex items-center gap-1.5 text-sm sm:text-base">

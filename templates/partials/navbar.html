@@ -1,8 +1,6 @@
 <div class="sidebar__header">
   <a class="sidebar__logo" href="{{ url_for('pagina_landing') }}" aria-label="DataInsight - Início">
-    <span class="sidebar__logo-icon" aria-hidden="true" style="border-radius:100px;">
-      <i class="fa-solid fa-chart-column"></i>
-    </span>
+<img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo DataInsight" style="max-width: 65px; height: auto;">
     <span class="sidebar__logo-text">DataInsight</span>
   </a>
 </div>
@@ -57,7 +55,7 @@
   <a href="{{ url_for('pagina_ia') }}"
      {% if request.endpoint=='pagina_ia' %}aria-current="page"{% endif %}>
     <i class="fa-solid fa-robot"></i>
-    Centro de Inteligência
+    IA
   </a>
 
   <a href="{{ url_for('pagina_analises_salvas') }}"

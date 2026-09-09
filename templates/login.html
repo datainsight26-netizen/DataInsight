@@ -351,12 +351,11 @@
 
     <!-- Painel visual esquerdo -->
     <div class="auth-panel" aria-hidden="true" >
-      <div class="auth-panel__logo">
-        <div class="auth-panel__logo-icon" style="border-radius:100px;">
-          <i class="fa-solid fa-chart-column"></i>
-        </div>
-        DataInsight
-      </div>
+      <a class="sidebar__logo" href="{{ url_for('pagina_landing') }}" aria-label="DataInsight - Início">
+      <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo DataInsight" style="max-width: 65px; height: auto;">
+          <span class="sidebar__logo-text">DataInsight</span>
+        </a>
+      
 
       <div class="auth-panel__tagline">Plataforma de BI Inteligente</div>
       <h1 class="auth-panel__title">

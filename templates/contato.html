@@ -4,35 +4,561 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Entre em contato com a equipe DataInsight para suporte, dúvidas e sugestões sobre a plataforma." />
   <title>DataInsight • Contato</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='acessibilidade/acessibilidade.css') }}" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    /* ===============================
+       CONTATO - PREMIUM UI
+       =============================== */
+
+    .contato-hero {
+      position: relative;
+      background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 50%, #1a2744 100%);
+      border-radius: 20px;
+      padding: 56px 48px;
+      margin-bottom: 32px;
+      overflow: hidden;
+      color: #fff;
+    }
+
+    .contato-hero::before {
+      content: '';
+      position: absolute;
+      top: -80px;
+      right: -80px;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(59,130,246,0.25) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .contato-hero::after {
+      content: '';
+      position: absolute;
+      bottom: -60px;
+      left: -60px;
+      width: 220px;
+      height: 220px;
+      background: radial-gradient(circle, rgba(139,92,246,0.18) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .contato-hero__badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(59,130,246,0.18);
+      border: 1px solid rgba(59,130,246,0.35);
+      color: #93c5fd;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 100px;
+      margin-bottom: 20px;
+    }
+
+    .contato-hero__title {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 800;
+      margin: 0 0 12px;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+
+    .contato-hero__title span {
+      background: linear-gradient(90deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .contato-hero__subtitle {
+      font-size: 1.05rem;
+      color: rgba(255,255,255,0.65);
+      max-width: 520px;
+      line-height: 1.7;
+      margin: 0;
+    }
+
+    .contato-hero__stats {
+      display: flex;
+      gap: 32px;
+      margin-top: 36px;
+      flex-wrap: wrap;
+    }
+
+    .contato-hero__stat {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .contato-hero__stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .contato-hero__stat-label {
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .contato-hero__icon-bg {
+      position: absolute;
+      top: 50%;
+      right: 48px;
+      transform: translateY(-50%);
+      font-size: 8rem;
+      opacity: 0.05;
+      color: #fff;
+      pointer-events: none;
+    }
+
+    /* LAYOUT GRID */
+    .contato-grid {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 900px) {
+      .contato-grid {
+        grid-template-columns: 1fr;
+      }
+      .contato-hero__icon-bg { display: none; }
+      .contato-hero { padding: 36px 28px; }
+    }
+
+    /* FORM CARD */
+    .contato-form-card {
+      background: var(--cartao);
+      border: 1px solid var(--borda);
+      border-radius: 16px;
+      padding: 36px 32px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+      transition: box-shadow 0.3s ease;
+    }
+
+    .contato-form-card:hover {
+      box-shadow: 0 8px 40px rgba(0,0,0,0.1);
+    }
+
+    .contato-form-card__header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 28px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--borda);
+    }
+
+    .contato-form-card__icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #3b82f6, #6366f1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .contato-form-card__title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--texto);
+      margin: 0 0 2px;
+    }
+
+    .contato-form-card__desc {
+      font-size: 0.82rem;
+      color: var(--suave);
+      margin: 0;
+    }
+
+    /* FORM FIELDS */
+    .contato-campo { margin-bottom: 20px; }
+
+    .contato-campo label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--texto);
+      margin-bottom: 7px;
+    }
+
+    .contato-campo label i {
+      color: var(--primaria);
+      font-size: 0.8rem;
+      width: 14px;
+    }
+
+    .contato-campo label .obrig {
+      color: #ef4444;
+      margin-left: 2px;
+    }
+
+    .contato-input {
+      width: 100%;
+      padding: 11px 14px;
+      background: var(--fundo);
+      border: 1.5px solid var(--borda);
+      border-radius: 10px;
+      font-size: 0.9rem;
+      color: var(--texto);
+      font-family: var(--fonte);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      outline: none;
+    }
+
+    .contato-input:focus {
+      border-color: var(--primaria);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+      background: var(--cartao);
+    }
+
+    .contato-input::placeholder {
+      color: var(--suave);
+      opacity: 0.7;
+    }
+
+    textarea.contato-input {
+      min-height: 130px;
+      resize: vertical;
+    }
+
+    .contato-campo__row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 520px) {
+      .contato-campo__row { grid-template-columns: 1fr; }
+    }
+
+    /* FEEDBACK ALERT */
+    .contato-feedback {
+      padding: 14px 16px;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: slideDown 0.3s ease;
+    }
+
+    .contato-feedback--hidden { display: none !important; }
+
+    .contato-feedback--erro {
+      background: rgba(239,68,68,0.08);
+      border: 1px solid rgba(239,68,68,0.25);
+      color: #dc2626;
+    }
+
+    .contato-feedback--sucesso {
+      background: rgba(22,163,74,0.08);
+      border: 1px solid rgba(22,163,74,0.25);
+      color: #16a34a;
+    }
+
+    .contato-feedback i { font-size: 1rem; flex-shrink: 0; }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* SUBMIT AREA */
+    .contato-acoes {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--borda);
+    }
+
+    .btn-contato-enviar {
+      flex: 1;
+      min-width: 160px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #3b82f6, #6366f1);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      font-family: var(--fonte);
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s;
+      box-shadow: 0 4px 15px rgba(59,130,246,0.3);
+    }
+
+    .btn-contato-enviar:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(59,130,246,0.4);
+    }
+
+    .btn-contato-enviar:active:not(:disabled) { transform: translateY(0); }
+    .btn-contato-enviar:disabled { opacity: 0.7; cursor: not-allowed; }
+
+    .btn-contato-limpar {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 12px 20px;
+      background: transparent;
+      color: var(--suave);
+      border: 1.5px solid var(--borda);
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      font-family: var(--fonte);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-contato-limpar:hover {
+      border-color: var(--primaria);
+      color: var(--primaria);
+      background: rgba(59,130,246,0.04);
+    }
+
+    /* INFO CARD */
+    .contato-info-card {
+      background: var(--cartao);
+      border: 1px solid var(--borda);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    }
+
+    .contato-info-card__top {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+      padding: 28px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .contato-info-card__top::before {
+      content: '';
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 140px; height: 140px;
+      background: radial-gradient(circle, rgba(99,102,241,0.3) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .contato-info-card__top-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      margin: 0 0 4px;
+    }
+
+    .contato-info-card__top-sub {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.5);
+      margin: 0;
+    }
+
+    .contato-info-card__body { padding: 24px; }
+
+    /* INFO ITEMS */
+    .contato-info-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--borda);
+      transition: transform 0.2s ease;
+    }
+
+    .contato-info-item:last-of-type { border-bottom: none; }
+    .contato-info-item:hover { transform: translateX(3px); }
+
+    .contato-info-item__icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+    }
+
+    .contato-info-item__icon--blue   { background: rgba(59,130,246,0.1);  color: #3b82f6; }
+    .contato-info-item__icon--purple { background: rgba(139,92,246,0.1);  color: #8b5cf6; }
+    .contato-info-item__icon--green  { background: rgba(22,163,74,0.1);   color: #16a34a; }
+    .contato-info-item__icon--amber  { background: rgba(245,158,11,0.1);  color: #f59e0b; }
+
+    .contato-info-item__content { flex: 1; }
+
+    .contato-info-item__label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--suave);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 0 0 3px;
+    }
+
+    .contato-info-item__value {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--texto);
+      margin: 0;
+    }
+
+    .contato-info-item__value a {
+      color: var(--primaria);
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+
+    .contato-info-item__value a:hover {
+      opacity: 0.75;
+      text-decoration: underline;
+    }
+
+    /* AVAILABILITY BADGE */
+    .contato-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 18px;
+      padding: 10px 14px;
+      background: rgba(22,163,74,0.08);
+      border: 1px solid rgba(22,163,74,0.2);
+      border-radius: 8px;
+    }
+
+    .contato-status__dot {
+      width: 8px;
+      height: 8px;
+      background: #16a34a;
+      border-radius: 50%;
+      animation: pulse-dot 2s infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(22,163,74,0.4); }
+      50% { box-shadow: 0 0 0 5px rgba(22,163,74,0); }
+    }
+
+    .contato-status__text {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #16a34a;
+    }
+
+    /* SOCIAL LINKS */
+    .contato-social {
+      margin-top: 20px;
+      padding-top: 18px;
+      border-top: 1px solid var(--borda);
+    }
+
+    .contato-social__label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--suave);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 12px;
+    }
+
+    .contato-social__links { display: flex; gap: 10px; }
+
+    .contato-social__link {
+      width: 38px;
+      height: 38px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      border: 1.5px solid var(--borda);
+      color: var(--suave);
+      font-size: 0.9rem;
+    }
+
+    .contato-social__link:hover {
+      border-color: var(--primaria);
+      color: var(--primaria);
+      background: rgba(59,130,246,0.07);
+      transform: translateY(-2px);
+    }
+
+    /* SELECT */
+    .contato-select {
+      width: 100%;
+      padding: 11px 36px 11px 14px;
+      background: var(--fundo);
+      border: 1.5px solid var(--borda);
+      border-radius: 10px;
+      font-size: 0.9rem;
+      color: var(--texto);
+      font-family: var(--fonte);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%236b7280'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z' clip-rule='evenodd'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 16px;
+    }
+
+    .contato-select:focus {
+      border-color: var(--primaria);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+      background-color: var(--cartao);
+    }
+
+    .tema-escuro .contato-select { background-color: rgba(255,255,255,0.04); }
+    .tema-escuro .contato-select option { background-color: #1e293b; }
+    .tema-escuro .contato-form-card,
+    .tema-escuro .contato-info-card { box-shadow: 0 4px 24px rgba(0,0,0,0.3); }
+    .tema-escuro .contato-input { background: rgba(255,255,255,0.04); }
+    .tema-escuro .contato-input:focus { background: rgba(255,255,255,0.07); }
+  </style>
 </head>
 
 <body>
 
-
   <div class="layout">
     <aside class="sidebar" aria-label="Navegação principal">
-      <div class="sidebar__header">
-        <a class="marca" href="{{ url_for('pagina_landing') }}" aria-label="DataInsight - Início">
-          <span class="marca__simbolo" aria-hidden="true">
-            <i class="fa-solid fa-chart-column"></i>
-          </span>
-          DataInsight
-        </a>
-      </div>
-
-      <!-- Navegação lateral -->
       {% include 'partials/navbar.html' %}
-
     </aside>
 
-
     {% include 'partials/navbar_mobile.html' %}
-
 
     <div class="main">
       <header class="topbar">
@@ -48,163 +574,290 @@
 
       <main id="conteudo" class="pagina" role="main" data-ia-help="page_contato">
         <div class="container">
-          <header class="pagina__cabecalho">
-            <div class="migalhas">Início &gt; Contato</div>
-            <h1 class="h1">Contato</h1>
-            <p class="p">Entre em contato conosco para dúvidas, sugestões ou suporte sobre a plataforma DataInsight.</p>
-          </header>
 
-          <section class="grade grade--2" aria-label="Formulário de contato e informações">
-            <article class="cartao" data-ia-help="contato_formulario">
-              <h2 class="h2">Envie uma mensagem</h2>
+          <!-- BREADCRUMB -->
+          <nav aria-label="Breadcrumb" style="margin-bottom: 24px; font-size: 0.85rem;">
+            <a href="{{ url_for('pagina_home') }}" style="color: var(--suave); text-decoration: none;">Início</a>
+            <span style="margin: 0 8px; color: var(--suave);">/</span>
+            <span style="color: var(--texto); font-weight: 500;">Contato</span>
+          </nav>
 
-              <!-- Mensagem de feedback -->
-              <div id="mensagem-feedback-contato" role="alert" aria-live="polite" aria-atomic="true"
-                style="display: none; padding: 12px; border-radius: 4px; margin-bottom: 16px;">
+          <!-- HERO SECTION -->
+          <div class="contato-hero">
+            <div class="contato-hero__badge">
+              <i class="fa-solid fa-headset"></i>
+              Suporte &amp; Contato
+            </div>
+            <h1 class="contato-hero__title">
+              Fale com nossa<br>
+              <span>equipe de suporte</span>
+            </h1>
+            <p class="contato-hero__subtitle">
+              Estamos aqui para ajudar. Entre em contato para tirar dúvidas, reportar problemas ou enviar sugestões sobre a plataforma DataInsight.
+            </p>
+            <div class="contato-hero__stats">
+              <div class="contato-hero__stat">
+                <span class="contato-hero__stat-value">&lt; 24h</span>
+                <span class="contato-hero__stat-label">Tempo de resposta</span>
+              </div>
+              <div class="contato-hero__stat">
+                <span class="contato-hero__stat-value">100%</span>
+                <span class="contato-hero__stat-label">Respostas garantidas</span>
+              </div>
+              <div class="contato-hero__stat">
+                <span class="contato-hero__stat-value">Seg–Sex</span>
+                <span class="contato-hero__stat-label">Horário de atendimento</span>
+              </div>
+            </div>
+            <i class="fa-solid fa-comments contato-hero__icon-bg" aria-hidden="true"></i>
+          </div>
+
+          <!-- MAIN CONTENT GRID -->
+          <div class="contato-grid">
+
+            <!-- FORM CARD -->
+            <div class="contato-form-card">
+              <div class="contato-form-card__header">
+                <div class="contato-form-card__icon">
+                  <i class="fa-solid fa-paper-plane"></i>
+                </div>
+                <div>
+                  <h2 class="contato-form-card__title">Envie uma mensagem</h2>
+                  <p class="contato-form-card__desc">Preencha o formulário e retornaremos em breve</p>
+                </div>
               </div>
 
-              <form id="formulario-contato">
-                <div class="campo">
-                  <label for="nome" class="obrigatorio">Nome</label>
-                  <input id="nome" class="entrada" type="text" placeholder="Digite seu nome" required />
+              <!-- Feedback alert -->
+              <div id="mensagem-feedback-contato"
+                   class="contato-feedback contato-feedback--hidden"
+                   role="alert" aria-live="polite" aria-atomic="true">
+                <i id="feedback-icon" class="fa-solid fa-circle-check"></i>
+                <span id="feedback-texto"></span>
+              </div>
+
+              <form id="formulario-contato" novalidate>
+
+                <div class="contato-campo__row">
+                  <div class="contato-campo">
+                    <label for="nome">
+                      <i class="fa-solid fa-user"></i>
+                      Nome <span class="obrig">*</span>
+                    </label>
+                    <input id="nome" class="contato-input" type="text"
+                           placeholder="Seu nome completo" required autocomplete="name" />
+                  </div>
+
+                  <div class="contato-campo">
+                    <label for="email">
+                      <i class="fa-solid fa-envelope"></i>
+                      E-mail <span class="obrig">*</span>
+                    </label>
+                    <input id="email" class="contato-input" type="email"
+                           placeholder="seu@email.com" required autocomplete="email" />
+                  </div>
                 </div>
 
-                <div class="campo">
-                  <label for="email" class="obrigatorio">Email</label>
-                  <input id="email" class="entrada" type="email" placeholder="Digite seu email" required />
+                <div class="contato-campo">
+                  <label for="assunto">
+                    <i class="fa-solid fa-tag"></i>
+                    Assunto
+                  </label>
+                  <select id="assunto" class="contato-select">
+                    <option value="">Selecione o assunto...</option>
+                    <option value="suporte">Suporte técnico</option>
+                    <option value="duvida">Dúvida sobre a plataforma</option>
+                    <option value="sugestao">Sugestão de melhoria</option>
+                    <option value="bug">Reportar um problema</option>
+                    <option value="dados">Problemas com dados</option>
+                    <option value="conta">Conta e acesso</option>
+                    <option value="outro">Outro</option>
+                  </select>
                 </div>
 
-                <div class="campo">
-                  <label for="mensagem" class="obrigatorio">Mensagem</label>
-                  <textarea id="mensagem" class="area-texto" placeholder="Digite sua mensagem" required></textarea>
+                <div class="contato-campo">
+                  <label for="mensagem">
+                    <i class="fa-solid fa-message"></i>
+                    Mensagem <span class="obrig">*</span>
+                  </label>
+                  <textarea id="mensagem" class="contato-input"
+                            placeholder="Descreva sua dúvida, sugestão ou problema com o máximo de detalhes possível..."
+                            required></textarea>
                 </div>
 
-                <div style="display:flex; gap: 12px; flex-wrap: wrap; margin-top: 16px;">
-                  <button class="botao botao--primario" type="submit" id="botao-enviar-contato">
+                <div class="contato-acoes">
+                  <button class="btn-contato-enviar" type="submit" id="botao-enviar-contato">
+                    <i id="icone-botao" class="fa-solid fa-paper-plane"></i>
                     <span id="texto-botao-contato">Enviar Mensagem</span>
-                    <span id="spinner-botao-contato" style="display: none; margin-left: 8px;">
+                    <span id="spinner-botao-contato" style="display:none;">
                       <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
                     </span>
                   </button>
-                  <button class="botao botao--delet" type="reset">Limpar</button>
+                  <button class="btn-contato-limpar" type="reset">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    Limpar
+                  </button>
                 </div>
               </form>
-            </article>
+            </div>
 
-            <aside class="cartao" data-ia-help="contato_info">
-              <h2 class="h2">Informações de contato</h2>
-              <p class="p">📧 Email: DataInsight@gmail.com</p>
-              <p class="p">📞 Telefone: (82) 99999-9999</p>
-              <p class="p">📍 Localização: Maceió - AL</p>
-              <p class="p">Nosso sistema ajuda usuários a interpretar dados com mais facilidade através de dashboards e
-                análises inteligentes.</p>
+            <!-- INFO CARD -->
+            <aside class="contato-info-card">
+              <div class="contato-info-card__top">
+                <p class="contato-info-card__top-title">Informações de contato</p>
+                <p class="contato-info-card__top-sub">Outros canais de comunicação</p>
+              </div>
+
+              <div class="contato-info-card__body">
+
+                <div class="contato-info-item">
+                  <div class="contato-info-item__icon contato-info-item__icon--blue">
+                    <i class="fa-solid fa-envelope"></i>
+                  </div>
+                  <div class="contato-info-item__content">
+                    <p class="contato-info-item__label">E-mail</p>
+                    <p class="contato-info-item__value">
+                      <a href="mailto:DataInsight@gmail.com">datainsight26@gmail.com</a>
+                    </p>
+                  </div>
+                </div>
+
+                <div class="contato-info-item">
+                  <div class="contato-info-item__icon contato-info-item__icon--purple">
+                    <i class="fa-solid fa-phone"></i>
+                  </div>
+                  <div class="contato-info-item__content">
+                    <p class="contato-info-item__label">Telefone</p>
+                    <p class="contato-info-item__value">
+                      <a href="tel:+5582996561474">(82) 99656-1474</a>
+                    </p>
+                  </div>
+                </div>
+
+                <div class="contato-info-item">
+                  <div class="contato-info-item__icon contato-info-item__icon--green">
+                    <i class="fa-solid fa-location-dot"></i>
+                  </div>
+                  <div class="contato-info-item__content">
+                    <p class="contato-info-item__label">Localização</p>
+                    <p class="contato-info-item__value">Maceió — AL, Brasil</p>
+                  </div>
+                </div>
+
+                <div class="contato-info-item">
+                  <div class="contato-info-item__icon contato-info-item__icon--amber">
+                    <i class="fa-solid fa-clock"></i>
+                  </div>
+                  <div class="contato-info-item__content">
+                    <p class="contato-info-item__label">Horário de atendimento</p>
+                    <p class="contato-info-item__value">Segunda a Sexta, 9h–18h</p>
+                  </div>
+                </div>
+              </div>
             </aside>
-          </section>
+
+          </div><!-- /contato-grid -->
+
         </div>
       </main>
     </div>
   </div>
-  
+
   <!-- Footer -->
   {% include 'partials/footer.html' %}
 
-  <!-- Painel Acessibilidae -->
+  <!-- Painel Acessibilidade -->
   {% include 'partials/painel_acessibilidade.html' %}
 
   <!-- Chatbot Flutuante -->
   {% include 'partials/chatbot.html' %}
 
-</div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
 
-  <script>
-    // ===============================
-    // MANIPULADOR DE FORMULÁRIO DE CONTATO
-    // ===============================
-    document.addEventListener('DOMContentLoaded', function() {
-      const formulario = document.getElementById('formulario-contato');
-      
-      if (formulario) {
-        formulario.addEventListener('submit', async function(e) {
-          e.preventDefault();
-          await enviarMensagemContato();
-        });
-      }
-    });
+<script>
+  // ===============================
+  // CONTACT FORM HANDLER
+  // ===============================
+  document.addEventListener('DOMContentLoaded', function () {
+    const formulario = document.getElementById('formulario-contato');
+    if (formulario) {
+      formulario.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        await enviarMensagemContato();
+      });
+    }
+  });
 
-    async function enviarMensagemContato() {
-      const formulario = document.getElementById('formulario-contato');
-      const nome = document.getElementById('nome').value.trim();
-      const email = document.getElementById('email').value.trim();
-      const mensagem = document.getElementById('mensagem').value.trim();
-      const botao = document.getElementById('botao-enviar-contato');
-      const textoBotao = document.getElementById('texto-botao-contato');
-      const spinnerBotao = document.getElementById('spinner-botao-contato');
-      const feedback = document.getElementById('mensagem-feedback-contato');
+  async function enviarMensagemContato() {
+    const nome      = document.getElementById('nome').value.trim();
+    const email     = document.getElementById('email').value.trim();
+    const assuntoEl = document.getElementById('assunto');
+    const assunto   = assuntoEl ? assuntoEl.value : '';
+    const mensagem  = document.getElementById('mensagem').value.trim();
+    const botao     = document.getElementById('botao-enviar-contato');
+    const iconeBotao = document.getElementById('icone-botao');
+    const textoBotao = document.getElementById('texto-botao-contato');
+    const spinner   = document.getElementById('spinner-botao-contato');
 
-      // Validações básicas
-      if (!nome || !email || !mensagem) {
-        mostrarFeedback(feedback, 'erro', 'Por favor, preencha todos os campos');
-        return;
-      }
-
-      try {
-        // Desabilitar botão e mostrar spinner
-        botao.disabled = true;
-        textoBotao.style.display = 'none';
-        spinnerBotao.style.display = 'inline';
-
-        const response = await fetch('/enviar-contato', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            nome: nome,
-            email: email,
-            mensagem: mensagem
-          })
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.sucesso) {
-          mostrarFeedback(feedback, 'sucesso', data.mensagem || 'Mensagem enviada com sucesso!');
-          formulario.reset();
-          
-          // Limpar feedback após 5 segundos
-          setTimeout(() => {
-            feedback.style.display = 'none';
-          }, 5000);
-        } else {
-          mostrarFeedback(feedback, 'erro', data.mensagem || 'Erro ao enviar a mensagem');
-        }
-      } catch (error) {
-        mostrarFeedback(feedback, 'erro', 'Erro ao processar a solicitação. Tente novamente.');
-      } finally {
-        // Reabilitar botão e ocultar spinner
-        botao.disabled = false;
-        textoBotao.style.display = 'inline';
-        spinnerBotao.style.display = 'none';
-      }
+    if (!nome || !email || !mensagem) {
+      mostrarFeedback('erro', 'Por favor, preencha todos os campos obrigatórios.');
+      return;
     }
 
-    function mostrarFeedback(elemento, tipo, mensagem) {
-      const isError = tipo === 'erro';
-      const color = isError ? '#dc2626' : '#16a34a';
-      const bgColor = isError ? 'rgba(220, 38, 38, 0.1)' : 'rgba(22, 163, 74, 0.1)';
-      const icon = isError ? '✗' : '✓';
-
-      elemento.style.display = 'block';
-      elemento.style.backgroundColor = bgColor;
-      elemento.style.borderLeft = `4px solid ${color}`;
-      elemento.style.color = color;
-      elemento.innerHTML = `<strong>${icon} ${isError ? 'Erro' : 'Sucesso'}:</strong> ${mensagem}`;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      mostrarFeedback('erro', 'Por favor, insira um endereço de e-mail válido.');
+      return;
     }
-  </script>
+
+    try {
+      botao.disabled = true;
+      iconeBotao.style.display = 'none';
+      textoBotao.textContent = 'Enviando...';
+      spinner.style.display = 'inline';
+
+      const response = await fetch('/enviar-contato', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome, email, assunto, mensagem })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.sucesso) {
+        mostrarFeedback('sucesso', data.mensagem || 'Mensagem enviada com sucesso! Retornaremos em breve.');
+        document.getElementById('formulario-contato').reset();
+        setTimeout(() => ocultarFeedback(), 6000);
+      } else {
+        mostrarFeedback('erro', data.mensagem || 'Erro ao enviar a mensagem. Tente novamente.');
+      }
+    } catch (error) {
+      mostrarFeedback('erro', 'Erro de conexão. Verifique sua internet e tente novamente.');
+    } finally {
+      botao.disabled = false;
+      iconeBotao.style.display = '';
+      textoBotao.textContent = 'Enviar Mensagem';
+      spinner.style.display = 'none';
+    }
+  }
+
+  function mostrarFeedback(tipo, mensagem) {
+    const el     = document.getElementById('mensagem-feedback-contato');
+    const icone  = document.getElementById('feedback-icon');
+    const texto  = document.getElementById('feedback-texto');
+    const isErro = tipo === 'erro';
+
+    el.className = `contato-feedback contato-feedback--${isErro ? 'erro' : 'sucesso'}`;
+    icone.className = `fa-solid ${isErro ? 'fa-circle-xmark' : 'fa-circle-check'}`;
+    texto.textContent = mensagem;
+  }
+
+  function ocultarFeedback() {
+    const el = document.getElementById('mensagem-feedback-contato');
+    if (el) el.classList.add('contato-feedback--hidden');
+  }
+</script>
 </body>
 
 </html>

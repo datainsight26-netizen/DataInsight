@@ -267,10 +267,12 @@
         </div>
 
         <div class="logo-area">
-          <div class="logo-marca">
-            <i class="fa-solid fa-chart-column"></i>
-            <h2>DataInsight</h2>
-          </div>
+               <a class="sidebar__logo" href="{{ url_for('pagina_landing') }}" aria-label="DataInsight - Início">
+      <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo DataInsight" style="max-width: 65px; height: auto;">
+          <span class="sidebar__logo-text">DataInsight</span>
+        </a>
+      
+
           <p style="margin:0; font-size:13px; color: var(--texto-claro);">Emitido em: {{ dados.data }}</p>
         </div>
       </div>

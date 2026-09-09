@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="DataInsight — Gere e gerencie relatórios em PDF com seus dados de negócio." />
+  <meta name="description" content="DataInsight — Gere e gerencie relatórios executivos em PDF com seus dados de negócio em etapas simples." />
   <title>DataInsight • Relatórios</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
@@ -15,36 +15,36 @@
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@latest" defer></script>
 
   <style>
-    /* =============================================
-       RELATÓRIOS — Estilos Premium Locais
-       ============================================= */
+    /* ============================================================
+       RELATÓRIOS EXECUTIVOS — WIZARD POR ETAPAS (1 -> 2 -> 3 -> 4)
+       ============================================================ */
 
-    /* PAGE HEADER */
+    /* HEADER & NAVEGAÇÃO SUPERIOR */
     .rel-header {
       display: flex;
       align-items: flex-end;
       justify-content: space-between;
       flex-wrap: wrap;
       gap: 16px;
-      margin-bottom: 32px;
+      margin-bottom: 24px;
     }
 
     .rel-header__text .migalhas {
-      font-size: 0.78rem;
+      font-size: 0.8rem;
       color: var(--suave);
       margin-bottom: 6px;
       letter-spacing: 0.03em;
     }
 
     .rel-header__text h1 {
-      font-size: 1.85rem;
+      font-size: 1.9rem;
       font-weight: 800;
       color: var(--texto);
       line-height: 1.2;
     }
 
     .rel-header__text p {
-      font-size: 0.9rem;
+      font-size: 0.92rem;
       color: var(--suave);
       margin-top: 4px;
     }
@@ -52,121 +52,383 @@
     .rel-header__badge {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       background: linear-gradient(135deg, #3B82F6 0%, #6366F1 100%);
       color: #fff;
-      font-size: 0.75rem;
-      font-weight: 600;
-      padding: 6px 14px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 8px 16px;
       border-radius: 999px;
       letter-spacing: 0.04em;
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
     }
 
-    /* TWO-COLUMN LAYOUT */
-    .rel-grid {
-      display: grid;
-      grid-template-columns: 380px 1fr;
-      gap: 24px;
-      align-items: start;
+    /* VIEW SWITCHER TABS (ASSISTENTE VS HISTÓRICO) */
+    .rel-view-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+      border-bottom: 1.5px solid var(--borda);
+      padding-bottom: 4px;
     }
 
-    @media (max-width: 960px) {
-      .rel-grid {
-        grid-template-columns: 1fr;
-      }
+    .rel-tab-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 10px 20px;
+      border-radius: 10px 10px 0 0;
+      font-size: 0.92rem;
+      font-weight: 700;
+      font-family: var(--fonte);
+      background: transparent;
+      border: none;
+      color: var(--suave);
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s ease;
     }
 
-    /* WIZARD CARD */
-    .wizard-card {
+    .rel-tab-btn:hover {
+      color: var(--texto);
+      background: rgba(59, 130, 246, 0.04);
+    }
+
+    .rel-tab-btn.ativo {
+      color: var(--primaria);
+      background: var(--cartao);
+    }
+
+    .rel-tab-btn.ativo::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--primaria);
+      border-radius: 3px 3px 0 0;
+    }
+
+    .rel-tab-pill {
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(59, 130, 246, 0.12);
+      color: var(--primaria);
+      font-weight: 800;
+    }
+
+    /* STEPPER HEADER (1 -> 2 -> 3 -> 4) */
+    .rel-stepper-card {
       background: var(--cartao);
       border: 1px solid var(--borda);
       border-radius: 16px;
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-      overflow: hidden;
-      position: sticky;
-      top: 24px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+      padding: 18px 24px;
+      margin-bottom: 24px;
     }
 
-    .wizard-card__header {
-      background: linear-gradient(135deg, #3B82F6 0%, #6366F1 100%);
-      padding: 22px 24px;
-      color: #fff;
+    .rel-stepper {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      position: relative;
     }
 
-    .wizard-card__header h2 {
-      font-size: 1.05rem;
-      font-weight: 700;
-      margin-bottom: 2px;
-    }
-
-    .wizard-card__header p {
-      font-size: 0.8rem;
-      opacity: 0.85;
-    }
-
-    .wizard-card__body {
-      padding: 24px;
-    }
-
-    /* STEP LABELS */
-    .step-label {
+    .step-item {
       display: flex;
       align-items: center;
-      gap: 10px;
-      font-size: 0.78rem;
-      font-weight: 700;
-      color: var(--primaria);
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      margin-bottom: 14px;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      border: 1.5px solid transparent;
+      background: var(--fundo);
+      user-select: none;
     }
 
-    .step-label__num {
-      width: 22px;
-      height: 22px;
-      background: var(--primaria);
-      color: #fff;
+    .step-item:hover {
+      border-color: rgba(59, 130, 246, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .step-item.ativo {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(99, 102, 241, 0.08) 100%);
+      border-color: var(--primaria);
+      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.15);
+    }
+
+    .step-item.concluido {
+      border-color: rgba(16, 185, 129, 0.3);
+      background: rgba(16, 185, 129, 0.04);
+    }
+
+    .step-badge {
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.72rem;
+      font-size: 0.85rem;
       font-weight: 800;
       flex-shrink: 0;
+      background: var(--borda);
+      color: var(--suave);
+      transition: all 0.25s ease;
     }
 
-    .step-divider {
-      border: none;
-      border-top: 1px dashed var(--borda);
-      margin: 20px 0;
+    .step-item.ativo .step-badge {
+      background: linear-gradient(135deg, #3B82F6, #6366F1);
+      color: #fff;
+      box-shadow: 0 3px 10px rgba(99, 102, 241, 0.4);
     }
 
-    /* CAMPOS */
+    .step-item.concluido .step-badge {
+      background: #10B981;
+      color: #fff;
+    }
+
+    .step-info {
+      min-width: 0;
+    }
+
+    .step-label-num {
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--suave);
+      line-height: 1;
+      margin-bottom: 2px;
+    }
+
+    .step-item.ativo .step-label-num {
+      color: var(--primaria);
+    }
+
+    .step-item.concluido .step-label-num {
+      color: #10B981;
+    }
+
+    .step-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--texto);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .step-item.ativo .step-title {
+      color: var(--primaria);
+    }
+
+    /* CARD DE CONTEÚDO PRINCIPAL DO WIZARD */
+    .wizard-step-container {
+      background: var(--cartao);
+      border: 1px solid var(--borda);
+      border-radius: 18px;
+      box-shadow: 0 6px 30px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+      margin-bottom: 28px;
+    }
+
+    .wizard-step-header {
+      padding: 20px 28px;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(99, 102, 241, 0.05) 100%);
+      border-bottom: 1px solid var(--borda);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .wizard-step-header__title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .wizard-step-header__icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #3B82F6, #6366F1);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+    }
+
+    .wizard-step-header h2 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--texto);
+      margin-bottom: 2px;
+    }
+
+    .wizard-step-header p {
+      font-size: 0.85rem;
+      color: var(--suave);
+    }
+
+    .wizard-step-body {
+      padding: 28px;
+    }
+
+    /* PAINÉIS DE CADA ETAPA */
+    .step-panel {
+      display: none;
+      animation: fadeInRel 0.25s ease;
+    }
+
+    .step-panel.ativo {
+      display: block;
+    }
+
+    @keyframes fadeInRel {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* ETAPA 1: SELETOR DE MODELOS EM CARDS RÁPIDOS */
+    .tipo-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .tipo-card {
+      border: 1.5px solid var(--borda);
+      border-radius: 14px;
+      padding: 16px;
+      background: var(--fundo);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+    }
+
+    .tipo-card:hover {
+      border-color: var(--primaria);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(59, 130, 246, 0.1);
+    }
+
+    .tipo-card.selecionado {
+      border-color: var(--primaria);
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(99, 102, 241, 0.08));
+      box-shadow: 0 4px 16px rgba(59, 130, 246, 0.15);
+    }
+
+    .tipo-card__top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .tipo-card__icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      color: #fff;
+    }
+
+    .tipo-card__radio {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--borda);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .tipo-card.selecionado .tipo-card__radio {
+      border-color: var(--primaria);
+      background: var(--primaria);
+    }
+
+    .tipo-card.selecionado .tipo-card__radio::after {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #fff;
+    }
+
+    .tipo-card__title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--texto);
+      line-height: 1.3;
+    }
+
+    .tipo-card__desc {
+      font-size: 0.78rem;
+      color: var(--suave);
+      line-height: 1.4;
+    }
+
+    /* FORM CAMPOS */
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    @media (max-width: 768px) {
+      .form-grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .campo-rel {
-      margin-bottom: 14px;
+      margin-bottom: 18px;
     }
 
     .campo-rel label {
-      display: block;
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: var(--suave);
-      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--texto);
+      margin-bottom: 8px;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.04em;
     }
 
     .campo-rel .entrada,
     .campo-rel .selecao {
       width: 100%;
-      padding: 10px 14px;
+      padding: 12px 16px;
       border: 1.5px solid var(--borda);
-      border-radius: 10px;
+      border-radius: 12px;
       background: var(--fundo);
       color: var(--texto);
       font-family: var(--fonte);
-      font-size: 0.9rem;
+      font-size: 0.92rem;
       transition: border-color 0.2s, box-shadow 0.2s;
       outline: none;
     }
@@ -174,26 +436,74 @@
     .campo-rel .entrada:focus,
     .campo-rel .selecao:focus {
       border-color: var(--primaria);
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
     }
 
-    /* OPTION CARDS */
-    .opcoes-grid {
+    /* ETAPA 2: CARDS DE OPÇÕES / SEÇÕES */
+    .secoes-toolbar {
       display: flex;
-      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 18px;
+      padding: 12px 18px;
+      background: var(--fundo);
+      border: 1px solid var(--borda);
+      border-radius: 12px;
+    }
+
+    .secoes-toolbar__info {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--texto);
+    }
+
+    .secoes-toolbar__actions {
+      display: flex;
       gap: 8px;
+    }
+
+    .btn-quick-toggle {
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1.5px solid var(--borda);
+      background: var(--cartao);
+      color: var(--texto);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: var(--fonte);
+    }
+
+    .btn-quick-toggle:hover {
+      border-color: var(--primaria);
+      color: var(--primaria);
+    }
+
+    .opcoes-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    @media (max-width: 768px) {
+      .opcoes-grid {
+        grid-template-columns: 1fr;
+      }
     }
 
     .card-opcao {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 11px 14px;
+      gap: 14px;
+      padding: 14px 16px;
       background: var(--fundo);
       border: 1.5px solid var(--borda);
-      border-radius: 10px;
+      border-radius: 12px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.2s ease;
       user-select: none;
       position: relative;
     }
@@ -201,7 +511,7 @@
     .card-opcao:hover {
       border-color: var(--primaria);
       background: rgba(59, 130, 246, 0.04);
-      transform: translateX(2px);
+      transform: translateY(-1px);
     }
 
     .card-opcao.selecionado {
@@ -217,17 +527,17 @@
     }
 
     .card-opcao__check {
-      width: 18px;
-      height: 18px;
+      width: 20px;
+      height: 20px;
       border: 2px solid var(--borda);
-      border-radius: 5px;
+      border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      transition: all 0.2s;
+      transition: all 0.2s ease;
       color: transparent;
-      font-size: 0.65rem;
+      font-size: 0.7rem;
     }
 
     .card-opcao.selecionado .card-opcao__check {
@@ -237,62 +547,511 @@
     }
 
     .card-opcao-icon {
-      width: 34px;
-      height: 34px;
+      width: 40px;
+      height: 40px;
       background: linear-gradient(135deg, #3B82F6, #6366F1);
       color: #fff;
-      border-radius: 8px;
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.8rem;
+      font-size: 0.95rem;
       flex-shrink: 0;
     }
 
     .card-opcao-text h3 {
-      font-size: 0.85rem;
-      font-weight: 600;
+      font-size: 0.9rem;
+      font-weight: 700;
       color: var(--texto);
-      margin-bottom: 1px;
+      margin-bottom: 2px;
     }
 
     .card-opcao-text p {
-      font-size: 0.73rem;
+      font-size: 0.77rem;
+      color: var(--suave);
+      line-height: 1.35;
+    }
+
+    /* FOOTER DE NAVEGAÇÃO ENTRE ETAPAS (WIZARD ACTIONS) */
+    .wizard-nav-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-top: 32px;
+      padding-top: 20px;
+      border-top: 1.5px dashed var(--borda);
+      flex-wrap: wrap;
+    }
+
+    .btn-nav-rel {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      font-family: var(--fonte);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+      text-decoration: none;
+    }
+
+    .btn-nav-rel--prev {
+      background: var(--fundo);
+      color: var(--texto);
+      border: 1.5px solid var(--borda);
+    }
+
+    .btn-nav-rel--prev:hover {
+      border-color: var(--primaria);
+      color: var(--primaria);
+      background: rgba(59, 130, 246, 0.05);
+    }
+
+    .btn-nav-rel--next {
+      background: linear-gradient(135deg, #3B82F6, #6366F1);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+      margin-left: auto;
+    }
+
+    .btn-nav-rel--next:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+    }
+
+    /* ETAPA 3: PREVIEW PANEL */
+    .preview-wrap {
+      background: var(--cartao);
+      border: 1px solid var(--borda);
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+      overflow: hidden;
+    }
+
+    .preview-wrap__header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--borda);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      background: var(--fundo);
+    }
+
+    .preview-wrap__title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--texto);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .preview-wrap__title i {
+      color: var(--primaria);
+    }
+
+    .preview-wrap__tools {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .preview-empty {
+      padding: 56px 24px;
+      text-align: center;
       color: var(--suave);
     }
 
-    /* ACTION BUTTONS */
-    .rel-actions {
-      display: flex;
-      gap: 10px;
-      margin-top: 20px;
+    .preview-empty i {
+      font-size: 2.8rem;
+      opacity: 0.25;
+      margin-bottom: 14px;
+      display: block;
+      color: var(--primaria);
     }
 
-    .rel-actions .botao-rel {
-      flex: 1;
-      justify-content: center;
-      border-radius: 10px;
-      font-weight: 600;
+    .preview-empty p {
+      font-size: 0.92rem;
+    }
+
+    #preview {
+      padding: 28px;
+      display: none;
+    }
+
+    .preview-secao {
+      margin-bottom: 28px;
+    }
+
+    .preview-titulo {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--texto);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--borda);
+    }
+
+    .preview-titulo i {
+      color: var(--primaria);
+    }
+
+    /* PREVIEW EXECUTIVO */
+    .preview-header-block {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(99, 102, 241, 0.08) 100%);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      border-radius: 14px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    .preview-header-left h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--texto);
+      margin-bottom: 4px;
+      line-height: 1.2;
+    }
+
+    .preview-header-left p {
       font-size: 0.85rem;
-      padding: 11px 14px;
-      transition: all 0.2s;
+      color: var(--suave);
+    }
+
+    .preview-type-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .preview-diagnostic-banner {
+      background: var(--fundo);
+      border-left: 4px solid var(--primaria);
+      border-radius: 0 12px 12px 0;
+      padding: 18px 20px;
+      margin-bottom: 24px;
+    }
+
+    .preview-diagnostic-banner h4 {
+      font-size: 0.88rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--primaria);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .preview-diagnostic-banner p {
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: var(--texto);
+      margin: 0;
+    }
+
+    .diagnostico-conteudo {
+      font-size: 0.9rem;
+      line-height: 1.65;
+      color: var(--texto);
+    }
+
+    .diagnostico-conteudo h3,
+    .diagnostico-conteudo h4 {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--texto);
+      margin-top: 14px;
+      margin-bottom: 6px;
+    }
+
+    .diagnostico-conteudo h3:first-child,
+    .diagnostico-conteudo h4:first-child {
+      margin-top: 2px;
+    }
+
+    .diagnostico-conteudo p {
+      margin-bottom: 10px;
+      color: var(--texto);
+    }
+
+    .diagnostico-conteudo ul,
+    .diagnostico-conteudo ol {
+      padding-left: 20px;
+      margin-bottom: 12px;
+    }
+
+    .diagnostico-conteudo li {
+      margin-bottom: 4px;
+      color: var(--texto);
+    }
+
+    .diagnostico-conteudo strong {
+      color: var(--texto);
+      font-weight: 700;
+    }
+
+    .preview-insights-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .insight-card {
+      background: var(--fundo);
+      border: 1px solid var(--borda);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .insight-card__title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
       display: flex;
       align-items: center;
       gap: 7px;
+    }
+
+    .insight-card--fortes { border-top: 3px solid #10b981; }
+    .insight-card--fortes .insight-card__title { color: #10b981; }
+
+    .insight-card--riscos { border-top: 3px solid #f59e0b; }
+    .insight-card--riscos .insight-card__title { color: #f59e0b; }
+
+    .insight-card--recs { border-top: 3px solid #3b82f6; }
+    .insight-card--recs .insight-card__title { color: #3b82f6; }
+
+    .insight-list {
+      margin: 0;
+      padding-left: 18px;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      color: var(--texto);
+    }
+
+    .insight-list li {
+      margin-bottom: 6px;
+    }
+
+    .insight-list li:last-child {
+      margin-bottom: 0;
+    }
+
+    .kpi-grid-rich {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .kpi-card-rich {
+      background: var(--fundo);
+      border: 1px solid var(--borda);
+      border-radius: 12px;
+      padding: 16px;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .kpi-card-rich:hover {
+      border-color: var(--primaria);
+      transform: translateY(-2px);
+    }
+
+    .kpi-card-rich .kpi-lbl {
+      font-size: 0.74rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--suave);
+      margin-bottom: 6px;
+    }
+
+    .kpi-card-rich .kpi-val {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--texto);
+      line-height: 1.2;
+    }
+
+    .kpi-card-rich .kpi-sub {
+      font-size: 0.72rem;
+      color: var(--suave);
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .badge-pos { color: #10b981; font-weight: 700; }
+    .badge-neg { color: #ef4444; font-weight: 700; }
+    .badge-neu { color: var(--suave); font-weight: 700; }
+
+    .table-responsive-rel {
+      overflow-x: auto;
+      border: 1px solid var(--borda);
+      border-radius: 12px;
+    }
+
+    .table-responsive-rel table {
+      margin: 0;
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .table-responsive-rel th,
+    .table-responsive-rel td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--borda);
+      font-size: 0.88rem;
+    }
+
+    .table-responsive-rel th {
+      background: var(--fundo);
+      font-weight: 700;
+      color: var(--texto);
+    }
+
+    /* ETAPA 4: GERAR E EXPORTAR OFICIAL */
+    .gerar-card-hero {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(99, 102, 241, 0.08) 100%);
+      border: 1.5px solid rgba(59, 130, 246, 0.25);
+      border-radius: 16px;
+      padding: 32px;
+      text-align: center;
+      max-width: 680px;
+      margin: 0 auto 24px auto;
+    }
+
+    .gerar-card-hero__icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #3B82F6, #6366F1);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin: 0 auto 16px auto;
+      box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+    }
+
+    .gerar-card-hero h3 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--texto);
+      margin-bottom: 8px;
+    }
+
+    .gerar-card-hero p {
+      font-size: 0.92rem;
+      color: var(--suave);
+      max-width: 520px;
+      margin: 0 auto 24px auto;
+      line-height: 1.5;
+    }
+
+    /* SUMÁRIO DO RELATÓRIO PRONTO */
+    .resumo-executivo-lista {
+      background: var(--cartao);
+      border: 1px solid var(--borda);
+      border-radius: 12px;
+      padding: 16px 20px;
+      text-align: left;
+      margin-bottom: 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    @media (max-width: 600px) {
+      .resumo-executivo-lista {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .resumo-item {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .resumo-item__lbl {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--suave);
+    }
+
+    .resumo-item__val {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--texto);
+    }
+
+    .btn-gerar-pdf--lg {
+      width: 100%;
+      max-width: 380px;
+      margin: 0 auto;
+      padding: 16px 28px;
+      font-size: 1.05rem;
+      border-radius: 14px;
+      justify-content: center;
+      box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+    }
+
+    /* ACTION BUTTONS (GERAL) */
+    .botao-rel {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 18px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.88rem;
       cursor: pointer;
-      border: none;
+      transition: all 0.2s ease;
       font-family: var(--fonte);
+      border: none;
     }
 
     .botao-primario-rel {
       background: linear-gradient(135deg, #3B82F6, #6366F1);
       color: #fff;
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
     }
 
     .botao-primario-rel:hover {
       transform: translateY(-1px);
-      box-shadow: 0 6px 18px rgba(99, 102, 241, 0.4);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
     }
 
     .botao-suave-rel {
@@ -307,164 +1066,28 @@
       background: rgba(59, 130, 246, 0.05);
     }
 
-    /* RIGHT PANEL */
-    .right-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
-
-    /* PREVIEW PANEL */
-    .preview-wrap {
-      background: var(--cartao);
-      border: 1px solid var(--borda);
-      border-radius: 16px;
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-      overflow: hidden;
-    }
-
-    .preview-wrap__header {
-      padding: 16px 22px;
-      border-bottom: 1px solid var(--borda);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .preview-wrap__title {
-      font-size: 0.9rem;
-      font-weight: 700;
-      color: var(--texto);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .preview-wrap__title i {
-      color: var(--primaria);
-    }
-
-    .preview-empty {
-      padding: 48px 24px;
-      text-align: center;
-      color: var(--suave);
-    }
-
-    .preview-empty i {
-      font-size: 2.5rem;
-      opacity: 0.25;
-      margin-bottom: 12px;
-      display: block;
-    }
-
-    .preview-empty p {
-      font-size: 0.88rem;
-    }
-
-    #preview {
-      padding: 24px;
-      display: none;
-    }
-
-    .preview-secao {
-      margin-bottom: 24px;
-    }
-
-    .preview-titulo {
-      font-size: 0.95rem;
-      font-weight: 700;
-      color: var(--texto);
-      margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding-bottom: 10px;
-      border-bottom: 2px solid var(--borda);
-    }
-
-    .preview-titulo i {
-      color: var(--primaria);
-    }
-
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-    }
-
-    .kpi-card {
-      background: var(--fundo);
-      border: 1px solid var(--borda);
-      border-radius: 10px;
-      padding: 14px 16px;
-      text-align: center;
-    }
-
-    .kpi-val {
-      font-size: 1.1rem;
-      font-weight: 800;
-      color: var(--primaria);
-    }
-
-    .kpi-lbl {
-      font-size: 0.73rem;
-      color: var(--suave);
-      margin-top: 3px;
-    }
-
-    #preview table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.83rem;
-    }
-
-    #preview th {
-      background: var(--fundo);
-      color: var(--suave);
-      font-weight: 600;
-      text-transform: uppercase;
-      font-size: 0.72rem;
-      letter-spacing: 0.05em;
-      padding: 8px 12px;
-      text-align: left;
-      border-bottom: 2px solid var(--borda);
-    }
-
-    #preview td {
-      padding: 9px 12px;
-      border-bottom: 1px solid var(--borda);
-      color: var(--texto);
-    }
-
-    #preview tr:last-child td {
-      border-bottom: none;
-    }
-
-    #preview tr:hover td {
-      background: rgba(59, 130, 246, 0.03);
-    }
-
-    /* HISTORY CARD */
+    /* HISTÓRICO DE RELATÓRIOS CARD */
     .history-card {
       background: var(--cartao);
       border: 1px solid var(--borda);
       border-radius: 16px;
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
       overflow: hidden;
     }
 
     .history-card__header {
-      padding: 18px 22px;
+      padding: 18px 24px;
       border-bottom: 1px solid var(--borda);
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex-wrap: wrap;
       gap: 12px;
+      background: var(--fundo);
     }
 
     .history-card__title {
-      font-size: 0.95rem;
+      font-size: 1rem;
       font-weight: 700;
       color: var(--texto);
       display: flex;
@@ -477,10 +1100,10 @@
     }
 
     .history-count {
-      background: rgba(59, 130, 246, 0.1);
+      background: rgba(59, 130, 246, 0.12);
       color: var(--primaria);
-      font-size: 0.72rem;
-      font-weight: 700;
+      font-size: 0.74rem;
+      font-weight: 800;
       padding: 3px 10px;
       border-radius: 999px;
     }
@@ -490,14 +1113,14 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 12px 22px;
+      padding: 12px 24px;
       border-bottom: 1px solid var(--borda);
-      background: var(--fundo);
+      background: var(--cartao);
     }
 
     .search-bar__icon {
       color: var(--suave);
-      font-size: 0.85rem;
+      font-size: 0.9rem;
       flex-shrink: 0;
     }
 
@@ -506,7 +1129,7 @@
       border: none;
       background: transparent;
       font-family: var(--fonte);
-      font-size: 0.88rem;
+      font-size: 0.9rem;
       color: var(--texto);
       outline: none;
     }
@@ -520,13 +1143,13 @@
       border: none;
       cursor: pointer;
       color: var(--suave);
-      font-size: 0.78rem;
+      font-size: 0.82rem;
       padding: 4px;
       border-radius: 50%;
-      transition: color 0.2s, background 0.2s;
       display: none;
       align-items: center;
       justify-content: center;
+      transition: all 0.2s ease;
     }
 
     .search-bar__clear:hover {
@@ -542,9 +1165,10 @@
     .filter-pills {
       display: flex;
       gap: 8px;
-      padding: 10px 22px;
+      padding: 12px 24px;
       border-bottom: 1px solid var(--borda);
       overflow-x: auto;
+      background: var(--fundo);
     }
 
     .filter-pills::-webkit-scrollbar {
@@ -554,17 +1178,17 @@
     .pill {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      padding: 5px 12px;
+      gap: 6px;
+      padding: 6px 14px;
       border-radius: 999px;
-      font-size: 0.75rem;
-      font-weight: 600;
+      font-size: 0.78rem;
+      font-weight: 700;
       cursor: pointer;
       border: 1.5px solid var(--borda);
-      background: var(--fundo);
+      background: var(--cartao);
       color: var(--suave);
       white-space: nowrap;
-      transition: all 0.2s;
+      transition: all 0.2s ease;
       font-family: var(--fonte);
     }
 
@@ -583,10 +1207,10 @@
     .history-item {
       display: flex;
       align-items: center;
-      gap: 14px;
-      padding: 14px 22px;
+      gap: 16px;
+      padding: 16px 24px;
       border-bottom: 1px solid var(--borda);
-      transition: background 0.15s;
+      transition: background 0.15s ease;
     }
 
     .history-item:last-child {
@@ -598,13 +1222,13 @@
     }
 
     .history-item__icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1rem;
+      font-size: 1.1rem;
       flex-shrink: 0;
       background: rgba(59, 130, 246, 0.1);
       color: var(--primaria);
@@ -616,8 +1240,8 @@
     }
 
     .history-item__name {
-      font-size: 0.88rem;
-      font-weight: 600;
+      font-size: 0.92rem;
+      font-weight: 700;
       color: var(--texto);
       white-space: nowrap;
       overflow: hidden;
@@ -628,12 +1252,12 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-top: 3px;
+      margin-top: 4px;
       flex-wrap: wrap;
     }
 
     .history-item__date {
-      font-size: 0.73rem;
+      font-size: 0.76rem;
       color: var(--suave);
       display: flex;
       align-items: center;
@@ -641,19 +1265,19 @@
     }
 
     .history-item__period {
-      font-size: 0.7rem;
+      font-size: 0.72rem;
       background: var(--fundo);
       border: 1px solid var(--borda);
       color: var(--suave);
       padding: 2px 8px;
       border-radius: 999px;
-      font-weight: 500;
+      font-weight: 600;
     }
 
     .history-item__actions {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       flex-shrink: 0;
     }
 
@@ -661,73 +1285,58 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 34px;
-      height: 34px;
-      border-radius: 8px;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
       border: 1.5px solid var(--borda);
       background: var(--fundo);
       color: var(--suave);
       cursor: pointer;
-      transition: all 0.2s;
-      font-size: 0.8rem;
+      transition: all 0.2s ease;
+      font-size: 0.85rem;
     }
 
     .history-btn:hover {
       border-color: var(--primaria);
       color: var(--primaria);
-      background: rgba(59, 130, 246, 0.06);
+      background: rgba(59, 130, 246, 0.08);
       transform: scale(1.05);
     }
 
     .history-btn--danger:hover {
       border-color: var(--perigo);
       color: var(--perigo);
-      background: rgba(220, 38, 38, 0.06);
-    }
-
-    .status-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 0.68rem;
-      font-weight: 600;
-      padding: 2px 8px;
-      border-radius: 999px;
-    }
-
-    .status-tag--ok {
-      background: rgba(22, 163, 74, 0.1);
-      color: #16A34A;
+      background: rgba(220, 38, 38, 0.08);
     }
 
     /* EMPTY STATES */
     .history-empty {
-      padding: 40px 24px;
+      padding: 48px 24px;
       text-align: center;
       color: var(--suave);
     }
 
     .history-empty i {
-      font-size: 2.2rem;
+      font-size: 2.6rem;
       opacity: 0.2;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       display: block;
     }
 
     .history-empty p {
-      font-size: 0.85rem;
+      font-size: 0.9rem;
+      font-weight: 600;
     }
 
     .history-empty small {
       display: block;
       margin-top: 4px;
-      font-size: 0.75rem;
-      color: var(--suave);
-      opacity: 0.7;
+      font-size: 0.78rem;
+      opacity: 0.75;
     }
 
     .history-no-results {
-      padding: 32px 24px;
+      padding: 36px 24px;
       text-align: center;
       color: var(--suave);
       display: none;
@@ -738,14 +1347,10 @@
     }
 
     .history-no-results i {
-      font-size: 1.6rem;
+      font-size: 1.8rem;
       opacity: 0.25;
       margin-bottom: 8px;
       display: block;
-    }
-
-    .history-no-results p {
-      font-size: 0.84rem;
     }
 
     /* LOADING & SPINNER */
@@ -756,8 +1361,8 @@
     }
 
     .rel-spinner {
-      width: 15px;
-      height: 15px;
+      width: 16px;
+      height: 16px;
       border: 2px solid rgba(255, 255, 255, 0.4);
       border-top-color: #fff;
       border-radius: 50%;
@@ -773,7 +1378,11 @@
       display: inline-block;
     }
 
-    /* TOAST */
+    .btn-gerar-pdf[data-loading="true"] .btn-loading-text {
+      display: inline !important;
+    }
+
+    /* TOAST NOTIFICATION */
     #toast-rel {
       position: fixed;
       bottom: 24px;
@@ -781,18 +1390,18 @@
       background: #1E293B;
       color: #fff;
       padding: 12px 20px;
-      border-radius: 10px;
-      font-size: 0.85rem;
-      font-weight: 500;
+      border-radius: 12px;
+      font-size: 0.88rem;
+      font-weight: 600;
       display: flex;
       align-items: center;
       gap: 10px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
       transform: translateY(80px);
       opacity: 0;
       transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
       z-index: 9999;
-      max-width: 320px;
+      max-width: 360px;
       pointer-events: none;
     }
 
@@ -802,39 +1411,29 @@
       pointer-events: auto;
     }
 
-    #toast-rel.success i {
-      color: #4ADE80;
+    #toast-rel.success i { color: #4ADE80; }
+    #toast-rel.error i { color: #F87171; }
+    #toast-rel.info i { color: #60A5FA; }
+
+    /* RESPONSIVIDADE DO STEPPER */
+    @media (max-width: 960px) {
+      .rel-stepper {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
 
-    #toast-rel.error i {
-      color: #F87171;
-    }
-
-    #toast-rel.info i {
-      color: #60A5FA;
-    }
-
-    @media (max-width: 640px) {
-      .rel-actions {
-        flex-direction: column;
+    @media (max-width: 600px) {
+      .rel-stepper {
+        grid-template-columns: 1fr;
       }
-
-      .history-item {
-        padding: 12px 16px;
+      .wizard-step-body {
+        padding: 18px;
       }
-
-      .search-bar,
-      .filter-pills {
-        padding-left: 16px;
-        padding-right: 16px;
+      .wizard-step-header {
+        padding: 16px 18px;
       }
-
-      .history-card__header {
-        padding: 14px 16px;
-      }
-
-      .kpi-grid {
-        grid-template-columns: 1fr 1fr;
+      .rel-header h1 {
+        font-size: 1.5rem;
       }
     }
   </style>
@@ -868,216 +1467,534 @@
           <div class="rel-header">
             <div class="rel-header__text">
               <div class="migalhas">Início &rsaquo; Relatórios</div>
-              <h1>Relatórios</h1>
-              <p>Gere, visualize e gerencie seus relatórios de negócio em PDF.</p>
+              <h1>Central de Relatórios</h1>
+              <p>Gere, visualize e gerencie seus relatórios executivos em PDF com dados reais organizados por etapas.</p>
             </div>
-            <span class="rel-header__badge">
-              <i class="fa-solid fa-file-chart-column"></i> Central de Relatórios
-            </span>
+           
           </div>
 
-          <!-- MAIN GRID -->
-          <div class="rel-grid">
+          <!-- TABS PRINCIPAIS: GERADOR (ETAPAS) VS HISTÓRICO -->
+          <div class="rel-view-tabs" role="tablist">
+            <button class="rel-tab-btn ativo" id="tab-btn-wizard" onclick="alternarAbaPrincipal('wizard')" role="tab" aria-selected="true">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Gerar Relatório
+              <span class="rel-tab-pill">4 Etapas</span>
+            </button>
+            <button class="rel-tab-btn" id="tab-btn-historico" onclick="alternarAbaPrincipal('historico')" role="tab" aria-selected="false">
+              <i class="fa-solid fa-clock-rotate-left"></i> Histórico de Relatórios
+              <span class="rel-tab-pill" id="tab-history-badge">0</span>
+            </button>
+          </div>
 
-            <!-- LEFT: WIZARD CARD -->
-            <div class="wizard-card">
-              <div class="wizard-card__header">
-                <h2> Criar Relatório</h2>
-                <p>Configure e gere seu relatório em segundos</p>
-              </div>
-              <div class="wizard-card__body">
+          <!-- SEÇÃO DO ASSISTENTE / WIZARD POR ETAPAS -->
+          <div id="secao-wizard">
 
-                <!-- STEP 1 -->
-                <div class="step-label">
-                  <div class="step-label__num">1</div>
-                  Configuração Básica & Origem
-                </div>
-                <div class="campo-rel">
-                  <label for="seletorPlanilhaRel"><i class="fa-solid fa-table-list" style="margin-right:4px;opacity:.6;"></i> Origem dos Dados</label>
-                  <select class="selecao" id="seletorPlanilhaRel" style="font-weight:600;">
-                    <option value="todas">🌐 Todas as Planilhas (Relatório Consolidado)</option>
-                  </select>
-                </div>
-                <div class="campo-rel">
-                  <label for="nomeRel"><i class="fa-solid fa-tag" style="margin-right:4px;opacity:.6;"></i> Nome do
-                    Relatório</label>
-                  <input type="text" class="entrada" id="nomeRel" placeholder="Ex: Análise Março 2026"
-                    value="Meu Relatório">
-                </div>
-                <div class="campo-rel">
-                  <label for="perRel"><i class="fa-solid fa-calendar" style="margin-right:4px;opacity:.6;"></i> Período
-                    de Análise</label>
-                  <select class="selecao" id="perRel">
-                    <option>Últimos 7 dias</option>
-                    <option>Últimos 30 dias</option>
-                    <option selected>Últimos 6 meses</option>
-                    <option>Este ano</option>
-                  </select>
-                </div>
-
-                <hr class="step-divider">
-
-                <!-- STEP 2 -->
-                <div class="step-label">
-                  <div class="step-label__num">2</div>
-                  Conteúdo do Relatório
-                </div>
-
-                <div class="opcoes-grid">
-                  <div class="card-opcao selecionado" onclick="toggleCheck('opt-kpi')" id="wrap-opt-kpi">
-                    <input type="checkbox" id="opt-kpi" checked>
-                    <div class="card-opcao__check"><i class="fa-solid fa-check"></i></div>
-                    <div class="card-opcao-icon"><i class="fa-solid fa-chart-bar"></i></div>
-                    <div class="card-opcao-text">
-                      <h3>Indicadores de Desempenho</h3>
-                      <p>Faturamento, Lucro, Despesas</p>
-                    </div>
-                  </div>
-
-                  <div class="card-opcao selecionado" onclick="toggleCheck('opt-tendencias')" id="wrap-opt-tendencias">
-                    <input type="checkbox" id="opt-tendencias" checked>
-                    <div class="card-opcao__check"><i class="fa-solid fa-check"></i></div>
-                    <div class="card-opcao-icon"><i class="fa-solid fa-chart-line"></i></div>
-                    <div class="card-opcao-text">
-                      <h3>Tendências de Crescimento</h3>
-                      <p>Evolução mensal de faturamento</p>
-                    </div>
-                  </div>
-
-                  <div class="card-opcao selecionado" onclick="toggleCheck('opt-margem')" id="wrap-opt-margem">
-                    <input type="checkbox" id="opt-margem" checked>
-                    <div class="card-opcao__check"><i class="fa-solid fa-check"></i></div>
-                    <div class="card-opcao-icon"><i class="fa-solid fa-percent"></i></div>
-                    <div class="card-opcao-text">
-                      <h3>Análise de Margem</h3>
-                      <p>Taxa de margem e performance</p>
-                    </div>
-                  </div>
-
-                  <div class="card-opcao selecionado" onclick="toggleCheck('opt-dados')" id="wrap-opt-dados">
-                    <input type="checkbox" id="opt-dados" checked>
-                    <div class="card-opcao__check"><i class="fa-solid fa-check"></i></div>
-                    <div class="card-opcao-icon"><i class="fa-solid fa-table"></i></div>
-                    <div class="card-opcao-text">
-                      <h3>Tabela de Dados Detalhada</h3>
-                      <p>Informações completas mês a mês</p>
-                    </div>
-                  </div>
-
-                  <div class="card-opcao selecionado" onclick="toggleCheck('opt-grafico')" id="wrap-opt-grafico">
-                    <input type="checkbox" id="opt-grafico" checked>
-                    <div class="card-opcao__check"><i class="fa-solid fa-check"></i></div>
-                    <div class="card-opcao-icon"><i class="fa-solid fa-chart-simple"></i></div>
-                    <div class="card-opcao-text">
-                      <h3>Gráfico de Faturamento</h3>
-                      <p>Visualização de séries temporais</p>
-                    </div>
-                  </div>
-
-                  <div class="card-opcao selecionado" onclick="toggleCheck('opt-insights')" id="wrap-opt-insights">
-                    <input type="checkbox" id="opt-insights" checked>
-                    <div class="card-opcao__check"><i class="fa-solid fa-check"></i></div>
-                    <div class="card-opcao-icon"><i class="fa-solid fa-lightbulb"></i></div>
-                    <div class="card-opcao-text">
-                      <h3>Insights &amp; Recomendações</h3>
-                      <p>Principais achados e oportunidades</p>
-                    </div>
+            <!-- STEPPER HEADER (1 -> 2 -> 3 -> 4) -->
+            <div class="rel-stepper-card">
+              <div class="rel-stepper" role="navigation" aria-label="Etapas de geração do relatório">
+                <!-- ETAPA 1 -->
+                <div class="step-item ativo" id="step-tab-1" onclick="irParaEtapa(1)">
+                  <div class="step-badge" id="step-badge-1">1</div>
+                  <div class="step-info">
+                    <div class="step-label-num">Etapa 1</div>
+                    <div class="step-title">Modelo &amp; Origem</div>
                   </div>
                 </div>
 
-                <!-- ACTIONS -->
-                <div class="rel-actions">
-                  <button class="botao-rel botao-suave-rel" onclick="gerarPreviewMelhorado()" id="btn-preview">
-                    <i class="fa-solid fa-eye"></i> Visualizar
-                  </button>
-                  <button class="botao-rel botao-primario-rel btn-gerar-pdf" onclick="exportarPDFMelhorado()"
-                    id="btn-pdf">
-                    <span class="btn-text"><i class="fa-solid fa-file-pdf"></i> Gerar PDF</span>
-                    <span class="rel-spinner"></span>
-                    <span class="btn-loading-text" style="display:none;">Gerando…</span>
-                  </button>
+                <!-- ETAPA 2 -->
+                <div class="step-item" id="step-tab-2" onclick="irParaEtapa(2)">
+                  <div class="step-badge" id="step-badge-2">2</div>
+                  <div class="step-info">
+                    <div class="step-label-num">Etapa 2</div>
+                    <div class="step-title">Seções &amp; Conteúdo</div>
+                  </div>
+                </div>
+
+                <!-- ETAPA 3 -->
+                <div class="step-item" id="step-tab-3" onclick="irParaEtapa(3)">
+                  <div class="step-badge" id="step-badge-3">3</div>
+                  <div class="step-info">
+                    <div class="step-label-num">Etapa 3</div>
+                    <div class="step-title">Pré-visualizar</div>
+                  </div>
+                </div>
+
+                <!-- ETAPA 4 -->
+                <div class="step-item" id="step-tab-4" onclick="irParaEtapa(4)">
+                  <div class="step-badge" id="step-badge-4">4</div>
+                  <div class="step-info">
+                    <div class="step-label-num">Etapa 4</div>
+                    <div class="step-title">Gerar &amp; Exportar</div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <!-- RIGHT PANEL -->
-            <div class="right-panel">
+            <!-- CONTAINER CENTRAL DO PASSO ATIVO -->
+            <div class="wizard-step-container">
 
-              <!-- PREVIEW PANEL -->
-              <div class="preview-wrap">
-                <div class="preview-wrap__header">
-                  <div class="preview-wrap__title">
-                    <i class="fa-solid fa-eye"></i> Pré-visualização
-                  </div>
-                  <span id="preview-status" style="font-size:0.75rem;color:var(--suave);">Clique em "Visualizar" para
-                    gerar</span>
-                </div>
-                <div id="preview-empty-state" class="preview-empty">
-                  <i class="fa-solid fa-file-magnifying-glass"></i>
-
-
-                  <p>Configure as opções e clique em <strong>Visualizar</strong> para ver o resumo aqui.</p>
-                </div>
-                <div id="preview"></div>
-              </div>
-
-              <!-- HISTORY PANEL -->
-              <div class="history-card">
-                <div class="history-card__header">
-                  <div class="history-card__title">
-                    <i class="fa-solid fa-clock-rotate-left"></i>
-                    Histórico de Relatórios
-                    <span class="history-count" id="history-count">0</span>
+              <!-- =============================================
+                   ETAPA 1: TIPO DE RELATÓRIO E FONTE DE DADOS
+                   ============================================= -->
+              <div class="step-panel ativo" id="step-panel-1">
+                <div class="wizard-step-header">
+                  <div class="wizard-step-header__title">
+                    <div class="wizard-step-header__icon">
+                      <i class="fa-solid fa-sliders"></i>
+                    </div>
+                    <div>
+                      <h2>Etapa 1 — Escolha o Modelo &amp; Origem dos Dados</h2>
+                      <p>Selecione a finalidade do relatório executivo e a fonte de dados do seu negócio</p>
+                    </div>
                   </div>
                 </div>
 
-                <!-- SEARCH BAR -->
-                <div class="search-bar">
-                  <i class="fa-solid fa-magnifying-glass search-bar__icon"></i>
-                  <input type="search" class="search-bar__input" id="search-historico"
-                    placeholder="Buscar por nome ou data do relatório…" autocomplete="off" aria-label="Buscar relatório"
-                    oninput="filtrarHistorico()">
-                  <button class="search-bar__clear" id="search-clear" onclick="limparBusca()" title="Limpar busca"
-                    aria-label="Limpar busca">
-                    <i class="fa-solid fa-xmark"></i>
-                  </button>
-                </div>
+                <div class="wizard-step-body">
+                  <!-- SELETOR VISUAL DE TIPOS EM CARDS RÁPIDOS -->
+                  <label style="display:block;font-size:0.82rem;font-weight:700;color:var(--suave);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:12px;">
+                    Selecione o Modelo de Relatório:
+                  </label>
 
-                <!-- FILTER PILLS -->
-                <div class="filter-pills">
-                  <button class="pill ativo" data-filtro="todos" onclick="setPill(this, 'todos')">
-                    <i class="fa-solid fa-list"></i> Todos
-                  </button>
-                  <button class="pill" data-filtro="hoje" onclick="setPill(this, 'hoje')">
-                    <i class="fa-solid fa-calendar-day"></i> Hoje
-                  </button>
-                  <button class="pill" data-filtro="semana" onclick="setPill(this, 'semana')">
-                    <i class="fa-solid fa-calendar-week"></i> Esta semana
-                  </button>
-                  <button class="pill" data-filtro="mes" onclick="setPill(this, 'mes')">
-                    <i class="fa-solid fa-calendar"></i> Este mês
-                  </button>
-                </div>
+                  <div class="tipo-cards-grid">
+                    <!-- Consolidado -->
+                    <div class="tipo-card selecionado" data-tipo="consolidado" onclick="selecionarCardTipo('consolidado')">
+                      <div class="tipo-card__top">
+                        <div class="tipo-card__icon" style="background:linear-gradient(135deg,#3B82F6,#2563EB);">
+                          <i class="fa-solid fa-globe"></i>
+                        </div>
+                        <div class="tipo-card__radio"></div>
+                      </div>
+                      <div class="tipo-card__title">Consolidado do Negócio</div>
+                      <div class="tipo-card__desc">Faturamento, despesas, margens, evolução de faturamento e lucro líquido.</div>
+                    </div>
 
-                <!-- HISTORY LIST -->
-                <div class="history-list" id="history-list"></div>
+                    <!-- Fluxo de Caixa -->
+                    <div class="tipo-card" data-tipo="fluxo_caixa" onclick="selecionarCardTipo('fluxo_caixa')">
+                      <div class="tipo-card__top">
+                        <div class="tipo-card__icon" style="background:linear-gradient(135deg,#10B981,#059669);">
+                          <i class="fa-solid fa-money-bill-transfer"></i>
+                        </div>
+                        <div class="tipo-card__radio"></div>
+                      </div>
+                      <div class="tipo-card__title">Fluxo de Caixa &amp; Tesouraria</div>
+                      <div class="tipo-card__desc">Entradas, saídas operacionais, liquidez, saldo em conta e queima de caixa.</div>
+                    </div>
 
-                <!-- EMPTY STATE -->
-                <div class="history-empty" id="history-empty" style="display:block;">
-                  <i class="fa-solid fa-file-circle-xmark"></i>
-                  <p>Nenhum relatório gerado ainda</p>
-                  <small>Os relatórios criados aparecerão aqui para download</small>
-                </div>
+                    <!-- Planejamento Financeiro -->
+                    <div class="tipo-card" data-tipo="planejamento" onclick="selecionarCardTipo('planejamento')">
+                      <div class="tipo-card__top">
+                        <div class="tipo-card__icon" style="background:linear-gradient(135deg,#8B5CF6,#7C3AED);">
+                          <i class="fa-solid fa-bullseye"></i>
+                        </div>
+                        <div class="tipo-card__radio"></div>
+                      </div>
+                      <div class="tipo-card__title">Planejamento 12 Meses</div>
+                      <div class="tipo-card__desc">Projeções anuais, ponto de equilíbrio, margem de segurança e metas.</div>
+                    </div>
 
-                <!-- NO RESULTS -->
-                <div class="history-no-results" id="history-no-results">
-                  <i class="fa-solid fa-magnifying-glass"></i>
-                  <p>Nenhum resultado para <strong id="search-query-display"></strong></p>
+                    <!-- Análise Salva IA -->
+                    <div class="tipo-card" data-tipo="analise_salva" onclick="selecionarCardTipo('analise_salva')">
+                      <div class="tipo-card__top">
+                        <div class="tipo-card__icon" style="background:linear-gradient(135deg,#F59E0B,#D97706);">
+                          <i class="fa-solid fa-brain"></i>
+                        </div>
+                        <div class="tipo-card__radio"></div>
+                      </div>
+                      <div class="tipo-card__title">Análise Salva da IA</div>
+                      <div class="tipo-card__desc">Diagnóstico executivo de inteligência artificial com recomendações estratégicas.</div>
+                    </div>
+
+                    <!-- Gráficos Avançados -->
+                    <div class="tipo-card" data-tipo="graficos_avancados" onclick="selecionarCardTipo('graficos_avancados')">
+                      <div class="tipo-card__top">
+                        <div class="tipo-card__icon" style="background:linear-gradient(135deg,#EC4899,#DB2777);">
+                          <i class="fa-solid fa-chart-pie"></i>
+                        </div>
+                        <div class="tipo-card__radio"></div>
+                      </div>
+                      <div class="tipo-card__title">Performance &amp; Gráficos</div>
+                      <div class="tipo-card__desc">Visualização comparativa de séries temporais e indicadores-chave de desempenho.</div>
+                    </div>
+                  </div>
+
+                  <!-- SELECT TIPO DE RELATÓRIO (MANTIDO E SINCRONIZADO PARA O SCRIPT relatorios.js) -->
+                  <div class="campo-rel" style="display:none;">
+                    <label for="tipoRelatorio"><i class="fa-solid fa-layer-group"></i> Tipo de Relatório Técnico</label>
+                    <select class="selecao" id="tipoRelatorio" onchange="aoMudarTipoRelatorio()">
+                      <option value="analise_salva">🌟 Análise Salva da IA (Diagnóstico Completo)</option>
+                      <option value="fluxo_caixa">💼 Fluxo de Caixa & Tesouraria (Liquidez e Saldo)</option>
+                      <option value="planejamento">🎯 Planejamento Financeiro & Metas (12 Meses)</option>
+                      <option value="graficos_avancados">📊 Gráficos Avançados & Métricas Globais</option>
+                      <option value="consolidado" selected>🌐 Relatório Consolidado do Negócio</option>
+                    </select>
+                  </div>
+
+                  <div class="form-grid-2">
+                    <!-- SELETOR DE ANÁLISE SALVA (quando tipo = analise_salva) -->
+                    <div class="campo-rel" id="campoAnaliseSalva" style="display:none;">
+                      <label for="seletorAnaliseSalva"><i class="fa-solid fa-brain"></i> Selecionar Análise Salva da IA</label>
+                      <select class="selecao" id="seletorAnaliseSalva" style="font-weight:600;" onchange="aoSelecionarAnaliseSalva()">
+                        <option value="">Carregando análises salvas...</option>
+                      </select>
+                    </div>
+
+                    <!-- SELETOR DE PLANILHA (quando tipo != analise_salva) -->
+                    <div class="campo-rel" id="campoPlanilhaRel">
+                      <label for="seletorPlanilhaRel"><i class="fa-solid fa-table-list"></i> Planilha de Origem dos Dados</label>
+                      <select class="selecao" id="seletorPlanilhaRel" style="font-weight:600;">
+                        <option value="todas">🌐 Todas as Planilhas (Consolidado)</option>
+                      </select>
+                    </div>
+
+                    <!-- SELETOR DE CENÁRIO (quando tipo = planejamento) -->
+                    <div class="campo-rel" id="campoCenarioPlan" style="display:none;">
+                      <label for="seletorCenarioPlan"><i class="fa-solid fa-sliders"></i> Cenário do Planejamento</label>
+                      <select class="selecao" id="seletorCenarioPlan">
+                        <option value="provavel" selected>📊 Cenário Provável (Média Realizada)</option>
+                        <option value="otimista">🚀 Cenário Otimista (+15% Receita)</option>
+                        <option value="pessimista">⚠️ Cenário Pessimista (Ponto de Equilíbrio)</option>
+                      </select>
+                    </div>
+
+                    <!-- PERÍODO DE ANÁLISE -->
+                    <div class="campo-rel" id="campoPeriodoRel">
+                      <label for="perRel"><i class="fa-solid fa-calendar"></i> Período de Análise</label>
+                      <select class="selecao" id="perRel">
+                        <option>Últimos 7 dias</option>
+                        <option>Últimos 30 dias</option>
+                        <option selected>Últimos 6 meses</option>
+                        <option>Este ano</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <!-- NOME DO RELATÓRIO -->
+                  <div class="campo-rel">
+                    <label for="nomeRel"><i class="fa-solid fa-file-lines"></i> Título Oficial do Relatório</label>
+                    <input type="text" class="entrada" id="nomeRel" placeholder="Ex: Relatório Executivo DataInsight"
+                      value="Relatório Consolidado">
+                  </div>
+
+                  <!-- RODAPÉ DE NAVEGAÇÃO DA ETAPA 1 -->
+                  <div class="wizard-nav-footer">
+                    <span style="font-size:0.84rem;color:var(--suave);">
+                      <i class="fa-solid fa-circle-info" style="color:var(--primaria);"></i> Os dados da fonte selecionada serão processados em tempo real.
+                    </span>
+                    <button type="button" class="btn-nav-rel btn-nav-rel--next" onclick="irParaEtapa(2)">
+                      Avançar para Seções (Etapa 2) <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
 
-            </div><!-- /right-panel -->
-          </div><!-- /rel-grid -->
+              <!-- =============================================
+                   ETAPA 2: SELEÇÃO DE SEÇÕES E CONTEÚDO
+                   ============================================= -->
+              <div class="step-panel" id="step-panel-2">
+                <div class="wizard-step-header">
+                  <div class="wizard-step-header__title">
+                    <div class="wizard-step-header__icon">
+                      <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div>
+                      <h2>Etapa 2 — Selecione as Seções do Relatório</h2>
+                      <p>Personalize os blocos e análises que farão parte do documento impresso</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="wizard-step-body">
+                  <!-- TOOLBAR COM ATALHOS RÁPIDOS -->
+                  <div class="secoes-toolbar">
+                    <div class="secoes-toolbar__info">
+                      <i class="fa-solid fa-toggle-on" style="color:var(--primaria);margin-right:6px;"></i>
+                      Clique nos cartões para ativar ou desativar cada seção:
+                    </div>
+                    <div class="secoes-toolbar__actions">
+                      <button type="button" class="btn-quick-toggle" onclick="selecionarTodasSecoes(true)">
+                        <i class="fa-solid fa-check-double"></i> Marcar Todas
+                      </button>
+                      <button type="button" class="btn-quick-toggle" onclick="selecionarApenasResumo()">
+                        <i class="fa-solid fa-chart-simple"></i> Apenas Resumo
+                      </button>
+                      <button type="button" class="btn-quick-toggle" onclick="selecionarTodasSecoes(false)">
+                        <i class="fa-solid fa-xmark"></i> Desmarcar Todas
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- GRID DE SEÇÕES INCLUÍDAS -->
+                  <div class="opcoes-grid">
+                    <!-- SEÇÃO 1: KPIS -->
+                    <div class="card-opcao selecionado" onclick="toggleCheck('opt-kpi')" id="wrap-opt-kpi">
+                      <input type="checkbox" id="opt-kpi" checked>
+                      <div class="card-opcao__check"><i class="fa-solid fa-check"></i></div>
+                      <div class="card-opcao-icon"><i class="fa-solid fa-chart-bar"></i></div>
+                      <div class="card-opcao-text">
+                        <h3>Indicadores Principais (KPIs)</h3>
+                        <p id="lbl-opt-kpi">Faturamento, Lucro, Despesas e Margem</p>
+                      </div>
+                    </div>
+
+                    <!-- SEÇÃO 2: DIAGNÓSTICO -->
+                    <div class="card-opcao selecionado" onclick="toggleCheck('opt-diagnostico')" id="wrap-opt-diagnostico">
+                      <input type="checkbox" id="opt-diagnostico" checked>
+                      <div class="card-opcao__check"><i class="fa-solid fa-check"></i></div>
+                      <div class="card-opcao-icon"><i class="fa-solid fa-microchip"></i></div>
+                      <div class="card-opcao-text">
+                        <h3>Diagnóstico Executivo &amp; Insights Reais</h3>
+                        <p id="lbl-opt-diagnostico">Síntese matemática e estratégica calculada dos dados</p>
+                      </div>
+                    </div>
+
+                    <!-- SEÇÃO 3: PONTOS FORTES E RISCOS -->
+                    <div class="card-opcao selecionado" onclick="toggleCheck('opt-pontos-riscos')" id="wrap-opt-pontos-riscos">
+                      <input type="checkbox" id="opt-pontos-riscos" checked>
+                      <div class="card-opcao__check"><i class="fa-solid fa-check"></i></div>
+                      <div class="card-opcao-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                      <div class="card-opcao-text">
+                        <h3>Pontos Fortes &amp; Alertas de Riscos</h3>
+                        <p id="lbl-opt-pontos-riscos">Destaques operacionais e vulnerabilidades mitigadas</p>
+                      </div>
+                    </div>
+
+                    <!-- SEÇÃO 4: RECOMENDAÇÕES -->
+                    <div class="card-opcao selecionado" onclick="toggleCheck('opt-recomendacoes')" id="wrap-opt-recomendacoes">
+                      <input type="checkbox" id="opt-recomendacoes" checked>
+                      <div class="card-opcao__check"><i class="fa-solid fa-check"></i></div>
+                      <div class="card-opcao-icon"><i class="fa-solid fa-lightbulb"></i></div>
+                      <div class="card-opcao-text">
+                        <h3>Recomendações Estratégicas</h3>
+                        <p id="lbl-opt-recomendacoes">Plano de ação prático e orientações de gestão</p>
+                      </div>
+                    </div>
+
+                    <!-- SEÇÃO 5: GRÁFICO VISUAL -->
+                    <div class="card-opcao selecionado" onclick="toggleCheck('opt-grafico')" id="wrap-opt-grafico">
+                      <input type="checkbox" id="opt-grafico" checked>
+                      <div class="card-opcao__check"><i class="fa-solid fa-check"></i></div>
+                      <div class="card-opcao-icon"><i class="fa-solid fa-chart-line"></i></div>
+                      <div class="card-opcao-text">
+                        <h3>Gráfico Visual Comparativo</h3>
+                        <p id="lbl-opt-grafico">Evolução temporal e séries de desempenho</p>
+                      </div>
+                    </div>
+
+                    <!-- SEÇÃO 6: TABELA DETALHADA -->
+                    <div class="card-opcao selecionado" onclick="toggleCheck('opt-dados')" id="wrap-opt-dados">
+                      <input type="checkbox" id="opt-dados" checked>
+                      <div class="card-opcao__check"><i class="fa-solid fa-check"></i></div>
+                      <div class="card-opcao-icon"><i class="fa-solid fa-table"></i></div>
+                      <div class="card-opcao-text">
+                        <h3>Tabela Detalhada com Dados Reais</h3>
+                        <p id="lbl-opt-dados">Abertura completa de contas mês a mês</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- RODAPÉ DE NAVEGAÇÃO DA ETAPA 2 -->
+                  <div class="wizard-nav-footer">
+                    <button type="button" class="btn-nav-rel btn-nav-rel--prev" onclick="irParaEtapa(1)">
+                      <i class="fa-solid fa-arrow-left"></i> Voltar para Etapa 1
+                    </button>
+                    <button type="button" class="btn-nav-rel btn-nav-rel--next" onclick="irParaEtapa(3)">
+                      Avançar para Pré-visualização (Etapa 3) <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- =============================================
+                   ETAPA 3: PRÉ-VISUALIZAÇÃO AMPLA EM TEMPO REAL
+                   ============================================= -->
+              <div class="step-panel" id="step-panel-3">
+                <div class="wizard-step-header">
+                  <div class="wizard-step-header__title">
+                    <div class="wizard-step-header__icon">
+                      <i class="fa-solid fa-eye"></i>
+                    </div>
+                    <div>
+                      <h2>Etapa 3 — Pré-visualização do Relatório</h2>
+                      <p>Confira como seu documento executivo será compilado antes de gerar o PDF</p>
+                    </div>
+                  </div>
+                  <div class="preview-wrap__tools">
+                    <button type="button" class="botao-rel botao-suave-rel" onclick="gerarPreviewMelhorado()" id="btn-preview">
+                      <i class="fa-solid fa-rotate"></i> Atualizar Dados
+                    </button>
+                  </div>
+                </div>
+
+                <div class="wizard-step-body" style="padding:20px;">
+                  <!-- PREVIEW WRAPPER -->
+                  <div class="preview-wrap">
+                    <div class="preview-wrap__header">
+                      <div class="preview-wrap__title">
+                        <i class="fa-solid fa-file-waveform"></i> Estrutura do Documento
+                      </div>
+                      <span id="preview-status" style="font-size:0.78rem;color:var(--suave);font-weight:600;">
+                        Clique em "Atualizar Dados" para recarregar
+                      </span>
+                    </div>
+
+                    <!-- ESTADO VAZIO INICIAL -->
+                    <div id="preview-empty-state" class="preview-empty">
+                      <i class="fa-solid fa-file-magnifying-glass"></i>
+                      <p>Processando e organizando os dados da sua empresa…</p>
+                      <button type="button" class="botao-rel botao-primario-rel" style="margin-top:12px;" onclick="gerarPreviewMelhorado()">
+                        <i class="fa-solid fa-play"></i> Gerar Pré-visualização
+                      </button>
+                    </div>
+
+                    <!-- CONTEÚDO RENDERIZADO PELO relatorios.js -->
+                    <div id="preview"></div>
+                  </div>
+
+                  <!-- RODAPÉ DE NAVEGAÇÃO DA ETAPA 3 -->
+                  <div class="wizard-nav-footer">
+                    <button type="button" class="btn-nav-rel btn-nav-rel--prev" onclick="irParaEtapa(2)">
+                      <i class="fa-solid fa-arrow-left"></i> Voltar para Seções
+                    </button>
+                    <button type="button" class="btn-nav-rel btn-nav-rel--next" onclick="irParaEtapa(4)">
+                      Avançar para Emissão (Etapa 4) <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- =============================================
+                   ETAPA 4: GERAR E EXPORTAR OFICIAL (PDF)
+                   ============================================= -->
+              <div class="step-panel" id="step-panel-4">
+                <div class="wizard-step-header">
+                  <div class="wizard-step-header__title">
+                    <div class="wizard-step-header__icon" style="background:linear-gradient(135deg,#10B981,#059669);">
+                      <i class="fa-solid fa-file-arrow-down"></i>
+                    </div>
+                    <div>
+                      <h2>Etapa 4 — Emissão Oficial &amp; Download em PDF</h2>
+                      <p>Revise o resumo final e faça o download do relatório formatado para impressão</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="wizard-step-body">
+                  <!-- HERO CARD DE FINALIZAÇÃO -->
+                  <div class="gerar-card-hero">
+                    <div class="gerar-card-hero__icon">
+                      <i class="fa-solid fa-file-pdf"></i>
+                    </div>
+                    <h3>Seu Relatório está Pronto para Emissão!</h3>
+                    <p>O documento foi compilado com sucesso e contém todos os dados, diagnósticos e gráficos selecionados.</p>
+
+                    <!-- RESUMO EXECUTIVO DAS CONFIGURAÇÕES -->
+                    <div class="resumo-executivo-lista">
+                      <div class="resumo-item">
+                        <span class="resumo-item__lbl"><i class="fa-solid fa-tag"></i> Título do Relatório</span>
+                        <span class="resumo-item__val" id="resumo-nome-rel">-</span>
+                      </div>
+                      <div class="resumo-item">
+                        <span class="resumo-item__lbl"><i class="fa-solid fa-layer-group"></i> Modelo Selecionado</span>
+                        <span class="resumo-item__val" id="resumo-tipo-rel">-</span>
+                      </div>
+                      <div class="resumo-item">
+                        <span class="resumo-item__lbl"><i class="fa-solid fa-calendar"></i> Período Avaliado</span>
+                        <span class="resumo-item__val" id="resumo-periodo-rel">-</span>
+                      </div>
+                      <div class="resumo-item">
+                        <span class="resumo-item__lbl"><i class="fa-solid fa-list-check"></i> Seções Ativas</span>
+                        <span class="resumo-item__val" id="resumo-secoes-rel">-</span>
+                      </div>
+                    </div>
+
+                    <!-- BOTÃO PRINCIPAL DE GERAÇÃO E DOWNLOAD EM PDF -->
+                    <button type="button" class="botao-rel botao-primario-rel btn-gerar-pdf btn-gerar-pdf--lg" onclick="exportarPDFMelhorado()" id="btn-pdf">
+                      <span class="btn-text"><i class="fa-solid fa-file-pdf"></i> Baixar Relatório em PDF</span>
+                      <span class="rel-spinner"></span>
+                      <span class="btn-loading-text" style="display:none;">Compilando Relatório…</span>
+                    </button>
+
+                    <div style="margin-top:16px;font-size:0.78rem;color:var(--suave);">
+                      <i class="fa-solid fa-shield-check" style="color:#10B981;margin-right:4px;"></i> Formato oficial A4 para impressão e reuniões de diretoria. O arquivo é salvo no histórico automaticamente.
+                    </div>
+                  </div>
+
+                  <!-- RODAPÉ DE NAVEGAÇÃO DA ETAPA 4 -->
+                  <div class="wizard-nav-footer">
+                    <button type="button" class="btn-nav-rel btn-nav-rel--prev" onclick="irParaEtapa(3)">
+                      <i class="fa-solid fa-arrow-left"></i> Voltar para Pré-visualização
+                    </button>
+                    <button type="button" class="btn-nav-rel btn-nav-rel--prev" onclick="alternarAbaPrincipal('historico')">
+                      <i class="fa-solid fa-clock-rotate-left"></i> Ver Histórico de Relatórios
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+            </div><!-- /wizard-step-container -->
+
+          </div><!-- /#secao-wizard -->
+
+          <!-- =============================================
+               SEÇÃO DO HISTÓRICO DE RELATÓRIOS
+               ============================================= -->
+          <div id="secao-historico" style="display:none;">
+            <div class="history-card">
+              <div class="history-card__header">
+                <div class="history-card__title">
+                  <i class="fa-solid fa-clock-rotate-left"></i>
+                  Histórico de Relatórios Salvos
+                  <span class="history-count" id="history-count">0</span>
+                </div>
+                <button type="button" class="botao-rel botao-primario-rel" onclick="alternarAbaPrincipal('wizard'); irParaEtapa(1);">
+                  <i class="fa-solid fa-plus"></i> Novo Relatório
+                </button>
+              </div>
+
+              <!-- BARRA DE BUSCA -->
+              <div class="search-bar">
+                <i class="fa-solid fa-magnifying-glass search-bar__icon"></i>
+                <input type="search" class="search-bar__input" id="search-historico"
+                  placeholder="Buscar por título, período ou data do relatório…" autocomplete="off" aria-label="Buscar relatório"
+                  oninput="filtrarHistorico()">
+                <button class="search-bar__clear" id="search-clear" onclick="limparBusca()" title="Limpar busca"
+                  aria-label="Limpar busca">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+
+              <!-- FILTROS POR DATA (PILLS) -->
+              <div class="filter-pills">
+                <button class="pill ativo" data-filtro="todos" onclick="setPill(this, 'todos')">
+                  <i class="fa-solid fa-list"></i> Todos
+                </button>
+                <button class="pill" data-filtro="hoje" onclick="setPill(this, 'hoje')">
+                  <i class="fa-solid fa-calendar-day"></i> Hoje
+                </button>
+                <button class="pill" data-filtro="semana" onclick="setPill(this, 'semana')">
+                  <i class="fa-solid fa-calendar-week"></i> Esta semana
+                </button>
+                <button class="pill" data-filtro="mes" onclick="setPill(this, 'mes')">
+                  <i class="fa-solid fa-calendar"></i> Este mês
+                </button>
+              </div>
+
+              <!-- LISTA DE RELATÓRIOS SALVOS -->
+              <div class="history-list" id="history-list"></div>
+
+              <!-- ESTADO VAZIO -->
+              <div class="history-empty" id="history-empty" style="display:block;">
+                <i class="fa-solid fa-file-circle-xmark"></i>
+                <p>Nenhum relatório gerado ainda</p>
+                <small>Os relatórios criados aparecerão aqui com acesso a download e exclusão</small>
+              </div>
+
+              <!-- SEM RESULTADOS DE BUSCA -->
+              <div class="history-no-results" id="history-no-results">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <p>Nenhum resultado para <strong id="search-query-display"></strong></p>
+              </div>
+            </div>
+          </div><!-- /#secao-historico -->
 
         </div><!-- /container -->
 
@@ -1090,17 +2007,190 @@
   {% include 'partials/painel_acessibilidade.html' %}
   {% include 'partials/chatbot.html' %}
 
-</div>
-
-  <!-- TOAST -->
+  <!-- TOAST NOTIFICATIONS -->
   <div id="toast-rel" role="status" aria-live="polite">
     <i class="fa-solid fa-circle-check"></i>
     <span id="toast-msg"></span>
   </div>
 
-<script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+  <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
   <script src="{{ url_for('static', filename='js/relatorios.js') }}"></script>
+
+  <!-- CONTROLADOR VISUAL DO WIZARD POR ETAPAS -->
+  <script>
+    let etapaAtual = 1;
+
+    // Alternar entre aba do Gerador e do Histórico
+    function alternarAbaPrincipal(aba) {
+      const secaoWizard = document.getElementById('secao-wizard');
+      const secaoHistorico = document.getElementById('secao-historico');
+      const tabWizard = document.getElementById('tab-btn-wizard');
+      const tabHistorico = document.getElementById('tab-btn-historico');
+
+      if (aba === 'historico') {
+        if (secaoWizard) secaoWizard.style.display = 'none';
+        if (secaoHistorico) secaoHistorico.style.display = 'block';
+        if (tabWizard) tabWizard.classList.remove('ativo');
+        if (tabHistorico) tabHistorico.classList.add('ativo');
+      } else {
+        if (secaoWizard) secaoWizard.style.display = 'block';
+        if (secaoHistorico) secaoHistorico.style.display = 'none';
+        if (tabWizard) tabWizard.classList.add('ativo');
+        if (tabHistorico) tabHistorico.classList.remove('ativo');
+      }
+    }
+
+    // Navegar diretamente para uma etapa (1, 2, 3, 4)
+    function irParaEtapa(num) {
+      if (num < 1 || num > 4) return;
+      etapaAtual = num;
+
+      // Atualiza os painéis
+      for (let i = 1; i <= 4; i++) {
+        const painel = document.getElementById('step-panel-' + i);
+        const tab = document.getElementById('step-tab-' + i);
+        const badge = document.getElementById('step-badge-' + i);
+
+        if (painel) painel.classList.toggle('ativo', i === num);
+
+        if (tab) {
+          tab.classList.toggle('ativo', i === num);
+          tab.classList.toggle('concluido', i < num);
+        }
+
+        if (badge) {
+          if (i < num) {
+            badge.innerHTML = '<i class="fa-solid fa-check"></i>';
+          } else {
+            badge.textContent = String(i);
+          }
+        }
+      }
+
+      // Ações contextuais de cada etapa
+      if (num === 3) {
+        // Se entrou na etapa de pré-visualização, renderiza os dados
+        if (typeof gerarPreviewMelhorado === 'function') {
+          gerarPreviewMelhorado();
+        }
+      } else if (num === 4) {
+        // Atualiza os valores do resumo executivo da etapa 4
+        atualizarResumoEtapa4();
+      }
+
+      // Rola suavemente até o stepper para conforto visual
+      const stepperEl = document.querySelector('.rel-stepper-card');
+      if (stepperEl) {
+        stepperEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    // Atualiza o resumo da Etapa 4 com base nos campos atuais
+    function atualizarResumoEtapa4() {
+      const nomeRel = document.getElementById('nomeRel')?.value || 'Relatório Executivo';
+      const tipoSel = document.getElementById('tipoRelatorio');
+      const tipoTexto = tipoSel ? tipoSel.options[tipoSel.selectedIndex]?.text || 'Consolidado' : 'Consolidado';
+      const perSel = document.getElementById('perRel');
+      const periodoTexto = perSel ? perSel.value : 'Período Completo';
+
+      const secoes = [
+        document.getElementById('opt-kpi')?.checked,
+        document.getElementById('opt-diagnostico')?.checked,
+        document.getElementById('opt-pontos-riscos')?.checked,
+        document.getElementById('opt-recomendacoes')?.checked,
+        document.getElementById('opt-grafico')?.checked,
+        document.getElementById('opt-dados')?.checked
+      ].filter(Boolean).length;
+
+      const elNome = document.getElementById('resumo-nome-rel');
+      const elTipo = document.getElementById('resumo-tipo-rel');
+      const elPeriodo = document.getElementById('resumo-periodo-rel');
+      const elSecoes = document.getElementById('resumo-secoes-rel');
+
+      if (elNome) elNome.textContent = nomeRel;
+      if (elTipo) elTipo.textContent = tipoTexto;
+      if (elPeriodo) elPeriodo.textContent = periodoTexto;
+      if (elSecoes) elSecoes.textContent = `${secoes} de 6 seções incluídas`;
+    }
+
+    // Selecionador visual em cards para os tipos de relatório
+    function selecionarCardTipo(tipo) {
+      document.querySelectorAll('.tipo-card').forEach(card => {
+        card.classList.toggle('selecionado', card.dataset.tipo === tipo);
+      });
+
+      const sel = document.getElementById('tipoRelatorio');
+      if (sel) {
+        sel.value = tipo;
+        if (typeof aoMudarTipoRelatorio === 'function') {
+          aoMudarTipoRelatorio();
+        }
+      }
+    }
+
+    // Sincronizar o card visual caso o select mude externamente (ex: parâmetro de URL)
+    function sincronizarCardsTipoComSelect() {
+      const tipoAtual = document.getElementById('tipoRelatorio')?.value || 'consolidado';
+      document.querySelectorAll('.tipo-card').forEach(card => {
+        card.classList.toggle('selecionado', card.dataset.tipo === tipoAtual);
+      });
+    }
+
+    // Atalhos rápidos para seleção de seções na Etapa 2
+    function selecionarTodasSecoes(marcar) {
+      const ids = ['opt-kpi', 'opt-diagnostico', 'opt-pontos-riscos', 'opt-recomendacoes', 'opt-grafico', 'opt-dados'];
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        const wrap = document.getElementById('wrap-' + id);
+        if (el) el.checked = marcar;
+        if (wrap) wrap.classList.toggle('selecionado', marcar);
+      });
+    }
+
+    function selecionarApenasResumo() {
+      const idsAtivos = ['opt-kpi', 'opt-diagnostico', 'opt-recomendacoes'];
+      const idsDesativos = ['opt-pontos-riscos', 'opt-grafico', 'opt-dados'];
+
+      idsAtivos.forEach(id => {
+        const el = document.getElementById(id);
+        const wrap = document.getElementById('wrap-' + id);
+        if (el) el.checked = true;
+        if (wrap) wrap.classList.add('selecionado');
+      });
+
+      idsDesativos.forEach(id => {
+        const el = document.getElementById(id);
+        const wrap = document.getElementById('wrap-' + id);
+        if (el) el.checked = false;
+        if (wrap) wrap.classList.remove('selecionado');
+      });
+    }
+
+    // Sincronizar contagem do histórico no botão do topo
+    function sincronizarBadgeHistorico() {
+      const countEl = document.getElementById('history-count');
+      const badgeEl = document.getElementById('tab-history-badge');
+      if (countEl && badgeEl) {
+        badgeEl.textContent = countEl.textContent || '0';
+      }
+    }
+
+    // Observa mudanças no contador de histórico
+    document.addEventListener('DOMContentLoaded', () => {
+      sincronizarCardsTipoComSelect();
+      const countEl = document.getElementById('history-count');
+      if (countEl && window.MutationObserver) {
+        const obs = new MutationObserver(() => sincronizarBadgeHistorico());
+        obs.observe(countEl, { childList: true, characterData: true, subtree: true });
+      }
+
+      // Sincroniza select e cards se houver URL params
+      setTimeout(() => {
+        sincronizarCardsTipoComSelect();
+      }, 400);
+    });
+  </script>
 </body>
 
 </html>

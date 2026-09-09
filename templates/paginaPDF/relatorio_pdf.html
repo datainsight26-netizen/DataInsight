@@ -2,309 +2,704 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <title>{{ dados.nome }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ dados.nome }} • DataInsight</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
-      body {
-        font-family: Arial, sans-serif;
-        background: #f4f6f9;
-        padding: 20px;
+      :root {
+        --cor-primaria: {{ dados.cor | default('#3b82f6') }};
       }
-      
-      .container {
-        background: white;
-        padding: 30px;
-        border-radius: 10px;
-        max-width: 900px;
-        margin: auto;
-      }
-      
-      /* HEADER */
-      .header {
-        display: flex;
-        justify-content: space-between;
-        border-bottom: 2px solid #ddd;
-        padding-bottom: 15px;
-        margin-bottom: 20px;
-      }
-      
-      .logo {
-        text-align: right;
-      }
-      
-      /* TITULOS */
-      h1 {
+
+      * {
+        box-sizing: border-box;
         margin: 0;
+        padding: 0;
       }
-      
-      h2 {
-        margin-top: 30px;
-        border-bottom: 1px solid #ddd;
-        padding-bottom: 5px;
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        background: #f1f5f9;
+        color: #1e293b;
+        padding: 30px 15px;
+        line-height: 1.5;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
-      
-      /* KPI */
-      .kpis {
+
+      .folha-relatorio {
+        background: #ffffff;
+        max-width: 900px;
+        margin: 0 auto 30px auto;
+        padding: 40px;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      }
+
+      /* HEADER */
+      .rel-header {
         display: flex;
-        gap: 10px;
-        margin-top: 15px;
+        align-items: flex-start;
+        justify-content: space-between;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 20px;
+        margin-bottom: 25px;
+        gap: 20px;
       }
-      
-      .card {
-        flex: 1;
-        background: #f1f3f5;
-        padding: 15px;
+
+      .rel-header-left h1 {
+        font-size: 24px;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 4px;
+      }
+
+      .rel-header-left p {
+        font-size: 13px;
+        color: #64748b;
+      }
+
+      .rel-header-right {
+        text-align: right;
+        flex-shrink: 0;
+      }
+
+      .sidebar__logo {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        margin-bottom: 6px;
+      }
+
+      .sidebar__logo-text {
+        font-size: 20px;
+        font-weight: 800;
+        color: #0f172a;
+        letter-spacing: -0.02em;
+      }
+
+      .marca-box {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+      }
+
+      .marca-icone {
+        width: 30px;
+        height: 30px;
+        background: linear-gradient(135deg, #3b82f6, #6366f1);
+        color: #fff;
         border-radius: 8px;
-        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
       }
-      
-      .card h3 {
-        margin: 5px 0;
+
+      .marca-texto {
+        font-size: 18px;
+        font-weight: 800;
+        color: #0f172a;
+        letter-spacing: -0.02em;
       }
-      
-      .destaque {
-        background: #e6f4ea;
-        color: #1e7e34;
+
+      .badge-tipo {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        background: #eff6ff;
+        color: #3b82f6;
+        border: 1px solid #bfdbfe;
       }
-      
+
+      /* SEÇÕES */
+      .secao-rel {
+        margin-bottom: 24px;
+        page-break-inside: avoid;
+      }
+
+      .titulo-secao {
+        font-size: 14px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #334155;
+        border-bottom: 1.5px solid #e2e8f0;
+        padding-bottom: 8px;
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .titulo-secao i {
+        color: var(--cor-primaria);
+      }
+
+      /* KPIS */
+      .kpis-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+      }
+
+      .kpi-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 14px 16px;
+      }
+
+      .kpi-card .lbl {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #64748b;
+        margin-bottom: 4px;
+      }
+
+      .kpi-card .val {
+        font-size: 20px;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1.2;
+      }
+
+      .kpi-card .sub {
+        font-size: 11px;
+        color: #64748b;
+        margin-top: 4px;
+      }
+
+      /* DIAGNÓSTICO */
+      .diagnostico-banner {
+        background: #f8fafc;
+        border-left: 4px solid var(--cor-primaria);
+        border-radius: 0 8px 8px 0;
+        padding: 16px 18px;
+        font-size: 13px;
+        line-height: 1.6;
+        color: #1e293b;
+      }
+
+      .diagnostico-banner h3,
+      .diagnostico-banner h4 {
+        font-size: 14px;
+        font-weight: 800;
+        color: #0f172a;
+        margin-top: 12px;
+        margin-bottom: 6px;
+      }
+
+      .diagnostico-banner h3:first-child,
+      .diagnostico-banner h4:first-child {
+        margin-top: 0;
+      }
+
+      .diagnostico-banner p {
+        margin-bottom: 8px;
+      }
+
+      .diagnostico-banner ul,
+      .diagnostico-banner ol {
+        padding-left: 20px;
+        margin-bottom: 10px;
+      }
+
+      .diagnostico-banner li {
+        margin-bottom: 4px;
+      }
+
+      .diagnostico-banner strong {
+        color: #0f172a;
+      }
+
+      /* INSIGHTS GRID */
+      .insights-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 14px;
+      }
+
+      .insight-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 14px 16px;
+      }
+
+      .insight-box--fortes { border-top: 3px solid #10b981; }
+      .insight-box--riscos { border-top: 3px solid #f59e0b; }
+      .insight-box--recs   { border-top: 3px solid #3b82f6; width: 100%; }
+
+      .insight-box h4 {
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .insight-box--fortes h4 { color: #10b981; }
+      .insight-box--riscos h4 { color: #d97706; }
+      .insight-box--recs h4   { color: #2563eb; }
+
+      .insight-box ul {
+        padding-left: 18px;
+        margin: 0;
+        font-size: 12px;
+        color: #334155;
+        line-height: 1.5;
+      }
+
+      .insight-box li {
+        margin-bottom: 5px;
+      }
+
+      .insight-box li:last-child {
+        margin-bottom: 0;
+      }
+
       /* TABELA */
+      .tabela-wrap {
+        overflow-x: auto;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+      }
+
       table {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 15px;
+        font-size: 12px;
+        background: #ffffff;
       }
-      
-      thead {
-        background: #2c3e50;
-        color: white;
+
+      thead th {
+        background: #1e293b;
+        color: #ffffff;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.04em;
+        padding: 10px 12px;
+        text-align: left;
       }
-      
-      th,
-      td {
-        padding: 10px;
-        text-align: center;
-        border: 1px solid #ddd;
+
+      tbody td {
+        padding: 9px 12px;
+        border-bottom: 1px solid #e2e8f0;
+        color: #1e293b;
       }
-      
-      /* INSIGHTS */
-      ul {
-        margin-top: 10px;
+
+      tbody tr:last-child td {
+        border-bottom: none;
       }
-      
+
+      tbody tr:nth-child(even) td {
+        background: #f8fafc;
+      }
+
+      /* GRÁFICO */
+      .grafico-wrap {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 15px;
+        min-height: 320px;
+      }
+
       /* FOOTER */
-      .footer {
+      .rel-footer {
+        border-top: 1px solid #e2e8f0;
+        padding-top: 15px;
         margin-top: 30px;
         display: flex;
+        align-items: center;
         justify-content: space-between;
-        font-size: 12px;
-        border-top: 1px solid #ddd;
-        padding-top: 10px;
+        font-size: 11px;
+        color: #94a3b8;
       }
-      
-      /* BOTÃO */
-      .acoes {
-        text-align: center;
-        margin-top: 20px;
+
+      /* BOTÕES DE AÇÃO */
+      .acoes-flutuantes {
+        max-width: 900px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        padding-bottom: 40px;
       }
-      
-      button {
+
+      .btn-acao {
         padding: 10px 20px;
-        border: none;
-        background: #2c3e50;
-        color: white;
-        border-radius: 5px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 700;
         cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: none;
+        transition: all 0.2s;
+        text-decoration: none;
+      }
+
+      .btn-acao-pdf {
+        background: linear-gradient(135deg, #3b82f6, #6366f1);
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+      }
+
+      .btn-acao-voltar {
+        background: #e2e8f0;
+        color: #334155;
+      }
+
+      @media print {
+        body {
+          background: #ffffff;
+          padding: 0;
+        }
+        .folha-relatorio {
+          box-shadow: none;
+          max-width: 100%;
+          padding: 0;
+          margin: 0;
+        }
+        .acoes-flutuantes {
+          display: none !important;
+        }
       }
     </style>
-
-    <!-- Biblioteca PDF -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   </head>
 
-  <body data-ia-help="page_relatorio_pdf">
-    <div id="relatorio" class="container">
-      <!-- HEADER -->
-      <div class="header">
-        <div>
+  <body>
+    <!-- AÇÕES FLUTUANTES -->
+    <div class="acoes-flutuantes">
+      <a href="{{ url_for('pagina_relatorio') }}" class="btn-acao btn-acao-voltar">
+        <i class="fa-solid fa-arrow-left"></i> Voltar à Central
+      </a>
+      <button onclick="gerarPDF()" class="btn-acao btn-acao-pdf" id="btnBaixarPdf">
+        <i class="fa-solid fa-download"></i> Baixar Relatório em PDF
+      </button>
+    </div>
+
+    <!-- FOLHA DO RELATÓRIO -->
+    <div id="relatorioDocumento" class="folha-relatorio">
+
+      <!-- CABEÇALHO -->
+      <div class="rel-header">
+        <div class="rel-header-left">
           <h1>{{ dados.nome }}</h1>
           <p>
-            <strong>Período:</strong> {{ dados.periodo }}
+            {% if dados.subtitulo %}
+              {{ dados.subtitulo }} •
+            {% endif %}
+            Período: <strong>{{ dados.periodo }}</strong> | Gerado em: <strong>{{ dados.data }}</strong>
           </p>
         </div>
 
-        <div class="logo">
-          <div style="display:flex; align-items:center; gap:8px; justify-content:flex-end;">
-            <span class="marca__simbolo" aria-hidden="true" style="width:28px; height:28px; font-size:14px;"><i class="fa-solid fa-chart-column"></i></span>
-            <h2 style="margin:0;">DataInsight</h2>
+        <div class="rel-header-right">
+          <a class="sidebar__logo" href="{{ url_for('pagina_landing') }}" aria-label="DataInsight - Início">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo DataInsight" style="max-width: 65px; height: auto;">
+            <span class="sidebar__logo-text">DataInsight</span>
+          </a>
+          <div>
+            <span class="badge-tipo">
+              <i class="fa-solid fa-circle-check"></i> {{ dados.badge | default('Relatório Oficial') }}
+            </span>
           </div>
-          <p style="margin:0; font-size:13px;">Gerado em: {{ dados.data }}</p>
         </div>
       </div>
 
-      {% if dados.conteudo_html %}
-        <div class="conteudo-customizado markdown-body" style="margin-top: 20px; line-height: 1.6; color: #333;">
-          {{ dados.conteudo_html | safe }}
-        </div>
-      {% else %}
-        <!-- KPI -->
-        {% if dados.kpis is defined %}
-          <h2>Indicadores de Desempenho</h2>
-          <div class="kpis">
-            <div class="card">
-              <p>Faturamento</p>
-              <h3>R$ {{ dados.kpis.faturamento }}</h3>
-            </div>
-            <div class="card">
-              <p>Lucro</p>
-              <h3>R$ {{ dados.kpis.lucro }}</h3>
-            </div>
-            <div class="card">
-              <p>Despesas</p>
-              <h3>R$ {{ dados.kpis.despesas }}</h3>
-            </div>
-            <div class="card destaque">
-              <p>Crescimento</p>
-              <h3>{{ dados.kpis.crescimento }}</h3>
-            </div>
-          </div>
-        {% endif %}
-
-        <!-- TABELA -->
-        {% if dados.dadosDetalhados %}
-          <h2>Tabela de Dados</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Mês</th>
-                <th>Faturamento</th>
-                <th>Lucro</th>
-                <th>Despesas</th>
-                <th>Margem</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for item in dados.tabela | default([]) %}
-                <tr>
-                  <td>{{ item.mes }}</td>
-                  <td>R$ {{ item.fat }}</td>
-                  <td>R$ {{ item.luc }}</td>
-                  <td>R$ {{ item.desp }}</td>
-                  <td>{{ item.margem }}</td>
-                </tr>
-              {% else %}
-                <tr>
-                  <td colspan="5" style="text-align:center;">Nenhum dado disponível para a tabela.</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        {% endif %}
-
-        <!-- INSIGHTS -->
-        <h2>Insights & Recomendações</h2>
-        <ul>
-          {% if dados.insights is defined and dados.insights|length > 0 %}
-            {% for insight in dados.insights %}
-              <li>{{ insight }}</li>
+      <!-- SEÇÃO KPIS -->
+      {% if dados.kpis_lista and dados.kpis_lista|length > 0 %}
+        <div class="secao-rel">
+          <div class="titulo-secao"><i class="fa-solid fa-chart-bar"></i> Indicadores Principais de Desempenho</div>
+          <div class="kpis-grid">
+            {% for k in dados.kpis_lista %}
+              <div class="kpi-card">
+                <div class="lbl">{{ k.label }}</div>
+                <div class="val">{{ k.valor }}</div>
+                {% if k.sub %}
+                  <div class="sub">{{ k.sub }}</div>
+                {% endif %}
+              </div>
             {% endfor %}
-          {% else %}
-            <li>Sem insights selecionados.</li>
-          {% endif %}
-        </ul>
-      {% endif %}
-
-      {% if dados.grafico and dados.tabela %}
-        <h2>Gráfico</h2>
-        <div style="width:100%; height:350px; margin-bottom:20px; margin-top:20px;">
-          <div id="grafico-pdf" style="width:100%; height:340px;"></div>
+          </div>
+        </div>
+      {% elif dados.kpis and dados.kpis.faturamento %}
+        <!-- Fallback compatível -->
+        <div class="secao-rel">
+          <div class="titulo-secao"><i class="fa-solid fa-chart-bar"></i> Indicadores de Desempenho</div>
+          <div class="kpis-grid">
+            <div class="kpi-card">
+              <div class="lbl">Faturamento</div>
+              <div class="val">R$ {{ dados.kpis.faturamento }}</div>
+            </div>
+            <div class="kpi-card">
+              <div class="lbl">Lucro Líquido</div>
+              <div class="val">R$ {{ dados.kpis.lucro }}</div>
+            </div>
+            <div class="kpi-card">
+              <div class="lbl">Despesas</div>
+              <div class="val">R$ {{ dados.kpis.despesas }}</div>
+            </div>
+            <div class="kpi-card">
+              <div class="lbl">Crescimento</div>
+              <div class="val">{{ dados.kpis.crescimento }}</div>
+            </div>
+          </div>
         </div>
       {% endif %}
 
-      <!-- FOOTER -->
-      <div class="footer">
-        <span>DataInsight | Relatório</span>
+      <!-- SEÇÃO DIAGNÓSTICO -->
+      {% if dados.insights_estruturados and dados.insights_estruturados.diagnostico %}
+        <div class="secao-rel">
+          <div class="titulo-secao"><i class="fa-solid fa-microchip"></i> Diagnóstico Executivo</div>
+          <div class="diagnostico-banner">
+            {{ dados.insights_estruturados.diagnostico | safe }}
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- SEÇÃO PONTOS FORTES E RISCOS -->
+      {% set ie = dados.insights_estruturados | default({}) %}
+      {% set temPontos = ie.pontosFortes is defined and ie.pontosFortes|length > 0 %}
+      {% set temRiscos = ie.alertasRiscos is defined and ie.alertasRiscos|length > 0 %}
+      {% if temPontos or temRiscos %}
+        <div class="secao-rel">
+          <div class="titulo-secao"><i class="fa-solid fa-shield-halved"></i> Pontos Fortes &amp; Alertas de Riscos</div>
+          <div class="insights-grid">
+            {% if temPontos %}
+              <div class="insight-box insight-box--fortes">
+                <h4><i class="fa-solid fa-circle-check"></i> Pontos Fortes Observados</h4>
+                <ul>
+                  {% for pt in ie.pontosFortes %}
+                    <li>{{ pt | safe }}</li>
+                  {% endfor %}
+                </ul>
+              </div>
+            {% endif %}
+            {% if temRiscos %}
+              <div class="insight-box insight-box--riscos">
+                <h4><i class="fa-solid fa-triangle-exclamation"></i> Alertas &amp; Vulnerabilidades</h4>
+                <ul>
+                  {% for r in ie.alertasRiscos %}
+                    <li>{{ r | safe }}</li>
+                  {% endfor %}
+                </ul>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- SEÇÃO RECOMENDAÇÕES ESTRATÉGICAS -->
+      {% if ie.recomendacoes is defined and ie.recomendacoes|length > 0 %}
+        <div class="secao-rel">
+          <div class="titulo-secao"><i class="fa-solid fa-lightbulb"></i> Recomendações Estratégicas &amp; Plano de Ação</div>
+          <div class="insight-box insight-box--recs">
+            <h4><i class="fa-solid fa-list-check"></i> Orientações Práticas</h4>
+            <ul>
+              {% for rec in ie.recomendacoes %}
+                <li>{{ rec | safe }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      {% elif dados.insights and dados.insights|length > 0 and not ie.diagnostico %}
+        <!-- Fallback de insights lista simples -->
+        <div class="secao-rel">
+          <div class="titulo-secao"><i class="fa-solid fa-lightbulb"></i> Insights &amp; Observações</div>
+          <div class="insight-box insight-box--recs">
+            <ul>
+              {% for ins in dados.insights %}
+                <li>{{ ins | safe }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- SEÇÃO GRÁFICO APEXCHARTS -->
+      {% if dados.grafico and dados.grafico_labels and dados.grafico_labels|length > 0 %}
+        <div class="secao-rel">
+          <div class="titulo-secao"><i class="fa-solid fa-chart-line"></i> Evolução Visual</div>
+          <div class="grafico-wrap">
+            <div id="graficoPdfContainer" style="height: 300px; width: 100%;"></div>
+          </div>
+        </div>
+      {% elif dados.grafico and dados.tabela and dados.tabela|length > 0 %}
+        <!-- Fallback de gráfico legado -->
+        <div class="secao-rel">
+          <div class="titulo-secao"><i class="fa-solid fa-chart-line"></i> Gráfico de Desempenho</div>
+          <div class="grafico-wrap">
+            <div id="graficoPdfContainer" style="height: 300px; width: 100%;"></div>
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- SEÇÃO TABELA DETALHADA -->
+      {% if dados.tabela and dados.tabela|length > 0 %}
+        <div class="secao-rel">
+          <div class="titulo-secao"><i class="fa-solid fa-table"></i> Dados Detalhados</div>
+          <div class="tabela-wrap">
+            <table>
+              <thead>
+                <tr>
+                  {% if dados.tabela_colunas and dados.tabela_colunas|length > 0 %}
+                    {% for col in dados.tabela_colunas %}
+                      <th>{{ col.label }}</th>
+                    {% endfor %}
+                  {% else %}
+                    <th>Período</th>
+                    <th>Faturamento</th>
+                    <th>Despesas</th>
+                    <th>Lucro</th>
+                    <th>Margem</th>
+                  {% endif %}
+                </tr>
+              </thead>
+              <tbody>
+                {% if dados.tabela_colunas and dados.tabela_colunas|length > 0 %}
+                  {% for linha in dados.tabela %}
+                    <tr>
+                      {% for col in dados.tabela_colunas %}
+                        <td>{{ linha[col.chave] | default('-') }}</td>
+                      {% endfor %}
+                    </tr>
+                  {% endfor %}
+                {% else %}
+                  {% for item in dados.tabela %}
+                    <tr>
+                      <td>{{ item.mes | default(item.periodo) }}</td>
+                      <td>{{ item.fat | default('-') }}</td>
+                      <td>{{ item.desp | default('-') }}</td>
+                      <td>{{ item.luc | default('-') }}</td>
+                      <td>{{ item.margem | default('-') }}</td>
+                    </tr>
+                  {% endfor %}
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- RODAPÉ -->
+      <div class="rel-footer">
+        <span>DataInsight • Inteligência e Análise Financeira Empresarial</span>
+        <span>ID do Relatório: {{ dados.id | default('DI-' ~ dados.data) }}</span>
       </div>
+
     </div>
 
-    <!-- BOTÃO GERAR PDF -->
-    <div class="acoes">
-      <button onclick="gerarPDF()">Baixar PDF</button>
-    </div>
-
+    <!-- SCRIPT DE RENDERIZAÇÃO DO GRÁFICO E EXPORTAÇÃO PDF -->
     <script>
-function gerarPDF() {
-  const elemento = document.getElementById("relatorio");
+      const dadosRelatorio = {{ dados | tojson }};
+      const autoDownload = {{ auto | tojson }};
 
-  return gerarGraficoPDF()
-    .then(() => new Promise(resolve => setTimeout(resolve, 500)))
-    .then(() => {
-      const option = {
-        margin: 8,
-        filename: 'relatorio.pdf',
-        image: { type: 'jpeg', quality: 1 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
-      return html2pdf().set(option).from(elemento).save();
-    })
-    .then(() => {
-      console.log('PDF gerado com sucesso');
-    })
-    .catch(err => {
-      console.error('Erro ao gerar PDF:', err);
-      alert('Erro ao gerar PDF; veja o console para detalhes.');
-    });
-}
+      function renderizarGraficoPDF() {
+        const container = document.getElementById('graficoPdfContainer');
+        if (!container || typeof ApexCharts === 'undefined') {
+          return Promise.resolve();
+        }
 
-function gerarGraficoPDF() {
-  const chartEl = document.getElementById('grafico-pdf');
-  const tabela = {{ dados.tabela | default([]) | tojson }};
-  if (!chartEl || typeof ApexCharts === 'undefined' || !Array.isArray(tabela) || tabela.length === 0) {
-    return Promise.resolve();
-  }
+        let series = [];
+        let categories = [];
 
-  const labels = tabela.map(item => item.mes);
-  const faturamento = tabela.map(item => Number(item.fat || 0));
-  const lucro = tabela.map(item => Number(item.luc || 0));
+        if (Array.isArray(dadosRelatorio.grafico_series) && dadosRelatorio.grafico_series.length > 0) {
+          series = dadosRelatorio.grafico_series;
+          categories = dadosRelatorio.grafico_labels || [];
+        } else if (Array.isArray(dadosRelatorio.tabela) && dadosRelatorio.tabela.length > 0) {
+          categories = dadosRelatorio.tabela.map(item => item.mes || item.periodo || '');
+          const fatValores = dadosRelatorio.tabela.map(item => Number(item.fat_raw !== undefined ? item.fat_raw : String(item.fat || '').replace(/[^0-9-,.]/g, '').replace(',', '.')) || 0);
+          const lucValores = dadosRelatorio.tabela.map(item => Number(item.luc_raw !== undefined ? item.luc_raw : String(item.luc || '').replace(/[^0-9-,.]/g, '').replace(',', '.')) || 0);
+          series = [
+            { name: 'Faturamento', data: fatValores },
+            { name: 'Lucro Líquido', data: lucValores }
+          ];
+        }
 
-  if (window.graficoPdf) {
-    window.graficoPdf.destroy();
-  }
+        if (series.length === 0 || categories.length === 0) {
+          return Promise.resolve();
+        }
 
-  window.graficoPdf = new ApexCharts(chartEl, {
-    chart: { type: 'line', height: 350, toolbar: { show: false } },
-    series: [
-      { name: 'Faturamento', data: faturamento },
-      { name: 'Lucro', data: lucro }
-    ],
-    xaxis: { categories: labels, title: { text: 'Mês' } },
-    yaxis: { title: { text: 'Valor (R$)' }, labels: { formatter: v => 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) } },
-    markers: { size: 4 },
-    stroke: { curve: 'smooth', width: 2 },
-    tooltip: { y: { formatter: v => 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) } },
-    legend: { position: 'top' }
-  });
+        const options = {
+          chart: {
+            type: 'line',
+            height: 290,
+            toolbar: { show: false },
+            animations: { enabled: false }
+          },
+          colors: ['#3b82f6', '#ef4444', '#10b981', '#f59e0b'],
+          series: series,
+          xaxis: { categories: categories },
+          yaxis: {
+            labels: {
+              formatter: val => 'R$ ' + Number(val || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })
+            }
+          },
+          stroke: { curve: 'smooth', width: 2.5 },
+          markers: { size: 4 },
+          legend: { position: 'top' }
+        };
 
-  return window.graficoPdf.render();
-}
-
-window.addEventListener('DOMContentLoaded', () => {
-  // Gera o gráfico ao abrir a página de relatório.
-  try {
-    gerarGraficoPDF().then(() => {
-      const auto = {{ auto|tojson }};
-      if (auto) {
-        gerarPDF();
+        const chart = new ApexCharts(container, options);
+        return chart.render();
       }
-    });
-  } catch (error) {
-    console.error('Falha ao renderizar gráfico no PDF:', error);
-  }
-});
-</script>
+
+      function gerarPDF() {
+        const elemento = document.getElementById('relatorioDocumento');
+        const btn = document.getElementById('btnBaixarPdf');
+        if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gerando PDF...';
+
+        const opt = {
+          margin: [8, 8, 8, 8],
+          filename: `DataInsight-${(dadosRelatorio.nome || 'Relatorio').replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        return html2pdf()
+          .set(opt)
+          .from(elemento)
+          .save()
+          .then(() => {
+            if (btn) btn.innerHTML = '<i class="fa-solid fa-check"></i> PDF Baixado!';
+            setTimeout(() => {
+              if (btn) btn.innerHTML = '<i class="fa-solid fa-download"></i> Baixar Relatório em PDF';
+            }, 3000);
+          })
+          .catch(err => {
+            console.error('Erro ao gerar PDF:', err);
+            if (btn) btn.innerHTML = '<i class="fa-solid fa-download"></i> Tentar Novamente';
+          });
+      }
+
+      window.addEventListener('DOMContentLoaded', () => {
+        renderizarGraficoPDF().then(() => {
+          if (autoDownload) {
+            setTimeout(gerarPDF, 600);
+          }
+        });
+      });
+    </script>
   </body>
 </html>

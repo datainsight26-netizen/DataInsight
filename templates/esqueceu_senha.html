@@ -12,14 +12,12 @@
 
 <body>
     <header class="barra-topo" role="banner">
-        <div class="sidebar__header">
-            <a class="marca" href="{{ url_for('pagina_landing') }}" aria-label="DataInsight - Início">
-                <span class="marca__simbolo" aria-hidden="true">
-                    <i class="fa-solid fa-chart-column"></i>
-                </span>
-                DataInsight
-            </a>
-        </div>
+             <a class="sidebar__logo" href="{{ url_for('pagina_landing') }}" aria-label="DataInsight - Início">
+      <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo DataInsight" style="max-width: 65px; height: auto;">
+          <span class="sidebar__logo-text">DataInsight</span>
+        </a>
+      
+
     </header>
 
     <main id="conteudo" class="autenticacao" role="main" data-ia-help="page_esqueceu_senha">
