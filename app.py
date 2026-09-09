@@ -1542,6 +1542,50 @@ def api_listar_analises_salvas():
         return jsonify({"sucesso": False, "mensagem": str(e)}), 500
 
 
+@app.route("/api/analises-salvas/<analise_id>", methods=["GET"])
+@login_required
+def api_obter_analise_salva(analise_id):
+    """Retorna uma análise salva específica do usuário logado."""
+    from bson import ObjectId
+    from datetime import datetime
+    from backend.db import analises_salvas_colecao
+
+    try:
+        usuario_id = str(session.get("usuario_id"))
+        query = {"_id": ObjectId(analise_id), "usuario_id": usuario_id} if ObjectId.is_valid(analise_id) else {"_id": analise_id, "usuario_id": usuario_id}
+        doc = analises_salvas_colecao.find_one(query)
+
+        if not doc:
+            return jsonify({"sucesso": False, "mensagem": "Análise não encontrada"}), 404
+
+        dt_criado = doc.get("criado_em")
+        data_formatada = dt_criado.strftime("%d/%m/%Y às %H:%M") if isinstance(dt_criado, datetime) else "Recente"
+
+        analise = {
+            "id": str(doc["_id"]),
+            "pagina": doc.get("pagina", "home"),
+            "pagina_nome": doc.get("pagina_nome", "Visão Geral"),
+            "origem": doc.get("origem", "Consolidada"),
+            "periodo": doc.get("periodo", "Período Selecionado"),
+            "titulo": doc.get("titulo", "Diagnóstico Executivo"),
+            "subtitulo": doc.get("subtitulo", ""),
+            "badge": doc.get("badge", "Salvo"),
+            "cor": doc.get("cor", "#3b82f6"),
+            "veredito": doc.get("veredito", {}),
+            "metricas": doc.get("metricas", []),
+            "diagnostico_geral": doc.get("diagnostico_geral", ""),
+            "pontos_fortes": doc.get("pontos_fortes", []),
+            "alertas_riscos": doc.get("alertas_riscos", []),
+            "recomendacoes": doc.get("recomendacoes", []),
+            "criado_em_fmt": data_formatada
+        }
+
+        return jsonify({"sucesso": True, "analise": analise})
+    except Exception as e:
+        print("[Erro ao buscar análise salva]:", e)
+        return jsonify({"sucesso": False, "mensagem": str(e)}), 500
+
+
 @app.route("/api/analises-salvas/<analise_id>", methods=["DELETE"])
 @login_required
 def api_excluir_analise_salva(analise_id):
@@ -1559,6 +1603,7 @@ def api_excluir_analise_salva(analise_id):
     except Exception as e:
         print("[Erro ao excluir análise salva]:", e)
         return jsonify({"sucesso": False, "mensagem": str(e)}), 500
+
 
 
 # =================== RUN ===================
