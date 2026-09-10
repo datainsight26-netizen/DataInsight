@@ -61,10 +61,10 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-16">
         <a href="/" class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-            <i class="fa-solid fa-chart-column text-lg"></i>
-          </div>
-          <span class="text-xl font-bold tracking-tight texto-titulo">DataInsight</span>
+              <a class="sidebar__logo" href="{{ url_for('pagina_landing') }}" aria-label="DataInsight - Início">
+              <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo DataInsight" style="max-width: 65px; height: auto;">
+                  <span class="sidebar__logo-text">DataInsight</span>
+                </a>
         </a>
 
         <div class="flex items-center gap-3">
