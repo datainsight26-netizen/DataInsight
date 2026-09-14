@@ -1484,14 +1484,144 @@
         }
 
         .page-ia-container.fullscreen {
-            position: fixed;
-            inset: 0;
-            width: 100vw;
-            height: 100vh;
-            border-radius: 0;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: 100vw !important;
+            max-height: 100vh !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
+            z-index: 2147483647 !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: var(--chat-bg, #0f172a) !important;
+        }
+
+        .page-ia-container.fullscreen .chat-sidebar {
+            height: 100vh !important;
+            max-height: 100vh !important;
+            border-radius: 0 !important;
+        }
+
+        .page-ia-container.fullscreen .chat-box {
+            height: 100vh !important;
+            max-height: 100vh !important;
+            border-radius: 0 !important;
+            flex: 1 !important;
+        }
+
+        .page-ia-container.fullscreen .chat-messages {
+            height: calc(100vh - 140px) !important;
+            flex: 1 !important;
+        }
+
+        body.copilot-is-fullscreen {
+            overflow: hidden !important;
+        }
+
+        body.copilot-is-fullscreen .layout {
+            overflow: hidden !important;
+        }
+
+        .copilot-fullscreen-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--primaria, #3b82f6);
+            border: 1.5px solid rgba(59, 130, 246, 0.4);
+            border-radius: 10px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.12);
+        }
+
+        .copilot-fullscreen-btn:hover {
+            background: #3b82f6;
+            color: #ffffff;
+            border-color: #3b82f6;
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .copilot-fullscreen-btn:active {
+            transform: translateY(0);
+        }
+
+        .chat-top-fullscreen-btn {
+            position: absolute;
+            top: 14px;
+            right: 16px;
+            z-index: 25;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #94a3b8;
+            border-radius: 8px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            transition: all 0.2s ease;
+        }
+
+        .chat-top-fullscreen-btn:hover {
+            background: #3b82f6;
+            color: #ffffff;
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+        }
+
+        .page-ia-container.fullscreen .chat-top-fullscreen-btn {
+            display: none !important;
+        }
+
+        .btn-floating-exit-fullscreen {
+            position: absolute;
+            top: 14px;
+            right: 18px;
             z-index: 99999;
-            border: none;
-            box-shadow: none;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(239, 68, 68, 0.9);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 18px rgba(239, 68, 68, 0.5);
+        }
+
+        .btn-floating-exit-fullscreen:hover {
+            background: #dc2626;
+            transform: scale(1.03);
+            box-shadow: 0 6px 22px rgba(220, 38, 38, 0.6);
+        }
+
+        .page-ia-container.fullscreen .btn-floating-exit-fullscreen {
+            display: inline-flex !important;
+        }
+
+        .page-ia-container.fullscreen .exit-fullscreen-btn {
+            display: inline-flex !important;
         }
 
         /* SIDEBAR COPILOT */
@@ -1583,6 +1713,69 @@
         #btn-nova-conversa:hover {
             transform: translateY(-1px);
             box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+        }
+
+        #btn-exportar-chat-pdf {
+            background: rgba(239, 68, 68, 0.08);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.22);
+            border-radius: 12px;
+            padding: 8px 14px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: var(--fonte);
+            margin-top: 4px;
+        }
+
+        #btn-exportar-chat-pdf:hover {
+            background: rgba(239, 68, 68, 0.16);
+            border-color: rgba(239, 68, 68, 0.45);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.2);
+        }
+
+        .chat-sidebar.collapsed #btn-exportar-chat-pdf {
+            padding: 10px 0;
+            justify-content: center;
+        }
+
+        .btn-chat-header-pdf {
+            position: absolute;
+            top: 12px;
+            right: 18px;
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #94a3b8;
+            padding: 6px 12px;
+            border-radius: 10px;
+            font-size: 0.76rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            z-index: 10;
+            transition: all 0.2s ease;
+            font-family: var(--fonte);
+        }
+
+        body:not(.tema-escuro) .btn-chat-header-pdf {
+            background: rgba(255, 255, 255, 0.85);
+            border-color: rgba(0, 0, 0, 0.1);
+            color: #475569;
+        }
+
+        .btn-chat-header-pdf:hover {
+            color: #ef4444;
+            border-color: rgba(239, 68, 68, 0.4);
+            background: rgba(239, 68, 68, 0.1);
+            transform: translateY(-1px);
         }
 
         .sidebar-history-item {
@@ -1974,6 +2167,352 @@
             color: var(--primaria);
         }
 
+        /* BOTÃO DE ANEXAR ARQUIVO AO LADO DE AGENT-SELECTOR-PILL */
+        .copilot-attach-btn {
+            background: var(--chat-pill-bg);
+            border: 1px solid var(--chat-pill-border);
+            color: var(--texto);
+            padding: 5px 12px;
+            border-radius: 14px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            font-family: var(--fonte);
+            user-select: none;
+        }
+
+        .copilot-attach-btn:hover {
+            background: rgba(16, 185, 129, 0.12);
+            border-color: rgba(16, 185, 129, 0.4);
+            color: #10B981;
+            transform: translateY(-1px);
+        }
+
+        .copilot-attach-btn.has-file {
+            background: rgba(16, 185, 129, 0.18);
+            border-color: #10B981;
+            color: #10B981;
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
+        }
+
+        /* DRAG & DROP NA CAIXA DO COPILOTO */
+        .copilot-pill-box.drag-active {
+            border-color: #10B981 !important;
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.3) !important;
+            background: rgba(16, 185, 129, 0.05) !important;
+        }
+
+        /* BARRA DE PRÉ-VISUALIZAÇÃO DO ANEXO */
+        .copilot-attachment-bar {
+            padding: 4px 2px 2px 2px;
+            animation: ia-slide-down 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes ia-slide-down {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .attachment-bar-card {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            padding: 6px 12px;
+            max-width: 100%;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: all 0.2s ease;
+        }
+
+        body:not(.tema-escuro) .attachment-bar-card {
+            background: rgba(0, 0, 0, 0.04);
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .attachment-bar-thumb {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            overflow: hidden;
+            flex-shrink: 0;
+            background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .attachment-bar-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .attachment-bar-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(59, 130, 246, 0.12);
+            color: #3B82F6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.05rem;
+            flex-shrink: 0;
+        }
+
+        .attachment-bar-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+        }
+
+        .attachment-bar-name {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--texto);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 220px;
+        }
+
+        .attachment-bar-details {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.7rem;
+            color: var(--suave);
+        }
+
+        .attachment-bar-badge {
+            background: rgba(59, 130, 246, 0.18);
+            color: var(--primaria);
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            font-size: 0.65rem;
+            letter-spacing: 0.5px;
+        }
+
+        .attachment-bar-remove {
+            background: transparent;
+            border: none;
+            color: var(--suave);
+            cursor: pointer;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            transition: all 0.18s ease;
+            margin-left: 4px;
+            flex-shrink: 0;
+        }
+
+        .attachment-bar-remove:hover {
+            background: rgba(239, 68, 68, 0.15);
+            color: #EF4444;
+            transform: scale(1.1);
+        }
+
+        /* CARD DE ANEXO NA BOLHA DO USUÁRIO */
+        .user-msg-attachment {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            max-width: 100%;
+            backdrop-filter: blur(8px);
+        }
+
+        .user-img-attachment {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 8px;
+            margin-bottom: 8px;
+        }
+
+        .user-img-attachment img {
+            max-width: 280px;
+            max-height: 200px;
+            border-radius: 8px;
+            object-fit: contain;
+        }
+
+        .user-attachment-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            text-align: left;
+        }
+
+        .attachment-filename {
+            font-weight: 600;
+            font-size: 0.82rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 220px;
+        }
+
+        .attachment-size {
+            font-size: 0.7rem;
+            opacity: 0.75;
+        }
+
+        /* ARTEFATO DE DOCUMENTO ESTILO CLAUDE */
+        .ia-document-artifact {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            background: rgba(15, 23, 42, 0.55);
+            border: 1px solid rgba(59, 130, 246, 0.35);
+            border-radius: 14px;
+            padding: 12px 16px;
+            margin: 14px 0 6px 0;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18), 0 0 15px rgba(59, 130, 246, 0.1);
+            backdrop-filter: blur(12px);
+            transition: all 0.25s ease;
+        }
+
+        body:not(.tema-escuro) .ia-document-artifact {
+            background: rgba(248, 250, 252, 0.95);
+            border-color: rgba(59, 130, 246, 0.3);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+        }
+
+        .ia-document-artifact:hover {
+            border-color: rgba(59, 130, 246, 0.6);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.2);
+        }
+
+        .artifact-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .artifact-icon-wrap {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.35rem;
+            flex-shrink: 0;
+        }
+
+        .artifact-icon-pdf {
+            background: rgba(239, 68, 68, 0.14);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.25);
+        }
+
+        .artifact-icon-docx {
+            background: rgba(37, 99, 235, 0.14);
+            color: #3b82f6;
+            border: 1px solid rgba(37, 99, 235, 0.25);
+        }
+
+        .artifact-icon-xlsx {
+            background: rgba(16, 185, 129, 0.14);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        .artifact-content {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            min-width: 0;
+        }
+
+        .artifact-title {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--texto);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .artifact-desc {
+            font-size: 0.72rem;
+            color: var(--suave);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .artifact-btn-download {
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+            font-family: var(--fonte);
+            flex-shrink: 0;
+        }
+
+        .artifact-btn-download:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+        }
+
+        .artifact-btn-download.loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .bot-action-btn.btn-export-pdf:hover {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.14);
+        }
+
+        .bot-action-btn.btn-export-docx:hover {
+            color: #3b82f6;
+            background: rgba(37, 99, 235, 0.14);
+        }
+
+        .bot-action-btn.btn-export-excel:hover {
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.14);
+        }
+
         .agent-dropdown-menu {
             position: absolute;
             bottom: calc(100% + 8px);
@@ -2261,7 +2800,7 @@
                             <i class="fa-solid fa-gauge-high"></i> Visão Geral
                         </button>
                         <button class="ia-hub-tab" data-tab="copiloto" role="tab" id="tab-copiloto">
-                            <i class="fa-solid fa-comments"></i> Copiloto IA
+                            <i class="fa-solid fa-brain"></i> Copiloto IA
                         </button>
                         <button class="ia-hub-tab" data-tab="modulos" role="tab" id="tab-modulos">
                             <i class="fa-solid fa-grid-2"></i> Módulos Especializados
@@ -2398,14 +2937,6 @@
                     ================================================ -->
                     <div class="ia-hub-panel" id="panel-copiloto" role="tabpanel">
 
-                        <!-- Barra superior do Copiloto -->
-                        <div
-                            style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:0 2px;">
-                            <div style="display:flex;align-items:center;gap:10px;">
-
-                            </div>
-
-                        </div>
 
                         <!-- Container principal do Chat (Estilo Copilot) -->
                         <div class="page-ia-container" id="copilot-main-container">
@@ -2415,16 +2946,28 @@
                                 <!-- Cabeçalho da Sidebar -->
                                 <div class="copilot-brand-row">
                                     <span class="copilot-brand-title sidebar-hide-on-collapse">
+                                        <i class="fa-solid fa-brain" style="color:#3B82F6;"></i> Copilot IA
                                     </span>
-                                    <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" title="Recolher">
-                                        <i class="fa-solid fa-sidebar fa-flip-horizontal"></i>
-                                    </button>
+                                    <div style="display:flex;align-items:center;gap:6px;">
+                                        <button type="button" class="sidebar-toggle-btn" id="btn-fullscreen-sidebar" onclick="window.alternarTelaCheiaCopiloto(event)" title="Tela Cheia">
+                                            <i class="fa-solid fa-expand"></i>
+                                        </button>
+                                        <!-- <button type="button" class="sidebar-toggle-btn" id="sidebar-toggle-btn" title="Recolher / Expandir Menu Lateral">
+                                            <i class="fa-solid fa-bars-staggered"></i>
+                                        </button> -->
+                                    </div>
                                 </div>
 
                                 <!-- Nova Conversa -->
                                 <button id="btn-nova-conversa">
                                     <i class="fa-solid fa-plus"></i>
                                     <span class="sidebar-hide-on-collapse">Nova Conversa</span>
+                                </button>
+
+                                <!-- Exportar Conversa em PDF / Documento -->
+                                <button type="button" id="btn-exportar-chat-pdf" title="Exportar conversa completa com análises e arquivos para PDF">
+                                    <i class="fa-solid fa-file-arrow-down" style="color: #ef4444;"></i>
+                                    <span class="sidebar-hide-on-collapse">Exportar Conversa (PDF)</span>
                                 </button>
 
                                 <!-- Seletor de Planilha -->
@@ -2462,11 +3005,7 @@
                                         class="sidebar-hide-on-collapse">
                                         <i class="fa-solid fa-trash"></i> Apagar Histórico
                                     </button>
-                                    <button id="btn-exit-fullscreen" class="exit-fullscreen-btn"
-                                        style="display:none;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:#94a3b8;padding:8px 10px;border-radius:10px;width:100%;cursor:pointer;font-size:0.78rem;font-weight:600;align-items:center;justify-content:center;gap:6px;">
-                                        <i class="fa-solid fa-compress"></i> <span class="sidebar-hide-on-collapse">Sair
-                                            da Tela Cheia</span>
-                                    </button>
+        
                                     <div class="sidebar-hide-on-collapse"
                                         style="padding:6px 4px 0;font-size:0.72rem;color:#334155;display:flex;align-items:center;gap:6px;">
                                         <i class="fa-brands fa-google" style="color:#4285F4;"></i>
@@ -2477,7 +3016,16 @@
                             <!-- ====== FIM SIDEBAR ====== -->
 
                             <!-- ====== ÁREA DO CHAT ====== -->
-                            <div class="chat-box" id="chat-box">
+                            <div class="chat-box" id="chat-box" style="position:relative;">
+                            
+                                <!-- Botão Flutuante de Sair da Tela Cheia (Aparece no modo fullscreen) -->
+                                <button type="button" id="btn-floating-exit-fullscreen" class="btn-floating-exit-fullscreen" onclick="window.sairTelaCheiaCopiloto(event)" title="Sair da Tela Cheia (ESC)">
+                                    <i class="fa-solid fa-compress"></i> <span>Sair da Tela Cheia</span>
+                                </button>
+                                <!-- Botão Flutuante de Exportação de Conversa em PDF -->
+                                <button type="button" id="btn-chat-header-pdf" class="btn-chat-header-pdf" title="Exportar conversa completa em PDF">
+                                    <i class="fa-solid fa-file-pdf"></i> <span>Exportar PDF</span>
+                                </button>
                                 <!-- Stream de mensagens -->
                                 <div class="chat-messages" id="chat-messages">
                                     <div class="chat-stream-inner" id="chat-stream-inner">
@@ -2521,6 +3069,28 @@
 
                                     <!-- Caixa pill flutuante -->
                                     <div class="copilot-pill-box" id="copilot-pill-box">
+                                        <!-- Barra de Pré-visualização do Anexo -->
+                                        <div class="copilot-attachment-bar" id="copilot-attachment-bar" style="display: none;">
+                                            <div class="attachment-bar-card">
+                                                <div class="attachment-bar-thumb" id="attachment-bar-thumb" style="display: none;">
+                                                    <img id="attachment-img-preview" src="" alt="Prévia" />
+                                                </div>
+                                                <div class="attachment-bar-icon" id="attachment-bar-icon">
+                                                    <i class="fa-solid fa-file"></i>
+                                                </div>
+                                                <div class="attachment-bar-meta">
+                                                    <div class="attachment-bar-name" id="attachment-bar-name">arquivo.pdf</div>
+                                                    <div class="attachment-bar-details">
+                                                        <span id="attachment-bar-size">0 KB</span>
+                                                        <span class="attachment-bar-badge" id="attachment-bar-type">PDF</span>
+                                                    </div>
+                                                </div>
+                                                <button type="button" class="attachment-bar-remove" id="attachment-bar-remove" title="Remover arquivo anexado">
+                                                    <i class="fa-solid fa-xmark"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+
                                         <textarea id="chat-input" class="copilot-textarea"
                                             placeholder="Pergunte ao Copiloto IA... (Enter para enviar, Shift+Enter para nova linha)"
                                             rows="1" autocomplete="off"></textarea>
@@ -2614,9 +3184,23 @@
                                                         </button>
                                                     </div>
                                                 </div>
+
+                                                <!-- Botão Anexar Arquivo ao lado do Seletor de Agentes -->
+                                                <button type="button" class="copilot-attach-btn" id="copilot-attach-btn"
+                                                    title="Anexar arquivo para a IA analisar (Imagens, PDF, CSV, Excel, JSON, XML, TXT)">
+                                                    <i class="fa-solid fa-paperclip"></i>
+                                                    <span id="copilot-attach-label">Anexar</span>
+                                                </button>
+                                                <input type="file" id="copilot-file-input" style="display: none;"
+                                                    accept=".pdf,.png,.jpg,.jpeg,.webp,.csv,.xlsx,.xls,.json,.xml,.txt">
                                             </div>
 
                                             <div class="copilot-box-right">
+                                                <!-- Alternar som do chat -->
+                                                <button class="copilot-icon-btn" id="copilot-sound-btn" type="button"
+                                                    title="Sons de mensagem: Ativados (Clique para silenciar)" aria-label="Alternar som do chat">
+                                                    <i class="fa-solid fa-volume-high"></i>
+                                                </button>
                                                 <!-- Microfone -->
                                                 <button class="copilot-icon-btn" id="copilot-mic-btn"
                                                     title="Ditado por voz">
@@ -2862,14 +3446,128 @@
     {% include 'partials/painel_acessibilidade.html' %}
     {% include 'partials/chatbot.html' %}
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     <script src="{{ url_for('static', filename='js/ia_analise_modal.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/ia.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/ia-hub.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/ia.js') }}?v=3.8"></script>
+    <script src="{{ url_for('static', filename='js/ia-hub.js') }}?v=3.7"></script>
     <script>
-        function abrirSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarOverlay').classList.add('active'); }
-        function fecharSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('active'); }
+        function abrirSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarOverlay')?.classList.add('active'); }
+        function fecharSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay')?.classList.remove('active'); }
+
+        // ==================== ENGINE UNIVERSAL DE TELA CHEIA COPILOTO ====================
+        // Guarda referência ao pai original para restaurar ao sair
+        let _copilotOriginalParent = null;
+        let _copilotOriginalNextSibling = null;
+
+        window.entrarTelaCheiaCopiloto = function(e) {
+            if (e && e.stopPropagation) e.stopPropagation();
+            const container = document.getElementById('copilot-main-container') || document.querySelector('.page-ia-container');
+            if (!container || container.classList.contains('fullscreen')) return;
+
+            // Salva posição original na DOM para restaurar depois
+            _copilotOriginalParent = container.parentNode;
+            _copilotOriginalNextSibling = container.nextSibling;
+
+            // Move o container para document.body, escapando do .layout overflow:hidden
+            document.body.appendChild(container);
+
+            // Aplica classe e estilos inline com !important
+            container.classList.add('fullscreen');
+            document.body.classList.add('copilot-is-fullscreen');
+
+            container.style.cssText = [
+                'position: fixed !important',
+                'top: 0 !important',
+                'left: 0 !important',
+                'right: 0 !important',
+                'bottom: 0 !important',
+                'width: 100vw !important',
+                'height: 100vh !important',
+                'max-width: 100vw !important',
+                'max-height: 100vh !important',
+                'z-index: 2147483647 !important',
+                'border-radius: 0 !important',
+                'margin: 0 !important',
+                'border: none !important',
+                'box-shadow: none !important'
+            ].join(';');
+
+            const btnFloat = document.getElementById('btn-floating-exit-fullscreen');
+            if (btnFloat) btnFloat.style.cssText = 'display: inline-flex !important';
+            const btnExit = document.getElementById('btn-exit-fullscreen');
+            if (btnExit) btnExit.style.cssText = 'display: flex !important';
+
+            const messages = document.getElementById('chat-messages');
+            if (messages) {
+                messages.style.cssText = 'height: calc(100vh - 140px) !important; flex: 1 !important;';
+                setTimeout(() => { messages.scrollTop = messages.scrollHeight; }, 100);
+            }
+        };
+
+        window.sairTelaCheiaCopiloto = function(e) {
+            if (e && e.stopPropagation) e.stopPropagation();
+            const container = document.getElementById('copilot-main-container') || document.querySelector('.page-ia-container');
+            if (!container || !container.classList.contains('fullscreen')) return;
+
+            // Remove classe e estilos inline
+            container.classList.remove('fullscreen');
+            document.body.classList.remove('copilot-is-fullscreen');
+            container.style.cssText = '';
+
+            // Restaura o container ao pai original na DOM
+            if (_copilotOriginalParent) {
+                if (_copilotOriginalNextSibling) {
+                    _copilotOriginalParent.insertBefore(container, _copilotOriginalNextSibling);
+                } else {
+                    _copilotOriginalParent.appendChild(container);
+                }
+                _copilotOriginalParent = null;
+                _copilotOriginalNextSibling = null;
+            }
+
+            const btnFloat = document.getElementById('btn-floating-exit-fullscreen');
+            if (btnFloat) btnFloat.style.cssText = 'display: none !important';
+            const btnExit = document.getElementById('btn-exit-fullscreen');
+            if (btnExit) btnExit.style.cssText = 'display: none !important';
+
+            const messages = document.getElementById('chat-messages');
+            if (messages) messages.style.cssText = '';
+        };
+
+        window.alternarTelaCheiaCopiloto = function(e) {
+            if (e && e.stopPropagation) e.stopPropagation();
+            const container = document.getElementById('copilot-main-container') || document.querySelector('.page-ia-container');
+            if (!container) return;
+            if (container.classList.contains('fullscreen')) {
+                window.sairTelaCheiaCopiloto(e);
+            } else {
+                window.entrarTelaCheiaCopiloto(e);
+            }
+        };
+
+        // Escuta global da tecla ESC
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.key === 'Esc') {
+                const container = document.getElementById('copilot-main-container') || document.querySelector('.page-ia-container');
+                if (container && container.classList.contains('fullscreen')) {
+                    window.sairTelaCheiaCopiloto(e);
+                }
+            }
+        });
+
+        // Toggle da Sidebar do Copilot
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleBtn = document.getElementById('sidebar-toggle-btn');
+            const sidebar = document.getElementById('chat-sidebar');
+            if (toggleBtn && sidebar) {
+                toggleBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    sidebar.classList.toggle('collapsed');
+                });
+            }
+        });
 
         // Reload insight button
         function loadDailyInsight() {

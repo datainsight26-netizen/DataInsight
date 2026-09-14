@@ -3647,6 +3647,10 @@
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
   <script src="{{ url_for('static', filename='js/dados.js') }}"></script>
   <script src="{{ url_for('static', filename='js/dados-tools.js') }}"></script>
+  <script>
+    window.IS_MEI = {{ is_mei | tojson }};
+    window.USUARIO_PERFIL = {{ usuario_perfil | tojson }};
+  </script>
   <script src="{{ url_for('static', filename='js/dados-financeiro.js') }}"></script>
   <script src="{{ url_for('static', filename='js/dados_guide.js') }}"></script>
   <script>

@@ -1567,8 +1567,22 @@
                       <div class="tipo-card__desc">Faturamento, despesas, margens, evolução de faturamento e lucro líquido.</div>
                     </div>
 
+                    {% if is_mei %}
+                    <!-- Relatório Especial MEI: Declaração Anual (DASN-SIMEI) -->
+                    <div class="tipo-card active" data-tipo="mei_dasn" onclick="selecionarCardTipo('mei_dasn')">
+                      <div class="tipo-card__top">
+                        <div class="tipo-card__icon" style="background:linear-gradient(135deg,#10B981,#047857);">
+                          <i class="fa-solid fa-file-shield"></i>
+                        </div>
+                        <div class="tipo-card__radio"></div>
+                      </div>
+                      <div class="tipo-card__title">Declaração Anual MEI (DASN-SIMEI)</div>
+                      <div class="tipo-card__desc">Receitas brutas de Comércio e Serviços mês a mês, teto de R$ 81k e total de compras.</div>
+                    </div>
+                    {% endif %}
+
                     <!-- Fluxo de Caixa -->
-                    <div class="tipo-card" data-tipo="fluxo_caixa" onclick="selecionarCardTipo('fluxo_caixa')">
+                    <div class="tipo-card {% if not is_mei %}active{% endif %}" data-tipo="fluxo_caixa" onclick="selecionarCardTipo('fluxo_caixa')">
                       <div class="tipo-card__top">
                         <div class="tipo-card__icon" style="background:linear-gradient(135deg,#10B981,#059669);">
                           <i class="fa-solid fa-money-bill-transfer"></i>
@@ -1579,6 +1593,7 @@
                       <div class="tipo-card__desc">Entradas, saídas operacionais, liquidez, saldo em conta e queima de caixa.</div>
                     </div>
 
+                    {% if not is_mei %}
                     <!-- Planejamento Financeiro -->
                     <div class="tipo-card" data-tipo="planejamento" onclick="selecionarCardTipo('planejamento')">
                       <div class="tipo-card__top">
@@ -1590,6 +1605,7 @@
                       <div class="tipo-card__title">Planejamento 12 Meses</div>
                       <div class="tipo-card__desc">Projeções anuais, ponto de equilíbrio, margem de segurança e metas.</div>
                     </div>
+                    {% endif %}
 
                     <!-- Análise Salva IA -->
                     <div class="tipo-card" data-tipo="analise_salva" onclick="selecionarCardTipo('analise_salva')">
@@ -1620,11 +1636,14 @@
                   <div class="campo-rel" style="display:none;">
                     <label for="tipoRelatorio"><i class="fa-solid fa-layer-group"></i> Tipo de Relatório Técnico</label>
                     <select class="selecao" id="tipoRelatorio" onchange="aoMudarTipoRelatorio()">
+                      {% if is_mei %}
+                      <option value="mei_dasn" selected>📋 Declaração Anual MEI (Espelho DASN-SIMEI)</option>
+                      {% endif %}
                       <option value="analise_salva">🌟 Análise Salva da IA (Diagnóstico Completo)</option>
-                      <option value="fluxo_caixa">💼 Fluxo de Caixa & Tesouraria (Liquidez e Saldo)</option>
+                      <option value="fluxo_caixa" {% if not is_mei %}selected{% endif %}>💼 Fluxo de Caixa & Tesouraria (Liquidez e Saldo)</option>
                       <option value="planejamento">🎯 Planejamento Financeiro & Metas (12 Meses)</option>
                       <option value="graficos_avancados">📊 Gráficos Avançados & Métricas Globais</option>
-                      <option value="consolidado" selected>🌐 Relatório Consolidado do Negócio</option>
+                      <option value="consolidado">🌐 Relatório Consolidado do Negócio</option>
                     </select>
                   </div>
 

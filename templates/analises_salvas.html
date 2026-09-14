@@ -464,7 +464,11 @@
                   <option value="analises">📊 Análise de Métricas</option>
                   <option value="dashboard">📈 Dashboard Gerencial</option>
                   <option value="fluxo_caixa">💸 Fluxo de Caixa</option>
+                  {% if is_mei %}
+                  <option value="controles_essenciais">🎛️ Controles Essenciais (MEI)</option>
+                  {% else %}
                   <option value="planejamento">🎯 Planejamento Financeiro</option>
+                  {% endif %}
                   <option value="dados">📁 Gestão de Dados</option>
                   <option value="ia_financeiro">💰 IA Financeiro</option>
                   <option value="ia_decisoes">🧠 IA Decisões</option>
@@ -506,8 +510,13 @@
                 onclick="selecionarFiltroPagina('dashboard')">📈 Dashboard</button>
               <button type="button" class="pill-btn" data-pill="fluxo_caixa"
                 onclick="selecionarFiltroPagina('fluxo_caixa')">💸 Fluxo de Caixa</button>
+              {% if is_mei %}
+              <button type="button" class="pill-btn" data-pill="controles_essenciais"
+                onclick="selecionarFiltroPagina('controles_essenciais')">🎛️ Controles Essenciais</button>
+              {% else %}
               <button type="button" class="pill-btn" data-pill="planejamento"
                 onclick="selecionarFiltroPagina('planejamento')">🎯 Planejamento</button>
+              {% endif %}
               <button type="button" class="pill-btn" data-pill="analises"
                 onclick="selecionarFiltroPagina('analises')">📊 Análises</button>
               <button type="button" class="pill-btn" data-pill="ia_financeiro"

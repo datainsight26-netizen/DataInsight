@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="DataInsight — Controles Essenciais e Termômetro do Limite Anual do MEI." />
+  <title>DataInsight • Controles Essenciais</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ia_analise_modal.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='acessibilidade/acessibilidade.css') }}" />
+  
+  <style>
+    /* Força display flex no container para que gap funcione e evite sobreposição de especificidade do premium.css */
+    .pagina > .container.mei-container,
+    .mei-container {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 24px !important;
+      padding: 24px 28px 48px !important;
+      width: 100% !important;
+      max-width: 1440px !important;
+      margin-left: auto !important;
+      margin-right: auto !important;
+      box-sizing: border-box !important;
+    }
+
+    /* Hero Header */
+    .mei-hero {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+      padding: 24px 28px;
+      background: var(--cartao);
+      border: 1px solid var(--borda);
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    }
+
+    .mei-hero-titles h1 {
+      font-size: 1.55rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin: 0 0 6px;
+      color: var(--texto);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .mei-hero-titles p {
+      margin: 0;
+      color: var(--suave);
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+
+    .badge-mei-tag {
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      background: #10b981;
+      color: #fff;
+      letter-spacing: 0.05em;
+    }
+
+    .mei-hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Barra de Filtros e Origem */
+    .mei-filtros-bar {
+      padding: 16px 24px;
+      border-radius: 14px;
+      background: var(--cartao);
+      border: 1px solid var(--borda);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+    }
+
+    .mei-filtros-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .mei-filtros-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .mei-filtro-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mei-filtro-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--texto);
+    }
+
+    .select-periodo {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--borda);
+      background: var(--fundo);
+      color: var(--texto);
+      font-weight: 600;
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    /* Termômetro MEI Card */
+    .termometro-card {
+      background: var(--cartao);
+      border: 1px solid var(--borda);
+      border-radius: 16px;
+      padding: 24px 28px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    }
+
+    .termometro-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .termometro-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.12);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    /* Barra visual do termômetro */
+    .termometro-bar-wrap {
+      margin: 20px 0 16px;
+    }
+
+    .termometro-bar-track {
+      height: 22px;
+      border-radius: 11px;
+      background: rgba(255, 255, 255, 0.08);
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--borda);
+    }
+
+    .termometro-bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 11px;
+      background: linear-gradient(90deg, #10b981 0%, #eab308 70%, #f97316 85%, #ef4444 100%);
+      transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .termometro-marcadores {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: var(--suave);
+      margin-top: 8px;
+      font-weight: 600;
+    }
+
+    /* Mini métricas do termômetro */
+    .termometro-kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 22px;
+    }
+
+    .termometro-kpi-item {
+      padding: 16px;
+      background: var(--fundo);
+      border: 1px solid var(--borda);
+      border-radius: 12px;
+      min-width: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .termometro-kpi-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--suave);
+      margin-bottom: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .termometro-kpi-val {
+      font-size: 1.28rem;
+      font-weight: 800;
+      color: var(--texto);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .termometro-alert-box {
+      margin-top: 18px;
+      padding: 14px 18px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+
+    /* Equação de Caixa (Saldo Anterior + Entradas - Saídas = Saldo Atual) */
+    .caixa-equacao-grid {
+      display: grid;
+      grid-template-columns: 1fr 40px 1fr 40px 1fr 40px 1.15fr;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .caixa-card {
+      background: var(--cartao);
+      border: 1px solid var(--borda);
+      border-radius: 14px;
+      padding: 20px 18px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 128px;
+      box-sizing: border-box;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .caixa-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    .caixa-card-op {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--fundo);
+      border: 1.5px solid var(--borda);
+      color: var(--suave);
+      font-size: 1.25rem;
+      font-weight: 800;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+      flex-shrink: 0;
+      margin: 0 auto;
+      user-select: none;
+    }
+
+    .caixa-card--saldo-ant { border-left: 4px solid #64748b; }
+    .caixa-card--entradas { border-left: 4px solid #10b981; }
+    .caixa-card--saidas { border-left: 4px solid #ef4444; }
+    .caixa-card--saldo-atual { 
+      border-left: 4px solid #3b82f6; 
+      background: rgba(59, 130, 246, 0.04);
+    }
+
+    .caixa-label {
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--suave);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .caixa-val {
+      font-size: 1.38rem;
+      font-weight: 800;
+      color: var(--texto);
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+    }
+
+    .caixa-subtext {
+      font-size: 0.75rem;
+      color: var(--suave);
+      margin-top: 6px;
+    }
+
+    /* Grid 2 colunas: Saídas e Tabela Mensal */
+    .mei-grid-2 {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      align-items: start;
+      gap: 24px;
+    }
+
+    .mei-card {
+      background: var(--cartao);
+      border: 1px solid var(--borda);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    }
+
+    .mei-card-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--texto);
+      margin: 0 0 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Lista de Categorias de Saídas */
+    .saidas-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .saida-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: var(--fundo);
+      border: 1px solid var(--borda);
+      transition: background 0.15s ease;
+    }
+
+    .saida-item:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .saida-item-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .saida-icon-box {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+
+    .saida-name {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--texto);
+      line-height: 1.2;
+    }
+
+    .saida-val {
+      font-size: 0.92rem;
+      font-weight: 800;
+      color: #ef4444;
+      white-space: nowrap;
+    }
+
+    .saida-total-box {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .saida-total-box span {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--texto);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .saida-total-box strong {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #ef4444;
+    }
+
+    /* Tabela Mensal Resumo */
+    .tabela-mensal-wrap {
+      overflow-x: auto;
+      border-radius: 10px;
+      border: 1px solid var(--borda);
+    }
+
+    .tabela-mensal {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.84rem;
+      text-align: left;
+    }
+
+    .tabela-mensal th {
+      padding: 11px 14px;
+      background: var(--fundo);
+      color: var(--suave);
+      font-weight: 700;
+      border-bottom: 1px solid var(--borda);
+      white-space: nowrap;
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .tabela-mensal td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--borda);
+      color: var(--texto);
+      white-space: nowrap;
+      font-size: 0.84rem;
+    }
+
+    .tabela-mensal tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .tabela-mensal tbody tr:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .tabela-mensal tr.mes-selecionado {
+      background: rgba(59, 130, 246, 0.1) !important;
+    }
+
+    .tabela-mensal tr.mes-selecionado td:first-child {
+      border-left: 3px solid #3b82f6;
+      font-weight: 800;
+    }
+
+    /* Tabela de Lançamentos Recentes */
+    .lancamento-badge-entrada {
+      background: rgba(16, 185, 129, 0.12);
+      color: #10b981;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.72rem;
+    }
+
+    .lancamento-badge-saida {
+      background: rgba(239, 68, 68, 0.12);
+      color: #ef4444;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.72rem;
+    }
+
+    /* Modal de Lançamento Rápido */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal-overlay.ativo {
+      display: flex;
+    }
+
+    .modal-card {
+      background: var(--cartao);
+      border: 1px solid var(--borda);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+      overflow: hidden;
+      animation: modalFadeIn 0.2s ease-out;
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .modal-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--borda);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--texto);
+    }
+
+    .modal-close-btn {
+      background: none;
+      border: none;
+      color: var(--suave);
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .modal-body {
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .modal-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .modal-field label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--texto);
+    }
+
+    .modal-input, .modal-select {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1.5px solid var(--borda);
+      background: var(--fundo);
+      color: var(--texto);
+      font-size: 0.9rem;
+      font-family: var(--fonte);
+      outline: none;
+    }
+
+    .modal-input:focus, .modal-select:focus {
+      border-color: var(--primaria);
+    }
+
+    .modal-tipo-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .modal-tipo-btn {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1.5px solid var(--borda);
+      background: var(--fundo);
+      color: var(--texto);
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.15s;
+    }
+
+    .modal-tipo-btn.active-entrada {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: #10b981;
+      color: #10b981;
+    }
+
+    .modal-tipo-btn.active-saida {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--borda);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    /* Regras Responsivas */
+    @media (max-width: 1200px) {
+      .mei-grid-2 {
+        grid-template-columns: 310px 1fr;
+        gap: 20px;
+      }
+      .caixa-val {
+        font-size: 1.25rem;
+      }
+    }
+
+    @media (max-width: 1024px) {
+      .caixa-equacao-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+      }
+      .caixa-card-op {
+        display: none;
+      }
+      .mei-grid-2 {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .pagina > .container.mei-container,
+      .mei-container {
+        padding: 16px 14px 36px !important;
+        gap: 18px !important;
+      }
+      .termometro-kpis {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .caixa-equacao-grid {
+        grid-template-columns: 1fr;
+      }
+      .mei-hero {
+        padding: 18px 20px;
+      }
+      .termometro-card, .mei-card {
+        padding: 18px 20px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .termometro-kpis {
+        grid-template-columns: 1fr;
+      }
+      .termometro-kpi-val {
+        font-size: 1.1rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <a href="#conteudo" class="skip-link">Ir para conteúdo</a>
+  <div class="layout">
+    <!-- Sidebar Desktop -->
+    <aside class="sidebar" id="sidebar" aria-label="Navegação principal">
+      {% include 'partials/navbar.html' %}
+    </aside>
+
+    <div class="main">
+      <header class="topbar" role="banner">
+        <div class="topbar__left">
+          <button class="topbar__btn topbar__mobile-toggle" onclick="abrirSidebar()" aria-label="Abrir menu"><i class="fa-solid fa-bars"></i></button>
+          <span class="topbar__greeting">Olá, <strong>{{ session.usuario_nome }}</strong></span>
+        </div>
+        <div class="topbar__actions">
+          <button class="topbar__btn" onclick="alternarTema()" aria-label="Alternar tema" id="btnTema"><i class="fa-solid fa-moon"></i></button>
+          <a class="topbar__btn" href="{{ url_for('pagina_configuracoes') }}" title="Configurações"><i class="fa-solid fa-gear"></i></a>
+        </div>
+      </header>
+
+      <main id="conteudo" class="pagina" role="main" data-ia-help="page_controles_essenciais">
+        <div class="container mei-container">
+
+          <!-- 1. Hero do Módulo MEI -->
+          <header class="mei-hero">
+            <div class="mei-hero-titles">
+              <div class="migalhas" aria-label="Você está em">Início &gt; Controles Essenciais (MEI)</div>
+              <h1>
+                <i class="fa-solid fa-sliders" style="color: #10b981;"></i>
+                Controles Essenciais
+              </h1>
+              <p>
+                Gestão simplificada de entradas, saídas, caixa diário e vigilância constante do teto legal de R$ 81.000,00.
+              </p>
+            </div>
+
+            <!-- BOTÃO DE IA BRILHANTE AZUL COM ANIMAÇÃO E PULSANDO -->
+            <div style="display: flex; align-items: center; gap: 12px; flex-shrink: 0;">
+              <button type="button" 
+                      id="btnIaAnaliseControlesEssenciais" 
+                      class="btn-ia-glow-blue" 
+                      onclick="IaAnaliseModal.abrir('controles_essenciais', coletarContextoIaControlesEssenciais)" 
+                      title="Executar Análise Completa dos Controles Essenciais com IA"
+                      aria-label="Executar Análise Completa com IA">
+                <span class="btn-ia-glow-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+                <span class="btn-ia-glow-text">IA</span>
+              </button>
+            </div>
+          </header>
+
+        <!-- BARRA DE FILTRO DE ORIGEM DOS DADOS E PERÍODO -->
+        <section class="mei-filtros-bar" aria-label="Origem dos dados e período">
+          <div class="mei-filtros-content">
+            <div class="mei-filtros-left">
+              
+              <!-- Seletor de Planilha / Origem -->
+              <div class="mei-filtro-group">
+                <label for="seletorPlanilhaCE" class="mei-filtro-label">
+                  <i class="fa-solid fa-table-list" style="color:#10b981;"></i>
+                  Origem dos Dados:
+                </label>
+                <select class="selecao" id="seletorPlanilhaCE" aria-label="Selecionar tabela ou visão consolidada"
+                        style="min-width:240px; padding:8px 14px; font-size:0.82rem; font-weight:600; border-radius:8px; border:1px solid var(--borda); background:var(--fundo); color:var(--texto);">
+                  <option value="todas">🌐 Todas as Planilhas (Visão Consolidada)</option>
+                </select>
+              </div>
+
+              <!-- Filtro de Ano -->
+              <div class="mei-filtro-group">
+                <label for="selAno" class="mei-filtro-label">
+                  <i class="fa-solid fa-calendar-days" style="color:#10b981;"></i>
+                  Ano:
+                </label>
+                <select id="selAno" class="select-periodo" onchange="carregarControlesEssenciais()">
+                  <option value="2026" selected>2026</option>
+                  <option value="2025">2025</option>
+                  <option value="2024">2024</option>
+                </select>
+              </div>
+
+              <!-- Filtro de Mês -->
+              <div class="mei-filtro-group">
+                <label for="selMes" class="mei-filtro-label">
+                  <i class="fa-solid fa-clock" style="color:#10b981;"></i>
+                  Mês de Referência:
+                </label>
+                <select id="selMes" class="select-periodo" onchange="carregarControlesEssenciais()">
+                  <option value="1">Janeiro</option>
+                  <option value="2">Fevereiro</option>
+                  <option value="3" selected>Março</option>
+                  <option value="4">Abril</option>
+                  <option value="5">Maio</option>
+                  <option value="6">Junho</option>
+                  <option value="7">Julho</option>
+                  <option value="8">Agosto</option>
+                  <option value="9">Setembro</option>
+                  <option value="10">Outubro</option>
+                  <option value="11">Novembro</option>
+                  <option value="12">Dezembro</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Indicador / Badge de Fontes Selecionadas -->
+            <div id="controlesStatusFontesContainer" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+              <span class="badge" style="background:rgba(16,185,129,0.12); color:#10b981; border:1px solid rgba(16,185,129,0.25); padding:6px 12px; border-radius:14px; font-size:0.75rem; font-weight:600;">
+                <i class="fa-solid fa-layer-group"></i> Carregando fontes...
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. CARD TERMÔMETRO DO LIMITE DO MEI -->
+        <section class="termometro-card" aria-label="Termômetro do Teto Anual do MEI">
+          <div class="termometro-header">
+            <div>
+              <h2 style="font-size: 1.15rem; font-weight: 800; margin: 0 0 4px; color: var(--texto);">
+
+                Termômetro do Teto Anual do MEI
+              </h2>
+              <span style="font-size: 0.82rem; color: var(--suave);">
+                Acompanhe o faturamento acumulado no ano fiscal para não sofrer desenquadramento surpresa.
+              </span>
+            </div>
+            <div id="termometroBadge" class="termometro-badge">
+              <i class="fa-solid fa-shield-check"></i>
+              <span>Carregando...</span>
+            </div>
+          </div>
+
+          <!-- Barra de Progresso Visual -->
+          <div class="termometro-bar-wrap">
+            <div class="termometro-bar-track">
+              <div id="termometroFill" class="termometro-bar-fill"></div>
+            </div>
+            <div class="termometro-marcadores">
+              <span>R$ 0</span>
+              <span>70% (Atenção)</span>
+              <span>85% (Risco)</span>
+              <span id="labelTetoFinal">R$ 81.000,00</span>
+            </div>
+          </div>
+
+          <!-- 4 Indicadores Chave -->
+          <div class="termometro-kpis">
+            <div class="termometro-kpi-item">
+              <div class="termometro-kpi-label">Faturado no Ano</div>
+              <div id="kpiFaturadoAno" class="termometro-kpi-val" style="color: #10b981;">R$ 0,00</div>
+            </div>
+            <div class="termometro-kpi-item">
+              <div class="termometro-kpi-label">Limite Legal Anual</div>
+              <div id="kpiLimiteTeto" class="termometro-kpi-val">R$ 81.000,00</div>
+            </div>
+            <div class="termometro-kpi-item">
+              <div class="termometro-kpi-label">Saldo Restante</div>
+              <div id="kpiSaldoRestante" class="termometro-kpi-val" style="color: #3b82f6;">R$ 81.000,00</div>
+            </div>
+            <div class="termometro-kpi-item">
+              <div class="termometro-kpi-label">Percentual Utilizado</div>
+              <div id="kpiPctUsado" class="termometro-kpi-val">0.0%</div>
+            </div>
+          </div>
+
+          <!-- Box de Alerta Contextual -->
+          <div id="termometroAlertBox" class="termometro-alert-box" style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); color: #059669;">
+            <i class="fa-solid fa-circle-info" style="font-size: 1.2rem;"></i>
+            <span id="termometroMensagem">Seu faturamento acumulado está dentro da faixa segura para o MEI.</span>
+          </div>
+        </section>
+
+        <!-- 3. EQUAÇÃO DE CAIXA: Saldo Anterior + Entradas - Saídas = Saldo Atual -->
+        <section class="caixa-equacao-grid" aria-label="Equação de Caixa do Mês">
+          <!-- Saldo Anterior -->
+          <div class="caixa-card caixa-card--saldo-ant">
+            <div class="caixa-label">
+              <i class="fa-solid fa-clock-rotate-left"></i> Saldo Anterior
+            </div>
+            <div id="cxSaldoAnt" class="caixa-val">R$ 0,00</div>
+            <div class="caixa-subtext">Acumulado meses anteriores</div>
+          </div>
+
+          <div class="caixa-card-op">+</div>
+
+          <!-- Entradas -->
+          <div class="caixa-card caixa-card--entradas">
+            <div class="caixa-label" style="color: #10b981;">
+              <i class="fa-solid fa-arrow-trend-up"></i> Entradas (Receitas)
+            </div>
+            <div id="cxEntradas" class="caixa-val" style="color: #10b981;">R$ 0,00</div>
+            <div class="caixa-subtext">Vendas & Serviços no mês</div>
+          </div>
+
+          <div class="caixa-card-op">-</div>
+
+          <!-- Saídas -->
+          <div class="caixa-card caixa-card--saidas">
+            <div class="caixa-label" style="color: #ef4444;">
+              <i class="fa-solid fa-arrow-trend-down"></i> Saídas (Despesas)
+            </div>
+            <div id="cxSaidas" class="caixa-val" style="color: #ef4444;">R$ 0,00</div>
+            <div class="caixa-subtext">DAS, fornecedores e contas</div>
+          </div>
+
+          <div class="caixa-card-op">=</div>
+
+          <!-- Saldo Atual -->
+          <div class="caixa-card caixa-card--saldo-atual">
+            <div class="caixa-label" style="color: #3b82f6;">
+              <i class="fa-solid fa-vault"></i> Saldo Atual em Caixa
+            </div>
+            <div id="cxSaldoAtual" class="caixa-val" style="color: #3b82f6;">R$ 0,00</div>
+            <div id="cxLucroMes" class="caixa-subtext" style="font-weight: 700;">Lucro do Mês: R$ 0,00</div>
+          </div>
+        </section>
+
+        <!-- 4. GRID 2 COLUNAS: Saídas por Categoria + Resumo Mensal 12 Meses -->
+        <section class="mei-grid-2">
+          <!-- Coluna Esquerda: Detalhamento de Saídas -->
+          <div class="mei-card">
+            <h3 class="mei-card-title">
+              <i class="fa-solid fa-receipt" style="color: #ef4444;"></i>
+              Despesas do Mês
+            </h3>
+            <div class="saidas-list">
+              <div class="saida-item">
+                <div class="saida-item-left">
+                  <div class="saida-icon-box" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                  </div>
+                  <div>
+                    <div class="saida-name">Boleto DAS-MEI</div>
+                    <small style="color: var(--suave); font-size: 0.72rem;">Tributo fixo mensal</small>
+                  </div>
+                </div>
+                <div id="valDasMei" class="saida-val">R$ 0,00</div>
+              </div>
+
+              <div class="saida-item">
+                <div class="saida-item-left">
+                  <div class="saida-icon-box" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">
+                    <i class="fa-solid fa-truck"></i>
+                  </div>
+                  <div>
+                    <div class="saida-name">Fornecedores / Estoque</div>
+                    <small style="color: var(--suave); font-size: 0.72rem;">Mercadorias e insumos</small>
+                  </div>
+                </div>
+                <div id="valFornecedores" class="saida-val">R$ 0,00</div>
+              </div>
+
+              <div class="saida-item">
+                <div class="saida-item-left">
+                  <div class="saida-icon-box" style="background: rgba(139, 92, 246, 0.15); color: #8b5cf6;">
+                    <i class="fa-solid fa-bolt"></i>
+                  </div>
+                  <div>
+                    <div class="saida-name">Custos Operacionais</div>
+                    <small style="color: var(--suave); font-size: 0.72rem;">Internet, luz, ferramentas</small>
+                  </div>
+                </div>
+                <div id="valOperacionais" class="saida-val">R$ 0,00</div>
+              </div>
+
+              <div class="saida-item">
+                <div class="saida-item-left">
+                  <div class="saida-icon-box" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+                    <i class="fa-solid fa-user-tag"></i>
+                  </div>
+                  <div>
+                    <div class="saida-name">Pró-labore / Retiradas</div>
+                    <small style="color: var(--suave); font-size: 0.72rem;">Separação PF vs PJ</small>
+                  </div>
+                </div>
+                <div id="valProLabore" class="saida-val">R$ 0,00</div>
+              </div>
+
+              <div class="saida-item">
+                <div class="saida-item-left">
+                  <div class="saida-icon-box" style="background: rgba(100, 116, 139, 0.15); color: #64748b;">
+                    <i class="fa-solid fa-circle-ellipsis"></i>
+                  </div>
+                  <div>
+                    <div class="saida-name">Outras Despesas</div>
+                    <small style="color: var(--suave); font-size: 0.72rem;">Gastos diversos</small>
+                  </div>
+                </div>
+                <div id="valOutrasDesp" class="saida-val">R$ 0,00</div>
+              </div>
+            </div>
+
+            <!-- Totalizador do Mês -->
+            <div class="saida-total-box">
+              <span>Total de Saídas:</span>
+              <strong id="valTotalDespesasMes">R$ 0,00</strong>
+            </div>
+          </div>
+
+          <!-- Coluna Direita: Resumo Mensal 12 Meses -->
+          <div class="mei-card">
+            <h3 class="mei-card-title">
+              <i class="fa-solid fa-calendar-days" style="color: #3b82f6;"></i>
+              Acompanhamento Mensal do Ano
+            </h3>
+            <div class="tabela-mensal-wrap">
+              <table class="tabela-mensal">
+                <thead>
+                  <tr>
+                    <th>Mês</th>
+                    <th>Serviços</th>
+                    <th>Comércio</th>
+                    <th>Total Entradas</th>
+                    <th>Total Saídas</th>
+                    <th>Lucro Mês</th>
+                    <th>Acumulado Ano</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyMeses">
+                  <tr>
+                    <td colspan="7" style="text-align: center; color: var(--suave);">Carregando dados mensais...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. LANÇAMENTOS RECENTES -->
+        <section class="mei-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 class="mei-card-title" style="margin: 0;">
+              <i class="fa-solid fa-list-check" style="color: var(--primaria);"></i>
+              Últimas Movimentações Registradas
+            </h3>
+            <button type="button" class="botao botao--pequeno botao--primario" onclick="abrirModalLancamento()">
+              <i class="fa-solid fa-plus"></i> Novo Registro
+            </button>
+          </div>
+
+          <div class="tabela-mensal-wrap">
+            <table class="tabela-mensal">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Tipo</th>
+                  <th>Categoria</th>
+                  <th>Descrição</th>
+                  <th>Valor</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyLancamentos">
+                <tr>
+                  <td colspan="5" style="text-align: center; color: var(--suave);">Nenhum lançamento recente encontrado.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        </div> <!-- Fim .container.mei-container -->
+
+        {% include 'partials/footer.html' %}
+      </main>
+    </div>
+  </div>
+
+  <!-- MODAL DE LANÇAMENTO RÁPIDO -->
+  <div id="modalLancamentoRapido" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-bolt" style="color:#10b981;"></i> Registrar Movimentação MEI</h3>
+        <button type="button" class="modal-close-btn" onclick="fecharModalLancamento()">&times;</button>
+      </div>
+      <form id="formLancamentoRapido" onsubmit="salvarLancamentoRapido(event)">
+        <div class="modal-body">
+          <div class="modal-field">
+            <label>Tipo de Movimentação:</label>
+            <div class="modal-tipo-tabs">
+              <button type="button" id="btnTipoEntrada" class="modal-tipo-btn active-entrada" onclick="selecionarTipoLancamento('entrada')">
+                <i class="fa-solid fa-arrow-up"></i> Entrada (Venda/Serviço)
+              </button>
+              <button type="button" id="btnTipoSaida" class="modal-tipo-btn" onclick="selecionarTipoLancamento('saida')">
+                <i class="fa-solid fa-arrow-down"></i> Saída (Despesa/DAS)
+              </button>
+            </div>
+            <input type="hidden" id="lancTipo" value="entrada" />
+          </div>
+
+          <div class="modal-field">
+            <label for="lancSubtipo">Categoria:</label>
+            <select id="lancSubtipo" class="modal-select">
+              <option value="servico">Prestação de Serviços</option>
+              <option value="comercio">Venda de Mercadorias / Produtos</option>
+            </select>
+          </div>
+
+          <div class="modal-field">
+            <label for="lancDescricao">Descrição:</label>
+            <input type="text" id="lancDescricao" class="modal-input" placeholder="Ex: Venda de produto X para cliente" required />
+          </div>
+
+          <div class="modal-field">
+            <label for="lancValor">Valor (R$):</label>
+            <input type="number" step="0.01" min="0.01" id="lancValor" class="modal-input" placeholder="0,00" required />
+          </div>
+
+          <div class="modal-field">
+            <label for="lancData">Data:</label>
+            <input type="date" id="lancData" class="modal-input" required />
+          </div>
+
+          <div class="modal-field">
+            <label for="lancTabelaDestino"><i class="fa-solid fa-table-list" style="color:#10b981;"></i> Salvar na Tabela:</label>
+            <select id="lancTabelaDestino" class="modal-select">
+              <option value="padrao">📋 Tabela Padrão (Controles Essenciais MEI)</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="botao botao--outline" onclick="fecharModalLancamento()">Cancelar</button>
+          <button type="submit" id="btnSalvarLanc" class="botao botao--primario">
+            <i class="fa-solid fa-check"></i> Salvar Lançamento
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% include 'partials/navbar_mobile.html' %}
+  {% include 'partials/chatbot.html' %}
+  {% include 'partials/painel_acessibilidade.html' %}
+
+  <!-- Inclusão do Modal de Diagnóstico da IA e scripts -->
+  {% with page_id='controles_essenciais' %}
+    {% include 'partials/modal_analise_ia.html' %}
+  {% endwith %}
+
+  <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ia_analise_modal.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/controles_essenciais.js') }}?v=2.1"></script>
+  <script>
+    function abrirSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sidebarOverlay')?.classList.add('active');}
+    function fecharSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay')?.classList.remove('active');}
+  </script>
+</body>
+</html>

@@ -39,6 +39,15 @@
     <span>Fluxo Caixa</span>
   </a>
 
+  {% if is_mei %}
+  <a class="navbar-bottom__item {% if request.endpoint=='pagina_controles_essenciais' %}active{% endif %}"
+   href="{{ url_for('pagina_controles_essenciais') }}"
+   aria-label="Controles Essenciais"
+   {% if request.endpoint=='pagina_controles_essenciais' %}aria-current="page"{% endif %}>
+    <i class="fa-solid fa-sliders"></i>
+    <span>Controles</span>
+  </a>
+  {% else %}
   <a class="navbar-bottom__item {% if request.endpoint=='pagina_planejamento_financeiro' %}active{% endif %}"
    href="{{ url_for('pagina_planejamento_financeiro') }}"
    aria-label="Planejamento"
@@ -46,6 +55,7 @@
     <i class="fa-solid fa-chart-pie"></i>
     <span>Planejamento</span>
   </a>
+  {% endif %}
 
   <a class="navbar-bottom__item {% if request.endpoint=='pagina_relatorio' %}active{% endif %}"
      href="{{ url_for('pagina_relatorio') }}" aria-label="Relatórios"
@@ -58,7 +68,7 @@
    href="{{ url_for('pagina_ia') }}" aria-label="IA"
    {% if request.endpoint=='pagina_ia' %}aria-current="page"{% endif %}>
     <i class="fa-solid fa-robot"></i>
-    <span>IA</span>
+    <span>Centro de Inteligência</span>
   </a>
 
     <a href="{{ url_for('pagina_analises_salvas') }}"

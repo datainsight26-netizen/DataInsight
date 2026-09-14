@@ -256,6 +256,93 @@
       margin-bottom: 18px;
     }
 
+    /* Estilos para Seleção de Perfil MEI vs ME */
+    .perfil-selector-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 4px;
+      margin-bottom: 16px;
+    }
+
+    .perfil-option-card {
+      border: 1.5px solid var(--borda);
+      background: var(--cartao);
+      border-radius: 10px;
+      padding: 12px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .perfil-option-card:hover {
+      border-color: var(--primaria);
+      background: rgba(59, 130, 246, 0.03);
+    }
+
+    .perfil-option-card.selected {
+      border-color: var(--primaria);
+      background: rgba(59, 130, 246, 0.08);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+
+    .perfil-option-card input[type="radio"] {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      accent-color: var(--primaria);
+    }
+
+    .perfil-card-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--texto);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .perfil-card-desc {
+      font-size: 0.72rem;
+      color: var(--suave);
+      line-height: 1.3;
+    }
+
+    .cnpj-status-box {
+      margin-top: 6px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      line-height: 1.4;
+    }
+
+    .cnpj-status-box.sucesso {
+      display: flex;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #059669;
+    }
+
+    .cnpj-status-box.carregando {
+      display: flex;
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: #2563eb;
+    }
+
+    .cnpj-status-box.erro {
+      display: flex;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #dc2626;
+    }
+
     /* Responsivo */
     @media (max-width: 900px) {
       .auth-wrapper { grid-template-columns: 1fr; }
@@ -338,12 +425,63 @@
             <div class="auth-input-wrap">
               <input type="email" id="email" name="email"
                      class="auth-input"
+                     value="{{ email_preenchido|default('') }}"
+                     {% if email_preenchido %}readonly style="background: rgba(243, 244, 246, 0.7); cursor: not-allowed;"{% endif %}
                      placeholder="seu@email.com"
                      autocomplete="email" required />
             </div>
           </div>
 
-       
+          <div class="auth-field">
+            <label for="telefone">WhatsApp / Celular <span style="color:#DC2626">*</span></label>
+            <div class="auth-input-wrap">
+              <input type="tel" id="telefone" name="telefone"
+                     class="auth-input"
+                     placeholder="(11) 99999-9999"
+                     autocomplete="tel" required />
+            </div>
+          </div>
+
+          <div class="auth-field">
+            <label for="cnpj">CNPJ da Empresa <span style="font-size:0.75rem; color:var(--suave); font-weight:400;">(Recomendado / Opcional)</span></label>
+            <div class="auth-input-wrap">
+              <input type="text" id="cnpj" name="cnpj"
+                     class="auth-input"
+                     placeholder="00.000.000/0000-00"
+                     maxlength="18"
+                     autocomplete="off" />
+            </div>
+            <div id="cnpjFeedback" class="cnpj-status-box"></div>
+          </div>
+
+          <!-- Campos Ocultos para enriquecimento de dados cadastrais -->
+          <input type="hidden" id="razao_social" name="razao_social" value="" />
+          <input type="hidden" id="data_abertura" name="data_abertura" value="" />
+
+          <!-- Plano Contratado Confirmado pelo Stripe -->
+          <div class="auth-field" style="margin-bottom: 16px;">
+            <label>Plano Contratado (Stripe):</label>
+            <div style="background: rgba(59, 130, 246, 0.08); border: 1.5px solid rgba(59, 130, 246, 0.3); border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: #2563eb; display: flex; align-items: center; justify-content: center; color: white;">
+                  <i class="fa-solid fa-crown"></i>
+                </div>
+                <div>
+                  <div style="font-weight: 700; font-size: 0.95rem; color: var(--texto, #111827);">
+                    DataInsight {{ plano_contratado|default('ME') }}
+                  </div>
+                  <div style="font-size: 0.78rem; color: #16a34a; font-weight: 600;">
+                    <i class="fa-solid fa-circle-check"></i> Pagamento Confirmado no Stripe
+                  </div>
+                </div>
+              </div>
+              <span style="font-size: 0.85rem; font-weight: 700; color: #2563eb;">
+                {% if plano_contratado == 'MEI' %}R$ 250,00/mês{% else %}R$ 350,00/mês{% endif %}
+              </span>
+            </div>
+            <input type="hidden" name="tipo_perfil" value="{{ plano_contratado|default('ME') }}" />
+            <input type="hidden" name="session_id" value="{{ session_id|default('') }}" />
+          </div>
 
           <div class="auth-field">
             <label for="senha">Senha <span style="color:#DC2626">*</span></label>
@@ -430,10 +568,95 @@
     }
 
     const telInput      = document.getElementById('telefone');
+    const cnpjInput     = document.getElementById('cnpj');
+    const cnpjFeedback  = document.getElementById('cnpjFeedback');
     const senhaInput    = document.getElementById('senha');
     const confirmaInput = document.getElementById('confirmar');
     const msgEl         = document.getElementById('mensagem');
     const form          = document.getElementById('formularioCadastro');
+
+    // Seleção de Perfil Manual
+    function selecionarPerfilManual(tipo) {
+      const radioMEI = document.getElementById('radioMEI');
+      const radioME = document.getElementById('radioME');
+      const cardMEI = document.getElementById('cardPerfilMEI');
+      const cardME = document.getElementById('cardPerfilME');
+
+      if (tipo === 'MEI') {
+        if (radioMEI) radioMEI.checked = true;
+        if (cardMEI) cardMEI.classList.add('selected');
+        if (cardME) cardME.classList.remove('selected');
+      } else {
+        if (radioME) radioME.checked = true;
+        if (cardME) cardME.classList.add('selected');
+        if (cardMEI) cardMEI.classList.remove('selected');
+      }
+    }
+
+    // Máscara e Validação Inteligente de CNPJ com Consulta à BrasilAPI
+    let timerConsultaCnpj = null;
+    if (cnpjInput) {
+      cnpjInput.addEventListener('input', (e) => {
+        let v = e.target.value.replace(/\D/g, '');
+        if (v.length > 14) v = v.slice(0, 14);
+
+        // Formatação 00.000.000/0000-00
+        if (v.length > 12) {
+          e.target.value = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{1,2})$/, '$1.$2.$3/$4-$5');
+        } else if (v.length > 8) {
+          e.target.value = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{1,4})$/, '$1.$2.$3/$4');
+        } else if (v.length > 5) {
+          e.target.value = v.replace(/^(\d{2})(\d{3})(\d{1,3})$/, '$1.$2.$3');
+        } else if (v.length > 2) {
+          e.target.value = v.replace(/^(\d{2})(\d{1,3})$/, '$1.$2');
+        } else {
+          e.target.value = v;
+        }
+
+        clearTimeout(timerConsultaCnpj);
+        if (v.length === 14) {
+          cnpjFeedback.className = 'cnpj-status-box carregando';
+          cnpjFeedback.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Consultando CNPJ na Receita Federal...';
+          
+          timerConsultaCnpj = setTimeout(() => {
+            fetch(`/api/consultar-cnpj/${v}`)
+              .then(r => r.json())
+              .then(data => {
+                if (data.sucesso) {
+                  cnpjFeedback.className = 'cnpj-status-box sucesso';
+                  const badgeTexto = data.is_mei ? '✨ MEI Identificado' : '🏢 Microempresa (ME)';
+                  cnpjFeedback.innerHTML = `<i class="fa-solid fa-circle-check"></i> <strong>${data.razao_social}</strong> (${badgeTexto})`;
+                  
+                  // Preencher campos ocultos
+                  const rsEl = document.getElementById('razao_social');
+                  const daEl = document.getElementById('data_abertura');
+                  if (rsEl) rsEl.value = data.razao_social || '';
+                  if (daEl) daEl.value = data.data_abertura || '';
+
+                  // Selecionar perfil sugerido automaticamente
+                  if (data.tipo_perfil) {
+                    selecionarPerfilManual(data.tipo_perfil);
+                  }
+                } else {
+                  cnpjFeedback.className = 'cnpj-status-box erro';
+                  cnpjFeedback.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> ${data.mensagem || 'CNPJ não localizado na Receita.'}`;
+                }
+              })
+              .catch(err => {
+                console.error(err);
+                cnpjFeedback.className = 'cnpj-status-box';
+                cnpjFeedback.style.display = 'none';
+              });
+          }, 400);
+        } else if (v.length === 0) {
+          cnpjFeedback.className = 'cnpj-status-box';
+          cnpjFeedback.style.display = 'none';
+        } else {
+          cnpjFeedback.className = 'cnpj-status-box carregando';
+          cnpjFeedback.innerHTML = `<i class="fa-solid fa-pen"></i> Digite os 14 dígitos do CNPJ... (${v.length}/14)`;
+        }
+      });
+    }
 
     // Máscara automática de telefone (BR: (XX) XXXXX-XXXX ou fixo (XX) XXXX-XXXX)
     if (telInput) {

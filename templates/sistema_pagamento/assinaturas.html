@@ -93,6 +93,10 @@
       color: var(--suave, #6B7280);
     }
 
+    .tema-escuro .sidebar__logo-text {
+      color: var(--texto, #FFFFFF);
+    }
+
     @keyframes pulse-border {
 
       0%,
@@ -148,13 +152,9 @@
   <header class="pag-header sticky top-0 z-50 transition-colors">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-16">
-        <a href="/" class="flex items-center gap-3 group">
-          <div class="flex flex-col">
-               <a class="sidebar__logo" href="{{ url_for('pagina_landing') }}" aria-label="DataInsight - Início">
-              <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo DataInsight" style="max-width: 65px; height: auto;">
-                  <span class="sidebar__logo-text">DataInsight</span>
-                </a>
-          </div>
+        <a class="sidebar__logo flex items-center gap-2" href="{{ url_for('pagina_landing') }}" aria-label="DataInsight - Início">
+          <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo DataInsight" style="max-width: 65px; height: auto;">
+          <span class="sidebar__logo-text text-xl font-semibold text-gray-900">DataInsight</span>
         </a>
 
         <div class="flex items-center gap-3 text-xs sm:text-sm">
@@ -191,8 +191,8 @@
     <div class="grid lg:grid-cols-3 gap-8 mb-12">
 
       <!-- Plano MEI -->
-      <div id="card-mei" onclick="selecionarPlano('MEI', 250.00, 'card-mei')"
-        class="plan-card card-plano p-6 flex flex-col justify-between">
+      <div id="card-mei" onclick="selecionarPlano('MEI', 250.00, 'card-mei', 'DataInsight MEI')"
+        class="plan-card card-plano p-6 flex flex-col justify-between cursor-pointer">
         <div>
           <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-bold texto-titulo">DataInsight MEI</h3>
@@ -227,18 +227,18 @@
             </li>
           </ul>
         </div>
-        <button type="button"
+        <button type="button" onclick="event.stopPropagation(); selecionarPlano('MEI', 250.00, 'card-mei', 'DataInsight MEI')"
           class="w-full py-2.5 px-4 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 texto-titulo font-medium text-sm transition-colors flex items-center justify-center gap-2">
           <span>Selecionar MEI</span>
         </button>
       </div>
 
       <!-- Plano ME (Recomendado) -->
-      <div id="card-me" onclick="selecionarPlano('ME', ..., 'card-me')"
-        class="plan-card card-plano p-6 flex flex-col justify-between selected popular-glow relative">
-        <!-- <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider text-white plan-badge shadow-md">
+      <div id="card-me" onclick="selecionarPlano('ME', 350.00, 'card-me', 'DataInsight ME')"
+        class="plan-card card-plano p-6 flex flex-col justify-between selected popular-glow relative cursor-pointer">
+        <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider text-white plan-badge shadow-md">
           <i class="fa-solid fa-crown text-amber-300 mr-1"></i> Mais Escolhido
-        </div> -->
+        </div>
         <div>
           <div class="flex justify-between items-center mb-4 pt-2">
             <h3 class="text-lg font-bold texto-titulo flex items-center gap-2">
@@ -249,25 +249,44 @@
           </div>
           <p class="texto-sub text-xs mb-6">Para Microempresas (ME) em crescimento com IA e análises avançadas.</p>
           <div class="flex items-baseline gap-1 mb-6">
-            <span class="text-4xl font-extrabold texto-titulo">...</span>
+            <span class="text-4xl font-extrabold texto-titulo">R$ 350,00</span>
             <span class="texto-sub text-sm">/mês</span>
           </div>
-          <ul class="space-y-3 text-sm texto-sub mb-6">
+            <ul class="space-y-3 text-sm texto-sub mb-6">
             <li class="flex items-center gap-2.5">
-              <i class="fa-solid fa-check text-blue-500 text-xs"></i> <strong>Em breve....</strong>
+              <i class="fa-solid fa-check text-blue-500 text-xs"></i> Dashboards Ativos
             </li>
-
+            <li class="flex items-center gap-2.5">
+              <i class="fa-solid fa-check text-blue-500 text-xs"></i> Upload de Planilhas
+            </li>
+            <li class="flex items-center gap-2.5">
+              <i class="fa-solid fa-check text-blue-500 text-xs"></i> Exportação de Relatórios PDF
+            </li>
+            <li class="flex items-center gap-2.5">
+              <i class="fa-solid fa-check text-blue-500 text-xs"></i> IA Assistent DataInsight
+            </li>
+             <li class="flex items-center gap-2.5">
+              <i class="fa-solid fa-check text-blue-500 text-xs"></i> Análises Financeiras Avançadas
+            </li>
+             <li class="flex items-center gap-2.5">
+              <i class="fa-solid fa-check text-blue-500 text-xs"></i> Automação de Dados
+            </li>
+            <li class="flex items-center gap-2.5">
+              <i class="fa-solid fa-check text-blue-500 text-xs"></i> Assistente Virtual
+            </li>
+            <li class="flex items-center gap-2.5">
+              <i class="fa-solid fa-check text-blue-500 text-xs"></i> Planejamento Financeiro
             </li>
           </ul>
         </div>
-        <button type="button"
+        <button type="button" onclick="event.stopPropagation(); selecionarPlano('ME', 350.00, 'card-me', 'DataInsight ME')"
           class="w-full py-2.5 px-4 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-colors shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2">
           <span>Selecionado</span> <i class="fa-solid fa-circle-check text-xs"></i>
         </button>
       </div>
 
       <!-- Plano Empresas -->
-      <div id="card-empresas" onclick="selecionarPlano('Empresas',... 'card-empresas')"
+      <div id="card-empresas" onclick="selecionarPlano('Empresas', 0, 'card-empresas')"
         class="plan-card card-plano p-6 flex flex-col justify-between">
         <div>
           <div class="flex justify-between items-center mb-4">
@@ -318,14 +337,14 @@
           </div>
           <div class="flex justify-between items-center pt-3 border-t border-slate-200 dark:border-slate-800">
             <span class="texto-sub">Subtotal:</span>
-            <span id="resumo-subtotal" class="font-semibold texto-titulo">R$ 250,00</span>
+            <span id="resumo-subtotal" class="font-semibold texto-titulo">R$ 350,00</span>
           </div>
         </div>
 
         <div class="caixa-resumo p-5 rounded-xl mb-6">
           <div class="flex justify-between items-baseline">
             <span class="text-base font-semibold texto-sub">Total a pagar:</span>
-            <span id="resumo-total" class="text-3xl font-black text-blue-600 dark:text-blue-400">R$ 250,00</span>
+            <span id="resumo-total" class="text-3xl font-black text-blue-600 dark:text-blue-400">R$ 350,00</span>
           </div>
           <span class="text-xs texto-sub mt-1 block">Cobrado mensalmente via Mercado Pago. Cancele quando quiser.</span>
         </div>
@@ -366,20 +385,28 @@
       setTema();
     }
 
-    // Flag controlada pelo servidor: se true, bloqueia os planos ME e Empresas
+    // Flag controlada pelo servidor: se true, bloqueia os planos em breve (Empresas)
     const LOCK_PLANS = {{ block_plans| tojson }};
 
     let planoAtual = {
       nome: 'ME',
-      titulo: 'Assinatura DataInsight ME',
-      preco: 250.00,
+      titulo: 'DataInsight ME',
+      preco: 350.00,
       cardId: 'card-me'
     };
+
+    // Retorna o nome legível do plano pelo ID do card
+    function nomeLegivel(id) {
+      if (id === 'card-mei') return 'MEI';
+      if (id === 'card-me') return 'ME';
+      if (id === 'card-empresas') return 'Empresas';
+      return id.replace('card-', '').toUpperCase();
+    }
 
     // Aplica bloqueio visual e interativo quando LOCK_PLANS === true
     function applyPlanLocks() {
       if (!LOCK_PLANS) return;
-      const toLock = ['card-me', 'card-empresas'];
+      const toLock = ['card-empresas'];
       toLock.forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
@@ -392,7 +419,7 @@
         if (btn) {
           btn.className = 'w-full py-2.5 px-4 rounded-lg bg-slate-400 text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2';
           btn.innerHTML = '<span class="coming-soon-badge">Em breve</span>';
-          btn.disabled = true;
+
         }
         // add overlay label
         const overlay = document.createElement('div');
@@ -401,13 +428,13 @@
         el.appendChild(overlay);
       });
     }
-    function selecionarPlano(nome, preco, cardId) {
+    function selecionarPlano(nome, preco, cardId, titulo) {
       // Se o cartão está bloqueado, ignore seleção
       const targetEl = document.getElementById(cardId);
       if (targetEl && targetEl.classList.contains('locked')) return;
       planoAtual = {
         nome: nome,
-        titulo: `Assinatura DataInsight ${nome}`,
+        titulo: titulo || ('DataInsight ' + nome),
         preco: preco,
         cardId: cardId
       };
@@ -424,16 +451,15 @@
           }
         } else {
           el.classList.remove('selected');
-          if (btn) {
+          if (btn && !el.classList.contains('locked')) {
             btn.className = 'w-full py-2.5 px-4 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 texto-titulo font-medium text-sm transition-colors flex items-center justify-center gap-2';
-            const nomePlano = id.replace('card-', '').toUpperCase();
-            btn.innerHTML = `<span>Selecionar ${nomePlano === 'EMPRESAS' ? 'Empresas' : nomePlano}</span>`;
+            btn.innerHTML = '<span>Selecionar ' + nomeLegivel(id) + '</span>';
           }
         }
       });
 
       const precoFormatado = preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-      document.getElementById('resumo-plano-nome').innerText = `DataInsight ${nome}`;
+      document.getElementById('resumo-plano-nome').innerText = 'DataInsight ' + nome;
       document.getElementById('resumo-subtotal').innerText = precoFormatado;
       document.getElementById('resumo-total').innerText = precoFormatado;
     }
@@ -455,6 +481,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            plano: planoAtual.nome,
             titulo: planoAtual.titulo,
             preco: planoAtual.preco
           })
@@ -471,10 +498,10 @@
         }
       } catch (err) {
         console.error(err);
-        erroMsg.innerText = err.message || 'Erro ao conectar ao serviço de assinaturas do Mercado Pago.';
+        erroMsg.innerText = err.message || 'Erro ao conectar ao serviço de assinaturas do Stripe.';
         erroMsg.classList.remove('hidden');
         btn.disabled = false;
-        btnTexto.innerText = 'Assinar com Mercado Pago';
+        btnTexto.innerText = 'Assinar com Cartão / Stripe';
       }
     }
     // Aplicar locks assim que o DOM estiver pronto

@@ -52,6 +52,10 @@
       background-color: var(--fundo, #F9FAFB);
       border: 1px solid var(--borda, #E5E7EB);
     }
+
+    .tema-escuro .sidebar__logo-text {
+      color: var(--texto, #FFFFFF);
+    }
   </style>
 </head>
 <body>
@@ -60,11 +64,9 @@
   <header class="pag-header sticky top-0 z-50 transition-colors">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-16">
-        <a href="/" class="flex items-center gap-3">
-              <a class="sidebar__logo" href="{{ url_for('pagina_landing') }}" aria-label="DataInsight - Início">
-              <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo DataInsight" style="max-width: 65px; height: auto;">
-                  <span class="sidebar__logo-text">DataInsight</span>
-                </a>
+        <a class="sidebar__logo flex items-center gap-2" href="{{ url_for('pagina_landing') }}" aria-label="DataInsight - Início">
+          <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo DataInsight" style="max-width: 65px; height: auto;">
+          <span class="sidebar__logo-text text-xl font-semibold text-gray-900">DataInsight</span>
         </a>
 
         <div class="flex items-center gap-3">

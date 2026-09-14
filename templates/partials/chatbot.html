@@ -1928,6 +1928,9 @@ body.tema-escuro .chatbot-input-area input {
             latestRequestId = ++currentRequestId;
             const requestId = latestRequestId;
 
+            if (typeof window.tocarSomBolhaEnvio === 'function') {
+                window.tocarSomBolhaEnvio();
+            }
             adicionarMensagem(textoLimpo, 'user');
             if (input) input.value = '';
             document.querySelectorAll('.message.bot.typing').forEach(el => el.remove());
@@ -1974,6 +1977,9 @@ body.tema-escuro .chatbot-input-area input {
                 }
 
                 if (messagesContainer.contains(divDigitando)) messagesContainer.removeChild(divDigitando);
+                if (typeof window.tocarSomRecebimentoIA === 'function') {
+                    window.tocarSomRecebimentoIA();
+                }
                 adicionarMensagem(dados.resposta, 'bot');
                 exibirRespostaNoPainel(dados.resposta);
 

@@ -78,7 +78,7 @@
         <div class="container">
 
           <!-- CABEÇALHO DA PÁGINA -->
-          <header class="pagina__cabecalho anim-fade-up" style="display: flex !important; flex-direction: row !important; align-items: flex-start !important; justify-content: space-between !important; gap: 16px; margin-bottom: 24px; width: 100%;">
+          <header class="pagina__cabecalho anim-fade-up" style="display: flex !important; flex-direction: row !important; align-items: flex-start !important; justify-content: space-between !important; gap: 16px; margin-bottom: 20px; width: 100%;">
             <div style="flex: 1; min-width: 0;">
               <div class="migalhas">Início</div>
               <h1 class="h1" style="margin-bottom: 4px;">Visão rápida do negócio</h1>
@@ -97,6 +97,9 @@
               </button>
             </div>
           </header>
+
+          <!-- CONTAINER DE ALERTAS (Ex: Mapeamento de Colunas) -->
+          <div id="container-alerta-home" style="width: 100%;"></div>
 
           <!-- FILTRO DE PERÍODO E ORIGEM DOS DADOS -->
           <section class="cartao anim-fade-up anim-fade-up-d1" style="margin-bottom:20px;" aria-label="Filtros">
@@ -252,7 +255,72 @@
             </div>
           </section>
 
-          
+          {% if is_mei %}
+          <!-- ═══════════════════════════════════════════════ -->
+          <!-- TERMÔMETRO DO TETO ANUAL MEI — Exclusivo MEI   -->
+          <!-- ═══════════════════════════════════════════════ -->
+          <!-- <section id="secaoTermometroMei" class="cartao anim-fade-up" style="margin-bottom:20px; border-left:4px solid #10b981; background: linear-gradient(135deg, rgba(16,185,129,0.04) 0%, rgba(16,185,129,0.01) 100%);" aria-label="Termômetro do Limite Anual do MEI"> -->
+
+            <!-- Cabeçalho -->
+            <!-- <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+              <div>
+                <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:#10b981; margin-bottom:4px;">
+                  <i class="fa-solid fa-gauge-high" style="margin-right:5px;"></i> Controle Vital do MEI
+                </div>
+                <h2 style="font-size:1.1rem; font-weight:800; margin:0; color:var(--texto);">Termômetro do Teto Anual</h2>
+                <p style="font-size:0.8rem; color:var(--suave); margin:4px 0 0;">Faturamento acumulado vs. limite legal de R$ 81.000,00/ano</p>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <div id="homeMeiBadge" style="display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:999px; font-size:0.78rem; font-weight:700; background:rgba(16,185,129,0.12); color:#10b981; border:1px solid rgba(16,185,129,0.3);">
+                  <i class="fa-solid fa-shield-check"></i>
+                  <span>Carregando...</span>
+                </div>
+                <a href="{{ url_for('pagina_controles_essenciais') }}" class="botao botao--suave" style="font-size:0.8rem; padding:7px 14px;">
+                  <i class="fa-solid fa-sliders"></i> Controles Essenciais
+                </a>
+              </div>
+            </div> -->
+
+            <!-- Barra de Progresso -->
+            <!-- <div style="margin-bottom:14px;">
+              <div style="height:18px; border-radius:9px; background:rgba(255,255,255,0.07); overflow:hidden; border:1px solid var(--borda); position:relative;">
+                <div id="homeMeiBarFill" style="height:100%; width:0%; border-radius:9px; background:linear-gradient(90deg, #10b981 0%, #eab308 70%, #f97316 85%, #ef4444 100%); transition:width 1.2s cubic-bezier(0.4,0,0.2,1);"></div>
+              </div>
+              <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:var(--suave); margin-top:5px; font-weight:600;">
+                <span>R$ 0</span>
+                <span>70% (Atenção)</span>
+                <span>85% (Risco)</span>
+                <span id="homeMeiTetoLabel">R$ 81.000,00</span>
+              </div>
+            </div> -->
+
+            <!-- 4 KPIs -->
+            <!-- <div style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:14px;">
+              <div style="padding:12px 14px; background:var(--fundo); border:1px solid var(--borda); border-radius:12px;">
+                <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--suave); margin-bottom:5px;">Faturado no Ano</div>
+                <div id="homeMeiFaturado" style="font-size:1.15rem; font-weight:800; color:#10b981;">—</div>
+              </div>
+              <div style="padding:12px 14px; background:var(--fundo); border:1px solid var(--borda); border-radius:12px;">
+                <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--suave); margin-bottom:5px;">Limite Legal Anual</div>
+                <div id="homeMeiLimite" style="font-size:1.15rem; font-weight:800; color:var(--texto);">R$ 81.000,00</div>
+              </div>
+              <div style="padding:12px 14px; background:var(--fundo); border:1px solid var(--borda); border-radius:12px;">
+                <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--suave); margin-bottom:5px;">Saldo Restante</div>
+                <div id="homeMeiRestante" style="font-size:1.15rem; font-weight:800; color:#3b82f6;">—</div>
+              </div>
+              <div style="padding:12px 14px; background:var(--fundo); border:1px solid var(--borda); border-radius:12px;">
+                <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--suave); margin-bottom:5px;">Percentual Usado</div>
+                <div id="homeMeiPct" style="font-size:1.15rem; font-weight:800; color:var(--texto);">0,0%</div>
+              </div>
+            </div> -->
+
+            <!-- Alerta contextual -->
+            <!-- <div id="homeMeiAlertBox" style="padding:12px 16px; border-radius:10px; display:flex; align-items:center; gap:10px; font-size:0.84rem; background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25); color:#059669;">
+              <i class="fa-solid fa-circle-info" style="font-size:1.1rem; flex-shrink:0;"></i>
+              <span id="homeMeiMensagem">Seu faturamento acumulado está dentro da faixa segura para o MEI.</span>
+            </div>
+          </section> -->
+          {% endif %}
 
           <!-- GRÁFICOS -->
           <section style="margin-bottom:20px;" aria-label="Gráficos principais">
@@ -361,6 +429,8 @@
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
   <script src="{{ url_for('static', filename='js/ia_analise_modal.js') }}"></script>
   <script src="{{ url_for('static', filename='js/home.js') }}?v=5.0"></script>
+  <!-- Termômetro MEI (carrega apenas para usuários MEI) -->
+  <script src="{{ url_for('static', filename='js/home_mei_termometro.js') }}?v=1.0"></script>
 
   <div id="kpiDetalheModal" class="modal-backdrop" style="display:none; position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.65); align-items:center; justify-content:center; padding:20px;">
     <div class="modal" style="background:var(--cartao); width:100%; max-width:680px; border-radius:20px; box-shadow:0 24px 70px rgba(0,0,0,0.35); overflow:hidden; max-height:90vh; display:flex; flex-direction:column; color:var(--text-primary); border:1px solid var(--border-color);">

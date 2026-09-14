@@ -206,6 +206,10 @@
               <div id="graficoLinhaGaleria" style="min-height: 400px;"></div>
             </article>
 
+            {% if is_mei %}
+            <!-- Painel MEI: Aviso sobre DRE + link para Controles Essenciais -->
+         
+            {% else %}
             <article class="cartao" style="margin-bottom: 24px;">
               <h3 class="h2" style="font-size:18px; margin-bottom:20px;">
                 <i class="fa-solid fa-filter" style="color:var(--icon); margin-right:8px;"></i>
@@ -213,6 +217,7 @@
               </h3>
               <div id="graficoDREGaleria" style="min-height: 400px;"></div>
             </article>
+            {% endif %}
 
             <!-- Grid 2x2 para outros gráficos -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;" class="grid-responsivo">

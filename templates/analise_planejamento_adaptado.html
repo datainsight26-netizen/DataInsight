@@ -117,16 +117,87 @@
         }
 
         .pf-filterbar {
-            display: grid;
-            grid-template-columns: minmax(220px, 400px);
-            gap: 12px;
-            align-items: end;
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            justify-content: space-between;
+            flex-wrap: wrap;
         }
 
-        .pf-filterbar__buttons {
-            display: flex;
-            gap: 8px;
+        .pf-pe-box {
+            flex: 1;
+            min-width: 320px;
+            max-width: 580px;
+            background: color-mix(in srgb, #f59e0b 6%, var(--cartao));
+            border: 1px solid color-mix(in srgb, #f59e0b 24%, var(--borda));
+            border-radius: 12px;
+            padding: 12px 16px;
+            transition: all 0.2s ease;
+        }
+
+        .pf-pe-box:hover {
+            border-color: color-mix(in srgb, #f59e0b 45%, var(--borda));
+        }
+
+        .pf-pe-modo-toggle {
+            display: inline-flex;
+            background: var(--cartao);
+            border: 1px solid var(--borda);
+            border-radius: 8px;
+            padding: 2px;
+            gap: 2px;
+        }
+
+        .pf-pe-btn {
+            border: 0;
+            background: transparent;
+            color: var(--suave);
+            padding: 5px 11px;
+            border-radius: 6px;
+            font-size: .78rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
             align-items: center;
+            gap: 5px;
+            transition: all 0.15s ease;
+        }
+
+        .pf-pe-btn:hover {
+            color: var(--texto);
+        }
+
+        .pf-pe-btn.is-active {
+            color: #f59e0b;
+            background: color-mix(in srgb, #f59e0b 14%, var(--cartao));
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .pf-pe-btn-salvar {
+            height: 34px;
+            padding: 0 14px;
+            background: #f59e0b;
+            color: white;
+            border: none;
+            font-weight: 750;
+            font-size: 0.82rem;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+        }
+
+        .pf-pe-btn-salvar:hover {
+            background: #d97706;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+        }
+
+        .pf-pe-btn-salvar:active {
+            transform: translateY(0);
         }
 
         .pf-status {
@@ -697,17 +768,80 @@
                             Anual</button>
                     </nav>
 
-                    <!-- Filtros e origem dos dados -->
-                    <section class="cartao" aria-label="Filtros e origem dos dados">
-                        <div class="pf-filterbar" style="display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap;">
-                            <div class="campo" style="flex:1; min-width:240px; max-width:420px; margin:0;">
-                                <label for="seletorPlanilhaAnalise"><i class="fa-solid fa-table-list"
-                                        style="color:var(--primaria);"></i> Origem dos Dados</label>
-                                <select class="entrada" id="seletorPlanilhaAnalise" style="font-weight:650;">
-                                    <option value="todas">Todas as Planilhas (Visão Consolidada)</option>
-                                </select>
+                    <!-- Filtros, Origem dos Dados e Ponto de Equilíbrio -->
+                    <section class="cartao" aria-label="Filtros e configurações de projeção" style="padding: 16px 20px;">
+                        <div class="pf-filterbar">
+                            <!-- Origem dos Dados -->
+                            <div style="flex:1; min-width:240px; max-width:380px;">
+                                <div class="campo" style="margin:0;">
+                                    <label for="seletorPlanilhaAnalise" style="display:flex; align-items:center; gap:8px; font-weight:700; margin-bottom:6px;">
+                                        <i class="fa-solid fa-table-list" style="color:var(--primaria);"></i> Origem dos Dados
+                                    </label>
+                                    <select class="entrada" id="seletorPlanilhaAnalise" style="font-weight:650; width:100%;">
+                                        <option value="todas">Todas as Planilhas (Visão Consolidada)</option>
+                                    </select>
+                                </div>
+                                <div id="pfStatusFontesContainer" style="display:flex; align-items:center; min-height:26px; margin-top:6px;"></div>
                             </div>
-                            <div id="pfStatusFontesContainer" style="display:flex; align-items:center; min-height:42px;"></div>
+
+                            <!-- Ponto de Equilíbrio: Cálculo Automático ou Porcentagem Manual -->
+                            <div class="pf-pe-box" id="pf-pe-container">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; flex-wrap:wrap;">
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <div style="width:26px; height:26px; border-radius:6px; background:rgba(245,158,11,0.18); color:#f59e0b; display:grid; place-items:center; font-size:0.82rem;">
+                                            <i class="fa-solid fa-scale-balanced"></i>
+                                        </div>
+                                        <div>
+                                            <span style="font-size:0.86rem; font-weight:750; color:var(--texto);">Ponto de Equilíbrio</span>
+                                        </div>
+                                    </div>
+                                    <span id="pf-pe-badge-status" style="font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:999px; background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3);">
+                                        Automático
+                                    </span>
+                                </div>
+
+                                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                                    <!-- Alternador: Automático vs Manual -->
+                                    <div class="pf-pe-modo-toggle" role="group" aria-label="Modo de cálculo do Ponto de Equilíbrio">
+                                        <button type="button" id="pf-pe-btn-auto" class="pf-pe-btn is-active" title="Cálculo automático pela margem de contribuição real dos dados">
+                                            <i class="fa-solid fa-wand-magic-sparkles"></i> Automático
+                                        </button>
+                                        <button type="button" id="pf-pe-btn-manual" class="pf-pe-btn" title="Definir margem manualmente em porcentagem">
+                                            <i class="fa-solid fa-pen-to-square"></i> Manual (%)
+                                        </button>
+                                    </div>
+
+                                    <!-- Campo de Entrada da Porcentagem -->
+                                    <div style="display:inline-flex; align-items:center; position:relative;">
+                                        <input type="number" 
+                                               id="pf-pe-input-percentual" 
+                                               class="entrada" 
+                                               min="1" 
+                                               max="100" 
+                                               step="0.5" 
+                                               placeholder="40.0" 
+                                               style="width:95px; height:34px; padding:4px 22px 4px 10px; font-weight:750; font-size:0.85rem; text-align:right; border-radius:8px;" 
+                                               title="Digite quantos % de margem vai calcular o ponto de equilíbrio" />
+                                        <span style="position:absolute; right:8px; font-weight:700; font-size:0.82rem; color:var(--suave); pointer-events:none;">%</span>
+                                    </div>
+
+                                    <!-- Botão Salvar -->
+                                    <button type="button" 
+                                            id="pf-pe-btn-salvar" 
+                                            class="pf-pe-btn-salvar" 
+                                            title="Salvar porcentagem do Ponto de Equilíbrio">
+                                        <i class="fa-solid fa-floppy-disk"></i> Salvar
+                                    </button>
+                                </div>
+
+                                <!-- Subtexto / Indicador dinâmico -->
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; gap:8px; flex-wrap:wrap;">
+                                    <span id="pf-pe-info-text" style="font-size:0.75rem; color:var(--suave); line-height:1.3;">
+                                        Margem automática real: <strong id="pf-pe-auto-val" style="color:var(--texto);">--</strong>
+                                    </span>
+                                    <span id="pf-pe-feedback" style="font-size:0.74rem; font-weight:700; color:#16a34a; display:none;"></span>
+                                </div>
+                            </div>
                         </div>
                     </section>
 
