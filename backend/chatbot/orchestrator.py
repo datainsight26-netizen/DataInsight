@@ -64,21 +64,21 @@ class GeminiOrchestrator:
         except Exception:
             return None
 
-    def run(self, prompt: str) -> SimpleNamespace:
-        return SimpleNamespace(content=self._gerar_resposta(prompt))
+    def run(self, prompt: str, anexos: Optional[List[dict]] = None) -> SimpleNamespace:
+        return SimpleNamespace(content=self._gerar_resposta(prompt, anexos=anexos))
 
-    def _gerar_resposta(self, prompt: str) -> str:
+    def _gerar_resposta(self, prompt: str, anexos: Optional[List[dict]] = None) -> str:
         if not self.api_key:
             return (
                 "Desculpe — a integração com a API Gemini não está configurada. "
                 "Defina a variável de ambiente `GOOGLE_API_KEY`."
             )
 
-        texto = self._via_sdk(prompt)
+        texto = self._via_sdk(prompt, anexos=anexos)
         if texto:
             return texto
 
-        texto = self._via_rest(prompt)
+        texto = self._via_rest(prompt, anexos=anexos)
         if texto:
             return texto
 
@@ -87,7 +87,7 @@ class GeminiOrchestrator:
             "Por favor, verifique a conectividade de rede."
         )
 
-    def _via_sdk(self, prompt: str) -> Optional[str]:
+    def _via_sdk(self, prompt: str, anexos: Optional[List[dict]] = None) -> Optional[str]:
         try:
             client = self._obter_client()
             config = self._config_geracao()
@@ -97,7 +97,22 @@ class GeminiOrchestrator:
 
         for m in self._modelos_em_ordem():
             try:
-                kwargs = {"model": m, "contents": prompt}
+                # Prepara contents com suporte multimodal
+                contents = []
+                if anexos:
+                    from google.genai import types
+                    for anexo in anexos:
+                        b = anexo.get("bytes")
+                        mime = anexo.get("tipo") or anexo.get("mime_type")
+                        if b and mime and (mime.startswith("image/") or mime == "application/pdf"):
+                            try:
+                                contents.append(types.Part.from_bytes(data=b, mime_type=mime))
+                            except Exception as pe:
+                                print(f"[Gemini SDK Part Falha]: {pe}")
+                contents.append(prompt)
+                call_contents = contents if len(contents) > 1 else prompt
+
+                kwargs = {"model": m, "contents": call_contents}
                 if config is not None:
                     kwargs["config"] = config
                 response = client.models.generate_content(**kwargs)
@@ -109,9 +124,23 @@ class GeminiOrchestrator:
                 continue
         return None
 
-    def _via_rest(self, prompt: str) -> Optional[str]:
+    def _via_rest(self, prompt: str, anexos: Optional[List[dict]] = None) -> Optional[str]:
+        parts = []
+        if anexos:
+            for anexo in anexos:
+                b64 = anexo.get("base64")
+                mime = anexo.get("tipo") or anexo.get("mime_type")
+                if b64 and mime and (mime.startswith("image/") or mime == "application/pdf"):
+                    parts.append({
+                        "inlineData": {
+                            "mimeType": mime,
+                            "data": b64
+                        }
+                    })
+        parts.append({"text": prompt})
+
         payload = {
-            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+            "contents": [{"role": "user", "parts": parts}],
             "generationConfig": {
                 "temperature": 0.25,
                 "maxOutputTokens": 4096,
@@ -137,10 +166,10 @@ class GeminiOrchestrator:
                     if not candidatos:
                         continue
                     content = candidatos[0].get("content") or {}
-                    parts = content.get("parts") if isinstance(content, dict) else []
+                    parts_resp = content.get("parts") if isinstance(content, dict) else []
                     textos = [
                         str(part.get("text", "")).strip()
-                        for part in (parts or [])
+                        for part in (parts_resp or [])
                         if isinstance(part, dict) and part.get("text")
                     ]
                     if textos:

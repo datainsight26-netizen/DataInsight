@@ -307,13 +307,17 @@ def _calcular_cenario_otimista(meses_base, fator_crescimento=1.15):
     return meses_otimista
 
 
-def _calcular_cenario_pessimista(meses_base):
+def _calcular_cenario_pessimista(meses_base, percentual_manual=None):
     """
     Cenário de sobrevivência / ponto de equilíbrio.
 
     Para cada mês, calcula o faturamento mínimo necessário para
     cobrir impostos, custos variáveis e gastos fixos, mantendo
     o resultado operacional aproximadamente em R$ 0,00.
+
+    Se percentual_manual for informado (ex: 40.0 para 40%),
+    utiliza essa margem de contribuição percentual definida pelo usuário
+    ao invés da margem calculada automaticamente dos dados.
 
     Investimentos são zerados neste cenário porque representam
     desembolsos não essenciais à sobrevivência operacional.
@@ -352,12 +356,25 @@ def _calcular_cenario_pessimista(meses_base):
         taxa_impostos = impostos_base / receita_base
         taxa_variaveis = variaveis_base / receita_base
 
-        # Margem disponível para pagar os gastos fixos.
-        indice_margem = (
-            1
-            - taxa_impostos
-            - taxa_variaveis
-        )
+        if percentual_manual is not None and percentual_manual > 0:
+            indice_margem = float(percentual_manual) / 100.0
+            custos_taxa_total = taxa_impostos + taxa_variaveis
+            if custos_taxa_total > 0:
+                fator_ajuste = (1.0 - indice_margem) / custos_taxa_total
+                taxa_impostos_ajustada = taxa_impostos * fator_ajuste
+                taxa_variaveis_ajustada = taxa_variaveis * fator_ajuste
+            else:
+                taxa_impostos_ajustada = 0.0
+                taxa_variaveis_ajustada = max(0.0, 1.0 - indice_margem)
+        else:
+            # Margem disponível para pagar os gastos fixos.
+            indice_margem = (
+                1
+                - taxa_impostos
+                - taxa_variaveis
+            )
+            taxa_impostos_ajustada = taxa_impostos
+            taxa_variaveis_ajustada = taxa_variaveis
 
         # Com margem nula/negativa, aumentar faturamento não resolve
         # o ponto de equilíbrio mantendo a mesma estrutura de custos.
@@ -382,11 +399,11 @@ def _calcular_cenario_pessimista(meses_base):
         )
 
         impostos_equilibrio = (
-            receita_equilibrio * taxa_impostos
+            receita_equilibrio * taxa_impostos_ajustada
         )
 
         variaveis_equilibrio = (
-            receita_equilibrio * taxa_variaveis
+            receita_equilibrio * taxa_variaveis_ajustada
         )
 
         margem_equilibrio = (
@@ -1003,13 +1020,33 @@ def obter_planejamento_financeiro():
         # 7.1 Cenários Financeiros (Provável, Otimista, Pessimista)
         # ---------------------------------------
 
+        # Configuração do Ponto de Equilíbrio (Automático vs Manual)
+        pe_modo = request.args.get("pe_modo") or mapeamento.get("ponto_equilibrio_modo", "automatico")
+        pe_percentual_param = request.args.get("pe_percentual")
+        if pe_percentual_param is not None and pe_percentual_param != "":
+            try:
+                pe_percentual = float(pe_percentual_param)
+            except (ValueError, TypeError):
+                pe_percentual = mapeamento.get("ponto_equilibrio_percentual")
+        else:
+            pe_percentual = mapeamento.get("ponto_equilibrio_percentual")
+
+        try:
+            if pe_percentual is not None:
+                pe_percentual = float(pe_percentual)
+        except (ValueError, TypeError):
+            pe_percentual = None
+
+        percentual_manual = pe_percentual if pe_modo == "manual" and pe_percentual and pe_percentual > 0 else None
+
         meses_otimista = _calcular_cenario_otimista(
             meses_saida,
             fator_crescimento=1.15
         )
 
         meses_pessimista = _calcular_cenario_pessimista(
-            meses_saida
+            meses_saida,
+            percentual_manual=percentual_manual
         )
 
         # ---------------------------------------
@@ -1064,12 +1101,21 @@ def obter_planejamento_financeiro():
             "pessimista": {
                 "tipo": "ponto_equilibrio",
                 "descricao": (
-                    "Faturamento mínimo estimado para "
-                    "manter a operação sem prejuízo."
+                    f"Faturamento mínimo calculado com margem de {pe_percentual:.1f}% (manual)."
+                    if percentual_manual
+                    else "Faturamento mínimo estimado para manter a operação sem prejuízo (automático)."
                 ),
+                "modo": pe_modo,
+                "percentual_aplicado": pe_percentual if percentual_manual else round(margem_pct_total, 2),
                 "meses": meses_pessimista,
                 "campos_custom": cats_custom,
                 "categorias_custom": cats_custom
+            },
+
+            "ponto_equilibrio_config": {
+                "modo": pe_modo,
+                "percentual": pe_percentual,
+                "percentual_calculado_auto": round(margem_pct_total, 2)
             },
 
             "totais": {
@@ -1121,3 +1167,50 @@ def obter_planejamento_financeiro():
                 "Erro ao processar Planejamento Financeiro.",
             "erro": str(e)
         }), 500
+
+
+def salvar_configuracao_ponto_equilibrio():
+    """
+    Salva a configuração do Ponto de Equilíbrio (modo automático ou manual e o percentual).
+    """
+    usuario_id = session.get("usuario_id")
+    if not usuario_id:
+        return jsonify({"sucesso": False, "mensagem": "Usuário não autenticado"}), 401
+
+    dados = request.get_json(silent=True) or {}
+    modo = dados.get("modo", "automatico")
+    if modo not in ["automatico", "manual"]:
+        modo = "automatico"
+
+    percentual = dados.get("percentual")
+    if percentual is not None and str(percentual).strip() != "":
+        try:
+            percentual = float(percentual)
+            if percentual <= 0 or percentual > 100:
+                percentual = None
+            else:
+                percentual = round(percentual, 2)
+        except (ValueError, TypeError):
+            percentual = None
+    else:
+        percentual = None
+
+    try:
+        usuario.update_one(
+            _filtro_usuario(usuario_id),
+            {"$set": {
+                "mapeamento_financeiro.ponto_equilibrio_modo": modo,
+                "mapeamento_financeiro.ponto_equilibrio_percentual": percentual
+            }}
+        )
+        return jsonify({
+            "sucesso": True,
+            "mensagem": "Configuração do Ponto de Equilíbrio salva com sucesso!",
+            "modo": modo,
+            "percentual": percentual
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "sucesso": False,
+            "mensagem": f"Erro ao salvar configuração: {str(e)}"
+        }), 500

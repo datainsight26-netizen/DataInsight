@@ -2,6 +2,7 @@ from flask import request, jsonify, session, url_for
 import os
 import stripe
 import traceback
+from datetime import datetime
 
 def _debug_print(label, obj):
     try:
@@ -25,13 +26,36 @@ def criar_assinatura_stripe():
         stripe.api_key = STRIPE_SECRET_KEY
 
         titulo = str(dados.get("titulo", "Assinatura DataInsight ME"))
-        preco = float(dados.get("preco", 250.00))
+        preco = float(dados.get("preco", 350.00))
         unit_amount = int(preco * 100)
         
-        email_cliente = str(dados.get("email", session.get("usuario_email", "")))
+        plano = str(dados.get("plano", "")).strip().upper()
+        if not plano:
+            plano = "MEI" if "MEI" in titulo.upper() else "ME"
 
-        # Configuração das URLs direcionando para as páginas de sucesso e falha
-        success_url = request.host_url.rstrip('/') + url_for('sucesso_pagamento') + "?session_id={CHECKOUT_SESSION_ID}"
+        email_cliente = str(dados.get("email", session.get("usuario_email", ""))).strip()
+        usuario_id = session.get("usuario_id", "")
+
+        # Salva imediatamente na sessão o plano escolhido
+        session['plano_escolhido'] = plano
+        session['usuario_perfil'] = plano
+        session.modified = True
+
+        # Se o usuário já está logado, atualiza também seu tipo_perfil no MongoDB
+        if usuario_id:
+            try:
+                from bson import ObjectId
+                from backend.db import usuario
+                usuario.update_one(
+                    {'_id': ObjectId(usuario_id)},
+                    {'$set': {'tipo_perfil': plano, 'atualizado_em': datetime.now()}}
+                )
+                print(f"[criar_assinatura_stripe] tipo_perfil atualizado para {plano} no BD (user {usuario_id})")
+            except Exception as ex_db:
+                print(f"[criar_assinatura_stripe] Aviso ao salvar perfil no BD: {ex_db}")
+
+        # Configuração das URLs direcionando para as páginas de sucesso e falha com o plano explícito
+        success_url = request.host_url.rstrip('/') + url_for('sucesso_pagamento') + f"?session_id={{CHECKOUT_SESSION_ID}}&plano={plano}"
         cancel_url = request.host_url.rstrip('/') + url_for('falha_pagamento')
 
         # 2. Criar a Checkout Session
@@ -45,6 +69,7 @@ def criar_assinatura_stripe():
                             'currency': 'brl',
                             'product_data': {
                                 'name': titulo,
+                                'description': f'Plano {plano} recorrente DataInsight BI & IA'
                             },
                             'unit_amount': unit_amount,
                             'recurring': {
@@ -55,6 +80,19 @@ def criar_assinatura_stripe():
                     },
                 ],
                 mode='subscription',
+                metadata={
+                    'plano': plano,
+                    'usuario_id': usuario_id,
+                    'email': email_cliente,
+                    'titulo': titulo
+                },
+                subscription_data={
+                    'metadata': {
+                        'plano': plano,
+                        'usuario_id': usuario_id,
+                        'email': email_cliente
+                    }
+                },
                 success_url=success_url,
                 cancel_url=cancel_url,
             )

@@ -157,15 +157,23 @@ def _processar_inline(texto: str) -> str:
     return texto
 
 
-def salvar_mensagem_historico(usuario_id: str, remetente: str, mensagem: str, sessao_id: str) -> None:
+def salvar_mensagem_historico(usuario_id: str, remetente: str, mensagem: str, sessao_id: str, anexo: Optional[dict] = None) -> None:
     try:
-        chat_historico.insert_one({
+        doc = {
             "usuario_id": usuario_id,
             "sessao_id": sessao_id,
             "remetente": remetente,
             "mensagem": mensagem,
             "data": datetime.now(),
-        })
+        }
+        if anexo and isinstance(anexo, dict):
+            doc["anexo"] = {
+                "nome": anexo.get("nome"),
+                "tipo": anexo.get("tipo"),
+                "tamanho": anexo.get("tamanho"),
+                "tamanho_fmt": anexo.get("tamanho_fmt"),
+            }
+        chat_historico.insert_one(doc)
     except Exception as err:
         print(f"[Erro Historico DB]: {err}")
 
@@ -227,6 +235,7 @@ def buscar_historico_chatbot():
             "remetente": doc["remetente"],
             "mensagem": doc["mensagem"],
             "data": doc["data"].strftime("%d/%m %H:%M") if doc.get("data") else "",
+            "anexo": doc.get("anexo")
         }
         for doc in docs
     ]
@@ -399,15 +408,40 @@ PERSONAS_AGENTES = {
 def perguntar_chatbot():
     try:
         dados = request.get_json() or {}
-        mensagem_usuario = dados.get("mensagem")
+        mensagem_usuario = (dados.get("mensagem") or "").strip()
         sessao_id = dados.get("sessao_id", "default")
         usuario_id = session.get("usuario_id")
         incluir_voz = bool(dados.get("incluir_voz"))
         agente_selecionado = dados.get("agente_selecionado", "smart")
         ferramenta = dados.get("ferramenta")
+        arquivo_raw = dados.get("arquivo")  # { nome, tipo, tamanho, base64 }
 
+        # Processar arquivo anexado se fornecido
+        anexo_processado = None
+        bloco_anexo = ""
+        anexos_orquestrador = None
+        if arquivo_raw and isinstance(arquivo_raw, dict) and arquivo_raw.get("base64"):
+            try:
+                from .file_processor import processar_arquivo_anexo, formatar_bloco_prompt_anexo
+                anexo_processado = processar_arquivo_anexo(arquivo_raw)
+                if anexo_processado:
+                    bloco_anexo = formatar_bloco_prompt_anexo(anexo_processado)
+                    if anexo_processado.get("is_image") or anexo_processado.get("is_pdf"):
+                        anexos_orquestrador = [anexo_processado]
+            except Exception as e_proc:
+                print(f"[Erro ao processar anexo]: {e_proc}")
+                traceback.print_exc()
+
+        # Se não enviou texto mas enviou arquivo, definir pergunta contextual
         if not mensagem_usuario:
-            return jsonify({"erro": "Mensagem não fornecida"}), 400
+            if anexo_processado:
+                nome_arq = anexo_processado.get("nome", "arquivo")
+                mensagem_usuario = (
+                    f"Por favor, faça uma análise detalhada e completa do arquivo '{nome_arq}'. "
+                    "Apresente um resumo executivo, dados e indicadores essenciais, conclusões e recomendações práticas."
+                )
+            else:
+                return jsonify({"erro": "Mensagem não fornecida"}), 400
 
         persona_info = PERSONAS_AGENTES.get(agente_selecionado, PERSONAS_AGENTES["smart"])
 
@@ -421,7 +455,10 @@ def perguntar_chatbot():
                 papel = "Usuário" if m["remetente"] == "user" else "Assistente"
                 contexto_str += f"{papel}: {_texto_curto_historico(m.get('mensagem', ''))}\n"
 
-            salvar_mensagem_historico(usuario_id, "user", mensagem_usuario, sessao_id)
+            salvar_mensagem_historico(
+                usuario_id, "user", mensagem_usuario, sessao_id,
+                anexo=anexo_processado if anexo_processado else arquivo_raw
+            )
 
         tabela_id = dados.get("tabela_id", "todas")
         contexto_rag = montar_contexto_rag(usuario_id, mensagem_usuario, top_k=4, tabela_id=tabela_id)
@@ -447,12 +484,41 @@ def perguntar_chatbot():
                 "Organize os dados comparativos em uma tabela HTML estruturada com a classe 'ia-table-render' contendo <thead> com colunas claras e <tbody> com linhas e valores formatados.\n"
             )
 
+        # Detecção de solicitação de documento / PDF / Word / Excel (Estilo Claude Artifacts)
+        quer_documento = any(p in mensagem_usuario.lower() for p in [
+            "gere um documento", "gerar documento", "crie um documento", "criar documento",
+            "gere um pdf", "gerar pdf", "em pdf", "baixe em pdf", "baixar pdf", "salve em pdf", "salvar em pdf", "relatorio em pdf",
+            "gere um docx", "gerar docx", "em docx", "arquivo docx", "documento word", "em word", "relatorio em word",
+            "gere uma planilha", "gerar planilha", "em excel", "arquivo excel", "em xlsx", "gere um excel", "tabela em excel",
+            "exporte em pdf", "exportar para pdf", "exportar em word", "exportar para excel", "exportar dados"
+        ])
+        tipo_doc_solicitado = "pdf"
+        if any(p in mensagem_usuario.lower() for p in ["docx", "word", "doc"]):
+            tipo_doc_solicitado = "docx"
+        elif any(p in mensagem_usuario.lower() for p in ["excel", "xlsx", "planilha"]):
+            tipo_doc_solicitado = "xlsx"
+
+        if quer_documento:
+            diretivas_especiais += (
+                f"\n[REQUISITO DE GERAÇÃO DE DOCUMENTO OFICIAL ({tipo_doc_solicitado.upper()})]:\n"
+                f"O usuário solicitou explicitamente a geração e exportação de um documento corporativo ({tipo_doc_solicitado.upper()}).\n"
+                "Além de apresentar seu diagnóstico executivo detalhado e estruturado com títulos e dados, ao final da resposta "
+                "INCLUA O SEGUINTE BLOCO HTML DE ARTEFATO DE DOWNLOAD (estilo Claude Artifacts):\n"
+                f'<div class="ia-document-artifact" data-tipo="{tipo_doc_solicitado}" data-titulo="Relatorio_Estrategico_DataInsight" data-desc="Documento executivo oficial pronto para download"></div>\n'
+            )
+
         prompt_base = montar_prompt_com_rag(mensagem_usuario, contexto_rag, contexto_str)
-        prompt_final = f"{diretivas_especiais}\n{prompt_base}"
+
+        partes_prompt = []
+        if bloco_anexo:
+            partes_prompt.append(bloco_anexo)
+        partes_prompt.append(diretivas_especiais)
+        partes_prompt.append(prompt_base)
+        prompt_final = "\n\n".join(partes_prompt)
 
         orquestrador = obter_time_agentes()
         try:
-            resposta_obj = orquestrador.run(prompt_final)
+            resposta_obj = orquestrador.run(prompt_final, anexos=anexos_orquestrador)
             resposta_texto = resposta_obj.content
             falhas_reais = (
                 'integração com a api gemini não está configurada',
@@ -462,6 +528,13 @@ def perguntar_chatbot():
                 print('[Chatbot] Orquestrador externo indisponível — usando fallback local')
                 from .rag_helpers import gerar_resposta_fallback
                 resposta_texto = gerar_resposta_fallback(usuario_id, mensagem_usuario, contexto_rag)
+                if anexo_processado and anexo_processado.get("conteudo_texto"):
+                    resposta_texto += (
+                        f"<div style='margin-top:14px;padding:12px;border-radius:10px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);'>"
+                        f"<strong>Resumo do Arquivo Anexado ({anexo_processado.get('nome')}):</strong><br>"
+                        f"<pre style='font-size:0.8rem;white-space:pre-wrap;max-height:220px;overflow-y:auto;margin-top:8px;'>{anexo_processado.get('conteudo_texto')[:1200]}...</pre>"
+                        f"</div>"
+                    )
         except Exception as e:
             print('[Erro Orquestrador]:', e)
             traceback.print_exc()
@@ -470,6 +543,17 @@ def perguntar_chatbot():
 
         # Pós-processamento: converter Markdown→HTML e limpar termos técnicos
         resposta_texto = converter_markdown_para_html(resposta_texto)
+
+        # Garantir presença do card de artefato de documento estilo Claude
+        if quer_documento and "ia-document-artifact" not in resposta_texto:
+            nome_doc = "Relatorio_Analise_DataInsight"
+            if anexo_processado:
+                nome_base_anexo = re.sub(r'[^a-zA-Z0-9_]', '_', anexo_processado.get('nome', 'dados'))
+                nome_doc = f"Diagnostico_{nome_base_anexo}"
+            resposta_texto += (
+                f'\n<div class="ia-document-artifact" data-tipo="{tipo_doc_solicitado}" '
+                f'data-titulo="{nome_doc}" data-desc="Documento oficial compilado pela IA a partir dos dados e análises"></div>'
+            )
 
         if usuario_id:
             div_matches = re.finditer(r"<div\s+class=['\"]grafico-ia-render['\"]([^>]*)>", resposta_texto)

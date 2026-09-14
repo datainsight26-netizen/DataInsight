@@ -5,6 +5,8 @@ from .db import usuario
 import re
 import secrets
 from datetime import datetime, timedelta
+import os
+import stripe
 
 
 def enviar_email_codigo(destinatario, codigo):
@@ -87,52 +89,136 @@ def validar_telefone(telefone):
     return True, digitos
 
 
-# =================== CADASTRO ===================
+# =================== CADASTRO (FLUXO SAAS) ===================
 
 def tela_cadastro():
+    session_id = request.args.get("session_id") or request.form.get("session_id")
+
+    # Em um SaaS real, o cadastro de novas contas é liberado mediante escolha de plano e checkout
+    if not session_id:
+        return redirect(url_for("pagina_assinaturas"))
+
+    email_preenchido = ""
+    plano_contratado = (
+        request.args.get("plano")
+        or request.form.get("tipo_perfil")
+        or session.get("plano_escolhido")
+        or "ME"
+    ).strip().upper()
+    if plano_contratado not in ["MEI", "ME"]:
+        plano_contratado = "ME"
+
+    customer_id = None
+    subscription_id = None
+
+    # Validar sessão do Stripe Checkout
+    try:
+        STRIPE_SECRET_KEY = os.getenv("STRIPE_API_KEY")
+        if STRIPE_SECRET_KEY:
+            stripe.api_key = STRIPE_SECRET_KEY
+            checkout_session = stripe.checkout.Session.retrieve(session_id)
+            detalhes = checkout_session.get("customer_details") or {}
+            email_preenchido = detalhes.get("email") or checkout_session.get("customer_email") or ""
+            metadata = checkout_session.get("metadata") or {}
+            plano_contratado = metadata.get("plano") or plano_contratado
+            customer_id = checkout_session.get("customer")
+            subscription_id = checkout_session.get("subscription")
+    except Exception as e:
+        print(f"Aviso ao consultar Stripe session_id ({session_id}): {e}")
+
     if request.method == "POST":
+        from backend.cnpj.cnpj_service import formatar_cnpj, calcular_teto_anual_mei
 
         nome = request.form.get("nome", "").strip()
-        email = request.form.get("email", "").strip()
+        email = (email_preenchido or request.form.get("email", "")).strip().lower()
         telefone = request.form.get("telefone", "").strip()
         senha = request.form.get("senha", "")
         confirmar = request.form.get("confirmar", "")
+        
+        # Dados do Perfil e CNPJ
+        cnpj_input = request.form.get("cnpj", "").strip()
+        tipo_perfil = plano_contratado or request.form.get("tipo_perfil", "ME").strip().upper()
+        if tipo_perfil not in ["MEI", "ME"]:
+            tipo_perfil = "ME"
+        razao_social = request.form.get("razao_social", "").strip()
+        data_abertura = request.form.get("data_abertura", "").strip()
 
         if not nome or not email or not senha or not confirmar:
-            return render_template("cadastro.html", error_cad=True, msg="Todos os campos são obrigatórios")
+            return render_template("cadastro.html", error_cad=True, msg="Todos os campos obrigatórios devem ser preenchidos.", session_id=session_id, email_preenchido=email_preenchido, plano_contratado=plano_contratado)
 
         if not validar_email(email):
-            return render_template("cadastro.html", error_cad=True, msg="Email inválido")
+            return render_template("cadastro.html", error_cad=True, msg="Email inválido.", session_id=session_id, email_preenchido=email_preenchido, plano_contratado=plano_contratado)
 
-        valido_tel, tel_res = validar_telefone(telefone)
-        if not valido_tel:
-            return render_template("cadastro.html", error_cad=True, msg=tel_res)
+        # Telefone (opcional ou validado se preenchido)
+        tel_res = ""
+        if telefone:
+            valido_tel, tel_res = validar_telefone(telefone)
+            if not valido_tel:
+                return render_template("cadastro.html", error_cad=True, msg=tel_res, session_id=session_id, email_preenchido=email_preenchido, plano_contratado=plano_contratado)
 
         valido, msg = validar_senha(senha)
         if not valido:
-            return render_template("cadastro.html", error_cad=True, msg=msg)
+            return render_template("cadastro.html", error_cad=True, msg=msg, session_id=session_id, email_preenchido=email_preenchido, plano_contratado=plano_contratado)
 
         if senha != confirmar:
-            return render_template("cadastro.html", error_cad=True, msg="As senhas não coincidem")
+            return render_template("cadastro.html", error_cad=True, msg="As senhas não coincidem.", session_id=session_id, email_preenchido=email_preenchido, plano_contratado=plano_contratado)
 
         if usuario.find_one({"email": email}):
-            return render_template("cadastro.html", error_cad=True, msg="Email já cadastrado")
+            return render_template("cadastro.html", error_cad=True, msg="Email já cadastrado. Acesse a tela de login.", session_id=session_id, email_preenchido=email_preenchido, plano_contratado=plano_contratado)
+
+        # Tratamento do CNPJ
+        cnpj_limpo = re.sub(r"\D", "", cnpj_input) if cnpj_input else ""
+        cnpj_formatado = formatar_cnpj(cnpj_limpo) if cnpj_limpo else ""
+        
+        # Cálculo do limite MEI se aplicável
+        limite_anual_mei = 81000.0
+        if tipo_perfil == "MEI":
+            info_teto = calcular_teto_anual_mei(data_abertura)
+            limite_anual_mei = info_teto.get("teto_anual", 81000.0)
 
         senha_hash = bcrypt.hashpw(senha.encode("utf-8"), bcrypt.gensalt())
 
-        usuario.insert_one({
+        novo_usuario = {
             "nome": nome,
             "email": email,
             "telefone": tel_res,
             "telefone_formatado": telefone,
+            "cnpj": cnpj_limpo,
+            "cnpj_formatado": cnpj_formatado,
+            "tipo_perfil": tipo_perfil,
+            "status_assinatura": "ativa",
+            "stripe_customer_id": customer_id,
+            "stripe_subscription_id": subscription_id,
+            "razao_social": razao_social or nome,
+            "data_abertura": data_abertura,
+            "limite_anual_mei": limite_anual_mei,
             "senha": senha_hash,
             "criado_em": datetime.now(),
             "atualizado_em": datetime.now()
-        })
+        }
 
-        return redirect(url_for("pagina_login"))
+        res = usuario.insert_one(novo_usuario)
 
-    return render_template("cadastro.html")
+        # Inicia a sessão automaticamente para entrada imediata
+        session["usuario_id"] = str(res.inserted_id)
+        session["usuario_nome"] = nome
+        session["usuario_email"] = email
+        session["usuario_telefone"] = telefone
+        session["usuario_perfil"] = tipo_perfil
+        session["status_assinatura"] = "ativa"
+        session["usuario_cnpj"] = cnpj_formatado
+        session["usuario_razao_social"] = razao_social or nome
+        session["data_abertura_mei"] = data_abertura
+        session["limite_anual_mei"] = limite_anual_mei
+
+        return redirect(url_for("pagina_home"))
+
+    return render_template(
+        "cadastro.html",
+        session_id=session_id,
+        email_preenchido=email_preenchido,
+        plano_contratado=plano_contratado
+    )
 
 
 # =================== LOGIN ===================
@@ -140,7 +226,7 @@ def tela_cadastro():
 def login():
     if request.method == "POST":
 
-        email = request.form.get("email", "").strip()
+        email = request.form.get("email", "").strip().lower()
         senha = request.form.get("senha", "")
 
         if not email or not senha:
@@ -156,6 +242,12 @@ def login():
             session["usuario_nome"] = user["nome"]
             session["usuario_email"] = user["email"]
             session["usuario_telefone"] = user.get("telefone_formatado") or user.get("telefone") or ""
+            session["usuario_perfil"] = user.get("tipo_perfil", "ME")
+            session["status_assinatura"] = user.get("status_assinatura", "pendente")
+            session["usuario_cnpj"] = user.get("cnpj_formatado") or user.get("cnpj") or ""
+            session["usuario_razao_social"] = user.get("razao_social", "")
+            session["data_abertura_mei"] = user.get("data_abertura", "")
+            session["limite_anual_mei"] = user.get("limite_anual_mei", 81000.0)
             
             # Lógica Lembrar de mim
             lembrar = request.form.get("lembrar")
@@ -164,11 +256,54 @@ def login():
             else:
                 session.permanent = False
                 
+            # Verificação de status da assinatura (Admins ou contas ativas são liberadas)
+            if not user.get("is_admin") and user.get("email") != "admin@datainsight.com":
+                status = user.get("status_assinatura", "pendente")
+                if status != "ativa":
+                    return redirect(url_for("pagina_bloqueio_assinatura", motivo=status))
+
             return redirect(url_for("pagina_home"))
 
         return render_template("login.html", error=True, msg="Email ou senha inválidos")
 
     return render_template("login.html")
+
+
+# =================== ALTERNAR PERFIL MEI / ME ===================
+
+def alternar_perfil():
+    """Permite ao usuário alternar instantaneamente entre os perfis MEI e ME."""
+    from bson import ObjectId
+    usuario_id = session.get("usuario_id")
+    if not usuario_id:
+        return jsonify({"sucesso": False, "mensagem": "Não autenticado"}), 401
+
+    payload = request.get_json() or {}
+    novo_perfil = payload.get("tipo_perfil", "").strip().upper()
+    if novo_perfil not in ["MEI", "ME"]:
+        # Se não especificou, inverte o perfil atual
+        atual = session.get("usuario_perfil", "ME")
+        novo_perfil = "MEI" if atual == "ME" else "ME"
+
+    try:
+        usuario.update_one(
+            {"_id": ObjectId(usuario_id)},
+            {
+                "$set": {
+                    "tipo_perfil": novo_perfil,
+                    "atualizado_em": datetime.now()
+                }
+            }
+        )
+        session["usuario_perfil"] = novo_perfil
+        return jsonify({
+            "sucesso": True,
+            "tipo_perfil": novo_perfil,
+            "mensagem": f"Plano alterado com sucesso para {novo_perfil}!"
+        }), 200
+    except Exception as e:
+        print(f"[Erro] Falha ao alternar perfil: {e}")
+        return jsonify({"sucesso": False, "mensagem": "Erro ao atualizar perfil."}), 500
 
 
 # =================== ESQUECEU SENHA ===================

@@ -111,15 +111,18 @@ def obter_mapeamento_financeiro():
         print(f"[DEBUG] Erro ao buscar dados para debug: {e}\n", flush=True)
     # ─────────────────────────────────────────────────────────────────
 
-    # Análise de completude por ferramenta
+    # Análise de completude por ferramenta (respeitando MEI vs ME)
+    perfil = session.get('usuario_perfil') or (user.get('tipo_perfil', 'ME') if user else 'ME')
     from backend.dados.classificacao_financeira import analisar_completude_financeira, gerar_recomendacoes
-    completude = analisar_completude_financeira(mapeamento)
-    recomendacoes = gerar_recomendacoes(mapeamento)
+    completude = analisar_completude_financeira(mapeamento, perfil=perfil)
+    recomendacoes = gerar_recomendacoes(mapeamento, perfil=perfil)
 
     return jsonify({
         "mapeamento": mapeamento,
         "completude": completude,
         "recomendacoes": recomendacoes,
+        "perfil": perfil,
+        "is_mei": str(perfil).upper() == "MEI",
     }), 200
 
 
@@ -251,16 +254,22 @@ def salvar_mapeamento_financeiro():
     except Exception as e:
         print(f"Aviso ao sincronizar valores manuais com tabela ativa: {e}", flush=True)
 
-    # Retornar completude atualizada
+    # Retornar completude atualizada (respeitando MEI vs ME)
+    perfil = session.get('usuario_perfil')
+    if not perfil:
+        user_doc = usuario.find_one(_get_user_filter(user_id))
+        perfil = user_doc.get('tipo_perfil', 'ME') if user_doc else 'ME'
     from backend.dados.classificacao_financeira import analisar_completude_financeira, gerar_recomendacoes
-    completude = analisar_completude_financeira(dados)
-    recomendacoes = gerar_recomendacoes(dados)
+    completude = analisar_completude_financeira(dados, perfil=perfil)
+    recomendacoes = gerar_recomendacoes(dados, perfil=perfil)
 
     return jsonify({
         "mensagem": "Mapeamento financeiro salvo com sucesso",
         "mapeamento": dados,
         "completude": completude,
         "recomendacoes": recomendacoes,
+        "perfil": perfil,
+        "is_mei": str(perfil).upper() == "MEI",
     }), 200
 
 
@@ -289,15 +298,30 @@ def analisar_colunas_financeiras():
     except Exception:
         df = pd.DataFrame(columns=colunas)
 
+    # Identificar perfil do usuário (MEI vs ME)
+    perfil = session.get('usuario_perfil')
+    if not perfil:
+        user_doc = usuario.find_one(_get_user_filter(user_id))
+        perfil = user_doc.get('tipo_perfil', 'ME') if user_doc else 'ME'
+    is_mei = str(perfil).upper() == "MEI"
+
     from backend.dados.classificacao_financeira import classificar_colunas_financeiras, LABELS_CATEGORIAS
     analise = classificar_colunas_financeiras(df)
 
+    mapeamento_sugerido = analise["mapeamento_sugerido"]
+    categorias_disponiveis = {k: v for k, v in LABELS_CATEGORIAS.items()}
+
+    # Para plano ME, remover das_mei das sugestões e categorias disponíveis
+    if not is_mei:
+        mapeamento_sugerido.pop("das_mei", None)
+        categorias_disponiveis.pop("das_mei", None)
+
     return jsonify({
         "analise": analise["colunas"],
-        "mapeamento_sugerido": analise["mapeamento_sugerido"],
-        "categorias_disponiveis": {
-            k: v for k, v in LABELS_CATEGORIAS.items()
-        },
+        "mapeamento_sugerido": mapeamento_sugerido,
+        "categorias_disponiveis": categorias_disponiveis,
+        "is_mei": is_mei,
+        "perfil": perfil,
     }), 200
 
 
@@ -442,15 +466,21 @@ def criar_coluna_financeira_api():
         }}
     )
 
+    perfil = session.get('usuario_perfil')
+    if not perfil:
+        user_doc = usuario.find_one(_get_user_filter(user_id))
+        perfil = user_doc.get('tipo_perfil', 'ME') if user_doc else 'ME'
     from backend.dados.classificacao_financeira import analisar_completude_financeira, gerar_recomendacoes
-    completude = analisar_completude_financeira(mapeamento_fin)
-    recomendacoes = gerar_recomendacoes(mapeamento_fin)
+    completude = analisar_completude_financeira(mapeamento_fin, perfil=perfil)
+    recomendacoes = gerar_recomendacoes(mapeamento_fin, perfil=perfil)
 
     return jsonify({
         "mensagem": f"Coluna '{nome_coluna}' criada e vinculada com sucesso à categoria '{categoria_id}'!",
         "colunas": colunas_atualizadas,
         "mapeamento": mapeamento_fin,
         "completude": completude,
-        "recomendacoes": recomendacoes
+        "recomendacoes": recomendacoes,
+        "perfil": perfil,
+        "is_mei": str(perfil).upper() == "MEI",
     }), 200
 

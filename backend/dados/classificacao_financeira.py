@@ -59,6 +59,9 @@ MAPA_FINANCEIRO = {
     ],
 
     # ── GASTOS FIXOS ──────────────────────────────────
+    "das_mei": [
+        r"das.?mei", r"^das$", r"boleto.?das", r"tributo.?das", r"simei", r"guia.?das",
+    ],
     "aluguel": [
         r"aluguel", r"locacao", r"rent\b", r"arrendamento", r"condominio",
     ],
@@ -133,6 +136,7 @@ LABELS_CATEGORIAS = {
     "custo_variavel_outros":   {"label": "Custos Variáveis Diversos",    "grupo": "Custos Variáveis",                 "cor": "#f59e0b", "icone": "fa-ellipsis", "coluna_sugerida": "Custos Diversos", "tipo_sugerido": "moeda"},
 
     # Gastos Fixos
+    "das_mei":                 {"label": "Boleto DAS-MEI (Tributo MEI)", "grupo": "Gastos Fixos",                     "cor": "#f59e0b", "icone": "fa-file-invoice-dollar", "coluna_sugerida": "DAS-MEI", "tipo_sugerido": "moeda"},
     "aluguel":                 {"label": "Aluguel / Locação",            "grupo": "Gastos Fixos",                     "cor": "#ef4444", "icone": "fa-building", "coluna_sugerida": "Aluguel", "tipo_sugerido": "moeda"},
     "folha_pagamento":         {"label": "Folha de Pagamento",           "grupo": "Gastos Fixos",                     "cor": "#ef4444", "icone": "fa-users", "coluna_sugerida": "Folha de Pagamento", "tipo_sugerido": "moeda"},
     "pro_labore":              {"label": "Pró-labore / Retirada",        "grupo": "Gastos Fixos",                     "cor": "#ef4444", "icone": "fa-user-tie", "coluna_sugerida": "Pró-labore", "tipo_sugerido": "moeda"},
@@ -144,8 +148,8 @@ LABELS_CATEGORIAS = {
     "investimento_outros":     {"label": "Outros Investimentos",         "grupo": "Investimentos",                    "cor": "#8b5cf6", "icone": "fa-coins", "coluna_sugerida": "Investimentos", "tipo_sugerido": "moeda"},
 }
 
-# Campos mínimos necessários por ferramenta
-REQUISITOS_FERRAMENTAS = {
+# Campos mínimos necessários por ferramenta para ME (Padrão)
+REQUISITOS_FERRAMENTAS_ME = {
     "planejamento_financeiro": {
         "label": "Planejamento Financeiro",
         "icone": "fa-chart-pie",
@@ -167,6 +171,25 @@ REQUISITOS_FERRAMENTAS = {
         "opcionais": ["impostos", "investimento_outros", "custo_variavel", "resultado"],
     },
 }
+
+# Campos mínimos necessários por ferramenta para MEI (Fluxo de Caixa e Controles Essenciais)
+REQUISITOS_FERRAMENTAS_MEI = {
+    "fluxo_caixa": {
+        "label": "Fluxo de Caixa",
+        "icone": "fa-money-bill-transfer",
+        "obrigatorios": ["receita_total", "despesas", "periodo"],
+        "opcionais": ["das_mei", "custo_variavel", "investimento_outros", "resultado"],
+    },
+    "controles_essenciais": {
+        "label": "Controles Essenciais",
+        "icone": "fa-sliders",
+        "obrigatorios": ["receita_total", "periodo", "despesas"],
+        "opcionais": ["das_mei", "fornecedores", "pro_labore", "resultado"],
+    },
+}
+
+# Compatibilidade retroativa
+REQUISITOS_FERRAMENTAS = REQUISITOS_FERRAMENTAS_ME
 
 
 # =====================================================
@@ -295,22 +318,35 @@ def classificar_colunas_financeiras(df: pd.DataFrame) -> dict:
 #  ANÁLISE DE COMPLETUDE POR FERRAMENTA
 # =====================================================
 
-def analisar_completude_financeira(mapeamento_usuario: dict) -> dict:
+def analisar_completude_financeira(mapeamento_usuario: dict, perfil: str = "ME") -> dict:
     """
     Recebe o mapeamento salvo do usuário { categoria: coluna_ou_valor }
     Retorna a % de prontidão para cada ferramenta + campos faltantes.
+    Quando perfil == 'MEI', analisa Fluxo de Caixa e Controles Essenciais.
+    Quando perfil == 'ME', analisa Planejamento Financeiro, DRE e Fluxo de Caixa.
     """
     resultado = {}
+    is_mei = str(perfil).upper() == "MEI"
+    reqs = REQUISITOS_FERRAMENTAS_MEI if is_mei else REQUISITOS_FERRAMENTAS_ME
 
-    for ferramenta_id, cfg in REQUISITOS_FERRAMENTAS.items():
+    def _esta_presente(c: str) -> bool:
+        if mapeamento_usuario.get(c) or mapeamento_usuario.get(f"{c}_manual"):
+            return True
+        if c == "receita_total" and (mapeamento_usuario.get("receita_produtos") or mapeamento_usuario.get("receita_servicos") or mapeamento_usuario.get("receita_outros")):
+            return True
+        if c == "despesas" and (mapeamento_usuario.get("custo_variavel") or mapeamento_usuario.get("fornecedores") or mapeamento_usuario.get("aluguel") or mapeamento_usuario.get("das_mei") or mapeamento_usuario.get("das_mei_manual")):
+            return True
+        return False
+
+    for ferramenta_id, cfg in reqs.items():
         obrigatorios = cfg["obrigatorios"]
         opcionais = cfg["opcionais"]
 
-        presentes_obrig = [c for c in obrigatorios if mapeamento_usuario.get(c)]
-        presentes_opcio = [c for c in opcionais if mapeamento_usuario.get(c)]
+        presentes_obrig = [c for c in obrigatorios if _esta_presente(c)]
+        presentes_opcio = [c for c in opcionais if _esta_presente(c)]
 
-        faltando_obrig = [c for c in obrigatorios if not mapeamento_usuario.get(c)]
-        faltando_opcio = [c for c in opcionais if not mapeamento_usuario.get(c)]
+        faltando_obrig = [c for c in obrigatorios if not _esta_presente(c)]
+        faltando_opcio = [c for c in opcionais if not _esta_presente(c)]
 
         # Peso: obrigatórios valem 70%, opcionais valem 30%
         total_obrig = len(obrigatorios)
@@ -348,7 +384,7 @@ def analisar_completude_financeira(mapeamento_usuario: dict) -> dict:
 #  RECOMENDAÇÕES INTELIGENTES
 # =====================================================
 
-_RECOMENDACOES_BASE = [
+_RECOMENDACOES_ME = [
     {
         "categoria_ausente": "impostos",
         "grupo_ausente": "taxa_imposto",
@@ -385,26 +421,70 @@ _RECOMENDACOES_BASE = [
     },
 ]
 
+_RECOMENDACOES_MEI = [
+    {
+        "categoria_ausente": "receita_total",
+        "grupo_ausente": "receita_produtos",
+        "mensagem": "Nenhuma coluna de receita identificada. O controle de faturamento e teto anual do MEI (R$ 81.000) dependem deste campo.",
+        "acao": "Mapear coluna de receita",
+        "nivel": "erro",
+        "coluna_sugerida": "Faturamento",
+        "tipo_sugerido": "moeda",
+    },
+    {
+        "categoria_ausente": "das_mei",
+        "mensagem": "Boleto DAS-MEI não identificado. Mapeie a coluna ou informe o valor mensal para acompanhar nos Controles Essenciais e Fluxo de Caixa.",
+        "acao": "Informar DAS-MEI manualmente",
+        "valor_padrao": {"das_mei_manual": 75.0},
+        "nivel": "aviso",
+        "coluna_sugerida": "DAS-MEI",
+        "tipo_sugerido": "moeda",
+    },
+    {
+        "categoria_ausente": "despesas",
+        "grupo_ausente": "custo_variavel",
+        "mensagem": "Nenhuma coluna de despesas/gastos detectada. O Fluxo de Caixa e os Controles Essenciais precisam das saídas para calcular o saldo.",
+        "acao": "Mapear coluna de despesas",
+        "nivel": "erro",
+        "coluna_sugerida": "Despesas",
+        "tipo_sugerido": "moeda",
+    },
+    {
+        "categoria_ausente": "periodo",
+        "mensagem": "Coluna de período/data não detectada. O Fluxo de Caixa e os Controles Essenciais precisam de datas para organizar os lançamentos.",
+        "acao": "Informar coluna de data",
+        "nivel": "aviso",
+        "coluna_sugerida": "Data",
+        "tipo_sugerido": "data",
+    },
+]
 
-def gerar_recomendacoes(mapeamento_usuario: dict) -> list:
+# Compatibilidade retroativa
+_RECOMENDACOES_BASE = _RECOMENDACOES_ME
+
+
+def gerar_recomendacoes(mapeamento_usuario: dict, perfil: str = "ME") -> list:
     """
     Gera lista de recomendações baseadas nos campos ausentes no mapeamento do usuário.
+    Personalizado para MEI e ME.
     """
     recomendacoes = []
+    is_mei = str(perfil).upper() == "MEI"
+    lista_base = _RECOMENDACOES_MEI if is_mei else _RECOMENDACOES_ME
 
-    for rec in _RECOMENDACOES_BASE:
+    for rec in lista_base:
         cat_ausente = rec["categoria_ausente"]
         grupo_ausente = rec.get("grupo_ausente")
 
         # Verificar se a categoria principal está ausente
-        tem_principal = bool(mapeamento_usuario.get(cat_ausente))
+        tem_principal = bool(mapeamento_usuario.get(cat_ausente) or mapeamento_usuario.get(f"{cat_ausente}_manual"))
         # Verificar grupo alternativo
-        tem_grupo = bool(mapeamento_usuario.get(grupo_ausente)) if grupo_ausente else False
+        tem_grupo = bool(mapeamento_usuario.get(grupo_ausente) or mapeamento_usuario.get(f"{grupo_ausente}_manual")) if grupo_ausente else False
 
         if not tem_principal and not tem_grupo:
             meta = LABELS_CATEGORIAS.get(cat_ausente, {})
-            col_sugerida = meta.get("coluna_sugerida", cat_ausente.capitalize())
-            tipo_sugerido = meta.get("tipo_sugerido", "moeda")
+            col_sugerida = rec.get("coluna_sugerida") or meta.get("coluna_sugerida", cat_ausente.capitalize())
+            tipo_sugerido = rec.get("tipo_sugerido") or meta.get("tipo_sugerido", "moeda")
             recomendacoes.append({
                 "mensagem": rec["mensagem"],
                 "acao": rec["acao"],

@@ -178,12 +178,13 @@ def preparar_dataframe_financeiro(df, mapeamento):
                 df_calc["_variaveis"] = df_calc["_fornecedores"] + df_calc["_publicidade"] + df_calc["_outros_var"]
 
     # Gastos Fixos
+    df_calc["_das_mei"] = _serie_financeira(df_calc, mapeamento, "das_mei")
     df_calc["_aluguel"] = _serie_financeira(df_calc, mapeamento, "aluguel")
     df_calc["_folha"] = _serie_financeira(df_calc, mapeamento, "folha_pagamento")
     df_calc["_pro_labore"] = _serie_financeira(df_calc, mapeamento, "pro_labore")
     df_calc["_outros_fixos"] = _serie_financeira(df_calc, mapeamento, "gasto_fixo_outros")
 
-    comp_fixos = df_calc["_aluguel"] + df_calc["_folha"] + df_calc["_pro_labore"]
+    comp_fixos = df_calc["_das_mei"] + df_calc["_aluguel"] + df_calc["_folha"] + df_calc["_pro_labore"]
     if comp_fixos.abs().sum() > 0:
         df_calc["_fixos"] = comp_fixos + df_calc["_outros_fixos"]
     else:
@@ -243,7 +244,7 @@ def preparar_dataframe_financeiro(df, mapeamento):
 
 def segmentar_periodos_fluxo(df_calc, periodo_str="30"):
     """
-    Gera colunas de sub-períodos conforme o filtro selecionado (7d, 30d, 180d, 365d).
+    Gera colunas de sub-períodos conforme o filtro selecionado (7d, 30d, 90d, 180d, 365d).
     Retorna a lista de nomes das colunas e os sub-dataframes correspondentes.
     """
     try:
@@ -282,6 +283,21 @@ def segmentar_periodos_fluxo(df_calc, periodo_str="30"):
                 colunas_periodos.insert(0, label)
                 dfs_periodos.insert(0, sub_df)
 
+        elif periodo_int == 90:
+            # Últimos 3 meses (90 dias)
+            ano_atual = data_maxima.year
+            mes_atual = data_maxima.month
+            for i in range(2, -1, -1):
+                m = mes_atual - i
+                y = ano_atual
+                while m <= 0:
+                    m += 12
+                    y -= 1
+                label = f"{MESES_NOMES[m - 1]}/{str(y)[2:]}"
+                sub_df = df_calc_ordenado[(df_calc_ordenado["_data"].dt.month == m) & (df_calc_ordenado["_data"].dt.year == y)]
+                colunas_periodos.append(label)
+                dfs_periodos.append(sub_df)
+
         elif periodo_int == 180:
             # Últimos 6 meses
             ano_atual = data_maxima.year
@@ -306,10 +322,11 @@ def segmentar_periodos_fluxo(df_calc, periodo_str="30"):
                 colunas_periodos.append(label)
                 dfs_periodos.append(sub_df)
     else:
-        # Sem datas na planilha: divide o DataFrame igualmente em 4 colunas padrão
+        # Sem datas na planilha: divide o DataFrame igualmente em colunas padrão
         n = len(df_calc)
-        tamanho_bloco = max(1, math.ceil(n / 4))
-        for i in range(4):
+        qtd_colunas = 3 if periodo_int == 90 else 4
+        tamanho_bloco = max(1, math.ceil(n / qtd_colunas))
+        for i in range(qtd_colunas):
             label = f"Período {i + 1}"
             sub_df = df_calc.iloc[i * tamanho_bloco:(i + 1) * tamanho_bloco]
             colunas_periodos.append(label)
@@ -398,6 +415,11 @@ def construir_tabela_detalhada(colunas_periodos, dfs_periodos, mapeamento=None):
             "label": "GASTOS FIXOS",
             "tipo": "grupo", "grupo": "fixos",
             "campo": "_fixos", "cor": "#d91f4f"
+        },
+        {
+            "id": "das_mei",
+            "label": "Boleto DAS-MEI",
+            "tipo": "subitem", "grupo": "fixos", "campo": "_das_mei"
         },
         {
             "id": "aluguel",
@@ -633,6 +655,7 @@ def obter_dados_fluxo_caixa():
 
             # 7. Maiores Gastos do período selecionado
             gastos_categorias = {
+                "Boleto DAS-MEI": float(df_periodo["_das_mei"].sum()),
                 "Fornecedores": float(df_periodo["_fornecedores"].sum()),
                 "Folha de Pagamento": float(df_periodo["_folha"].sum()),
                 "Aluguel": float(df_periodo["_aluguel"].sum()),
