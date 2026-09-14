@@ -1,6 +1,6 @@
 import os
 import traceback
-from datetime import timedelta
+from datetime import datetime, timedelta
 from functools import wraps
 
 import mercadopago
@@ -12,6 +12,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    send_file,
     session,
     url_for,
 )
@@ -98,10 +99,15 @@ from backend.dados.mapeamento import (
 from backend.contato.contato import enviar_mensagem_contato
 
 # Importação pagamento
+import stripe
 from backend.pagamento.criar_assinatura import (
     criar_assinatura_stripe,
     verificar_token_stripe,
 )
+from backend.pagamento.webhook_stripe import processar_webhook_stripe
+
+# Importação da coleção de usuários (MongoDB)
+from backend.db import usuario
 
 # Chatbot Import
 from backend.chatbot.chatbot import (
@@ -120,14 +126,34 @@ from backend.produtos import (
     obter_produto_exato,
     salvar_produto,
 )
-from backend.planejamento.planejamento_financeiro import obter_planejamento_financeiro
+from backend.planejamento.planejamento_financeiro import (
+    obter_planejamento_financeiro,
+    salvar_configuracao_ponto_equilibrio,
+)
 from backend.fluxoCaixa.fluxo_caixa import obter_dados_fluxo_caixa
+from backend.cnpj.cnpj_service import consultar_cnpj_externo, formatar_cnpj
+from backend.controles_essenciais.controles_essenciais import (
+    obter_dados_controles_essenciais,
+    registrar_lancamento_rapido,
+)
+from backend.user import alternar_perfil
 
 
 key = os.getenv('SECRET_KEY')
 
 app = Flask(__name__)
 app.secret_key = key
+
+# =================== INJEÇÃO GLOBAL DE CONTEXTO JINJA ===================
+@app.context_processor
+def inject_user_perfil():
+    perfil = session.get('usuario_perfil', 'ME')
+    return {
+        'usuario_perfil': perfil,
+        'is_mei': perfil == 'MEI',
+        'usuario_cnpj': session.get('usuario_cnpj', ''),
+        'usuario_razao_social': session.get('usuario_razao_social', '')
+    }
 
 # =================== EMAIL ===================
 app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
@@ -160,12 +186,55 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 
-# =================== PROTEÇÃO ===================
+# =================== PROTEÇÃO & PAYWALL SAAS ===================
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'usuario_nome' not in session:
+        if 'usuario_id' not in session and 'usuario_nome' not in session:
             return redirect(url_for('pagina_login'))
+
+        # Verificação do status da assinatura no banco de dados
+        user_id = session.get('usuario_id')
+        user = None
+        if user_id:
+            try:
+                from bson import ObjectId
+                user = usuario.find_one({'_id': ObjectId(user_id)})
+            except Exception:
+                user = usuario.find_one({'email': session.get('usuario_email')})
+        elif session.get('usuario_email'):
+            user = usuario.find_one({'email': session.get('usuario_email')})
+
+        if user:
+            # Sincroniza sempre o tipo_perfil na sessão
+            if session.get('plano_escolhido'):
+                session['usuario_perfil'] = session['plano_escolhido']
+            elif user.get('tipo_perfil'):
+                session['usuario_perfil'] = user.get('tipo_perfil')
+
+            # Admins liberados sem restrição
+            if user.get('is_admin') or user.get('email') == 'admin@datainsight.com':
+                return f(*args, **kwargs)
+
+            status = user.get('status_assinatura', 'pendente')
+            if status != 'ativa':
+                # Fallback: se a sessão Flask diz 'ativa' (vindo de sucesso_pagamento),
+                # confia e sincroniza com o BD imediatamente.
+                if session.get('status_assinatura') == 'ativa':
+                    try:
+                        usuario.update_one(
+                            {'_id': user['_id']},
+                            {'$set': {'status_assinatura': 'ativa', 'atualizado_em': datetime.now()}}
+                        )
+                        print(f"[login_required] Sincronizado status->ativa para user {user.get('email')} via sessão.")
+                        return f(*args, **kwargs)
+                    except Exception as ex:
+                        print(f"[login_required] Falha ao sincronizar BD: {ex}")
+
+                return redirect(url_for('pagina_bloqueio_assinatura', motivo=status))
+        else:
+            return redirect(url_for('pagina_login'))
+
         return f(*args, **kwargs)
 
     return decorated_function
@@ -185,6 +254,12 @@ def pagina_assinaturas():
     )
 
 
+@app.route("/bloqueio-assinatura", endpoint="pagina_bloqueio_assinatura")
+def pagina_bloqueio_assinatura():
+    motivo = request.args.get("motivo", "pendente")
+    return render_template("sistema_pagamento/bloqueio_assinatura.html", motivo=motivo)
+
+
 @app.route("/criar-assinatura", methods=['POST'])
 @app.route("/criar-preferencia", methods=['POST'])
 def rota_criar_assinatura():
@@ -193,14 +268,121 @@ def rota_criar_assinatura():
 
 @app.route('/sucesso-pagamento', endpoint="sucesso_pagamento")
 def sucesso_pagamento():
-    preapproval_id = request.args.get('preapproval_id') or request.args.get(
-        'payment_id'
-    )
+    session_id = request.args.get('session_id')
     status = request.args.get('status') or 'Aprovado'
+    plano = request.args.get('plano') or session.get('plano_escolhido') or session.get('usuario_perfil') or 'ME'
+    email = ''
+    customer_id = None
+    subscription_id = None
+
+    print(f"[sucesso_pagamento] Iniciando. session_id={session_id} | plano={plano} | session={dict(session)}")
+
+    # Tenta identificar o usuário de múltiplos modos:
+    # 1. Usuário logado na sessão ativa
+    usuario_existente = None
+    user_id_sess = session.get('usuario_id')
+    user_email_sess = session.get('usuario_email')
+
+    if user_id_sess:
+        try:
+            from bson import ObjectId
+            usuario_existente = usuario.find_one({'_id': ObjectId(user_id_sess)})
+            print(f"[sucesso_pagamento] Usuário encontrado por ID de sessão: {usuario_existente.get('email') if usuario_existente else None}")
+        except Exception as ex:
+            print(f"[sucesso_pagamento] Erro ao buscar por ID de sessão: {ex}")
+
+    if not usuario_existente and user_email_sess:
+        usuario_existente = usuario.find_one({'email': user_email_sess.lower()})
+        print(f"[sucesso_pagamento] Usuário por email de sessão: {usuario_existente.get('email') if usuario_existente else None}")
+
+    # 2. Se houver session_id do Stripe, tenta recuperar dados e metadata do checkout
+    if session_id:
+        try:
+            stripe.api_key = os.getenv('STRIPE_API_KEY')
+            if stripe.api_key:
+                checkout_session = stripe.checkout.Session.retrieve(session_id)
+                customer_details = checkout_session.get('customer_details') or {}
+                email = customer_details.get('email') or checkout_session.get('customer_email') or email
+                metadata = checkout_session.get('metadata') or {}
+                plano = metadata.get('plano') or plano
+                user_id_meta = metadata.get('usuario_id')
+                subscription_id = checkout_session.get('subscription')
+                customer_id = checkout_session.get('customer')
+                print(f"[sucesso_pagamento] Stripe OK. email={email} plano={plano} user_id_meta={user_id_meta}")
+
+                if not usuario_existente and user_id_meta:
+                    try:
+                        from bson import ObjectId
+                        usuario_existente = usuario.find_one({'_id': ObjectId(user_id_meta)})
+                        print(f"[sucesso_pagamento] Usuário por metadata ID: {usuario_existente.get('email') if usuario_existente else None}")
+                    except Exception as ex:
+                        print(f"[sucesso_pagamento] Erro ao buscar por metadata ID: {ex}")
+
+                if not usuario_existente and email:
+                    usuario_existente = usuario.find_one({'email': email.lower()})
+                    print(f"[sucesso_pagamento] Usuário por email Stripe: {usuario_existente.get('email') if usuario_existente else None}")
+            else:
+                print("[sucesso_pagamento] STRIPE_API_KEY não configurada — pulando consulta Stripe.")
+        except Exception as e:
+            print(f"[sucesso_pagamento] Erro ao consultar sessão Stripe ({session_id}): {e}")
+
+    # Se encontramos o usuário (logado ou via Stripe), ativa a assinatura no MongoDB e na sessão imediata
+    if usuario_existente:
+        update_fields = {
+            'status_assinatura': 'ativa',
+            'tipo_perfil': plano,
+            'atualizado_em': datetime.now()
+        }
+        if customer_id:
+            update_fields['stripe_customer_id'] = customer_id
+        if subscription_id:
+            update_fields['stripe_subscription_id'] = subscription_id
+
+        try:
+            result = usuario.update_one(
+                {'_id': usuario_existente['_id']},
+                {'$set': update_fields}
+            )
+            print(f"[sucesso_pagamento] MongoDB update: matched={result.matched_count} modified={result.modified_count} plano={plano}")
+        except Exception as ex:
+            print(f"[sucesso_pagamento] ERRO ao atualizar MongoDB: {ex}")
+
+        session['usuario_id'] = str(usuario_existente['_id'])
+        session['usuario_nome'] = usuario_existente.get('nome', '')
+        session['usuario_email'] = usuario_existente.get('email', '')
+        session['usuario_perfil'] = plano
+        session['plano_escolhido'] = plano
+        session['status_assinatura'] = 'ativa'
+        session.modified = True  # força gravação da sessão
+
+        print(f"[sucesso_pagamento] Sessão atualizada para ativa com perfil {plano}. Renderizando sucesso.html.")
+        return render_template(
+            'sistema_pagamento/sucesso.html',
+            status=status,
+            plano=plano,
+            email=usuario_existente.get('email', email),
+            payment_id=subscription_id or session_id or 'SUB-ATIVADA'
+        )
+
+    # Se não temos um usuário cadastrado e veio um session_id do Stripe, redireciona para tela de cadastro mantendo o plano
+    print(f"[sucesso_pagamento] Usuário NÃO encontrado. session_id={session_id} plano={plano}")
+    if session_id:
+        return redirect(url_for('pg_cadastro', session_id=session_id, plano=plano))
+
+    # Fallback (ex: teste ou acesso direto sem session_id)
+    # Se há sessão ativa, marca como ativa de qualquer forma
+    if user_id_sess or user_email_sess:
+        session['status_assinatura'] = 'ativa'
+        session['usuario_perfil'] = plano
+        session['plano_escolhido'] = plano
+        session.modified = True
+
     return render_template(
         'sistema_pagamento/sucesso.html',
-        preapproval_id=preapproval_id,
         status=status,
+        plano=plano,
+        email=email,
+        payment_id=session_id
     )
 
 
@@ -209,21 +391,64 @@ def falha_pagamento():
     return render_template('sistema_pagamento/falha.html')
 
 
+@app.route('/ativar-acesso', endpoint="ativar_acesso")
+def ativar_acesso():
+    """
+    Rota de ativação manual para usuários que pagaram mas ficaram bloqueados.
+    Ativa o status_assinatura='ativa' e preserva/sincroniza o plano correto (MEI/ME)
+    para o usuário logado na sessão atual.
+    """
+    user_id = session.get('usuario_id')
+    user_email = session.get('usuario_email')
+
+    if not user_id and not user_email:
+        return redirect(url_for('pagina_login'))
+
+    user = None
+    if user_id:
+        try:
+            from bson import ObjectId
+            user = usuario.find_one({'_id': ObjectId(user_id)})
+        except Exception:
+            pass
+    if not user and user_email:
+        user = usuario.find_one({'email': user_email.lower()})
+
+    if not user:
+        return redirect(url_for('pagina_login'))
+
+    # Determina o plano a ser aplicado, respeitando parâmetro URL > sessão > BD
+    plano_ativar = (
+        request.args.get('plano')
+        or session.get('plano_escolhido')
+        or session.get('usuario_perfil')
+        or user.get('tipo_perfil', 'ME')
+    ).strip().upper()
+    if plano_ativar not in ['MEI', 'ME']:
+        plano_ativar = 'ME'
+
+    # Ativa imediatamente no BD e na sessão
+    usuario.update_one(
+        {'_id': user['_id']},
+        {'$set': {
+            'status_assinatura': 'ativa',
+            'tipo_perfil': plano_ativar,
+            'atualizado_em': datetime.now()
+        }}
+    )
+    session['status_assinatura'] = 'ativa'
+    session['usuario_perfil'] = plano_ativar
+    session['plano_escolhido'] = plano_ativar
+    session.modified = True
+    print(f"[ativar_acesso] Assinatura ativada manualmente para {user.get('email')} com plano {plano_ativar}")
+
+    return redirect(url_for('pagina_home'))
+
+
+@app.route('/webhook-stripe', methods=['POST'])
 @app.route('/webhook-pagamento', methods=['POST'])
 def webhook_pagamento():
-    data = request.get_json() or {}
-    if data.get("type") == "subscription_preapproval":
-        preapproval_id = data.get("data", {}).get("id")
-        mp_token = os.getenv('MP_ACCESS_TOKEN') or os.getenv('MERCADOPAGO_ACCESS_TOKEN')
-        if mp_token and preapproval_id:
-            try:
-                sdk = mercadopago.SDK(mp_token)
-                info = sdk.preapproval().get(preapproval_id)
-                status = info.get("response", {}).get("status")
-                print(f"Status da assinatura {preapproval_id}: {status}")
-            except Exception as e:
-                print(f"Erro ao consultar assinatura no webhook: {e}")
-    return jsonify({"status": "ok"}), 200
+    return processar_webhook_stripe()
 
 
 @app.route('/verificar-token-mp', methods=['GET'])
@@ -255,7 +480,14 @@ def pagina_analise():
 @app.route("/planejamento-financeiro")
 @login_required
 def pagina_planejamento_financeiro():
+    if session.get("usuario_perfil") == "MEI":
+        return redirect(url_for("pagina_controles_essenciais"))
     return render_template("analise_planejamento_adaptado.html")
+
+@app.route("/controles-essenciais", endpoint="pagina_controles_essenciais")
+@login_required
+def pagina_controles_essenciais():
+    return render_template("controles_essenciais.html")
 
 @app.route("/fluxo-caixa", endpoint="pagina_fluxo_caixa")
 @app.route("/fluxo_caixa")
@@ -496,11 +728,46 @@ def get_planejamento_financeiro():
     return obter_planejamento_financeiro()
 
 
+@app.route("/api/planejamento-financeiro/ponto-equilibrio", methods=["POST"])
+@login_required
+def post_ponto_equilibrio_config():
+    """Salva a configuração do Ponto de Equilíbrio (automático ou manual)"""
+    return salvar_configuracao_ponto_equilibrio()
+
+
 @app.route("/api/fluxo-caixa", methods=["GET"])
 @login_required
 def get_fluxo_caixa():
     """Retorna dados processados do fluxo de caixa"""
     return obter_dados_fluxo_caixa()
+
+
+# =================== CONTROLES ESSENCIAIS & CNPJ (MEI) ===================
+@app.route("/api/consultar-cnpj/<cnpj>", methods=["GET"])
+def rota_consultar_cnpj(cnpj):
+    """Consulta dados públicos do CNPJ com verificação de MEI/ME"""
+    return jsonify(consultar_cnpj_externo(cnpj))
+
+
+@app.route("/api/usuario/alternar-perfil", methods=["POST"])
+@login_required
+def rota_alternar_perfil():
+    """Alterna perfil do usuário entre MEI e ME"""
+    return alternar_perfil()
+
+
+@app.route("/api/controles-essenciais", methods=["GET"])
+@login_required
+def get_controles_essenciais():
+    """Retorna faturamento acumulado, termômetro MEI e equação de caixa"""
+    return obter_dados_controles_essenciais()
+
+
+@app.route("/api/controles-essenciais/lancamento", methods=["POST"])
+@login_required
+def post_lancamento_controles_essenciais():
+    """Registra uma movimentação rápida no módulo do MEI"""
+    return registrar_lancamento_rapido()
 
 
 @app.route("/api/mapeamento-financeiro", methods=["GET"])
@@ -790,6 +1057,62 @@ def api_apagar_historico():
     from backend.chatbot.chatbot import limpar_historico_chatbot
 
     return limpar_historico_chatbot()
+
+
+@app.route('/api/chatbot/exportar-documento', methods=['POST'])
+@login_required
+def api_exportar_documento():
+    try:
+        import re
+        dados = request.get_json() or {}
+        tipo = (dados.get("tipo") or "pdf").lower().strip()
+        titulo = (dados.get("titulo") or "Relatório de Análise IA").strip()
+        conteudo_html = dados.get("conteudo_html") or ""
+        sessao_id = dados.get("sessao_id")
+        metadados = dados.get("metadados") or {}
+        usuario_id = session.get("usuario_id")
+
+        if dados.get("conversa_completa") and sessao_id and usuario_id:
+            from backend.chatbot.document_generator import compilar_conversa_para_documento
+            compilado = compilar_conversa_para_documento(sessao_id, usuario_id)
+            conteudo_html = compilado["conteudo_html"]
+            if not dados.get("titulo"):
+                titulo = compilado["titulo"]
+            if not metadados and compilado.get("metadados"):
+                metadados = compilado["metadados"]
+
+        from backend.chatbot.document_generator import gerar_documento_docx, gerar_documento_xlsx, gerar_documento_pdf
+
+        nome_base = re.sub(r'[\\/*?:"<>| ]', '_', titulo)[:45].strip('_') or 'Relatorio_DataInsight'
+
+        if tipo in ["docx", "word", "doc"]:
+            buf = gerar_documento_docx(titulo, conteudo_html, metadados=metadados)
+            return send_file(
+                buf,
+                mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                as_attachment=True,
+                download_name=f"{nome_base}.docx"
+            )
+        elif tipo in ["xlsx", "excel", "planilha"]:
+            buf = gerar_documento_xlsx(titulo, conteudo_html, metadados=metadados)
+            return send_file(
+                buf,
+                mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                as_attachment=True,
+                download_name=f"{nome_base}.xlsx"
+            )
+        else:
+            buf = gerar_documento_pdf(titulo, conteudo_html, metadados=metadados)
+            return send_file(
+                buf,
+                mimetype="application/pdf",
+                as_attachment=True,
+                download_name=f"{nome_base}.pdf"
+            )
+    except Exception as err:
+        print(f"[Erro Exportar Documento]: {err}")
+        traceback.print_exc()
+        return jsonify({"erro": f"Falha ao gerar documento: {str(err)}"}), 500
 
 
 @app.route('/api/insight_diario', methods=['GET'])
@@ -1136,8 +1459,38 @@ def api_analise_ia_pagina():
         if not origem or origem == "todas":
             origem = "Todas as Planilhas (Visão Consolidada)"
 
+        is_usuario_mei = (session.get("usuario_perfil") == "MEI") or (contexto.get("perfil") == "MEI") or (pagina in ["controles_essenciais", "controles-essenciais"])
+
         # Montar prompt especializado com foco EXCLUSIVO em inteligência financeira e decisões de negócio
-        if pagina in ["home", "ia"]:
+        if pagina in ["controles_essenciais", "controles-essenciais"]:
+            fat_ano = contexto.get("faturamento_ano", "R$ 0,00")
+            teto = contexto.get("teto_mei", "R$ 81.000,00")
+            pct_teto = contexto.get("percentual_teto", "0.0%")
+            status_teto = contexto.get("status_teto", "seguro")
+            ent_mes = contexto.get("entradas_mes", "R$ 0,00")
+            sai_mes = contexto.get("saidas_mes", "R$ 0,00")
+            luc_mes = contexto.get("lucro_mes", "R$ 0,00")
+            sld_atual = contexto.get("saldo_atual", "R$ 0,00")
+            das_pago = contexto.get("das_pago", "R$ 0,00")
+
+            prompt = f"""Você é o Mentor Financeiro e Consultor Especialista em MEI da plataforma DataInsight.
+Analise a situação de caixa e o enquadramento fiscal do microempreendedor individual:
+- Período Analisado: {periodo}
+- Faturamento Acumulado no Ano: {fat_ano}
+- Teto Anual Permitido do MEI: {teto} (Utilizado: {pct_teto} - Situação: {status_teto})
+- Entradas do Mês (Vendas e Serviços Prestados): {ent_mes}
+- Saídas do Mês (Compras, Despesas Operacionais e DAS): {sai_mes} (Guia DAS: {das_pago})
+- Lucro Líquido Real que sobrou no bolso: {luc_mes}
+- Saldo Disponível em Caixa: {sld_atual}
+
+DIRETRIZES DA ANÁLISE PARA O MEI:
+1. Use uma linguagem humana, acessível, acolhedora e encorajadora. NUNCA use jargões difíceis (proibido usar DRE, EBITDA, CAPEX, WACC, goodwill).
+2. Diga com clareza se o mês foi lucrativo e se o saldo atual em caixa garante tranquilidade.
+3. Avalie o limite de faturamento anual do MEI (R$ 81.000). Se estiver acima de 70%, oriente com antecedência sobre o planejamento de transição para Microempresa (ME) para evitar multas da Receita Federal.
+4. Reforce a importância de não misturar a conta física (PF) com a da empresa (PJ), recomendando definir uma retirada mensal de pró-labore.
+5. Relembre o pagamento pontual do boleto DAS-MEI (todo dia 20) para assegurar a cobertura do INSS (aposentadoria, auxílio-doença).
+"""
+        elif pagina in ["home", "ia"]:
             fat = contexto.get("faturamento", "R$ 0,00")
             fat_pct = contexto.get("faturamento_pct", "0.0%")
             luc = contexto.get("lucro", "R$ 0,00")
@@ -1147,7 +1500,23 @@ def api_analise_ia_pagina():
             cresc = contexto.get("crescimento", "0.0%")
 
             nome_painel = "Centro de Inteligência IA" if pagina == "ia" else "Visão Geral (Home)"
-            prompt = f"""Você é o consultor de BI executivo, CFO virtual e estrategista da plataforma DataInsight.
+
+            if is_usuario_mei:
+                prompt = f"""Você é o Mentor Financeiro Especialista em MEI da plataforma DataInsight.
+Analise a saúde do microempreendedor individual no painel {nome_painel}:
+- Período Selecionado: {periodo}
+- Entradas / Faturamento: {fat} ({fat_pct})
+- Lucro Real no Bolso: {luc} ({luc_pct})
+- Despesas e Custos: {desp} ({desp_pct})
+- Crescimento Global: {cresc}
+
+DIRETRIZES PARA O MEI:
+1. Fale de forma simples, direta e empática com o microempreendedor individual, sem termos técnicos complicados.
+2. Destaque o quanto realmente sobrou no bolso (lucro líquido) após pagar fornecedores e despesas.
+3. Lembre da vigilância permanente do teto anual do MEI de R$ 81.000,00 e de nunca misturar despesas pessoais com o caixa da empresa.
+"""
+            else:
+                prompt = f"""Você é o consultor de BI executivo, CFO virtual e estrategista da plataforma DataInsight.
 Analise a performance financeira e estratégica consolidada no painel {nome_painel}:
 - Fonte de Dados / Tabela Analisada: {origem}
 - Período Selecionado: {periodo}
@@ -1494,7 +1863,14 @@ def api_listar_analises_salvas():
         query = {"usuario_id": usuario_id}
 
         if pagina_filtro and pagina_filtro != "todas":
-            query["pagina"] = pagina_filtro
+            if pagina_filtro in ["controles_essenciais", "controles-essenciais"]:
+                query["pagina"] = {"$in": ["controles_essenciais", "controles-essenciais"]}
+            elif pagina_filtro in ["fluxo_caixa", "fluxo-caixa"]:
+                query["pagina"] = {"$in": ["fluxo_caixa", "fluxo-caixa"]}
+            elif pagina_filtro in ["dashboard", "graficos-avancados"]:
+                query["pagina"] = {"$in": ["dashboard", "graficos-avancados"]}
+            else:
+                query["pagina"] = pagina_filtro
 
         if data_filtro:
             try:
