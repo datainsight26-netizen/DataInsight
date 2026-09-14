@@ -6,6 +6,15 @@
 // UTILITÁRIOS E CONFIGURAÇÕES
 // ==========================================
 
+/**
+ * Formata um número como moeda brasileira (R$ X.XXX,XX).
+ * Disponível globalmente para o widget MEI e outros módulos.
+ */
+function formatarMoeda(valor) {
+  const n = Number(valor) || 0;
+  return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
 const chartsInstances = {};
 
 function isDarkMode() {

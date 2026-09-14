@@ -165,12 +165,16 @@ function atualizarIndicadores(data) {
 }
 
 function exibirAlertaMapeamento() {
-  const container = document.querySelector('.pagina__cabecalho');
-  if (!container || document.getElementById('alerta-mapeamento')) return;
+  if (document.getElementById('alerta-mapeamento')) return;
+  const target = document.getElementById('container-alerta-home') || document.querySelector('.pagina__cabecalho');
+  if (!target) return;
 
   const alerta = document.createElement('div');
   alerta.id = 'alerta-mapeamento';
-  alerta.className = 'alerta-premium';
+  alerta.className = 'alerta-premium anim-fade-up';
+  alerta.style.width = '100%';
+  alerta.style.marginTop = '0';
+  alerta.style.marginBottom = '20px';
   alerta.innerHTML = `
     <div style="display: flex; align-items: center; gap: 12px;">
       <i class="fa-solid fa-circle-info"></i>
@@ -178,7 +182,12 @@ function exibirAlertaMapeamento() {
     </div>
     <a href="/dados" class="alerta-premium__botao">Configurar Agora</a>
   `;
-  container.appendChild(alerta);
+
+  if (target.id === 'container-alerta-home') {
+    target.appendChild(alerta);
+  } else {
+    target.insertAdjacentElement('afterend', alerta);
+  }
 }
 
 function atualizarCard(nome, dados, inverter = false) {

@@ -11,6 +11,19 @@ document.addEventListener('DOMContentLoaded', () => {
     let tabelaIaAtualId = 'todas';
     let agenteAtual = 'smart';
     let ferramentaAtual = null;
+    let arquivoAnexadoAtual = null;
+
+    const attachBtn = document.getElementById('copilot-attach-btn');
+    const fileInput = document.getElementById('copilot-file-input');
+    const attachmentBar = document.getElementById('copilot-attachment-bar');
+    const attachmentBarThumb = document.getElementById('attachment-bar-thumb');
+    const attachmentImgPreview = document.getElementById('attachment-img-preview');
+    const attachmentBarIcon = document.getElementById('attachment-bar-icon');
+    const attachmentBarName = document.getElementById('attachment-bar-name');
+    const attachmentBarSize = document.getElementById('attachment-bar-size');
+    const attachmentBarType = document.getElementById('attachment-bar-type');
+    const attachmentBarRemove = document.getElementById('attachment-bar-remove');
+    const copilotPillBox = document.getElementById('copilot-pill-box');
 
     // ==================== SELETOR DE PLANILHA ====================
     async function configurarSeletorPlanilhaIa() {
@@ -56,23 +69,46 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==================== TELA CHEIA ====================
     const pageContainer = document.querySelector('.page-ia-container');
     const btnFullscreen = document.getElementById('btn-fullscreen');
+    const btnFullscreenSidebar = document.getElementById('btn-fullscreen-sidebar');
     const btnExitFullscreen = document.getElementById('btn-exit-fullscreen');
+    const btnFloatingExitFullscreen = document.getElementById('btn-floating-exit-fullscreen');
 
     function entrarTelaCheia() {
+        if (!pageContainer) return;
         pageContainer.classList.add('fullscreen');
         document.body.style.overflow = 'hidden';
         if (btnExitFullscreen) btnExitFullscreen.style.display = 'flex';
+        if (btnFloatingExitFullscreen) btnFloatingExitFullscreen.style.display = 'inline-flex';
+        // Rolar o chat para o fim automaticamente ao expandir
+        setTimeout(() => {
+            if (messagesDiv) messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }, 100);
     }
+
     function sairTelaCheia() {
+        if (!pageContainer) return;
         pageContainer.classList.remove('fullscreen');
         document.body.style.overflow = '';
         if (btnExitFullscreen) btnExitFullscreen.style.display = 'none';
+        if (btnFloatingExitFullscreen) btnFloatingExitFullscreen.style.display = 'none';
     }
+
     if (btnFullscreen) btnFullscreen.addEventListener('click', entrarTelaCheia);
+    if (btnFullscreenSidebar) btnFullscreenSidebar.addEventListener('click', entrarTelaCheia);
     if (btnExitFullscreen) btnExitFullscreen.addEventListener('click', sairTelaCheia);
+    if (btnFloatingExitFullscreen) btnFloatingExitFullscreen.addEventListener('click', sairTelaCheia);
+
+    // Permitir sair via tecla ESC
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && pageContainer && pageContainer.classList.contains('fullscreen')) sairTelaCheia();
+        if (e.key === 'Escape' || e.key === 'Esc') {
+            if (pageContainer && pageContainer.classList.contains('fullscreen')) {
+                sairTelaCheia();
+            }
+        }
     });
+
+    window.entrarTelaCheiaIa = entrarTelaCheia;
+    window.sairTelaCheiaIa = sairTelaCheia;
 
     // ==================== SIDEBAR TOGGLE ====================
     const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
@@ -180,7 +216,515 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ==================== RENDERIZAR GRÁFICOS ====================
+    // ==================== SONS DO CHAT (WEB AUDIO API) ====================
+    let _audioCtx = null;
+    function getAudioContext() {
+        if (!_audioCtx) {
+            const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtxClass) {
+                _audioCtx = new AudioCtxClass();
+            }
+        }
+        if (_audioCtx && _audioCtx.state === 'suspended') {
+            _audioCtx.resume().catch(() => {});
+        }
+        return _audioCtx;
+    }
+
+    // Retoma AudioContext na primeira interação com a página (política de navegadores)
+    function desbloquearAudioContext() {
+        if (_audioCtx && _audioCtx.state === 'suspended') {
+            _audioCtx.resume().catch(() => {});
+        }
+    }
+    document.addEventListener('click', desbloquearAudioContext, { once: true, passive: true });
+    document.addEventListener('keydown', desbloquearAudioContext, { once: true, passive: true });
+
+    let chatSoundMuted = localStorage.getItem('copilotChatSoundMuted') === 'true';
+
+    function atualizarBotaoSom() {
+        const soundBtn = document.getElementById('copilot-sound-btn');
+        if (!soundBtn) return;
+        if (chatSoundMuted) {
+            soundBtn.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>';
+            soundBtn.title = 'Sons de mensagem: Silenciados (Clique para ativar)';
+            soundBtn.style.color = '#94a3b8';
+            soundBtn.style.opacity = '0.6';
+        } else {
+            soundBtn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+            soundBtn.title = 'Sons de mensagem: Ativados (Clique para silenciar)';
+            soundBtn.style.color = '';
+            soundBtn.style.opacity = '';
+        }
+    }
+
+    const soundToggleBtn = document.getElementById('copilot-sound-btn');
+    if (soundToggleBtn) {
+        atualizarBotaoSom();
+        soundToggleBtn.addEventListener('click', () => {
+            chatSoundMuted = !chatSoundMuted;
+            localStorage.setItem('copilotChatSoundMuted', chatSoundMuted ? 'true' : 'false');
+            atualizarBotaoSom();
+            if (!chatSoundMuted) {
+                tocarSomBolhaEnvio();
+            }
+        });
+    }
+
+    // Som de bolha líquida ao enviar mensagem (efeito pop/bloop com sweep de frequência)
+    function tocarSomBolhaEnvio() {
+        if (chatSoundMuted) return;
+        try {
+            const ctx = getAudioContext();
+            if (!ctx) return;
+            const now = ctx.currentTime;
+
+            // Oscilador 1: Varredura de frequência de bolha d'água (360Hz -> 960Hz)
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(360, now);
+            osc.frequency.exponentialRampToValueAtTime(960, now + 0.085);
+
+            gain.gain.setValueAtTime(0.001, now);
+            gain.gain.linearRampToValueAtTime(0.32, now + 0.012);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc.start(now);
+            osc.stop(now + 0.12);
+
+            // Oscilador 2: Pop harmônico de fechamento da bolha (820Hz -> 1420Hz)
+            const popOsc = ctx.createOscillator();
+            const popGain = ctx.createGain();
+
+            popOsc.type = 'sine';
+            popOsc.frequency.setValueAtTime(820, now + 0.025);
+            popOsc.frequency.exponentialRampToValueAtTime(1420, now + 0.08);
+
+            popGain.gain.setValueAtTime(0.001, now + 0.025);
+            popGain.gain.linearRampToValueAtTime(0.14, now + 0.04);
+            popGain.gain.exponentialRampToValueAtTime(0.001, now + 0.095);
+
+            popOsc.connect(popGain);
+            popGain.connect(ctx.destination);
+
+            popOsc.start(now + 0.025);
+            popOsc.stop(now + 0.10);
+        } catch (e) {
+            console.warn('Erro ao reproduzir som de bolha:', e);
+        }
+    }
+
+    // Som suave e futurista ao receber resposta da IA (campainha harmônica cristalina)
+    function tocarSomRecebimentoIA() {
+        if (chatSoundMuted) return;
+        try {
+            const ctx = getAudioContext();
+            if (!ctx) return;
+            const now = ctx.currentTime;
+
+            // Nota 1: Tom suave quente (D5 ~ 587.33 Hz)
+            const osc1 = ctx.createOscillator();
+            const gain1 = ctx.createGain();
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(587.33, now);
+            osc1.frequency.exponentialRampToValueAtTime(630, now + 0.08);
+
+            gain1.gain.setValueAtTime(0.001, now);
+            gain1.gain.linearRampToValueAtTime(0.22, now + 0.015);
+            gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+            osc1.connect(gain1);
+            gain1.connect(ctx.destination);
+            osc1.start(now);
+            osc1.stop(now + 0.26);
+
+            // Nota 2: Arpeggio ascendente cristalino (A5 ~ 880 Hz -> B5 ~ 987.77 Hz)
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(880, now + 0.07);
+            osc2.frequency.exponentialRampToValueAtTime(987.77, now + 0.16);
+
+            gain2.gain.setValueAtTime(0.001, now + 0.07);
+            gain2.gain.linearRampToValueAtTime(0.26, now + 0.09);
+            gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.40);
+
+            osc2.connect(gain2);
+            gain2.connect(ctx.destination);
+            osc2.start(now + 0.07);
+            osc2.stop(now + 0.42);
+
+            // Brilho harmônico sutil (E6 ~ 1318.5 Hz)
+            const osc3 = ctx.createOscillator();
+            const gain3 = ctx.createGain();
+            osc3.type = 'triangle';
+            osc3.frequency.setValueAtTime(1318.51, now + 0.08);
+
+            gain3.gain.setValueAtTime(0.001, now + 0.08);
+            gain3.gain.linearRampToValueAtTime(0.07, now + 0.10);
+            gain3.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+
+            osc3.connect(gain3);
+            gain3.connect(ctx.destination);
+            osc3.start(now + 0.08);
+            osc3.stop(now + 0.30);
+        } catch (e) {
+            console.warn('Erro ao reproduzir som de resposta da IA:', e);
+        }
+    }
+
+    window.tocarSomBolhaEnvio = tocarSomBolhaEnvio;
+    window.tocarSomRecebimentoIA = tocarSomRecebimentoIA;
+
+    // ==================== ANEXO DE ARQUIVOS (COPILOTO) ====================
+    function formatarTamanhoBytes(bytes) {
+        if (!bytes || bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    function obterIconeArquivo(nome, tipo) {
+        const ext = (nome || '').split('.').pop().toLowerCase();
+        const tipoLower = (tipo || '').toLowerCase();
+        if (tipoLower.startsWith('image/') || ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'].includes(ext)) {
+            return { icon: 'fa-solid fa-file-image', color: '#3B82F6', badge: 'IMG', isImage: true };
+        }
+        if (ext === 'pdf' || tipoLower === 'application/pdf') {
+            return { icon: 'fa-solid fa-file-pdf', color: '#EF4444', badge: 'PDF', isImage: false };
+        }
+        if (['xlsx', 'xls'].includes(ext) || tipoLower.includes('spreadsheet') || tipoLower.includes('excel')) {
+            return { icon: 'fa-solid fa-file-excel', color: '#10B981', badge: 'EXCEL', isImage: false };
+        }
+        if (ext === 'csv' || tipoLower.includes('csv')) {
+            return { icon: 'fa-solid fa-file-csv', color: '#10B981', badge: 'CSV', isImage: false };
+        }
+        if (ext === 'json' || tipoLower.includes('json')) {
+            return { icon: 'fa-solid fa-file-code', color: '#F59E0B', badge: 'JSON', isImage: false };
+        }
+        if (ext === 'xml' || tipoLower.includes('xml')) {
+            return { icon: 'fa-solid fa-file-code', color: '#F59E0B', badge: 'XML', isImage: false };
+        }
+        return { icon: 'fa-solid fa-file-lines', color: '#64748B', badge: ext.toUpperCase() || 'TXT', isImage: false };
+    }
+
+    function processarArquivoSelecionado(file) {
+        if (!file) return;
+        if (file.size > 25 * 1024 * 1024) {
+            alert('O arquivo selecionado é muito grande. O limite máximo é de 25 MB.');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const dataUrl = e.target.result;
+            const info = obterIconeArquivo(file.name, file.type);
+            const tamanhoFmt = formatarTamanhoBytes(file.size);
+
+            arquivoAnexadoAtual = {
+                nome: file.name,
+                tipo: file.type || 'application/octet-stream',
+                tamanho: file.size,
+                tamanho_fmt: tamanhoFmt,
+                base64: dataUrl,
+                previewUrl: info.isImage ? dataUrl : null
+            };
+
+            // Atualiza barra de prévia
+            if (attachmentBar) {
+                attachmentBar.style.display = 'block';
+                if (attachmentBarName) attachmentBarName.textContent = file.name;
+                if (attachmentBarSize) attachmentBarSize.textContent = tamanhoFmt;
+                if (attachmentBarType) {
+                    attachmentBarType.textContent = info.badge;
+                    attachmentBarType.style.color = info.color;
+                    attachmentBarType.style.background = `${info.color}1F`;
+                }
+
+                if (info.isImage && attachmentBarThumb && attachmentImgPreview) {
+                    attachmentImgPreview.src = dataUrl;
+                    attachmentBarThumb.style.display = 'flex';
+                    if (attachmentBarIcon) attachmentBarIcon.style.display = 'none';
+                } else if (attachmentBarIcon) {
+                    attachmentBarIcon.innerHTML = `<i class="${info.icon}"></i>`;
+                    attachmentBarIcon.style.color = info.color;
+                    attachmentBarIcon.style.background = `${info.color}1F`;
+                    attachmentBarIcon.style.display = 'flex';
+                    if (attachmentBarThumb) attachmentBarThumb.style.display = 'none';
+                }
+            }
+
+            if (attachBtn) {
+                attachBtn.classList.add('has-file');
+                const label = document.getElementById('copilot-attach-label');
+                if (label) label.textContent = '1 Anexo';
+            }
+
+            if (input) {
+                input.placeholder = 'Pergunte algo sobre o arquivo anexado ou envie para análise completa...';
+                input.focus();
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function limparAnexo() {
+        arquivoAnexadoAtual = null;
+        if (fileInput) fileInput.value = '';
+        if (attachmentBar) attachmentBar.style.display = 'none';
+        if (attachBtn) {
+            attachBtn.classList.remove('has-file');
+            const label = document.getElementById('copilot-attach-label');
+            if (label) label.textContent = 'Anexar';
+        }
+        if (input) {
+            input.placeholder = 'Pergunte ao Copiloto IA... (Enter para enviar, Shift+Enter para nova linha)';
+        }
+    }
+
+    if (attachBtn && fileInput) {
+        attachBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            fileInput.click();
+        });
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files.length > 0) {
+                processarArquivoSelecionado(e.target.files[0]);
+            }
+        });
+    }
+
+    if (attachmentBarRemove) {
+        attachmentBarRemove.addEventListener('click', (e) => {
+            e.preventDefault();
+            limparAnexo();
+        });
+    }
+
+    // Drag & Drop na caixa do Copiloto
+    if (copilotPillBox) {
+        ['dragenter', 'dragover'].forEach(eventName => {
+            copilotPillBox.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                copilotPillBox.classList.add('drag-active');
+            });
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            copilotPillBox.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                copilotPillBox.classList.remove('drag-active');
+            });
+        });
+        copilotPillBox.addEventListener('drop', (e) => {
+            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                processarArquivoSelecionado(e.dataTransfer.files[0]);
+            }
+        });
+    }
+
+    // ==================== GERAÇÃO & EXPORTAÇÃO DE DOCUMENTOS (CLAUDE STYLE) ====================
+    async function dispararDownloadDocumento({ tipo, titulo, elemento, nomeArquivo }) {
+        let conteudoHtml = '';
+        let metadados = null;
+
+        if (elemento) {
+            const bodyContent = elemento.querySelector('.bot-msg-content');
+            conteudoHtml = bodyContent ? bodyContent.innerHTML : elemento.innerHTML;
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = conteudoHtml;
+            tempDiv.querySelectorAll('.ia-document-artifact').forEach(a => a.remove());
+            conteudoHtml = tempDiv.innerHTML;
+
+            // Busca eventual anexo na mensagem de usuário correspondente
+            let prev = elemento.previousElementSibling;
+            while (prev) {
+                if (prev.classList.contains('user')) {
+                    const userAttachment = prev.querySelector('.attachment-filename');
+                    if (userAttachment) {
+                        const sizeEl = prev.querySelector('.attachment-size');
+                        metadados = {
+                            nome: userAttachment.innerText.trim(),
+                            tamanho_fmt: sizeEl ? sizeEl.innerText.trim() : ''
+                        };
+                    }
+                    break;
+                }
+                prev = prev.previousElementSibling;
+            }
+        }
+
+        const payload = {
+            tipo: tipo || 'pdf',
+            titulo: titulo || 'Relatorio_DataInsight',
+            conteudo_html: conteudoHtml,
+            sessao_id: currentSessionId,
+            metadados: metadados
+        };
+
+        const resp = await fetch('/api/chatbot/exportar-documento', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!resp.ok) {
+            throw new Error(`Falha ao gerar ${tipo.toUpperCase()} (HTTP ${resp.status})`);
+        }
+
+        const blob = await resp.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const ext = tipo === 'docx' ? 'docx' : (tipo === 'xlsx' ? 'xlsx' : 'pdf');
+        a.download = nomeArquivo || `${(titulo || 'Relatorio_DataInsight').replace(/\s+/g, '_')}.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    }
+
+    function renderizarArtefatosDeDocumento(container) {
+        if (!container) return;
+        const artifacts = container.querySelectorAll('.ia-document-artifact:not(.artifact-renderizado)');
+        artifacts.forEach(card => {
+            card.classList.add('artifact-renderizado');
+            const tipo = (card.getAttribute('data-tipo') || 'pdf').toLowerCase();
+            const rawTitulo = card.getAttribute('data-titulo') || 'Documento_DataInsight';
+            const desc = card.getAttribute('data-desc') || 'Documento corporativo pronto para download';
+
+            let iconClass = 'fa-file-pdf';
+            let wrapClass = 'artifact-icon-pdf';
+            let extLabel = 'PDF';
+
+            if (tipo === 'docx' || tipo === 'word') {
+                iconClass = 'fa-file-word';
+                wrapClass = 'artifact-icon-docx';
+                extLabel = 'DOCX';
+            } else if (tipo === 'xlsx' || tipo === 'excel' || tipo === 'planilha') {
+                iconClass = 'fa-file-excel';
+                wrapClass = 'artifact-icon-xlsx';
+                extLabel = 'XLSX';
+            }
+
+            const fileName = rawTitulo.toLowerCase().endsWith(`.${tipo}`) ? rawTitulo : `${rawTitulo}.${extLabel.toLowerCase()}`;
+
+            card.innerHTML = `
+                <div class="artifact-left">
+                    <div class="artifact-icon-wrap ${wrapClass}">
+                        <i class="fa-solid ${iconClass}"></i>
+                    </div>
+                    <div class="artifact-content">
+                        <div class="artifact-title">${escapeHtml(fileName)}</div>
+                        <div class="artifact-desc">
+                            <span class="attachment-bar-badge" style="font-size:0.6rem;padding:0 4px;">${extLabel}</span>
+                            <span>${escapeHtml(desc)}</span>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="artifact-btn-download" title="Baixar ${extLabel}">
+                    <i class="fa-solid fa-download"></i> <span>Baixar ${extLabel}</span>
+                </button>
+            `;
+
+            const btnDownload = card.querySelector('.artifact-btn-download');
+            btnDownload.addEventListener('click', async () => {
+                btnDownload.classList.add('loading');
+                btnDownload.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Gerando ${extLabel}...</span>`;
+                try {
+                    const msgPai = card.closest('.chat-msg') || container;
+                    await dispararDownloadDocumento({
+                        tipo: tipo,
+                        titulo: rawTitulo,
+                        elemento: msgPai,
+                        nomeArquivo: fileName
+                    });
+                } catch (e) {
+                    console.error('Erro ao baixar artefato:', e);
+                    alert('Erro ao gerar documento: ' + e.message);
+                } finally {
+                    btnDownload.classList.remove('loading');
+                    btnDownload.innerHTML = `<i class="fa-solid fa-check"></i> <span>Baixar Novamente</span>`;
+                }
+            });
+        });
+    }
+
+    async function exportarConversaCompleta(tipo = 'pdf') {
+        const btnHeader = document.getElementById('btn-chat-header-pdf');
+        const btnSidebar = document.getElementById('btn-exportar-chat-pdf');
+
+        if (btnHeader) btnHeader.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Gerando...</span>`;
+        if (btnSidebar) {
+            const span = btnSidebar.querySelector('.sidebar-hide-on-collapse') || btnSidebar.querySelector('span');
+            if (span) span.textContent = 'Gerando PDF...';
+        }
+
+        try {
+            const resp = await fetch('/api/chatbot/exportar-documento', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tipo: tipo,
+                    conversa_completa: true,
+                    titulo: `DataInsight_Conversa_${new Date().toISOString().slice(0, 10)}`,
+                    sessao_id: currentSessionId
+                })
+            });
+
+            if (!resp.ok) {
+                throw new Error(`Falha no servidor (HTTP ${resp.status})`);
+            }
+
+            const blob = await resp.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `DataInsight_Conversa_${currentSessionId.slice(-6)}.${tipo}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error('Falha ao exportar conversa:', err);
+            alert('Não foi possível exportar a conversa: ' + err.message);
+        } finally {
+            if (btnHeader) btnHeader.innerHTML = `<i class="fa-solid fa-file-pdf"></i> <span>Exportar PDF</span>`;
+            if (btnSidebar) {
+                const span = btnSidebar.querySelector('.sidebar-hide-on-collapse') || btnSidebar.querySelector('span');
+                if (span) span.textContent = 'Exportar Conversa (PDF)';
+            }
+        }
+    }
+
+    // Botões de exportação da conversa
+    const btnHeaderExport = document.getElementById('btn-chat-header-pdf');
+    if (btnHeaderExport) {
+        btnHeaderExport.addEventListener('click', (e) => {
+            e.preventDefault();
+            exportarConversaCompleta('pdf');
+        });
+    }
+    const btnSidebarExport = document.getElementById('btn-exportar-chat-pdf');
+    if (btnSidebarExport) {
+        btnSidebarExport.addEventListener('click', (e) => {
+            e.preventDefault();
+            exportarConversaCompleta('pdf');
+        });
+    }
+
+    window.exportarConversaCompleta = exportarConversaCompleta;
+    window.renderizarArtefatosDeDocumento = renderizarArtefatosDeDocumento;
+
     function renderizarGraficosDaMensagem() {
         const containers = document.querySelectorAll('.grafico-ia-render:not(.renderizado)');
         containers.forEach(container => {
@@ -266,7 +810,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==================== APPEND MESSAGE (NOVO DESIGN) ====================
-    function appendMessage(texto, remetente, agenteInfo) {
+    function appendMessage(texto, remetente, agenteInfo, anexoInfo) {
         const wrapper = streamInner || messagesDiv;
         const msgDiv = document.createElement('div');
         msgDiv.className = `chat-msg ${remetente}`;
@@ -287,6 +831,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="bot-action-btn btn-copy-msg" title="Copiar"><i class="fa-regular fa-copy"></i></button>
                 <button class="bot-action-btn btn-speak-msg" title="Ouvir resposta"><i class="fa-solid fa-volume-high"></i></button>
                 <button class="bot-action-btn btn-regen-msg" title="Regenerar resposta"><i class="fa-solid fa-rotate-right"></i></button>
+                <span class="bot-action-sep" style="width:1px;height:12px;background:var(--copilot-border, rgba(255,255,255,0.15));margin:0 2px;"></span>
+                <button class="bot-action-btn btn-export-pdf" title="Exportar esta resposta em PDF"><i class="fa-solid fa-file-pdf" style="color:#ef4444;"></i></button>
+                <button class="bot-action-btn btn-export-docx" title="Exportar esta resposta em Word (.docx)"><i class="fa-solid fa-file-word" style="color:#3b82f6;"></i></button>
+                <button class="bot-action-btn btn-export-excel" title="Exportar dados/tabelas em Excel (.xlsx)"><i class="fa-solid fa-file-excel" style="color:#10b981;"></i></button>
             </div>`;
 
             msgDiv.innerHTML = `${badge}<div class="bot-msg-content">${conteudo}</div>${actionBar}`;
@@ -321,7 +869,7 @@ document.addEventListener('DOMContentLoaded', () => {
             el.querySelector('.btn-regen-msg').addEventListener('click', function() {
                 const userMsgs = wrapper.querySelectorAll('.chat-msg.user');
                 if (userMsgs.length > 0) {
-                    const lastUserText = userMsgs[userMsgs.length - 1].querySelector('.user-bubble');
+                    const lastUserText = userMsgs[userMsgs.length - 1].querySelector('.user-text') || userMsgs[userMsgs.length - 1].querySelector('.user-bubble');
                     if (lastUserText) {
                         input.value = lastUserText.innerText;
                         ferramentaAtual = null;
@@ -330,15 +878,83 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
+            // Ações de exportação direta da resposta
+            const btnPdf = el.querySelector('.btn-export-pdf');
+            if (btnPdf) {
+                btnPdf.addEventListener('click', () => {
+                    const contentEl = el.querySelector('.bot-msg-content');
+                    dispararDownloadDocumento({
+                        tipo: 'pdf',
+                        titulo: 'Analise_DataInsight',
+                        elemento: contentEl
+                    });
+                });
+            }
+            const btnDocx = el.querySelector('.btn-export-docx');
+            if (btnDocx) {
+                btnDocx.addEventListener('click', () => {
+                    const contentEl = el.querySelector('.bot-msg-content');
+                    dispararDownloadDocumento({
+                        tipo: 'docx',
+                        titulo: 'Relatorio_DataInsight',
+                        elemento: contentEl
+                    });
+                });
+            }
+            const btnExcel = el.querySelector('.btn-export-excel');
+            if (btnExcel) {
+                btnExcel.addEventListener('click', () => {
+                    const contentEl = el.querySelector('.bot-msg-content');
+                    dispararDownloadDocumento({
+                        tipo: 'xlsx',
+                        titulo: 'Dados_DataInsight',
+                        elemento: contentEl
+                    });
+                });
+            }
+
             msgDiv.querySelectorAll('a').forEach(a => a.target = '_blank');
         } else {
-            msgDiv.innerHTML = `<div class="user-bubble">${escapeHtml(texto)}</div>`;
+            let anexoHtml = '';
+            if (anexoInfo && anexoInfo.nome) {
+                const info = obterIconeArquivo(anexoInfo.nome, anexoInfo.tipo);
+                const tamanhoStr = anexoInfo.tamanho_fmt || formatarTamanhoBytes(anexoInfo.tamanho);
+                if (info.isImage && (anexoInfo.previewUrl || anexoInfo.base64)) {
+                    const imgSrc = anexoInfo.previewUrl || anexoInfo.base64;
+                    anexoHtml = `
+                        <div class="user-img-attachment">
+                            <img src="${imgSrc}" alt="${escapeHtml(anexoInfo.nome)}" />
+                            <div style="display:flex;align-items:center;gap:6px;font-size:0.75rem;padding:2px 4px;">
+                                <i class="${info.icon}" style="color:${info.color};"></i>
+                                <span class="attachment-filename">${escapeHtml(anexoInfo.nome)}</span>
+                                <span class="attachment-size">(${tamanhoStr})</span>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    anexoHtml = `
+                        <div class="user-msg-attachment">
+                            <div style="font-size:1.3rem;color:${info.color};display:flex;align-items:center;">
+                                <i class="${info.icon}"></i>
+                            </div>
+                            <div class="user-attachment-info">
+                                <span class="attachment-filename">${escapeHtml(anexoInfo.nome)}</span>
+                                <span class="attachment-size">${tamanhoStr}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            msgDiv.innerHTML = `<div class="user-bubble">${anexoHtml}${texto ? `<div class="user-text">${escapeHtml(texto)}</div>` : ''}</div>`;
         }
 
         wrapper.appendChild(msgDiv);
         if (messagesDiv) messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-        if (remetente === 'bot') setTimeout(renderizarGraficosDaMensagem, 100);
+        if (remetente === 'bot') {
+            setTimeout(renderizarGraficosDaMensagem, 100);
+            renderizarArtefatosDeDocumento(msgDiv);
+        }
         return msgDiv;
     }
 
@@ -373,6 +989,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 msgDiv.innerHTML = m.html;
                 wrapper.appendChild(msgDiv);
             });
+            renderizarArtefatosDeDocumento(wrapper);
             if (messagesDiv) messagesDiv.scrollTop = messagesDiv.scrollHeight;
             return true;
         } catch (err) {
@@ -484,7 +1101,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(res => res.json())
             .then(data => {
                 if (data.historico && data.historico.length > 0) {
-                    data.historico.forEach(h => appendMessage(h.mensagem, h.remetente));
+                    data.historico.forEach(h => appendMessage(h.mensagem, h.remetente, null, h.anexo));
                 } else {
                     appendMessage(
                         "<p>Olá! Sou seu <strong>Copiloto IA DataInsight</strong>. Posso analisar suas finanças, criar gráficos interativos, gerar tabelas de indicadores e muito mais.</p><p>Use os atalhos abaixo para começar ou escreva sua pergunta!</p>",
@@ -498,36 +1115,52 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==================== ENVIAR MENSAGEM ====================
     function sendMessage() {
         const text = input ? input.value.trim() : '';
-        if (!text) return;
+        const anexoParaEnviar = arquivoAnexadoAtual;
+        if (!text && !anexoParaEnviar) return;
+
+        // Som de bolha ao usuário enviar mensagem
+        tocarSomBolhaEnvio();
 
         persistSessionId();
-        appendMessage(text, 'user');
+        appendMessage(text, 'user', null, anexoParaEnviar);
         if (input) { input.value = ''; input.style.height = 'auto'; }
+        limparAnexo();
         if (sendBtn) sendBtn.disabled = true;
 
         const wrapper = streamInner || messagesDiv;
         const typingDiv = document.createElement('div');
         typingDiv.className = 'chat-msg bot typing-msg';
         typingDiv.innerHTML = `<div class="bot-header-badge" style="color:#3B82F6;background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.2);">
-            <i class="fa-solid fa-robot"></i> Pensando...
+            <i class="fa-solid fa-brain"></i> Pensando...
         </div>
         <div class="bot-msg-content" style="display:flex;align-items:center;gap:8px;color:#64748b;">
-            <i class="fa-solid fa-circle-notch fa-spin" style="color:#3B82F6;"></i> Analisando seus dados e preparando a resposta...
+            <i class="fa-solid fa-circle-notch fa-spin" style="color:#3B82F6;"></i> ${anexoParaEnviar ? 'Processando e analisando o arquivo anexado...' : 'Analisando seus dados e preparando a resposta...'}
         </div>`;
         wrapper.appendChild(typingDiv);
         if (messagesDiv) messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+        const payload = {
+            mensagem: text,
+            sessao_id: currentSessionId,
+            tabela_id: tabelaIaAtualId,
+            agente_selecionado: agenteAtual,
+            ferramenta: ferramentaAtual
+        };
+        if (anexoParaEnviar) {
+            payload.arquivo = {
+                nome: anexoParaEnviar.nome,
+                tipo: anexoParaEnviar.tipo,
+                tamanho: anexoParaEnviar.tamanho,
+                tamanho_fmt: anexoParaEnviar.tamanho_fmt,
+                base64: anexoParaEnviar.base64
+            };
+        }
 
         fetch('/api/chatbot/perguntar', {
             method: 'POST',
             credentials: 'same-origin',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                mensagem: text,
-                sessao_id: currentSessionId,
-                tabela_id: tabelaIaAtualId,
-                agente_selecionado: agenteAtual,
-                ferramenta: ferramentaAtual
-            })
+            body: JSON.stringify(payload)
         })
             .then(res => {
                 if (!res.ok) return res.text().then(t => { throw new Error(`HTTP ${res.status}: ${t.slice(0, 200)}`); });
@@ -537,6 +1170,8 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .then(data => {
                 if (wrapper.contains(typingDiv)) wrapper.removeChild(typingDiv);
+                // Som ao receber mensagem da IA
+                tocarSomRecebimentoIA();
                 if (data && data._rawText) {
                     appendMessage('Resposta inválida do servidor.', 'bot');
                 } else {
@@ -549,6 +1184,8 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(err => {
                 console.error('Erro ao chamar /api/chatbot/perguntar:', err);
                 if (wrapper.contains(typingDiv)) wrapper.removeChild(typingDiv);
+                // Som ao receber mensagem da IA (mesmo com aviso de erro)
+                tocarSomRecebimentoIA();
                 appendMessage(`<p style="color:#ef4444;">Erro ao contactar a IA: ${err.message}</p>`, 'bot');
             })
             .finally(() => {

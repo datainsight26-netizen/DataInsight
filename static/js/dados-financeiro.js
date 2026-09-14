@@ -13,6 +13,8 @@
     recomendacoes: [],    // lista de recomendações
     preview: {},          // indicadores calculados
     salvo: false,
+    perfil: (typeof window !== 'undefined' && window.IS_MEI) ? 'MEI' : ((typeof window !== 'undefined' && window.USUARIO_PERFIL) ? window.USUARIO_PERFIL : 'ME'),
+    is_mei: (typeof window !== 'undefined' && window.IS_MEI === true),
   };
 
   /* ================================================================
@@ -38,6 +40,7 @@
     { id: "publicidade",       label: "Publicidade / Marketing",      grupo: "Custos Variáveis",                 cor: "#f59e0b", icone: "fa-bullhorn",           temManual: true },
 
     // GASTOS FIXOS
+    { id: "das_mei",           label: "Boleto DAS-MEI (Tributo MEI)", grupo: "Gastos Fixos",                     cor: "#f59e0b", icone: "fa-file-invoice-dollar", temManual: true, placeholder: "Valor mensal DAS-MEI R$", desc: "Tributo fixo mensal do MEI. Pagar at\u00e9 o dia 20." },
     { id: "aluguel",           label: "Aluguel / Locação",            grupo: "Gastos Fixos",                     cor: "#ef4444", icone: "fa-building",           temManual: true, placeholder: "Valor fixo mensal R$" },
     { id: "folha_pagamento",   label: "Folha de Pagamento",           grupo: "Gastos Fixos",                     cor: "#ef4444", icone: "fa-users",              temManual: true, placeholder: "Total folha mensal R$" },
     { id: "pro_labore",        label: "Pró-labore / Retirada",        grupo: "Gastos Fixos",                     cor: "#ef4444", icone: "fa-user-tie",           temManual: true, placeholder: "Valor pró-labore R$" },
@@ -72,6 +75,7 @@
     publicidade:               { nome: "Marketing",              tipo: "moeda",      tipoLabel: "💰 Moeda (R$)",  valorPadrao: 0.0 },
     custo_variavel:            { nome: "Custos Variáveis",       tipo: "moeda",      tipoLabel: "💰 Moeda (R$)",  valorPadrao: 0.0 },
     custo_variavel_outros:     { nome: "Custos Diversos",        tipo: "moeda",      tipoLabel: "💰 Moeda (R$)",  valorPadrao: 0.0 },
+    das_mei:                   { nome: "DAS-MEI",              tipo: "moeda",      tipoLabel: "💰 Moeda (R$)",  valorPadrao: 0.0 },
     aluguel:                   { nome: "Aluguel",                tipo: "moeda",      tipoLabel: "💰 Moeda (R$)",  valorPadrao: 0.0 },
     folha_pagamento:           { nome: "Folha de Pagamento",     tipo: "moeda",      tipoLabel: "💰 Moeda (R$)",  valorPadrao: 0.0 },
     pro_labore:                { nome: "Pró-labore",             tipo: "moeda",      tipoLabel: "💰 Moeda (R$)",  valorPadrao: 0.0 },
@@ -488,6 +492,7 @@
 
   /* Análise local silenciosa (só atualiza FinState, sem chamar renderizarCategorias) */
   function _finAnaliseLocalSemRenderizar(colunas) {
+    const isMei = (FinState.is_mei === true) || (typeof window !== 'undefined' && window.IS_MEI === true) || (FinState.perfil === 'MEI');
     const aliases = {
       receita_total:     [/faturamento/i, /receita/i, /entrada/i, /venda.?total/i],
       receita_produtos:  [/produto/i, /mercadoria/i, /venda.*prod/i],
@@ -504,6 +509,9 @@
       periodo:           [/data/i, /per[ií]odo/i, /m[eê]s/i, /ano/i],
       despesas:          [/despesa/i, /gasto/i, /custo/i, /saida/i],
     };
+    if (isMei) {
+      aliases.das_mei = [/das.*mei/i, /simei/i, /boleto.*das/i, /guia.*das/i];
+    }
     const sugestoes = {};
     colunas.forEach(col => {
       Object.entries(aliases).forEach(([cat, pats]) => {
@@ -645,8 +653,11 @@
     const container = document.getElementById('finCategoriasContainer');
     if (!container) return;
 
-    // Calcular campos essenciais faltantes para o banner
-    const essenciais = ['periodo', 'receita_total', 'despesas', 'resultado', 'impostos', 'aluguel', 'folha_pagamento'];
+    // Calcular campos essenciais faltantes para o banner respeitando perfil (MEI vs ME)
+    const isMei = (FinState.is_mei === true) || (typeof window !== 'undefined' && window.IS_MEI === true) || (FinState.perfil === 'MEI');
+    const essenciais = isMei 
+      ? ['periodo', 'receita_total', 'despesas', 'resultado', 'das_mei']
+      : ['periodo', 'receita_total', 'despesas', 'resultado', 'impostos', 'aluguel', 'folha_pagamento'];
     const faltantesEssenciais = essenciais.filter(c => !FinState.mapeamentoUsuario[c] && !FinState.mapeamentoUsuario[`${c}_manual`]);
 
     let html = '';
@@ -680,7 +691,11 @@
     ];
 
     gruposPadrao.forEach(grp => {
-      const catsFixas = FIN_CATEGORIAS_LOCAL.filter(c => c.grupo === grp.nome);
+      let catsFixas = FIN_CATEGORIAS_LOCAL.filter(c => c.grupo === grp.nome);
+      // Para plano ME, remover DAS-MEI de Gastos Fixos (exclusivo para plano MEI)
+      if (!isMei) {
+        catsFixas = catsFixas.filter(c => c.id !== 'das_mei');
+      }
       const catsCustom = (FinState.categoriasCustom || []).filter(c => c.grupo === grp.nome);
       const todasCats = [...catsFixas, ...catsCustom];
 
@@ -1058,7 +1073,10 @@
     const container = document.getElementById('finListaColunasFaltantes');
     if (!modal || !container) return;
 
-    const essenciais = ['periodo', 'receita_total', 'despesas', 'resultado', 'impostos', 'aluguel', 'folha_pagamento'];
+    const isMei = (FinState.is_mei === true) || (typeof window !== 'undefined' && window.IS_MEI === true) || (FinState.perfil === 'MEI');
+    const essenciais = isMei 
+      ? ['periodo', 'receita_total', 'despesas', 'resultado', 'das_mei']
+      : ['periodo', 'receita_total', 'despesas', 'resultado', 'impostos', 'aluguel', 'folha_pagamento'];
     const faltantes = essenciais.filter(c => !FinState.mapeamentoUsuario[c] && !FinState.mapeamentoUsuario[`${c}_manual`]);
 
     if (faltantes.length === 0) {
@@ -1089,7 +1107,10 @@
 
   async function executarCriarTodasFaltantes() {
     const modal = document.getElementById('modalCriarTodasFaltantes');
-    const essenciais = ['periodo', 'receita_total', 'despesas', 'resultado', 'impostos', 'aluguel', 'folha_pagamento'];
+    const isMei = (FinState.is_mei === true) || (typeof window !== 'undefined' && window.IS_MEI === true) || (FinState.perfil === 'MEI');
+    const essenciais = isMei 
+      ? ['periodo', 'receita_total', 'despesas', 'resultado', 'das_mei']
+      : ['periodo', 'receita_total', 'despesas', 'resultado', 'impostos', 'aluguel', 'folha_pagamento'];
     const faltantes = essenciais.filter(c => !FinState.mapeamentoUsuario[c] && !FinState.mapeamentoUsuario[`${c}_manual`]);
 
     if (faltantes.length === 0) {
@@ -1255,6 +1276,8 @@
       const resp = await fetch('/api/mapeamento-financeiro', { method: 'GET' });
       const json = await resp.json();
       if (resp.ok) {
+        if (json.perfil) FinState.perfil = json.perfil;
+        if (json.is_mei !== undefined) FinState.is_mei = json.is_mei;
         FinState.completude = json.completude || {};
         FinState.recomendacoes = json.recomendacoes || [];
         renderizarStatusFerramentas();
@@ -1282,6 +1305,13 @@
       return;
     }
 
+    const rotasFerramentas = {
+      fluxo_caixa: '/fluxo-de-caixa',
+      controles_essenciais: '/controles-essenciais',
+      planejamento_financeiro: '/planejamento-financeiro',
+      dre: '/relatorios',
+    };
+
     const cores = { low: '#ef4444', mid: '#f59e0b', high: '#10b981' };
 
     let html = '';
@@ -1290,6 +1320,7 @@
       const cor = pct >= 70 ? cores.high : pct >= 40 ? cores.mid : cores.low;
       const pronto = pct >= 70;
       const faltando = dados.faltando_obrigatorios || [];
+      const rota = rotasFerramentas[id];
 
       html += `
         <div class="fin-status-card">
@@ -1304,7 +1335,10 @@
             <div class="fin-status-fill" style="width:${pct}%; background:${cor};"></div>
           </div>
           ${pronto
-            ? `<div class="fin-status-pronto"><i class="fa-solid fa-circle-check"></i> Pronto para usar!</div>`
+            ? (rota
+                ? `<a href="${rota}" class="fin-status-pronto" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;" title="Clique para abrir ${dados.label || id}"><i class="fa-solid fa-circle-check"></i> Pronto para usar! <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:10px; opacity:0.8;"></i></a>`
+                : `<div class="fin-status-pronto"><i class="fa-solid fa-circle-check"></i> Pronto para usar!</div>`
+              )
             : `<div class="fin-status-faltando">
                 <span style="font-size:11px; color:var(--suave); display:block; margin-bottom:4px;">Campos obrigatórios ausentes:</span>
                 <div style="display:flex; flex-wrap:wrap; gap:5px;">
@@ -1322,7 +1356,11 @@
   }
 
   function calcularCompletudoLocal() {
-    const req = {
+    const isMei = (FinState.is_mei === true) || (window.IS_MEI === true) || (FinState.perfil === 'MEI');
+    const req = isMei ? {
+      fluxo_caixa:          { label: 'Fluxo de Caixa',         icone: 'fa-money-bill-transfer', obrig: ['receita_total', 'despesas', 'periodo'] },
+      controles_essenciais: { label: 'Controles Essenciais',   icone: 'fa-sliders',             obrig: ['receita_total', 'periodo', 'despesas'] },
+    } : {
       planejamento_financeiro: { label: 'Planejamento Financeiro', icone: 'fa-chart-pie',         obrig: ['receita_total', 'aluguel', 'folha_pagamento'] },
       dre:                     { label: 'DRE',                     icone: 'fa-file-invoice',       obrig: ['receita_total', 'impostos', 'custo_variavel', 'aluguel'] },
       fluxo_caixa:             { label: 'Fluxo de Caixa',         icone: 'fa-money-bill-transfer', obrig: ['receita_total', 'despesas', 'periodo'] },
@@ -1336,6 +1374,7 @@
         label: cfg.label,
         icone: cfg.icone,
         prontidao: pct,
+        completo: pct >= 70,
         faltando_obrigatorios: faltando.map(c => ({ categoria: c, label: c.replace(/_/g, ' ') })),
       };
     });
@@ -1385,21 +1424,62 @@
   function renderizarRecomendacoesLocal() {
     const recomendacoes = [];
     const m = FinState.mapeamentoUsuario;
+    const isMei = (FinState.is_mei === true) || (window.IS_MEI === true) || (FinState.perfil === 'MEI');
 
-    if (!m.receita_total && !m.receita_produtos && !m.receita_servicos)
-      recomendacoes.push({ mensagem: 'Nenhuma coluna de receita identificada. Verifique se os dados foram carregados corretamente.', acao: 'Mapear coluna de receita', nivel: 'erro', categoria: 'receita_total', coluna_sugerida: 'Faturamento' });
+    if (isMei) {
+      if (!m.receita_total && !m.receita_produtos && !m.receita_servicos) {
+        recomendacoes.push({
+          mensagem: 'Nenhuma coluna de receita identificada. O controle de faturamento e teto anual do MEI (R$ 81.000) dependem deste campo.',
+          acao: 'Mapear coluna de receita',
+          nivel: 'erro',
+          categoria: 'receita_total',
+          coluna_sugerida: 'Faturamento'
+        });
+      }
+      if (!m.das_mei && !m.das_mei_manual) {
+        recomendacoes.push({
+          mensagem: 'Boleto DAS-MEI não identificado. Mapeie a coluna ou informe o valor mensal para acompanhar nos Controles Essenciais e Fluxo de Caixa.',
+          acao: 'Informar DAS-MEI manualmente',
+          nivel: 'aviso',
+          categoria: 'das_mei',
+          coluna_sugerida: 'DAS-MEI',
+          valor_padrao: { das_mei_manual: 75 }
+        });
+      }
+      if (!m.despesas && !m.despesas_manual && !m.custo_variavel && !m.fornecedores) {
+        recomendacoes.push({
+          mensagem: 'Nenhuma coluna de despesas/gastos detectada. O Fluxo de Caixa e os Controles Essenciais precisam das saídas para calcular o saldo.',
+          acao: 'Mapear coluna de despesas',
+          nivel: 'erro',
+          categoria: 'despesas',
+          coluna_sugerida: 'Despesas'
+        });
+      }
+      if (!m.periodo) {
+        recomendacoes.push({
+          mensagem: 'Coluna de período/data não detectada. O Fluxo de Caixa e os Controles Essenciais precisam de datas para organizar os lançamentos.',
+          acao: 'Informar coluna de data',
+          nivel: 'aviso',
+          categoria: 'periodo',
+          coluna_sugerida: 'Data'
+        });
+      }
+    } else {
+      if (!m.receita_total && !m.receita_produtos && !m.receita_servicos)
+        recomendacoes.push({ mensagem: 'Nenhuma coluna de receita identificada. Verifique se os dados foram carregados corretamente.', acao: 'Mapear coluna de receita', nivel: 'erro', categoria: 'receita_total', coluna_sugerida: 'Faturamento' });
 
-    if (!m.impostos && !m.taxa_imposto && !m.taxa_imposto_manual)
-      recomendacoes.push({ mensagem: 'Nenhum imposto detectado. Usaremos 8% padrão (Simples Nacional) no DRE.', acao: 'Informar taxa manualmente', nivel: 'aviso', categoria: 'taxa_imposto', coluna_sugerida: 'Impostos', valor_padrao: { taxa_imposto_manual: 8 } });
+      if (!m.impostos && !m.taxa_imposto && !m.taxa_imposto_manual)
+        recomendacoes.push({ mensagem: 'Nenhum imposto detectado. Usaremos 8% padrão (Simples Nacional) no DRE.', acao: 'Informar taxa manualmente', nivel: 'aviso', categoria: 'taxa_imposto', coluna_sugerida: 'Impostos', valor_padrao: { taxa_imposto_manual: 8 } });
 
-    if (!m.aluguel && !m.aluguel_manual && !m.folha_pagamento && !m.folha_pagamento_manual)
-      recomendacoes.push({ mensagem: 'Gastos Fixos não encontrados (Aluguel / Folha). O Planejamento Financeiro ficará incompleto.', acao: 'Adicionar Gastos Fixos', nivel: 'erro', categoria: 'aluguel', coluna_sugerida: 'Aluguel' });
+      if (!m.aluguel && !m.aluguel_manual && !m.folha_pagamento && !m.folha_pagamento_manual)
+        recomendacoes.push({ mensagem: 'Gastos Fixos não encontrados (Aluguel / Folha). O Planejamento Financeiro ficará incompleto.', acao: 'Adicionar Gastos Fixos', nivel: 'erro', categoria: 'aluguel', coluna_sugerida: 'Aluguel' });
 
-    if (!m.periodo)
-      recomendacoes.push({ mensagem: 'Coluna de período/data não detectada. O Fluxo de Caixa precisa de uma dimensão temporal.', acao: 'Informar coluna de data', nivel: 'aviso', categoria: 'periodo', coluna_sugerida: 'Data' });
+      if (!m.periodo)
+        recomendacoes.push({ mensagem: 'Coluna de período/data não detectada. O Fluxo de Caixa precisa de uma dimensão temporal.', acao: 'Informar coluna de data', nivel: 'aviso', categoria: 'periodo', coluna_sugerida: 'Data' });
 
-    if (!m.custo_variavel && !m.fornecedores)
-      recomendacoes.push({ mensagem: 'Custos variáveis não detectados. A Margem de Contribuição não poderá ser calculada.', acao: 'Mapear custos variáveis', nivel: 'aviso', categoria: 'custo_variavel', coluna_sugerida: 'Custos Variáveis' });
+      if (!m.custo_variavel && !m.fornecedores)
+        recomendacoes.push({ mensagem: 'Custos variáveis não detectados. A Margem de Contribuição não poderá ser calculada.', acao: 'Mapear custos variáveis', nivel: 'aviso', categoria: 'custo_variavel', coluna_sugerida: 'Custos Variáveis' });
+    }
 
     FinState.recomendacoes = recomendacoes;
     renderizarRecomendacoes();
@@ -1534,6 +1614,8 @@
 
       if (resp.ok) {
         FinState.salvo = true;
+        if (json.perfil) FinState.perfil = json.perfil;
+        if (json.is_mei !== undefined) FinState.is_mei = json.is_mei;
         if (json.mapeamento) {
           if (json.mapeamento._categorias_custom && Array.isArray(json.mapeamento._categorias_custom)) {
             FinState.categoriasCustom = json.mapeamento._categorias_custom;
@@ -1575,36 +1657,40 @@
     try {
       const resp = await fetch('/api/mapeamento-financeiro', { method: 'GET' });
       const json = await resp.json();
-      if (resp.ok && json.mapeamento && Object.keys(json.mapeamento).length > 0) {
-        if (json.mapeamento._categorias_custom && Array.isArray(json.mapeamento._categorias_custom)) {
-          FinState.categoriasCustom = json.mapeamento._categorias_custom;
-        } else if (json.mapeamento.categorias_custom && Array.isArray(json.mapeamento.categorias_custom)) {
-          FinState.categoriasCustom = json.mapeamento.categorias_custom;
-        } else if (json.categorias_custom && Array.isArray(json.categorias_custom)) {
-          FinState.categoriasCustom = json.categorias_custom;
-        }
-        FinState.mapeamentoUsuario = json.mapeamento;
-        FinState.completude = json.completude || {};
-        FinState.recomendacoes = json.recomendacoes || [];
-        FinState.salvo = true;
-
-        const tentarRenderizar = (tentativa = 1) => {
-          const { colunas, amostra } = finObterDadosTabela();
-          FinState.colunas = colunas;
-          FinState.dadosAmostra = amostra;
-          if (colunas.length > 0) {
-            renderizarCategorias();
-            renderizarStatusFerramentas();
-            renderizarRecomendacoes();
-            mostrarPainelFinanceiro();
-            const statusEl = document.getElementById('finSalvarStatus');
-            if (statusEl) statusEl.innerHTML = '<i class="fa-solid fa-cloud-arrow-up" style="color:#10b981;"></i> <span style="color:#059669;">Mapeamento carregado do histórico</span>';
-          } else if (tentativa <= 5) {
-            setTimeout(() => tentarRenderizar(tentativa + 1), 300);
+      if (resp.ok) {
+        if (json.perfil) FinState.perfil = json.perfil;
+        if (json.is_mei !== undefined) FinState.is_mei = json.is_mei;
+        if (json.mapeamento && Object.keys(json.mapeamento).length > 0) {
+          if (json.mapeamento._categorias_custom && Array.isArray(json.mapeamento._categorias_custom)) {
+            FinState.categoriasCustom = json.mapeamento._categorias_custom;
+          } else if (json.mapeamento.categorias_custom && Array.isArray(json.mapeamento.categorias_custom)) {
+            FinState.categoriasCustom = json.mapeamento.categorias_custom;
+          } else if (json.categorias_custom && Array.isArray(json.categorias_custom)) {
+            FinState.categoriasCustom = json.categorias_custom;
           }
-        };
+          FinState.mapeamentoUsuario = json.mapeamento;
+          FinState.completude = json.completude || {};
+          FinState.recomendacoes = json.recomendacoes || [];
+          FinState.salvo = true;
 
-        tentarRenderizar();
+          const tentarRenderizar = (tentativa = 1) => {
+            const { colunas, amostra } = finObterDadosTabela();
+            FinState.colunas = colunas;
+            FinState.dadosAmostra = amostra;
+            if (colunas.length > 0) {
+              renderizarCategorias();
+              renderizarStatusFerramentas();
+              renderizarRecomendacoes();
+              mostrarPainelFinanceiro();
+              const statusEl = document.getElementById('finSalvarStatus');
+              if (statusEl) statusEl.innerHTML = '<i class="fa-solid fa-cloud-arrow-up" style="color:#10b981;"></i> <span style="color:#059669;">Mapeamento carregado do histórico</span>';
+            } else if (tentativa <= 5) {
+              setTimeout(() => tentarRenderizar(tentativa + 1), 300);
+            }
+          };
+
+          tentarRenderizar();
+        }
       }
     } catch (err) {
       console.warn('[Fin] Não foi possível carregar mapeamento salvo:', err);
@@ -1648,4 +1734,4 @@
   window.salvarClassificacaoFinanceira = salvarClassificacaoFinanceira;
   window.analisarColunasFinanceiras = analisarColunasFinanceiras;
   window.mostrarPainelFinanceiro = mostrarPainelFinanceiro;
-  window.atualizarPreviewFinanceiro = atualizarPreviewFinanceiro;
+  window.atualizarPreviewFinanceiro = atualizarPreviewFinanceiro;

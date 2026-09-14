@@ -531,6 +531,8 @@ ${planoAcao.map((p, idx) => `${idx + 1}. ${p.replace(/<[^>]+>/g, '')}`).join('\n
       case 'dashboard':
       case 'graficos-avancados': return 'Dashboard Gerencial';
       case 'planejamento': return 'Planejamento Financeiro';
+      case 'controles_essenciais':
+      case 'controles-essenciais': return 'Controles Essenciais (MEI)';
       case 'fluxo_caixa':
       case 'fluxo-caixa': return 'Fluxo de Caixa';
       case 'ia': return 'Centro de Inteligência IA';
@@ -548,6 +550,8 @@ ${planoAcao.map((p, idx) => `${idx + 1}. ${p.replace(/<[^>]+>/g, '')}`).join('\n
       case 'analises': return coletarContextoIaAnalises;
       case 'dashboard': return coletarContextoIaDashboard;
       case 'planejamento': return coletarContextoIaPlanejamento;
+      case 'controles_essenciais':
+      case 'controles-essenciais': return (typeof coletarContextoIaControlesEssenciais === 'function' ? coletarContextoIaControlesEssenciais : () => ({}));
       case 'fluxo_caixa': return coletarContextoIaFluxoCaixa;
       case 'ia': return (typeof window.coletarContextoIa === 'function' ? window.coletarContextoIa : () => ({}));
       default: return () => ({});

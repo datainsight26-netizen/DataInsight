@@ -9,6 +9,10 @@
             pessimista: null
         };
 
+        // --- Ponto de Equilíbrio: estado local ---
+        let peModo = 'automatico';        // 'automatico' | 'manual'
+        let pePercentual = null;          // número (ex: 40.5) ou null
+
         const $ = (id) => document.getElementById(id);
         const brl = (value) => {
             if (value === null || value === undefined || value === '') return 'N/A';
@@ -1209,6 +1213,141 @@
             });
         }
 
+        // ---- Ponto de Equilíbrio: controles ----
+        function _atualizarUiPE() {
+            const btnAuto    = $('pf-pe-btn-auto');
+            const btnManual  = $('pf-pe-btn-manual');
+            const inputPct   = $('pf-pe-input-percentual');
+            const btnSalvar  = $('pf-pe-btn-salvar');
+            const badge      = $('pf-pe-badge-status');
+
+            const isManual = peModo === 'manual';
+
+            if (btnAuto)   btnAuto.classList.toggle('is-active', !isManual);
+            if (btnManual) btnManual.classList.toggle('is-active', isManual);
+
+            // Campo de percentual: visível e obrigatório apenas no modo manual
+            if (inputPct) {
+                inputPct.disabled = !isManual;
+                inputPct.style.opacity = isManual ? '1' : '0.4';
+                inputPct.style.pointerEvents = isManual ? '' : 'none';
+                if (isManual && pePercentual != null) {
+                    inputPct.value = pePercentual;
+                } else if (!isManual) {
+                    inputPct.value = '';
+                    inputPct.placeholder = '40.0';
+                }
+            }
+
+            if (btnSalvar) {
+                btnSalvar.disabled = !isManual;
+                btnSalvar.style.opacity = isManual ? '1' : '0.45';
+            }
+
+            if (badge) {
+                if (isManual && pePercentual != null) {
+                    badge.textContent = `Manual · ${pePercentual.toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1})}%`;
+                    badge.style.background = 'rgba(99,102,241,0.15)';
+                    badge.style.color = '#6366f1';
+                    badge.style.borderColor = 'rgba(99,102,241,0.3)';
+                } else {
+                    badge.textContent = 'Automático';
+                    badge.style.background = 'rgba(245,158,11,0.15)';
+                    badge.style.color = '#f59e0b';
+                    badge.style.borderColor = 'rgba(245,158,11,0.3)';
+                }
+            }
+        }
+
+        function _mostrarFeedbackPE(msg, ok = true) {
+            const el = $('pf-pe-feedback');
+            if (!el) return;
+            el.textContent = msg;
+            el.style.color = ok ? '#16a34a' : '#dc2626';
+            el.style.display = '';
+            clearTimeout(el._timer);
+            el._timer = setTimeout(() => { el.style.display = 'none'; }, 3200);
+        }
+
+        function initPontoEquilibrio() {
+            const btnAuto   = $('pf-pe-btn-auto');
+            const btnManual = $('pf-pe-btn-manual');
+            const inputPct  = $('pf-pe-input-percentual');
+            const btnSalvar = $('pf-pe-btn-salvar');
+
+            if (!btnAuto || !btnManual || !inputPct || !btnSalvar) return;
+
+            // Restaura estado persistido
+            const savedModo = localStorage.getItem('DataInsight_PE_Modo');
+            const savedPct  = localStorage.getItem('DataInsight_PE_Percentual');
+            if (savedModo === 'manual' || savedModo === 'automatico') peModo = savedModo;
+            if (savedPct && !isNaN(parseFloat(savedPct))) pePercentual = parseFloat(savedPct);
+            _atualizarUiPE();
+
+            btnAuto.addEventListener('click', () => {
+                peModo = 'automatico';
+                pePercentual = null;
+                localStorage.setItem('DataInsight_PE_Modo', peModo);
+                localStorage.removeItem('DataInsight_PE_Percentual');
+                _atualizarUiPE();
+                // Recarrega já com automático
+                const tabelaId = $('seletorPlanilhaAnalise')?.value || 'todas';
+                iaAnaliseCache = { provavel: null, otimista: null, pessimista: null };
+                carregarPlanejamentoFinanceiro(tabelaId);
+            });
+
+            btnManual.addEventListener('click', () => {
+                peModo = 'manual';
+                localStorage.setItem('DataInsight_PE_Modo', peModo);
+                _atualizarUiPE();
+                inputPct.focus();
+            });
+
+            btnSalvar.addEventListener('click', async () => {
+                const valorRaw = parseFloat(inputPct.value);
+                if (!Number.isFinite(valorRaw) || valorRaw <= 0 || valorRaw > 100) {
+                    _mostrarFeedbackPE('Digite um valor entre 1 e 100 para a margem (%).', false);
+                    inputPct.focus();
+                    return;
+                }
+
+                pePercentual = Math.round(valorRaw * 100) / 100;
+                localStorage.setItem('DataInsight_PE_Percentual', String(pePercentual));
+                localStorage.setItem('DataInsight_PE_Modo', 'manual');
+
+                btnSalvar.disabled = true;
+                btnSalvar.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Salvando...';
+
+                try {
+                    const resp = await fetch('/api/planejamento-financeiro/ponto-equilibrio', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({ modo: 'manual', percentual: pePercentual })
+                    });
+                    const data = await resp.json();
+                    if (!resp.ok || !data.sucesso) throw new Error(data.mensagem || 'Erro ao salvar');
+                    _mostrarFeedbackPE(`✓ Salvo! Recalculando com ${pePercentual.toLocaleString('pt-BR', {minimumFractionDigits:1})}% de margem...`);
+                } catch (e) {
+                    _mostrarFeedbackPE('Aviso: não foi possível persistir no servidor, mas o cálculo local será aplicado.', false);
+                }
+
+                btnSalvar.disabled = false;
+                btnSalvar.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar';
+                _atualizarUiPE();
+
+                // Recarrega o planejamento aplicando a nova margem
+                iaAnaliseCache = { provavel: null, otimista: null, pessimista: null };
+                const tabelaId = $('seletorPlanilhaAnalise')?.value || 'todas';
+                await carregarPlanejamentoFinanceiro(tabelaId);
+            });
+
+            // Enter no campo dispara salvar
+            inputPct.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') btnSalvar.click();
+            });
+        }
+
         window.carregarPlanejamentoFinanceiro = carregarPlanejamentoFinanceiro;
 
         async function carregarPlanejamentoFinanceiro(tabelaId = 'todas') {
@@ -1221,6 +1360,14 @@
 
                 const params = new URLSearchParams();
                 params.set('tabela_id', tabelaId || 'todas');
+
+                // Passa a configuração do Ponto de Equilíbrio para o backend
+                if (peModo === 'manual' && pePercentual != null && pePercentual > 0) {
+                    params.set('pe_modo', 'manual');
+                    params.set('pe_percentual', String(pePercentual));
+                } else {
+                    params.set('pe_modo', 'automatico');
+                }
 
                 const resposta = await fetch(
                     `/api/planejamento-financeiro?${params.toString()}`,
@@ -1250,6 +1397,22 @@
                 const avisoImposto = document.getElementById('pf-aviso-imposto-estimado');
                 if (avisoImposto) {
                     avisoImposto.style.display = payload.imposto_estimado ? '' : 'none';
+                }
+
+                // Sincroniza UI do Ponto de Equilíbrio com a configuração retornada
+                if (payload.ponto_equilibrio_config) {
+                    const peConf = payload.ponto_equilibrio_config;
+                    // Exibe a margem automática calculada abaixo dos controles
+                    const autoValEl = $('pf-pe-auto-val');
+                    if (autoValEl && peConf.percentual_calculado_auto != null) {
+                        autoValEl.textContent = `${Number(peConf.percentual_calculado_auto).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1})}%`;
+                    }
+                    // Se o backend retornou modo manual com percentual, sincronia com localStorage
+                    if (peConf.modo === 'manual' && peConf.percentual != null && peModo !== 'manual') {
+                        peModo = 'manual';
+                        pePercentual = peConf.percentual;
+                        _atualizarUiPE();
+                    }
                 }
 
                 const seletor = $('seletorPlanilhaAnalise');
@@ -1298,6 +1461,9 @@
         async function inicializarPlanejamento() {
             const initial = getScenarioData(window.planejamentoFinanceiroBackend, scenario);
             renderAll(initial);
+
+            // Inicializa controles do Ponto de Equilíbrio
+            initPontoEquilibrio();
 
             await configurarSeletorPlanilhaPlanejamento();
 

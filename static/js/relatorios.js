@@ -185,6 +185,7 @@ function aoMudarTipoRelatorio() {
   // Sugestões de nomes amigáveis para cada tipo
   if (nomeRelInput) {
     const nomesPadrao = {
+      mei_dasn: 'Declaração Anual MEI (DASN-SIMEI)',
       analise_salva: 'Relatório de Diagnóstico IA',
       fluxo_caixa: 'Relatório de Fluxo de Caixa & Tesouraria',
       planejamento: 'Relatório de Planejamento Financeiro & Metas',
@@ -211,7 +212,14 @@ function atualizarRotulosOpcoes(tipo) {
   const lblGraf = document.getElementById('lbl-opt-grafico');
   const lblDados = document.getElementById('lbl-opt-dados');
 
-  if (tipo === 'fluxo_caixa') {
+  if (tipo === 'mei_dasn') {
+    if (lblKpi) lblKpi.textContent = 'Faturamento Bruto, Teto R$ 81k, Compras e Lucro do MEI';
+    if (lblDiag) lblDiag.textContent = 'Diagnóstico fiscal de permanência no SIMEI e limite anual';
+    if (lblPontos) lblPontos.textContent = 'Apuração de Receitas com Serviços vs Venda de Mercadorias';
+    if (lblRecs) lblRecs.textContent = 'Instruções para preenchimento da Declaração Anual (DASN-SIMEI)';
+    if (lblGraf) lblGraf.textContent = 'Gráfico de Entradas (Receitas) x Saídas (Despesas)';
+    if (lblDados) lblDados.textContent = 'Espelho mensal com valores detalhados para o fisco';
+  } else if (tipo === 'fluxo_caixa') {
     if (lblKpi) lblKpi.textContent = 'Entradas, Saídas, Saldo Líquido e Margem de Caixa';
     if (lblDiag) lblDiag.textContent = 'Diagnóstico de liquidez, solvência e queima de caixa';
     if (lblPontos) lblPontos.textContent = 'Top fontes de receitas e maiores centros de despesas';
@@ -623,7 +631,9 @@ async function gerarPreview() {
   try {
     let payload = null;
 
-    if (tipo === 'analise_salva') {
+    if (tipo === 'mei_dasn') {
+      payload = await compilarRelatorioMeiDasn(nomeRel, dataHoje);
+    } else if (tipo === 'analise_salva') {
       payload = await compilarRelatorioAnaliseSalva(nomeRel, dataHoje);
     } else if (tipo === 'fluxo_caixa') {
       payload = await compilarRelatorioFluxoCaixa(nomeRel, dataHoje, periodo);
@@ -655,6 +665,83 @@ async function gerarPreview() {
 // =============================================
 // COMPILADORES ESPECÍFICOS DE PAYLOAD
 // =============================================
+async function compilarRelatorioMeiDasn(nomeRel, dataHoje) {
+  let d = {};
+  try {
+    const res = await fetch('/api/controles-essenciais');
+    d = await res.json();
+  } catch (e) {
+    console.warn("Falha ao buscar controles essenciais:", e);
+  }
+
+  const teto = d.teto_mei || {};
+  const meses = d.meses_resumo || [];
+
+  const totalServicos = meses.reduce((acc, m) => acc + (m.servicos || 0), 0);
+  const totalComercio = meses.reduce((acc, m) => acc + (m.comercio || 0), 0);
+  const totalReceitas = totalServicos + totalComercio;
+  const totalSaidas = meses.reduce((acc, m) => acc + (m.saidas || 0), 0);
+  const lucroReal = totalReceitas - totalSaidas;
+
+  return {
+    tipo_relatorio: 'mei_dasn',
+    nome: nomeRel || 'Declaração Anual MEI (DASN-SIMEI)',
+    subtitulo: `Exercício ${d.ano || new Date().getFullYear()} • Apuração de Receitas Brutas`,
+    origem_nome: 'Controles Essenciais MEI',
+    badge: teto.badge || 'MEI Regular',
+    cor: teto.cor || '#10B981',
+    periodo: `Ano Calendário ${d.ano || new Date().getFullYear()}`,
+    data: dataHoje,
+    kpis: {
+      faturamento: formatarMoeda(totalReceitas),
+      teto_mei: formatarMoeda(teto.limite_anual || 81000),
+      saidas_compras: formatarMoeda(totalSaidas),
+      lucro_liquido: formatarMoeda(lucroReal)
+    },
+    kpis_lista: [
+      { label: 'Receita Serviços', valor: formatarMoeda(totalServicos), destaque: false },
+      { label: 'Receita Comércio', valor: formatarMoeda(totalComercio), destaque: false },
+      { label: 'Faturamento Total Bruto', valor: formatarMoeda(totalReceitas), destaque: true },
+      { label: 'Limite Anual MEI', valor: formatarMoeda(teto.limite_anual || 81000), destaque: false },
+      { label: 'Saldo Restante Teto', valor: formatarMoeda(teto.saldo_restante || 0), destaque: false },
+      { label: 'Total Saídas / Compras', valor: formatarMoeda(totalSaidas), destaque: false },
+      { label: 'Lucro Real no Bolso', valor: formatarMoeda(lucroReal), destaque: true }
+    ],
+    grafico: true,
+    grafico_tipo: 'barra',
+    grafico_labels: meses.map(m => m.mes_nome),
+    grafico_series: [
+      { name: 'Receita Bruta (R$)', data: meses.map(m => m.entradas) },
+      { name: 'Saídas / Despesas (R$)', data: meses.map(m => m.saidas) }
+    ],
+    tabela: meses.map(m => ({
+      'Mês': m.mes_nome,
+      'Serviços': formatarMoeda(m.servicos),
+      'Comércio': formatarMoeda(m.comercio),
+      'Receita Bruta': formatarMoeda(m.entradas),
+      'Total Despesas': formatarMoeda(m.saidas),
+      'Lucro Líquido': formatarMoeda(m.lucro),
+      'Acumulado': formatarMoeda(m.acumulado_ano)
+    })),
+    tabela_colunas: ['Mês', 'Serviços', 'Comércio', 'Receita Bruta', 'Total Despesas', 'Lucro Líquido', 'Acumulado'],
+    insights_estruturados: {
+      diagnostico_geral: `O microempreendedor acumulou um faturamento bruto de ${formatarMoeda(totalReceitas)} no ano, utilizando ${teto.percentual_usado || 0}% do teto oficial de ${formatarMoeda(teto.limite_anual || 81000)}. ${teto.mensagem || ''}`,
+      pontos_fortes: [
+        `Receitas de Serviços somaram ${formatarMoeda(totalServicos)} e Comércio ${formatarMoeda(totalComercio)}.`,
+        `O negócio gerou um lucro líquido acumulado de ${formatarMoeda(lucroReal)} no período apurado.`
+      ],
+      alertas_riscos: [
+        teto.status === 'excedido' ? 'Limite do MEI estourado. Obrigatório procurar contador para migrar para ME.' : 'Mantenha a guarda das notas fiscais de compras e vendas por 5 anos.',
+        'Lembre-se de pagar o DAS-MEI pontualmente todo dia 20 para garantir direitos previdenciários (INSS).'
+      ],
+      recomendacoes: [
+        'Copie os totais de Serviços e Comércio deste relatório para preencher a Declaração Anual DASN-SIMEI no Portal do Empreendedor.',
+        'Mantenha uma reserva de emergência equivalente a pelo menos 3 meses dos seus custos operacionais.',
+        'Não misture despesas pessoais com as contas do negócio; defina um valor fixo de pró-labore.'
+      ]
+    }
+  };
+}
 async function compilarRelatorioAnaliseSalva(nomeRel, dataHoje) {
   const analise = estadoRelatorio.analiseSelecionada;
   if (!analise) {

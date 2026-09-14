@@ -753,6 +753,7 @@ function configurarBotoesPeriodo() {
       const textos = {
         '7': 'Exibindo os últimos 7 dias',
         '30': 'Exibindo os últimos 30 dias',
+        '90': 'Exibindo os últimos 90 dias',
         '180': 'Exibindo os últimos 6 meses',
         '365': 'Exibindo o último ano'
       };
