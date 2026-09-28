@@ -4,58 +4,247 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="DataInsight — Análise de métricas e comparação entre períodos." />
-    <title>DataInsight • Análises</title>
+    <meta name="description" content="DataInsight — Central Executiva de Análise Contábil, Financeira e Inteligência do Negócio." />
+    <title>DataInsight • Central de Análise Contábil & Inteligência</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='acessibilidade/acessibilidade.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='acessibilidade/acessibilidade.css') }}" />
     <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
-    
+
     <style>
-      /* ========== EFEITO DE LUZ NOS KPIs - ANÁLISES ========== */
-      @keyframes shimmer-light {
-        0% {
-          left: -100%;
+        /* Estilos avançados da Central de Análise */
+        .analise-tabs { display:flex; gap:6px; background:var(--fundo); border:1px solid var(--borda); border-radius:calc(var(--raio) + 4px); padding:5px; flex-wrap:wrap; margin-bottom:24px; }
+        .analise-tab-btn { flex:1; min-width:130px; display:flex; align-items:center; justify-content:center; gap:8px; padding:10px 16px; border:none; border-radius:var(--raio); background:transparent; color:var(--suave); font-size:0.84rem; font-weight:600; cursor:pointer; transition:all 0.25s ease; white-space:nowrap; }
+        .analise-tab-btn:hover { background:rgba(59,130,246,0.08); color:var(--primaria); }
+        .analise-tab-btn.ativo { background:var(--primaria); color:#fff; box-shadow:0 2px 10px rgba(59,130,246,0.35); }
+        .analise-painel { display:none; }
+        .analise-painel.ativo { display:block; animation:fadeInUp 0.3s ease; }
+        @keyframes fadeInUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+        /* Banner Executivo IA */
+        .banner-ia-executivo {
+            background: linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(139,92,246,0.08) 100%);
+            border: 1px solid rgba(59,130,246,0.25);
+            border-radius: calc(var(--raio) + 4px);
+            padding: 22px;
+            margin-bottom: 22px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
         }
-        100% {
-          left: 100%;
+        .banner-ia-executivo::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6, #10b981);
         }
-      }
-      
-      /* KPI Cards com efeito de luz nas cores de cada indicador */
-      .grade--4 .cartao {
-        position: relative;
-        overflow: hidden;
-      }
-      
-      .grade--4 .cartao::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-        animation: shimmer-light 2.5s linear infinite alternate;
-        pointer-events: none;
-      }
-      
-      /* Cores específicas para cada KPI */
-      .grade--4 .cartao:nth-child(1)::before {
-        background: linear-gradient(90deg, transparent, #3B82F6, transparent);
-      }
-      
-      .grade--4 .cartao:nth-child(2)::before {
-        background: linear-gradient(90deg, transparent, #16A34A, transparent);
-      }
-      
-      .grade--4 .cartao:nth-child(3)::before {
-        background: linear-gradient(90deg, transparent, #DC2626, transparent);
-      }
-      
-      .grade--4 .cartao:nth-child(4)::before {
-        background: linear-gradient(90deg, transparent, #F59E0B, transparent);
-      }
+        .banner-ia-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .banner-ia-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--texto);
+        }
+        .banner-ia-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            box-shadow: 0 2px 8px rgba(59,130,246,0.3);
+        }
+        .banner-ia-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .banner-ia-badge.positivo { background: rgba(16,185,129,0.12); color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
+        .banner-ia-badge.neutro { background: rgba(59,130,246,0.12); color: #3b82f6; border: 1px solid rgba(59,130,246,0.3); }
+        .banner-ia-badge.atencao { background: rgba(245,158,11,0.12); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
+        .banner-ia-badge.critico { background: rgba(239,68,68,0.12); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+
+        .banner-ia-texto {
+            font-size: 0.88rem;
+            line-height: 1.6;
+            color: var(--texto);
+            margin-bottom: 16px;
+        }
+
+        .banner-ia-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        @media(max-width: 860px) { .banner-ia-grid { grid-template-columns: 1fr; } }
+
+        .banner-ia-bloco {
+            background: var(--cartao);
+            border: 1px solid var(--borda);
+            border-radius: var(--raio);
+            padding: 12px 14px;
+        }
+        .banner-ia-bloco-titulo {
+            font-size: 0.74rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .banner-ia-bloco-lista {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 0.8rem;
+            color: var(--suave);
+        }
+        .banner-ia-bloco-lista li {
+            margin-bottom: 6px;
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+            line-height: 1.4;
+        }
+        .banner-ia-bloco-lista li:last-child { margin-bottom: 0; }
+        .banner-ia-bloco-lista li i {
+            margin-top: 3px;
+            font-size: 0.7rem;
+            flex-shrink: 0;
+        }
+
+        /* KPIs Principais */
+        .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin-bottom:20px; }
+        .kpi-card { background:var(--cartao); border:1px solid var(--borda); border-radius:var(--raio); padding:16px; position:relative; overflow:hidden; transition:transform 0.2s,box-shadow 0.2s; }
+        .kpi-card:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,0.08); }
+        .kpi-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--kpi-color,var(--primaria)); }
+        .kpi-card__icon { width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:1rem; margin-bottom:10px; background:var(--kpi-bg,rgba(59,130,246,0.1)); color:var(--kpi-color,var(--primaria)); }
+        .kpi-card__label { font-size:0.72rem; font-weight:700; color:var(--suave); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+        .kpi-card__valor { font-size:1.35rem; font-weight:800; color:var(--texto); line-height:1.1; }
+        .kpi-card__variacao { display:inline-flex; align-items:center; gap:3px; font-size:0.72rem; font-weight:600; margin-top:6px; padding:2px 7px; border-radius:20px; }
+        .kpi-card__variacao.positivo { background:rgba(16,185,129,0.1); color:var(--sucesso); }
+        .kpi-card__variacao.negativo { background:rgba(239,68,68,0.1); color:var(--perigo); }
+        .kpi-card__variacao.neutro { background:rgba(107,114,128,0.1); color:var(--suave); }
+        .mini-progress { height:5px; background:var(--borda); border-radius:10px; overflow:hidden; margin-top:6px; }
+        .mini-progress__fill { height:100%; border-radius:10px; background:var(--progress-color,var(--primaria)); transition:width 0.8s ease; }
+
+        /* Saúde Ring */
+        .saude-ring-wrapper { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; }
+        .saude-ring { position:relative; width:110px; height:110px; }
+        .saude-ring svg { transform:rotate(-90deg); }
+        .saude-ring-valor { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:1.6rem; font-weight:800; line-height:1; }
+        .saude-ring-label { font-size:0.7rem; font-weight:700; color:var(--suave); text-transform:uppercase; letter-spacing:0.5px; }
+
+        /* DRE e Tabelas Contábeis */
+        .dre-container { width:100%; border-collapse:collapse; font-size:0.875rem; margin-top:10px; }
+        .dre-container th { padding:10px 14px; text-align:left; font-weight:700; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--suave); background:rgba(229,231,235,0.15); border-bottom:1px solid var(--borda); }
+        .dre-container td { padding:11px 14px; border-bottom:1px solid var(--borda); color:var(--texto); }
+        .dre-container tr.dre-destaque td { font-weight:700; background:rgba(59,130,246,0.04); }
+        .dre-container tr.dre-total td { font-weight:800; background:rgba(16,185,129,0.06); border-top:2px solid var(--sucesso); font-size:0.95rem; }
+        .dre-container tr.dre-subtotal td { font-weight:700; background:rgba(243,244,246,0.05); }
+
+        /* Grid de Indicadores Contábeis */
+        .indicadores-contabeis-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; margin-bottom:20px; }
+        .card-indicador { background:var(--cartao); border:1px solid var(--borda); border-radius:var(--raio); padding:16px; transition:transform 0.2s; }
+        .card-indicador:hover { transform:translateY(-2px); border-color:var(--primaria); }
+        .card-indicador__nome { font-size:0.72rem; font-weight:700; color:var(--suave); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+        .card-indicador__valor { font-size:1.3rem; font-weight:800; color:var(--texto); margin-bottom:4px; }
+        .card-indicador__desc { font-size:0.74rem; color:var(--suave); line-height:1.4; }
+
+        /* Módulo MEI */
+        .mei-teto-card {
+            background: linear-gradient(135deg, rgba(245,158,11,0.06) 0%, rgba(59,130,246,0.06) 100%);
+            border: 1px solid rgba(245,158,11,0.3);
+            border-radius: var(--raio);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .mei-teto-barra-bg {
+            height: 14px;
+            background: rgba(107,114,128,0.15);
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 12px 0 8px;
+            position: relative;
+        }
+        .mei-teto-barra-fill {
+            height: 100%;
+            border-radius: 20px;
+            background: linear-gradient(90deg, #10b981, #f59e0b, #ef4444);
+            transition: width 1s ease;
+        }
+
+        /* Grade Mensal 12 Meses */
+        .anual-mes-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-top:14px; }
+        @media(max-width:900px){.anual-mes-grid{grid-template-columns:repeat(3,1fr)}}
+        @media(max-width:550px){.anual-mes-grid{grid-template-columns:repeat(2,1fr)}}
+        .anual-mes-card { background:var(--fundo); border:1px solid var(--borda); border-radius:var(--raio); padding:12px 10px; text-align:center; transition:all 0.2s; position:relative; }
+        .anual-mes-card:hover { border-color:var(--primaria); transform:translateY(-2px); }
+        .anual-mes-card.melhor { border-color:#10b981; background:rgba(16,185,129,0.05); }
+        .anual-mes-card.pior { border-color:#ef4444; background:rgba(239,68,68,0.05); }
+        .anual-mes-card__tag { position:absolute; top:-8px; right:8px; font-size:0.6rem; font-weight:800; padding:1px 6px; border-radius:8px; text-transform:uppercase; }
+        .anual-mes-card.melhor .anual-mes-card__tag { background:#10b981; color:#fff; }
+        .anual-mes-card.pior .anual-mes-card__tag { background:#ef4444; color:#fff; }
+        .anual-mes-card__nome { font-weight:700; color:var(--suave); font-size:0.75rem; margin-bottom:4px; }
+        .anual-mes-card__fat { font-weight:800; font-size:0.85rem; color:var(--texto); }
+        .anual-mes-card__lucro { font-size:0.72rem; color:var(--suave); margin-top:2px; }
+
+        /* Cenários Cards */
+        .cenario-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:16px; }
+        @media(max-width:768px){.cenario-cards{grid-template-columns:1fr}}
+        .cenario-card { border:1px solid var(--borda); border-radius:var(--raio); padding:16px; background:var(--cartao); transition:all 0.2s; }
+        .cenario-card:hover { transform:translateY(-2px); border-color:var(--primaria); box-shadow:0 4px 15px rgba(0,0,0,0.06); }
+        .cenario-card__badge { font-size:0.68rem; font-weight:700; text-transform:uppercase; padding:3px 8px; border-radius:12px; margin-bottom:8px; display:inline-block; }
+        .cenario-card__title { font-size:0.9rem; font-weight:700; color:var(--texto); margin-bottom:6px; }
+        .cenario-card__valor { font-size:1.3rem; font-weight:800; margin-bottom:4px; }
+        .cenario-card__desc { font-size:0.75rem; color:var(--suave); line-height:1.4; }
+
+        /* Alertas e Recomendações */
+        .alerta-item { display:flex; gap:12px; align-items:flex-start; padding:14px; border-radius:var(--raio); margin-bottom:10px; border-left:4px solid var(--alerta-cor,var(--primaria)); background:var(--alerta-bg,rgba(59,130,246,0.05)); }
+        .alerta-item__icon { font-size:1.1rem; flex-shrink:0; margin-top:2px; }
+        .alerta-item__titulo { font-size:0.86rem; font-weight:700; color:var(--texto); margin-bottom:2px; }
+        .alerta-item__desc { font-size:0.8rem; color:var(--suave); line-height:1.45; }
+
+        .filtro-rapido { display:flex; gap:6px; flex-wrap:wrap; }
+        .filtro-rapido-btn { padding:5px 12px; border:1px solid var(--borda); border-radius:20px; background:transparent; color:var(--suave); font-size:0.75rem; font-weight:600; cursor:pointer; transition:all 0.2s; }
+        .filtro-rapido-btn:hover,.filtro-rapido-btn.ativo { background:var(--primaria); border-color:var(--primaria); color:#fff; }
+
+        .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; gap:8px; flex-wrap:wrap; }
+        .section-header h2 { font-size:1rem; font-weight:700; color:var(--texto); margin:0; display:flex; align-items:center; gap:8px; }
+        .section-header h2 i { color:var(--primaria); font-size:0.9rem; }
+
+        .badge-perfil { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:12px; font-size:0.72rem; font-weight:700; }
+        .badge-perfil.mei { background:rgba(245,158,11,0.12); color:#d97706; border:1px solid rgba(245,158,11,0.3); }
+        .badge-perfil.me { background:rgba(59,130,246,0.1); color:var(--primaria); border:1px solid rgba(59,130,246,0.25); }
+
+        .grafico-container { min-height:300px; width:100%; }
+        .dois-paineis { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+        @media(max-width:768px){.dois-paineis{grid-template-columns:1fr}}
+
+        .empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 20px; color:var(--suave); gap:10px; text-align:center; }
+        .empty-state i { font-size:2.5rem; opacity:0.4; }
+        .empty-state p { font-size:0.85rem; max-width:280px; line-height:1.5; margin:0; }
     </style>
 </head>
 
@@ -79,468 +268,751 @@
                             class="fa-solid fa-gear"></i></a>
                 </div>
             </header>
+
             <main id="conteudo" class="pagina" role="main" data-ia-help="page_analises">
                 <div class="container">
-                    <header class="pagina__cabecalho" style="display: flex !important; flex-direction: row !important; align-items: flex-start !important; justify-content: space-between !important; gap: 16px; margin-bottom: 24px; width: 100%;">
-                        <div style="flex: 1; min-width: 0;">
-                            <div class="migalhas">Início &gt; Métricas</div>
-                            <h1 class="h1" style="margin-bottom: 4px;">Análise de Métricas</h1>
-                            <p class="p" style="margin: 0;">Análise detalhada de desempenho com comparação entre períodos.</p>
+
+                    <!-- =================== CABEÇALHO DA PÁGINA =================== -->
+                    <header class="pagina__cabecalho" style="display:flex;flex-direction:row;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap;">
+                        <div style="flex:1;min-width:0;">
+                            <div class="migalhas">Início &gt; Análise</div>
+                            <h1 class="h1" style="margin-bottom:4px;">Central de Análise &amp; Inteligência</h1>
+                            <p class="p" style="margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                                Diagnósticos contábeis, controladoria, projeções e inteligência de negócio
+                                <span id="badge-perfil-topo" class="badge-perfil me">
+                                    <i class="fa-solid fa-building"></i> ME
+                                </span>
+                            </p>
                         </div>
-                        <!-- BOTÃO DE IA BRILHANTE AZUL COM ANIMAÇÃO E PULSANDO -->
-                        <div style="display: flex; align-items: center; gap: 12px; flex-shrink: 0;">
-                            <button type="button" 
-                                    id="btnIaAnaliseAnalises" 
-                                    class="btn-ia-glow-blue" 
-                                    onclick="IaAnaliseModal.abrir('analises', coletarContextoIaAnalises)" 
-                                    title="Executar Análise Completa e Direta das Métricas com IA"
-                                    aria-label="Executar Análise Completa com IA">
+                        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+                            <button type="button"
+                                    id="btnIaAnaliseAnalises"
+                                    class="btn-ia-glow-blue"
+                                    onclick="IaAnaliseModal.abrir('analises', coletarContextoIaAnalises)"
+                                    title="Executar Diagnóstico Profundo com IA (Gemini)"
+                                    aria-label="Análise Completa com Inteligência Artificial">
                                 <span class="btn-ia-glow-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
                                 <span class="btn-ia-glow-text">IA</span>
                             </button>
                         </div>
                     </header>
 
-                    <!-- FILTROS AVANÇADOS COM SELETOR MULTI-PLANILHA -->
-                    <section class="cartao" aria-label="Filtros">
-                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-                            <h2 class="h2" style="margin:0;">Filtros & Origem dos Dados</h2>
-                            <div id="analiseStatusFontesContainer" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
-                                <span class="badge" style="background:rgba(59,130,246,0.12); color:#3b82f6; border:1px solid rgba(59,130,246,0.25); padding:4px 10px; border-radius:14px; font-size:0.75rem; font-weight:600;">
-                                    <i class="fa-solid fa-layer-group"></i> Analisando dados
+                    <!-- =================== FILTROS E ORIGEM DOS DADOS =================== -->
+                    <section class="cartao" aria-label="Filtros e origem dos dados" style="margin-bottom:20px;">
+                        <div class="section-header">
+                            <h2> Seleção de Dados &amp; Período de Análise</h2>
+                            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                                <span id="status-fonte-badge" class="badge" style="background:rgba(59,130,246,0.1);color:#3b82f6;border:1px solid rgba(59,130,246,0.25);padding:4px 10px;border-radius:14px;font-size:0.73rem;font-weight:600;">
+                                    <i class="fa-solid fa-layer-group"></i> Conectando bases...
                                 </span>
                             </div>
                         </div>
 
-                        <div class="grade grade--3" style="margin-top:16px;">
+                        <div class="grade grade--3" style="margin-bottom:14px;">
                             <div class="campo">
                                 <label for="seletorPlanilhaAnalise">
-                                    <i class="fa-solid fa-table-list" style="color:var(--primaria); margin-right:4px;"></i>
-                                    Origem dos Dados
+                                    <i class="fa-solid fa-table-list" style="color:var(--primaria);margin-right:4px;"></i>
+                                    Origem dos Dados / Tabela
                                 </label>
-                                <select class="entrada" id="seletorPlanilhaAnalise" style="font-weight:600;">
-                                    <option value="todas">🌐 Todas as Planilhas (Visão Consolidada)</option>
+                                <select class="entrada" id="seletorPlanilhaAnalise" style="font-weight:600;" onchange="aoTrocarPlanilhaAnalise()">
+                                    <option value="todas">&#127760; Todas as Planilhas (Visão Consolidada)</option>
                                 </select>
                             </div>
-
                             <div class="campo">
                                 <label for="data-inicio">
-                                    <i class="fa-solid fa-calendar-days" style="color:var(--primaria); margin-right:4px;"></i>
-                                    Período - Início
+                                    <i class="fa-solid fa-calendar-days" style="color:var(--primaria);margin-right:4px;"></i>
+                                    Período Inicial
                                 </label>
                                 <input type="date" class="entrada" id="data-inicio" />
                             </div>
-
                             <div class="campo">
                                 <label for="data-fim">
-                                    <i class="fa-solid fa-calendar-days" style="color:var(--primaria); margin-right:4px;"></i>
-                                    Período - Fim
+                                    <i class="fa-solid fa-calendar-days" style="color:var(--primaria);margin-right:4px;"></i>
+                                    Período Final
                                 </label>
                                 <input type="date" class="entrada" id="data-fim" />
                             </div>
                         </div>
 
-                        <div style="display:flex; gap: 12px; flex-wrap: wrap; margin-top: 16px;">
-                            <button class="botao botao--delet" type="button" onclick="limparFiltros()">✕ Limpar
-                                filtros</button>
-                            <button class="botao botao--primario" type="button" onclick="aplicarFiltros()">Aplicar
-                                filtros</button>
+                        <div class="filtro-rapido" style="margin-bottom:14px;">
+                            <button class="filtro-rapido-btn" onclick="aplicarFiltroRapido(7)" id="fq-7">7 dias</button>
+                            <button class="filtro-rapido-btn" onclick="aplicarFiltroRapido(30)" id="fq-30">30 dias</button>
+                            <button class="filtro-rapido-btn ativo" onclick="aplicarFiltroRapido(90)" id="fq-90">90 dias</button>
+                            <button class="filtro-rapido-btn" onclick="aplicarFiltroRapido(180)" id="fq-180">6 meses</button>
+                            <button class="filtro-rapido-btn" onclick="aplicarFiltroRapido(365)" id="fq-365">1 ano</button>
+                            <button class="filtro-rapido-btn" onclick="aplicarFiltroAnoAtual()" id="fq-ano">Exercício Atual</button>
+                        </div>
+
+                        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                            <button class="botao botao--delet" type="button" onclick="limparFiltros()">
+                                <i class="fa-solid fa-xmark"></i> Limpar
+                            </button>
+                            <button class="botao botao--primario" type="button" id="btn-aplicar-filtros" onclick="aplicarFiltros()">
+                                <i class="fa-solid fa-magnifying-glass-chart"></i> Executar Análise
+                            </button>
                         </div>
                     </section>
 
-                    <!-- PAINEL DE MÉTRICAS -->
-                    <section aria-label="Lista de métricas disponíveis" style="margin-top: 24px;">
-                        <h2 class="h2" style="margin-bottom: 16px;">Selecione as Métricas</h2>
-                        <div class="grade grade--4">
-
-                            <!-- Métrica 1 -->
-                            <div class="cartao" data-ia-help="faturamento" data-ia-help-value="#fat-valor" data-ia-help-trend="Crescimento positivo no período" style="cursor: pointer; transition: all 0.3s; border-left: 4px solid var(--primaria);"
-                                onclick="selecionarMetrica(this, 'faturamento')">
-
-                                <div style="display: flex; justify-content: space-between; align-items: start;">
-                                    <div>
-                                        <h3 class="h3" style="margin: 0 0 8px;">Faturamento</h3>
-                                        <p class="p" style="margin: 0; font-size: 14px; color: var(--suave);">Receita
-                                            total</p>
-                                    </div>
-                                    <input type="checkbox" id="check-faturamento" class="metrica-checkbox"
-                                        style="width: 20px; height: 20px; cursor: pointer;" />
-                                </div>
-
-                                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--borda);">
-                                    <span id="fat-valor"
-                                        style="font-weight: 600; color: var(--primaria); font-size: 28px;">--</span>
-                                    <span id="fat-variacao" style="font-size: 12px; margin-left: 8px;">--</span>
+                    <!-- =================== BANNER DE PARECER DA IA / CFO VIRTUAL =================== -->
+                    <section class="banner-ia-executivo" id="banner-ia-secao" aria-label="Parecer Executivo com Inteligência Artificial">
+                        <div class="banner-ia-header">
+                            <div class="banner-ia-title">
+                            
+                                <div>
+                                    <span id="banner-ia-veredito-titulo">Parecer Executivo do CFO Virtual</span>
+                                    <div style="font-size:0.75rem;font-weight:600;color:var(--suave);margin-top:2px;">Diagnóstico contábil automatizado fundamentado nos dados reais</div>
                                 </div>
                             </div>
-
-                            <!-- Métrica 2 -->
-                            <div class="cartao" data-ia-help="despesas" data-ia-help-value="#desp-valor" data-ia-help-trend="Analise a redução ou aumento desses custos" style="cursor: pointer; transition: all 0.3s; border-left: 4px solid var(--perigo);"
-                                onclick="selecionarMetrica(this, 'despesas')">
-
-                                <div style="display: flex; justify-content: space-between; align-items: start;">
-                                    <div>
-                                        <h3 class="h3" style="margin: 0 0 8px;">Despesas</h3>
-                                        <p class="p" style="margin: 0; font-size: 14px; color: var(--suave);">Custos
-                                            operacionais</p>
-                                    </div>
-                                    <input type="checkbox" id="check-despesas" class="metrica-checkbox"
-                                        style="width: 20px; height: 20px; cursor: pointer;" />
-                                </div>
-                                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--borda);">
-                                    <span id="desp-valor"
-                                        style="font-weight: 600; color: var(--perigo); font-size: 28px;">--</span>
-                                    <span id="desp-variacao" style="font-size: 12px; margin-left: 8px;">--</span>
-                                </div>
-                            </div>
-
-                            <!-- Métrica 3 -->
-                            <div class="cartao" data-ia-help="lucro" data-ia-help-value="#luc-valor" data-ia-help-trend="Lucro é calculado como faturamento menos despesas" style="cursor: pointer; transition: all 0.3s; border-left: 4px solid var(--sucesso);"
-                                onclick="selecionarMetrica(this, 'lucro')">
-
-                                <div style="display: flex; justify-content: space-between; align-items: start;">
-                                    <div>
-                                        <h3 class="h3" style="margin: 0 0 8px;">Lucro</h3>
-                                        <p class="p" style="margin: 0; font-size: 14px; color: var(--suave);">
-                                            Faturamento - Despesas</p>
-                                    </div>
-                                    <input type="checkbox" id="check-lucro" class="metrica-checkbox"
-                                        style="width: 20px; height: 20px; cursor: pointer;" />
-                                </div>
-                                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--borda);">
-                                    <span id="luc-valor"
-                                        style="font-weight: 600; color: var(--sucesso); font-size: 28px;">--</span>
-                                    <span id="luc-variacao" style="font-size: 12px; margin-left: 8px;">--</span>
-                                </div>
-                            </div>
-
-                            <!-- Métrica 4 -->
-                            <div class="cartao" data-ia-help="margem" data-ia-help-value="#mg-valor" data-ia-help-trend="Margem alta indica maior eficiência financeira" style="cursor: pointer; transition: all 0.3s; border-left: 4px solid var(--aviso);"
-                                onclick="selecionarMetrica(this, 'margem')">
-
-                                <div style="display: flex; justify-content: space-between; align-items: start;">
-                                    <div>
-                                        <h3 class="h3" style="margin: 0 0 8px;">Margem Líquida</h3>
-                                        <p class="p" style="margin: 0; font-size: 14px; color: var(--suave);">Lucro /
-                                            Faturamento</p>
-                                    </div>
-                                    <input type="checkbox" id="check-margem" class="metrica-checkbox"
-                                        style="width: 20px; height: 20px; cursor: pointer;" />
-                                </div>
-                                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--borda);">
-                                    <span id="mg-valor"
-                                        style="font-weight: 600; color: var(--aviso); font-size: 28px;">--</span>
-                                    <span id="mg-variacao" style="font-size: 12px; margin-left: 8px;">--</span>
-                                </div>
-
-                            </div>
-
-                        </div>
-                    </section>
-                    <section class="cartao" aria-labelledby="titulo-analise" style="margin-top: 24px;">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                            <div>
-                                <h2 class="h2" id="titulo-analise">Gráfico Comparativo</h2>
-                                <p class="p" style="margin: 4px 0 0; font-size: 14px;">Evolução das métricas
-                                    selecionadas ao longo do tempo</p>
-                            </div>
+                            <span id="banner-ia-badge-status" class="banner-ia-badge neutro">
+                                <i class="fa-solid fa-shield"></i> Aguardando Processamento
+                            </span>
                         </div>
 
-                        <div id="grafico-metricas" data-ia-help="grafico_metricas" data-ia-help-trend="Visualize as métricas em evolução ao longo do tempo"
-                            style="width: 100%; min-height: 400px; border: 1px solid var(--borda); border-radius: var(--raio); padding: 16px; background: rgba(229, 231, 235, 0.1);">
-                        </div>
-                        
-                    </section>
-
-                    <!-- COMPARAÇÃO ENTRE PERÍODOS -->
-                    <section class="cartao" data-ia-help="comparacao_periodos" data-ia-help-trend="Comparação atual vs. anterior" data-ia-help-highlight="Observe as variações de métrica entre períodos" aria-label="Comparação entre períodos" style="margin-top: 24px;">
-                        <h2 class="h2" style="margin-bottom: 8px;">Comparação entre Períodos</h2>
-                        <p class="p" style="font-size: 14px; color: var(--suave); margin-bottom: 16px;">
-                            <span id="label-periodo-atual">Período selecionado</span>
-                            vs
-                            <span id="label-periodo-anterior">Período anterior</span>
+                        <p class="banner-ia-texto" id="banner-ia-diagnostico">
+                            Aplique os filtros para gerar o parecer contábil executivo e as diretrizes estratégicas para o seu negócio.
                         </p>
 
-                        <div style="overflow-x: auto;">
-                            <table style="width: 100%; border-collapse: collapse;">
-                                <thead>
-                                    <tr style="background: rgba(229, 231, 235, 0.3);">
-                                        <th
-                                            style="padding: 12px; text-align: left; font-weight: 600; border: 1px solid var(--borda); color: var(--suave);">
-                                            Métrica</th>
-                                        <th
-                                            style="padding: 12px; text-align: center; font-weight: 600; border: 1px solid var(--borda); color: var(--suave);">
-                                            Período Selecionado</th>
-                                        <th
-                                            style="padding: 12px; text-align: center; font-weight: 600; border: 1px solid var(--borda); color: var(--suave);">
-                                            Período Anterior</th>
-                                        <th
-                                            style="padding: 12px; text-align: center; font-weight: 600; border: 1px solid var(--borda); color: var(--suave);">
-                                            Variação</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td style="padding: 12px; border: 1px solid var(--borda); font-weight: 600;">
-                                            Faturamento</td>
-                                        <td style="padding: 12px; border: 1px solid var(--borda); text-align: center;"
-                                            id="tab-fat-atual">--</td>
-                                        <td style="padding: 12px; border: 1px solid var(--borda); text-align: center;"
-                                            id="tab-fat-anterior">--</td>
-                                        <td style="padding: 12px; border: 1px solid var(--borda); text-align: center; font-weight: 600;"
-                                            id="tab-fat-variacao">--</td>
-                                    </tr>
-                                    <tr style="background: rgba(229, 231, 235, 0.1);">
-                                        <td style="padding: 12px; border: 1px solid var(--borda); font-weight: 600;">
-                                            Despesas</td>
-                                        <td style="padding: 12px; border: 1px solid var(--borda); text-align: center;"
-                                            id="tab-desp-atual">--</td>
-                                        <td style="padding: 12px; border: 1px solid var(--borda); text-align: center;"
-                                            id="tab-desp-anterior">--</td>
-                                        <td style="padding: 12px; border: 1px solid var(--borda); text-align: center; font-weight: 600;"
-                                            id="tab-desp-variacao">--</td>
-                                    </tr>
-                                    <tr>
-                                        <td style="padding: 12px; border: 1px solid var(--borda); font-weight: 600;">
-                                            Lucro</td>
-                                        <td style="padding: 12px; border: 1px solid var(--borda); text-align: center;"
-                                            id="tab-luc-atual">--</td>
-                                        <td style="padding: 12px; border: 1px solid var(--borda); text-align: center;"
-                                            id="tab-luc-anterior">--</td>
-                                        <td style="padding: 12px; border: 1px solid var(--borda); text-align: center; font-weight: 600;"
-                                            id="tab-luc-variacao">--</td>
-                                    </tr>
-                                    <tr style="background: rgba(229, 231, 235, 0.1);">
-                                        <td style="padding: 12px; border: 1px solid var(--borda); font-weight: 600;">
-                                            Margem Líquida</td>
-                                        <td style="padding: 12px; border: 1px solid var(--borda); text-align: center;"
-                                            id="tab-mg-atual">--</td>
-                                        <td style="padding: 12px; border: 1px solid var(--borda); text-align: center;"
-                                            id="tab-mg-anterior">--</td>
-                                        <td style="padding: 12px; border: 1px solid var(--borda); text-align: center; font-weight: 600;"
-                                            id="tab-mg-variacao">--</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                        <div class="banner-ia-grid">
+                            <div class="banner-ia-bloco">
+                                <div class="banner-ia-bloco-titulo" style="color:#10b981;">
+                                    <i class="fa-solid fa-circle-check"></i> Pontos Fortes da Operação
+                                </div>
+                                <ul class="banner-ia-bloco-lista" id="banner-ia-pontos-fortes">
+                                    <li><i class="fa-solid fa-check" style="color:#10b981;"></i> Aguardando análise dos dados</li>
+                                </ul>
+                            </div>
+
+                            <div class="banner-ia-bloco">
+                                <div class="banner-ia-bloco-titulo" style="color:#f59e0b;">
+                                    <i class="fa-solid fa-triangle-exclamation"></i> Riscos &amp; Pontos de Atenção
+                                </div>
+                                <ul class="banner-ia-bloco-lista" id="banner-ia-alertas-riscos">
+                                    <li><i class="fa-solid fa-exclamation" style="color:#f59e0b;"></i> Nenhum risco detectado ainda</li>
+                                </ul>
+                            </div>
+
+                            <div class="banner-ia-bloco">
+                                <div class="banner-ia-bloco-titulo" style="color:#3b82f6;">
+                                    <i class="fa-solid fa-lightbulb"></i> Decisões Estratégicas Prioritárias
+                                </div>
+                                <ul class="banner-ia-bloco-lista" id="banner-ia-recomendacoes">
+                                    <li><i class="fa-solid fa-arrow-right" style="color:#3b82f6;"></i> Recomendações aparecerão aqui</li>
+                                </ul>
+                            </div>
                         </div>
                     </section>
-           <div style="height: 20px;"></div>                   <!-- PRODUTOS -->
-          <section class="cartao anim-fade-up anim-fade-up-d3 produto-overview" aria-label="Métricas de produtos" style="margin-bottom:20px;">
-            <div class="produto-overview__top">
-              <div>
-                <h2 class="produto-overview__title">Métricas de Produtos</h2>
-              
-                <p id="produtos-overview-meta" class="produto-overview__meta" style="margin-top:8px; font-size:0.92rem; color:var(--texto-secundario);">Carregando informações do produto...</p>
-              </div>
-              <span class="badge-status badge-status--success produto-overview__tag">Baseado no período selecionado</span>
-            </div>
 
-            <div id="produtos-overview-loading" class="produto-overview__loading">
-              <div class="skeleton" style="width:100%; max-width:360px;"></div>
-              <div class="skeleton" style="width:100%; max-width:260px;"></div>
-            </div>
-
-            <div id="produtos-overview" class="produto-overview__content" style="display:none;">
-              <div class="produto-overview__section produto-overview__section--cards">
-                <div class="produto-overview__section-header">
-                </div>
-                <div class="grade grade--3 produto-overview__grid produto-overview__grid--cards">
-                  <article class="cartao produto-card produto-card--vendas">
-                    <div class="produto-card__head">
-                      <h3 class="produto-card__title">Mais vendido</h3>
-                      <span class="produto-card__badge produto-card__badge--vendas">Vendas</span>
-                    </div>
-                    <div id="produto-mais-vendido" class="produto-card__value">Carregando...</div>
-                  </article>
-
-                  <article class="cartao produto-card produto-card--estoque">
-                    <div class="produto-card__head">
-                      <h3 class="produto-card__title">Menos vendido</h3>
-                      <span class="produto-card__badge produto-card__badge--info">Estoque</span>
-                    </div>
-                    <div id="produto-menos-vendido" class="produto-card__value">Carregando...</div>
-                  </article>
-
-                  <article class="cartao produto-card produto-card--lucro">
-                    <div class="produto-card__head">
-                      <h3 class="produto-card__title">Maior lucro</h3>
-                      <span class="produto-card__badge produto-card__badge--lucro">Lucro</span>
-                    </div>
-                    <div id="produto-maior-lucro" class="produto-card__value">Carregando...</div>
-                  </article>
-                </div>
-
-                <div class="grade grade--3 produto-overview__grid produto-overview__grid--cards">
-                  <article class="cartao produto-card produto-card--despesa">
-                    <div class="produto-card__head">
-                      <h3 class="produto-card__title">Maior despesa</h3>
-                      <span class="produto-card__badge produto-card__badge--despesa">Despesa</span>
-                    </div>
-                    <div id="produto-maior-despesa" class="produto-card__value">Carregando...</div>
-                  </article>
-
-                  <article class="cartao produto-card produto-card--warning">
-                    <div class="produto-card__head">
-                      <h3 class="produto-card__title">Menor despesa</h3>
-                      <span class="produto-card__badge produto-card__badge--warning">Custo</span>
-                    </div>
-                    <div id="produto-menos-despesa" class="produto-card__value">Carregando...</div>
-                  </article>
-
-                  <article class="cartao produto-card produto-card--perigo">
-                    <div class="produto-card__head">
-                      <h3 class="produto-card__title">Estoque crítico</h3>
-                      <span class="produto-card__badge produto-card__badge--perigo">Urgente</span>
-                    </div>
-                    <div id="produto-estoque" class="produto-card__value">Carregando...</div>
-                  </article>
-                </div>
-              </div>
-
-              <div class="produto-overview__section produto-overview__section--charts">
-                <div class="produto-overview__section-header produto-overview__section-header--compact">
-                  <h3>Distribuição</h3>
-                  <p>Top 5 por volume e valor, com uma visualização mais fácil.</p>
-                </div>
-                <div class="grade grade--2 produto-overview__grid produto-overview__grid--charts">
-                  <article class="cartao produto-grafico-card produto-grafico-card--vendas">
-                    <div class="produto-card__head">
-                      <h3 class="produto-card__title">Top 5 vendas</h3>
-                      <span class="badge-status badge-status--info">Quantidade</span>
-                    </div>
-                    <div id="graficoProdutosVendas"></div>
-                  </article>
-
-                  <article class="cartao produto-grafico-card produto-grafico-card--lucro">
-                    <div class="produto-card__head">
-                      <h3 class="produto-card__title">Top 5 lucro</h3>
-                      <span class="badge-status badge-status--success">Lucro</span>
-                    </div>
-                    <div id="graficoProdutosLucro"></div>
-                  </article>
-                </div>
-              </div>
-
-              <div class="produto-overview__section produto-overview__section--table">
-                <div class="produto-overview__section-header produto-overview__section-header--compact">
-                  <h3>Lista de produtos</h3>
-                  <p>Veja os valores por produto com maior clareza.</p>
-                </div>
-                <div class="produto-tabela__wrapper">
-                  <table class="produto-tabela">
-                    <thead>
-                      <tr>
-                        <th>Produto</th>
-                        <th>Venda</th>
-                        <th>Despesa</th>
-                        <th>Lucro</th>
-                        <th>Qtd</th>
-                        <th>Estoque</th>
-                      </tr>
-                    </thead>
-                    <tbody id="tabela-produtos-body">
-                      <tr class="produto-tabela__empty"><td colspan="6">Carregando dados de produtos...</td></tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </section>
-
-                    <!-- EXPLICAÇÃO DA MÉTRICA
-                    <section class="cartao" aria-label="Explicação das métricas" style="margin-top: 24px;">
-                        <h2 class="h2" style="margin-bottom: 16px;">O que significa cada métrica?</h2>
-
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-
-                            <!- Faturamento -->
-                            <!-- <div
-                                style="padding: 16px; border-left: 4px solid var(--primaria); background: rgba(59, 130, 246, 0.05);">
-                                <h3 class="h3" style="margin-top: 0; color: var(--primaria);">Faturamento</h3>
-                                <p class="p">A receita bruta total gerada pelas vendas ou serviços, antes de descontos
-                                    fiscais e despesas. É o primeiro indicador de volume de negócios.</p>
-                            </div> -->
-
-                            <!-- Despesas -->
-                            <!-- <div
-                                style="padding: 16px; border-left: 4px solid var(--perigo); background: rgba(220, 38, 38, 0.05);">
-                                <h3 class="h3" style="margin-top: 0; color: var(--perigo);">Despesas</h3>
-                                <p class="p">Todos os custos operacionais necessários para manter o negócio funcionando
-                                    (salários, fornecedores, aluguel, etc.). Reduzir despesas melhora a rentabilidade.
-                                </p>
-                            </div> -->
-
-                            <!-- Lucro -->
-                            <!-- <div
-                                style="padding: 16px; border-left: 4px solid var(--sucesso); background: rgba(22, 163, 74, 0.05);">
-                                <h3 class="h3" style="margin-top: 0; color: var(--sucesso);">Lucro</h3>
-                                <p class="p">O resultado positivo após subtrair todas as despesas do faturamento. É o
-                                    objetivo final e indica se o negócio é rentável.</p>
-                            </div> -->
-
-                            <!-- Margem Líquida -->
-                            <!-- <div
-                                style="padding: 16px; border-left: 4px solid var(--aviso); background: rgba(217, 119, 6, 0.05);">
-                                <h3 class="h3" style="margin-top: 0; color: var(--aviso);">Margem Líquida</h3>
-                                <p class="p">Percentual do faturamento que se converte em lucro. Quanto maior, melhor a
-                                    eficiência. Serve para comparar rentabilidade entre períodos.</p>
+                    <!-- =================== KPIS EXECUTIVOS & SAÚDE DO NEGÓCIO =================== -->
+                    <section aria-label="KPIs executivos e saúde" style="margin-bottom:20px;">
+                        <div class="kpi-grid">
+                            <div class="kpi-card" style="--kpi-color:#3b82f6;--kpi-bg:rgba(59,130,246,0.1);">
+                                <div class="kpi-card__icon"><i class="fa-solid fa-circle-dollar-to-slot"></i></div>
+                                <div class="kpi-card__label">Receita Bruta (Vendas)</div>
+                                <div class="kpi-card__valor" id="kpi-fat-valor">--</div>
+                                <div id="kpi-fat-var" class="kpi-card__variacao neutro">--</div>
+                                <div class="mini-progress" style="--progress-color:#3b82f6;"><div class="mini-progress__fill" id="kpi-fat-bar" style="width:0%"></div></div>
                             </div>
 
-                        </div>
-                    </section> --> 
-
-
-                    <!-- <section class="cartao"
-                        style="margin-top: 48px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05)); border-left: 4px solid var(--primaria);">
-
-                        <h2 class="h2">Insights e Recomendações</h2>
-
-                        <div style="margin-top: 16px;">
-
-                            <!-Crescimento -->
-                            <!-- <div
-                                style="background: var(--cartao); padding: 16px; border-radius: var(--raio); margin-bottom: 12px; border-left: 3px solid var(--sucesso);">
-                                <p class="p">
-                                    <strong>✓ Crescimento Sustentável:</strong> O faturamento cresceu 12.5% enquanto as
-                                    despesas aumentaram apenas 8.3%, resultando em ganho real de eficiência e expansão
-                                    do lucro.
-                                </p>
-                            </div> -->
-
-                            <!-- Margem -->
-                            <!-- <div
-                                style="background: var(--cartao); padding: 16px; border-radius: var(--raio); margin-bottom: 12px; border-left: 3px solid var(--sucesso);">
-                                <p class="p">
-                                    <strong>✓ Melhoria de Margem:</strong> A margem líquida aumentou em 2.6 pontos
-                                    percentuais, indicando maior controle operacional e melhor conversão de receita em
-                                    lucro.
-                                </p>
-                            </div> -->
-
-                            <!-- Tendência -->
-                            <!-- <div
-                                style="background: var(--cartao); padding: 16px; border-radius: var(--raio); margin-bottom: 12px; border-left: 3px solid var(--info);">
-                                <p class="p">
-                                    <strong>→ Tendência Positiva:</strong> O crescimento do lucro (15.2%) está acima do
-                                    crescimento da receita, mostrando escalabilidade e eficiência no modelo de negócio.
-                                </p>
-                            </div> -->
-
-                            <!-- Atenção -->
-                            <!-- <div
-                                style="background: var(--cartao); padding: 16px; border-radius: var(--raio); border-left: 3px solid var(--aviso);">
-                                <p class="p">
-                                    <strong>⚠ Ponto de Atenção:</strong> Apesar do crescimento controlado, o aumento
-                                    contínuo das despesas pode impactar a margem no longo prazo. Recomenda-se
-                                    monitoramento constante.
-                                </p>
+                            <div class="kpi-card" style="--kpi-color:#ef4444;--kpi-bg:rgba(239,68,68,0.1);">
+                                <div class="kpi-card__icon"><i class="fa-solid fa-receipt"></i></div>
+                                <div class="kpi-card__label">Custos &amp; Despesas</div>
+                                <div class="kpi-card__valor" id="kpi-desp-valor">--</div>
+                                <div id="kpi-desp-var" class="kpi-card__variacao neutro">--</div>
+                                <div class="mini-progress" style="--progress-color:#ef4444;"><div class="mini-progress__fill" id="kpi-desp-bar" style="width:0%"></div></div>
                             </div>
 
+                            <div class="kpi-card" style="--kpi-color:#10b981;--kpi-bg:rgba(16,185,129,0.1);">
+                                <div class="kpi-card__icon"><i class="fa-solid fa-sack-dollar"></i></div>
+                                <div class="kpi-card__label">Lucro Líquido Real</div>
+                                <div class="kpi-card__valor" id="kpi-luc-valor">--</div>
+                                <div id="kpi-luc-var" class="kpi-card__variacao neutro">--</div>
+                                <div class="mini-progress" style="--progress-color:#10b981;"><div class="mini-progress__fill" id="kpi-luc-bar" style="width:0%"></div></div>
+                            </div>
+
+                            <div class="kpi-card" style="--kpi-color:#f59e0b;--kpi-bg:rgba(245,158,11,0.1);">
+                                <div class="kpi-card__icon"><i class="fa-solid fa-percent"></i></div>
+                                <div class="kpi-card__label">Margem Líquida</div>
+                                <div class="kpi-card__valor" id="kpi-mg-valor">--</div>
+                                <div id="kpi-mg-var" class="kpi-card__variacao neutro">--</div>
+                                <div class="mini-progress" style="--progress-color:#f59e0b;"><div class="mini-progress__fill" id="kpi-mg-bar" style="width:0%"></div></div>
+                            </div>
+
+                            <!-- Card Dinâmico ME vs MEI -->
+                            <div class="kpi-card" id="kpi-card-especifico" style="--kpi-color:#8b5cf6;--kpi-bg:rgba(139,92,246,0.1);">
+                                <div class="kpi-card__icon" id="kpi-dinamico-icon"><i class="fa-solid fa-scale-balanced"></i></div>
+                                <div class="kpi-card__label" id="kpi-dinamico-label">Ponto de Equilíbrio</div>
+                                <div class="kpi-card__valor" id="kpi-dinamico-valor">--</div>
+                                <div id="kpi-dinamico-var" class="kpi-card__variacao neutro">--</div>
+                                <div class="mini-progress" style="--progress-color:#8b5cf6;"><div class="mini-progress__fill" id="kpi-dinamico-bar" style="width:0%"></div></div>
+                            </div>
                         </div>
-                    </section> -->
-                    <!-- Footer -->
+
+                        <!-- Card de Saúde Geral & Pilares -->
+                        <div class="cartao" style="display:flex;align-items:flex-start;gap:24px;flex-wrap:wrap;">
+                            <div class="saude-ring-wrapper">
+                                <div class="saude-ring">
+                                    <svg width="110" height="110" viewBox="0 0 110 110">
+                                        <circle cx="55" cy="55" r="46" fill="none" stroke="var(--borda)" stroke-width="9"/>
+                                        <circle id="saude-arc" cx="55" cy="55" r="46" fill="none"
+                                            stroke="#10b981" stroke-width="9" stroke-linecap="round"
+                                            stroke-dasharray="289" stroke-dashoffset="289"
+                                            style="transition:stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1),stroke 0.5s;"/>
+                                    </svg>
+                                    <div class="saude-ring-valor">
+                                        <span id="saude-score-num" style="color:var(--texto);">--</span>
+                                        <span style="font-size:0.6rem;color:var(--suave);font-weight:600;">/100</span>
+                                    </div>
+                                </div>
+                                <span class="saude-ring-label">Score de Saúde</span>
+                            </div>
+
+                            <div style="flex:1;min-width:220px;">
+                                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                                    <span id="saude-nivel-texto" style="font-size:1.05rem;font-weight:800;color:var(--texto);">Aguardando Análise</span>
+                                </div>
+                                <p id="saude-descricao" style="font-size:0.83rem;color:var(--suave);margin:0 0 14px;line-height:1.5;">
+                                    Execute a análise para visualizar o diagnóstico multifatorial de saúde contábil.
+                                </p>
+                                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;">
+                                    <div style="font-size:0.75rem;color:var(--suave);">
+                                        <div style="font-weight:800;color:var(--texto);" id="si-margem">--</div>
+                                        <div>Margem Líquida</div>
+                                    </div>
+                                    <div style="font-size:0.75rem;color:var(--suave);">
+                                        <div style="font-weight:800;color:var(--texto);" id="si-cresc">--</div>
+                                        <div>Crescimento Receita</div>
+                                    </div>
+                                    <div style="font-size:0.75rem;color:var(--suave);">
+                                        <div style="font-weight:800;color:var(--texto);" id="si-mc">--</div>
+                                        <div>Margem Contribuição</div>
+                                    </div>
+                                    <div style="font-size:0.75rem;color:var(--suave);">
+                                        <div style="font-weight:800;color:var(--texto);" id="si-cobertura">--</div>
+                                        <div>Cobertura de Fixos</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="border-left:1px solid var(--borda);padding-left:20px;min-width:180px;" id="projecao-box">
+                                <div style="font-size:0.72rem;font-weight:700;color:var(--suave);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">
+                                     Projeção Próx. Ciclo
+                                </div>
+                                <div style="font-size:1.25rem;font-weight:800;color:var(--texto);" id="proj-fat-val">--</div>
+                                <div style="font-size:0.75rem;color:var(--suave);margin-bottom:10px;">Receita estimada</div>
+                                <div style="font-size:1.15rem;font-weight:800;color:var(--sucesso);" id="proj-luc-val">--</div>
+                                <div style="font-size:0.75rem;color:var(--suave);">Lucro estimado</div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- =================== ABAS PRINCIPAIS =================== -->
+                    <div class="analise-tabs" role="tablist" aria-label="Módulos da Central de Análise">
+                        <button class="analise-tab-btn ativo" role="tab" aria-selected="true" onclick="mudarTab('contabil')" id="tab-btn-contabil">
+                            <i class="fa-solid fa-file-invoice-dollar"></i> Contábil &amp; DRE
+                        </button>
+                        <button class="analise-tab-btn" role="tab" aria-selected="false" onclick="mudarTab('desempenho')" id="tab-btn-desempenho">
+                            <i class="fa-solid fa-calendar-check"></i> Desempenho Mensal/Anual
+                        </button>
+                        <button class="analise-tab-btn" role="tab" aria-selected="false" onclick="mudarTab('operacional')" id="tab-btn-operacional">
+                            <i class="fa-solid fa-chart-pie"></i> Financeiro &amp; Operações
+                        </button>
+                        <button class="analise-tab-btn" role="tab" aria-selected="false" onclick="mudarTab('cenarios')" id="tab-btn-cenarios">
+                            <i class="fa-solid fa-compass-drafting"></i> Cenários &amp; Projeções
+                        </button>
+                        <button class="analise-tab-btn" role="tab" aria-selected="false" onclick="mudarTab('alertas')" id="tab-btn-alertas">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Alertas &amp; Riscos
+                            <span id="alertas-badge" style="background:#ef4444;color:#fff;border-radius:10px;padding:0 6px;font-size:0.65rem;display:none;">0</span>
+                        </button>
+                    </div>
+
+                    <!-- =========== ABA 1: CONTÁBIL & DRE (MEI vs ME) =========== -->
+                    <div class="analise-painel ativo" id="painel-contabil">
+
+                        <!-- SEÇÃO MEI (Exibida dinamicamente se o perfil for MEI) -->
+                        <div id="secao-modulo-mei" style="display:none;">
+                            <section class="mei-teto-card" aria-label="Monitoramento Fiscal do MEI">
+                                <div class="section-header" style="margin-bottom:8px;">
+                                    <h2 style="color:#d97706;"> Termômetro de Limite Legal do MEI (Teto R$ 81.000,00)</h2>
+                                    <span id="mei-status-badge" class="badge" style="background:#d97706;color:#fff;font-weight:700;">Seguro</span>
+                                </div>
+                                <p style="font-size:0.83rem;color:var(--suave);margin:0 0 10px;" id="mei-status-descricao">
+                                    Acompanhamento do teto anual do SIMEI para evitar desenquadramento fiscal involuntário.
+                                </p>
+
+                                <div class="mei-teto-barra-bg">
+                                    <div class="mei-teto-barra-fill" id="mei-barra-teto" style="width:0%;"></div>
+                                </div>
+
+                                <div style="display:flex;justify-content:space-between;font-size:0.75rem;font-weight:700;color:var(--suave);margin-bottom:16px;">
+                                    <span>R$ 0,00 (0%)</span>
+                                    <span id="mei-teto-consumido-texto">R$ 0,00 consumido</span>
+                                    <span>Teto: R$ 81.000,00</span>
+                                </div>
+
+                                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
+                                    <div class="card-indicador">
+                                        <div class="card-indicador__nome">Faturamento no Ano</div>
+                                        <div class="card-indicador__valor" id="mei-fat-ano">--</div>
+                                        <div class="card-indicador__desc">Acumulado do exercício</div>
+                                    </div>
+                                    <div class="card-indicador">
+                                        <div class="card-indicador__nome">Saldo Restante</div>
+                                        <div class="card-indicador__valor" id="mei-saldo-teto" style="color:var(--sucesso);">--</div>
+                                        <div class="card-indicador__desc">Margem segura até R$ 81k</div>
+                                    </div>
+                                    <div class="card-indicador">
+                                        <div class="card-indicador__nome">Média Mensal Real</div>
+                                        <div class="card-indicador__valor" id="mei-media-mes">--</div>
+                                        <div class="card-indicador__desc">Limite proporcional: R$ 6.750/mês</div>
+                                    </div>
+                                    <div class="card-indicador">
+                                        <div class="card-indicador__nome">Projeção até Dezembro</div>
+                                        <div class="card-indicador__valor" id="mei-proj-ano">--</div>
+                                        <div class="card-indicador__desc">Estimativa de fechamento</div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <!-- Gestão de Caixa & Pró-Labore do MEI -->
+                            <div class="dois-paineis" style="margin-bottom:20px;">
+                                <section class="cartao" aria-label="Separação PF vs PJ do MEI">
+                                    <div class="section-header">
+                                        <h2> Pró-Labore &amp; Separação PF/PJ</h2>
+                                    </div>
+                                    <p style="font-size:0.8rem;color:var(--suave);line-height:1.5;margin-bottom:14px;">
+                                        O lucro do MEI não deve ser gasto indiscriminadamente na conta física. Defina retiradas programadas para manter o negócio solvente.
+                                    </p>
+                                    <div style="display:flex;flex-direction:column;gap:12px;">
+                                        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(59,130,246,0.05);border-radius:var(--raio);">
+                                            <span style="font-size:0.83rem;font-weight:600;">Retirada Pró-Labore Recomendada:</span>
+                                            <strong style="font-size:1.1rem;color:var(--primaria);" id="mei-prolabore-val">--</strong>
+                                        </div>
+                                        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(16,185,129,0.05);border-radius:var(--raio);">
+                                            <span style="font-size:0.83rem;font-weight:600;">Reserva de Emergência PJ (Meta):</span>
+                                            <strong style="font-size:1.1rem;color:var(--sucesso);" id="mei-reserva-val">--</strong>
+                                        </div>
+                                        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(245,158,11,0.05);border-radius:var(--raio);">
+                                            <span style="font-size:0.83rem;font-weight:600;">Próximo Vencimento Guia DAS:</span>
+                                            <strong style="font-size:0.95rem;color:#d97706;" id="mei-vencimento-das">Todo dia 20</strong>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section class="cartao" aria-label="Checklist de Conformidade MEI">
+                                    <div class="section-header">
+                                        <h2>Checklist de Conformidade Fiscal</h2>
+                                    </div>
+                                    <ul style="list-style:none;padding:0;margin:0;font-size:0.82rem;color:var(--texto);display:flex;flex-direction:column;gap:10px;">
+                                        <li style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--fundo);border-radius:var(--raio);border:1px solid var(--borda);">
+                                            <i class="fa-solid fa-circle-check" style="color:#10b981;"></i>
+                                            <span>Emissão de notas fiscais para pessoas jurídicas (PJs)</span>
+                                        </li>
+                                        <li style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--fundo);border-radius:var(--raio);border:1px solid var(--borda);">
+                                            <i class="fa-solid fa-circle-check" style="color:#10b981;"></i>
+                                            <span>Preenchimento do Relatório Mensal das Receitas Brutas</span>
+                                        </li>
+                                        <li style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--fundo);border-radius:var(--raio);border:1px solid var(--borda);">
+                                            <i class="fa-solid fa-circle-check" style="color:#10b981;"></i>
+                                            <span>Declaração Anual Simplificada (DASN-SIMEI) até maio</span>
+                                        </li>
+                                        <li style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--fundo);border-radius:var(--raio);border:1px solid var(--borda);">
+                                            <i class="fa-solid fa-circle-check" style="color:#10b981;"></i>
+                                            <span>Pagamento da contribuição mensal DAS (INSS + ICMS/ISS)</span>
+                                        </li>
+                                    </ul>
+                                </section>
+                            </div>
+                        </div>
+
+                        <!-- SEÇÃO ME (DRE Gerencial Completa Contábil) -->
+                        <div id="secao-modulo-me">
+                            <section class="cartao" style="margin-bottom:20px;">
+                                <div class="section-header">
+                                    <h2> Indicadores Contábeis &amp; de Eficiência (Controladoria)</h2>
+                                </div>
+                                <div class="indicadores-contabeis-grid">
+                                    <div class="card-indicador">
+                                        <div class="card-indicador__nome">Margem de Contribuição (MC)</div>
+                                        <div class="card-indicador__valor" id="ind-mc-valor">--</div>
+                                        <div class="card-indicador__desc" id="ind-mc-pct">Índice IMC: --% da receita</div>
+                                    </div>
+                                    <div class="card-indicador">
+                                        <div class="card-indicador__nome">Ponto de Equilíbrio (Break-Even)</div>
+                                        <div class="card-indicador__valor" id="ind-pe-valor">--</div>
+                                        <div class="card-indicador__desc" id="ind-pe-status">Faturamento mínimo para zerar custos</div>
+                                    </div>
+                                    <div class="card-indicador">
+                                        <div class="card-indicador__nome">Margem de Segurança Operacional</div>
+                                        <div class="card-indicador__valor" id="ind-mseg-valor">--</div>
+                                        <div class="card-indicador__desc">Folga de vendas acima do Break-Even</div>
+                                    </div>
+                                    <div class="card-indicador">
+                                        <div class="card-indicador__nome">EBITDA / LAJIDA Gerencial</div>
+                                        <div class="card-indicador__valor" id="ind-ebitda-valor">--</div>
+                                        <div class="card-indicador__desc" id="ind-ebitda-pct">Margem EBITDA: --%</div>
+                                    </div>
+                                    <div class="card-indicador">
+                                        <div class="card-indicador__nome">Cobertura de Custos Fixos</div>
+                                        <div class="card-indicador__valor" id="ind-cob-valor">--</div>
+                                        <div class="card-indicador__desc">Vezes que a margem cobre os fixos</div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <!-- DRE Gerencial Estruturada -->
+                            <section class="cartao" style="margin-bottom:20px;">
+                                <div class="section-header">
+                                    <h2> Demonstração do Resultado do Exercício (DRE Gerencial)</h2>
+                                    <span class="badge" style="background:rgba(59,130,246,0.1);color:var(--primaria);font-weight:700;">Visão Contábil Gerencial</span>
+                                </div>
+                                <div style="overflow-x:auto;">
+                                    <table class="dre-container">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:50%;">Conta Contábil / Estrutura de Resultado</th>
+                                                <th style="text-align:right;width:30%;">Valor no Período</th>
+                                                <th style="text-align:right;width:20%;">Análise Vertical (%)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="dre-tabela-corpo">
+                                            <tr><td colspan="3" style="text-align:center;color:var(--suave);padding:24px;">Aplique os filtros para gerar a DRE Gerencial.</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+
+                    <!-- =========== ABA 2: DESEMPENHO MENSAL / ANUAL =========== -->
+                    <div class="analise-painel" id="painel-desempenho">
+                        <section class="cartao" style="margin-bottom:20px;">
+                            <div class="section-header">
+                                <h2> Matriz Mensal de Desempenho &amp; Sazonalidade</h2>
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <span style="font-size:0.75rem;font-weight:600;color:var(--suave);">Exercício:</span>
+                                    <select class="entrada" id="ano-seletor" style="width:auto;padding:5px 12px;font-size:0.82rem;" onchange="carregarVisaoAnual()"></select>
+                                </div>
+                            </div>
+
+                            <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px;font-size:0.8rem;color:var(--suave);">
+                                <div><strong style="color:var(--texto);" id="stat-media-fat">--</strong> Média Mensal de Vendas</div>
+                                <div><strong style="color:var(--texto);" id="stat-media-luc">--</strong> Média Mensal de Lucro</div>
+                                <div><strong style="color:var(--texto);" id="stat-volatilidade">--</strong> Estabilidade de Receita</div>
+                            </div>
+
+                            <div id="anual-mes-grid" class="anual-mes-grid">
+                                <div class="empty-state" style="grid-column:1/-1;">
+                                    <i class="fa-solid fa-calendar-check"></i>
+                                    <p>Aplique os filtros para visualizar a matriz de meses.</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="cartao" style="margin-bottom:20px;">
+                            <div class="section-header">
+                                <h2> Comparativo Mensal de Receitas vs Despesas</h2>
+                            </div>
+                            <div id="grafico-anual" class="grafico-container">
+                                <div class="empty-state">
+                                    <i class="fa-solid fa-chart-column"></i>
+                                    <p>O gráfico comparativo mensal aparecerá após carregar os dados.</p>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- =========== ABA 3: FINANCEIRO & OPERACIONAL =========== -->
+                    <div class="analise-painel" id="painel-operacional">
+                        <section class="cartao" style="margin-bottom:20px;">
+                            <div class="section-header">
+                                <h2>     Evolução Financeira Histórica</h2>
+                                <div style="display:flex;gap:6px;">
+                                    <button class="filtro-rapido-btn ativo" id="tipo-bar" onclick="alternarTipoGrafico('bar')">Barras</button>
+                                    <button class="filtro-rapido-btn" id="tipo-line" onclick="alternarTipoGrafico('line')">Linhas</button>
+                                    <button class="filtro-rapido-btn" id="tipo-area" onclick="alternarTipoGrafico('area')">Área</button>
+                                </div>
+                            </div>
+                            <div id="grafico-principal" class="grafico-container">
+                                <div class="empty-state">
+                                    <i class="fa-solid fa-chart-area"></i>
+                                    <p>Aplique os filtros para visualizar a evolução financeira do período.</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <div class="dois-paineis" style="margin-bottom:20px;">
+                            <section class="cartao" aria-label="Composição dos Custos">
+                                <div class="section-header">
+                                    <h2>     Composição dos Custos &amp; Gastos</h2>
+                                </div>
+                                <div id="grafico-donut" class="grafico-container" style="min-height:260px;">
+                                    <div class="empty-state">
+                                        <i class="fa-solid fa-chart-pie"></i>
+                                        <p>Aguardando dados para exibir a distribuição de custos.</p>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="cartao" aria-label="Comparativo de Períodos">
+                                <div class="section-header">
+                                    <h2>     Comparação vs Período Anterior</h2>
+                                </div>
+                                <div style="overflow-x:auto;">
+                                    <table class="dre-container" style="font-size:0.83rem;">
+                                        <thead>
+                                            <tr>
+                                                <th>Métrica</th>
+                                                <th style="text-align:right;">Período Atual</th>
+                                                <th style="text-align:right;">Anterior</th>
+                                                <th style="text-align:right;">Variação</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tabela-comparacao-body">
+                                            <tr><td colspan="4" style="text-align:center;color:var(--suave);padding:24px;">Aplique os filtros para comparar os períodos.</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+
+                    <!-- =========== ABA 4: CENÁRIOS & PROJEÇÕES (MEI vs ME) =========== -->
+                    <div class="analise-painel" id="painel-cenarios">
+
+                        <!-- SEÇÃO MEI: Planejador de Metas & Salário Líquido (Simulador Prático) -->
+                        <div id="cenarios-modulo-mei" style="display:none;">
+                            <!-- Grade do Simulador: Controles à esquerda, Resultados à direita -->
+                            <div class="dois-paineis" style="margin-bottom:20px;">
+                                <!-- Painel de Controles da Simulação -->
+                                <section class="cartao" aria-label="Ajuste de Parâmetros do Simulador">
+                                    <div class="section-header" style="margin-bottom:12px;">
+                                        <h2 style="font-size:0.95rem;">  Definir Parâmetros da Meta</h2>
+                                        <button type="button" class="filtro-rapido-btn" id="btn-reset-simulador-mei" onclick="resetarSimuladorMEI()" style="font-size:0.7rem;padding:3px 8px;">
+                                            <i class="fa-solid fa-rotate-left"></i> Restaurar Dados Reais
+                                        </button>
+                                    </div>
+
+                                    <div style="display:flex;flex-direction:column;gap:14px;">
+                                        <!-- Meta de Faturamento Mensal -->
+                                        <div>
+                                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                                                <label for="sim-mei-faturamento" style="font-size:0.8rem;font-weight:700;color:var(--texto);">Meta de Faturamento Mensal:</label>
+                                                <strong id="sim-mei-fat-display" style="font-size:0.95rem;color:#d97706;">R$ 5.000,00</strong>
+                                            </div>
+                                            <input type="range" id="sim-mei-faturamento" min="1000" max="12000" step="100" value="5000"
+                                                style="width:100%;accent-color:#d97706;cursor:pointer;" oninput="atualizarSimuladorMEI()">
+                                            <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+                                                <button type="button" class="filtro-rapido-btn" onclick="definirMetaRapidaMEI(3000)" style="font-size:0.68rem;padding:2px 8px;">R$ 3k</button>
+                                                <button type="button" class="filtro-rapido-btn" onclick="definirMetaRapidaMEI(5000)" style="font-size:0.68rem;padding:2px 8px;">R$ 5k</button>
+                                                <button type="button" class="filtro-rapido-btn" onclick="definirMetaRapidaMEI(6750)" style="font-size:0.68rem;padding:2px 8px;" title="Média segura do teto anual de R$ 81.000">R$ 6.750 (Teto)</button>
+                                                <button type="button" class="filtro-rapido-btn" onclick="definirMetaRapidaMEI(8000)" style="font-size:0.68rem;padding:2px 8px;">R$ 8k</button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Dias Trabalhados no Mês -->
+                                        <div>
+                                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                                                <label for="sim-mei-dias" style="font-size:0.8rem;font-weight:700;color:var(--texto);">Dias de Trabalho no Mês:</label>
+                                                <span id="sim-mei-dias-display" style="font-size:0.8rem;font-weight:700;color:var(--texto);">22 dias (Seg-Sex)</span>
+                                            </div>
+                                            <select class="entrada" id="sim-mei-dias" style="width:100%;padding:6px 10px;font-size:0.82rem;" onchange="atualizarSimuladorMEI()">
+                                                <option value="20">20 dias (Segunda a Sexta)</option>
+                                                <option value="22" selected>22 dias (Média útil padrão)</option>
+                                                <option value="26">26 dias (Segunda a Sábado)</option>
+                                                <option value="30">30 dias (Operação diária)</option>
+                                            </select>
+                                        </div>
+
+                                        <!-- Custo de Produtos / Mercadorias / Insumos (%) -->
+                                        <div>
+                                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                                                <label for="sim-mei-custo-pct" style="font-size:0.8rem;font-weight:700;color:var(--texto);">Custo de Mercadoria / Insumos (%):</label>
+                                                <strong id="sim-mei-custo-display" style="font-size:0.85rem;color:var(--texto);">30%</strong>
+                                            </div>
+                                            <input type="range" id="sim-mei-custo-pct" min="0" max="80" step="5" value="30"
+                                                style="width:100%;accent-color:#3b82f6;cursor:pointer;" oninput="atualizarSimuladorMEI()">
+                                            <span style="font-size:0.7rem;color:var(--suave);">Serviços sem materiais: ~0%-15%. Comércio/Produtos: 30%-60%.</span>
+                                        </div>
+
+                                        <!-- Despesas Fixas + Boleto DAS MEI -->
+                                        <div>
+                                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                                                <label for="sim-mei-fixos" style="font-size:0.8rem;font-weight:700;color:var(--texto);">Contas Fixas + DAS MEI (R$):</label>
+                                                <strong id="sim-mei-fixos-display" style="font-size:0.85rem;color:var(--texto);">R$ 575,00</strong>
+                                            </div>
+                                            <input type="number" id="sim-mei-fixos" class="entrada" style="width:100%;padding:6px 10px;font-size:0.82rem;"
+                                                value="575" min="75" step="25" oninput="atualizarSimuladorMEI()">
+                                            <span style="font-size:0.7rem;color:var(--suave);">Internet, telefone, ferramentas, aluguel e o boleto DAS (~R$ 75).</span>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <!-- Painel de Resultados Calculados -->
+                                <section class="cartao" aria-label="Resultado da Simulação do MEI">
+                                    <div class="section-header" style="margin-bottom:12px;">
+                                        <h2 style="font-size:0.95rem;">  O que Acontece na Prática</h2>
+                                        <span class="badge" id="sim-mei-status-teto-badge" style="background:rgba(16,185,129,0.1);color:#10b981;font-weight:700;">Seguro no MEI</span>
+                                    </div>
+
+                                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+                                        <!-- Card 1: Meta Diária de Vendas -->
+                                        <div style="padding:12px;background:rgba(217,119,6,0.06);border-radius:var(--raio);border:1px solid rgba(217,119,6,0.2);">
+                                            <div style="font-size:0.72rem;font-weight:700;color:#d97706;text-transform:uppercase;">Meta Diária de Vendas</div>
+                                            <div id="sim-mei-res-diario" style="font-size:1.25rem;font-weight:800;color:#d97706;margin:4px 0 2px;">R$ 0,00</div>
+                                            <div style="font-size:0.7rem;color:var(--suave);" id="sim-mei-res-diario-sub">por dia de trabalho</div>
+                                        </div>
+
+                                        <!-- Card 2: Salário Líquido no Bolso -->
+                                        <div style="padding:12px;background:rgba(16,185,129,0.06);border-radius:var(--raio);border:1px solid rgba(16,185,129,0.2);">
+                                            <div style="font-size:0.72rem;font-weight:700;color:#10b981;text-transform:uppercase;">Sobra Livre (Seu Bolso)</div>
+                                            <div id="sim-mei-res-salario" style="font-size:1.25rem;font-weight:800;color:#10b981;margin:4px 0 2px;">R$ 0,00</div>
+                                            <div style="font-size:0.7rem;color:var(--suave);" id="sim-mei-res-salario-sub">Pró-labore líquido estimado</div>
+                                        </div>
+
+                                        <!-- Card 3: Reserva Sugerida para Caixa -->
+                                        <div style="padding:12px;background:rgba(59,130,246,0.06);border-radius:var(--raio);border:1px solid rgba(59,130,246,0.2);">
+                                            <div style="font-size:0.72rem;font-weight:700;color:var(--primaria);text-transform:uppercase;">Reserva do Caixa PJ (10%)</div>
+                                            <div id="sim-mei-res-reserva" style="font-size:1.1rem;font-weight:800;color:var(--primaria);margin:4px 0 2px;">R$ 0,00</div>
+                                            <div style="font-size:0.7rem;color:var(--suave);">segurança para o negócio</div>
+                                        </div>
+
+                                        <!-- Card 4: Faturamento Anual Projetado -->
+                                        <div style="padding:12px;background:var(--fundo);border-radius:var(--raio);border:1px solid var(--borda);">
+                                            <div style="font-size:0.72rem;font-weight:700;color:var(--suave);text-transform:uppercase;">Faturamento em 12 Meses</div>
+                                            <div id="sim-mei-res-anual" style="font-size:1.1rem;font-weight:800;color:var(--texto);margin:4px 0 2px;">R$ 0,00</div>
+                                            <div style="font-size:0.7rem;color:var(--suave);" id="sim-mei-res-teto-desc">consumo do teto de 81k</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Diagnóstico Direto e Amigável -->
+                                    <div id="sim-mei-diagnostico-box" style="padding:10px 12px;border-radius:var(--raio);background:rgba(16,185,129,0.06);border-left:3px solid #10b981;font-size:0.78rem;line-height:1.45;color:var(--texto);">
+                                        Carregando simulação...
+                                    </div>
+                                </section>
+                            </div>
+
+                            <!-- Comparativo Visual & Destino do Faturamento -->
+                            <div class="dois-paineis" style="margin-bottom:20px;">
+                                <section class="cartao" aria-label="Comparativo Visual de Metas">
+                                    <div class="section-header">
+                                        <h2>Comparativo: Atual vs Meta vs Teto MEI</h2>
+                                    </div>
+                                    <div id="grafico-simulador-mei" class="grafico-container" style="min-height:260px;"></div>
+                                </section>
+
+                                <section class="cartao" aria-label="Destino de Cada Real da Meta">
+                                    <div class="section-header">
+                                        <h2> O Destino do seu Dinheiro na Meta</h2>
+                                    </div>
+                                    <div id="grafico-destino-mei" class="grafico-container" style="min-height:260px;"></div>
+                                </section>
+                            </div>
+
+                            <!-- 3 Dicas Práticas para o MEI Alcançar a Meta -->
+                            <section class="cartao" style="margin-bottom:20px;">
+                                <div class="section-header">
+                                    <h2>     3 Ações Simples para Bater sua Meta sem Stress</h2>
+                                </div>
+                                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;">
+                                    <div style="padding:14px;background:var(--fundo);border:1px solid var(--borda);border-radius:var(--raio);">
+                                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                                            <i class="fa-solid fa-calendar-day" style="color:#d97706;font-size:1rem;"></i>
+                                            <strong style="font-size:0.85rem;color:var(--texto);">1. Foque na Meta do Dia</strong>
+                                        </div>
+                                        <p style="font-size:0.77rem;color:var(--suave);margin:0;line-height:1.45;">
+                                            Em vez de se preocupar com o montante do mês, acompanhe apenas se bateu sua meta diária hoje. Se fechar o dia acima da meta, acumula folga para os dias mais lentos.
+                                        </p>
+                                    </div>
+                                    <div style="padding:14px;background:var(--fundo);border:1px solid var(--borda);border-radius:var(--raio);">
+                                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                                            <i class="fa-solid fa-tags" style="color:#10b981;font-size:1rem;"></i>
+                                            <strong style="font-size:0.85rem;color:var(--texto);">2. Aumente o Ticket Médio</strong>
+                                        </div>
+                                        <p style="font-size:0.77rem;color:var(--suave);margin:0;line-height:1.45;">
+                                            Tente vender um produto complementar ou um serviço combinado para quem já compra de você. Subir um pouco o valor médio por venda bate a meta com menos esforço.
+                                        </p>
+                                    </div>
+                                    <div style="padding:14px;background:var(--fundo);border:1px solid var(--borda);border-radius:var(--raio);">
+                                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                                            <i class="fa-solid fa-building-columns" style="color:var(--primaria);font-size:1rem;"></i>
+                                            <strong style="font-size:0.85rem;color:var(--texto);">3. Salário Fixo na Conta PF</strong>
+                                        </div>
+                                        <p style="font-size:0.77rem;color:var(--suave);margin:0;line-height:1.45;">
+                                            Transfira sua sobra líquida como Pró-labore em 1 ou 2 datas fixas no mês. Não pague contas pessoais no cartão da empresa para nunca misturar o dinheiro.
+                                        </p>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        <!-- SEÇÃO ME (Cenários Estatísticos & Regressão Linear) -->
+                        <div id="cenarios-modulo-me">
+                            <div class="cartao" style="margin-bottom:18px;background:rgba(59,130,246,0.04);border-color:rgba(59,130,246,0.25);">
+                                <div style="display:flex;gap:12px;align-items:flex-start;">
+                                    <i class="fa-solid fa-compass-drafting" style="color:var(--primaria);font-size:1.2rem;margin-top:2px;"></i>
+                                    <div style="font-size:0.83rem;color:var(--texto);line-height:1.5;">
+                                        Os cenários futuros são calculados por <strong>regressão linear estatística</strong> baseada na inclinação real de vendas e despesas. Permitem simulações para tomada de decisão preventiva.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <section class="cartao" style="margin-bottom:20px;">
+                                <div class="section-header">
+                                    <h2>Simulação de Cenários para o Próximo Período</h2>
+                                </div>
+                                <div class="cenario-cards" id="cenario-cards-container">
+                                    <div class="empty-state" style="grid-column:1/-1;">
+                                        <i class="fa-solid fa-compass-drafting"></i>
+                                        <p>Aplique os filtros para calcular os cenários preditivos.</p>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="cartao" style="margin-bottom:20px;">
+                                <div class="section-header">
+                                    <h2> Projeção Visual dos Cenários</h2>
+                                </div>
+                                <div id="grafico-cenarios" class="grafico-container">
+                                    <div class="empty-state">
+                                        <i class="fa-solid fa-chart-line"></i>
+                                        <p>Os cenários projetados serão exibidos graficamente após a análise.</p>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+
+                    <!-- =========== ABA 5: ALERTAS & RISCOS =========== -->
+                    <div class="analise-painel" id="painel-alertas">
+                        <section class="cartao" style="margin-bottom:20px;">
+                            <div class="section-header">
+                                <h2>     Matriz de Alertas &amp; Vulnerabilidades Contábeis</h2>
+                                <span id="alertas-count-text" style="font-size:0.75rem;color:var(--suave);">0 alertas detectados</span>
+                            </div>
+                            <div id="alertas-lista">
+                                <div class="empty-state">
+                                    <i class="fa-solid fa-bell-slash"></i>
+                                    <p>Nenhum alerta crítico ativo. Execute a análise para monitorar os dados.</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="cartao" style="margin-bottom:20px;">
+                            <div class="section-header">
+                                <h2>     Decomposição dos Pilares do Score de Saúde</h2>
+                            </div>
+                            <div id="score-detalhe-lista">
+                                <div class="empty-state">
+                                    <i class="fa-solid fa-star-half-stroke"></i>
+                                    <p>Aplique os filtros para visualizar a auditoria pontual por pilar contábil.</p>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <div style="height:20px;"></div>
                     {% include 'partials/footer.html' %}
+                </div>
             </main>
         </div>
     </div>
@@ -552,26 +1024,27 @@
 </div>
 
 <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-    <script>
-        function abrirSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarOverlay').classList.add('active'); }
-        function fecharSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('active'); }
-        window.analise_selecionada = null;
-        {% if session.get('analise_selecionada') %}
-        window.analise_selecionada = {
-            periodo_inicio: '{{ session.analise_selecionada.periodo_inicio }}',
-            periodo_fim: '{{ session.analise_selecionada.periodo_fim }}'
-        };
-        {% endif %}
-    </script>
-    <script src="{{ url_for('static', filename='js/ia_analise_modal.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/home.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/analise.js') }}"></script>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<script>
+    function abrirSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarOverlay').classList.add('active'); }
+    function fecharSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('active'); }
+    window.analise_selecionada = null;
+    {% if session.get('analise_selecionada') %}
+    window.analise_selecionada = {
+        periodo_inicio: '{{ session.analise_selecionada.periodo_inicio }}',
+        periodo_fim: '{{ session.analise_selecionada.periodo_fim }}',
+        tabela_id: '{{ session.analise_selecionada.tabela_id or "todas" }}'
+    };
+    {% endif %}
+    window.USUARIO_PERFIL = '{{ session.get("usuario_perfil", "ME") }}';
+</script>
+<script src="{{ url_for('static', filename='js/ia_analise_modal.js') }}"></script>
+<script src="{{ url_for('static', filename='js/home.js') }}"></script>
+<script src="{{ url_for('static', filename='js/analise_central.js') }}"></script>
 
-    <!-- MODAL DE ANÁLISE COMPLETA COM IA -->
-    {% with page_id='analises' %}
-        {% include 'partials/modal_analise_ia.html' %}
-    {% endwith %}
+{% with page_id='analises' %}
+    {% include 'partials/modal_analise_ia.html' %}
+{% endwith %}
 </body>
 
 </html>
