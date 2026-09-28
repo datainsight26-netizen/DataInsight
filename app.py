@@ -56,7 +56,12 @@ from backend.dados.tabelas import (
 from backend.dados.quality import api_analisar_dados, api_limpar_dados
 
 # Importação analise
-from backend.analise.analise import analise_por_periodo, obter_ultimo_periodo
+from backend.analise.analise import (
+    analise_por_periodo,
+    obter_ultimo_periodo,
+    obter_limites_datas_analise,
+    salvar_ultimo_periodo
+)
 from backend.analise.analise_estrategica import obter_analise_estrategica
 
 # Importação relatorio
@@ -156,25 +161,12 @@ def inject_user_perfil():
     }
 
 # =================== EMAIL ===================
-print("EMAIL_USER:", os.getenv("EMAIL_USER"))
-print("EMAIL_PASS carregado:", bool(os.getenv("EMAIL_PASS")))
-print("MAIL_SERVER:", os.getenv("MAIL_SERVER", "smtp.gmail.com"))
-print("MAIL_PORT:", os.getenv("MAIL_PORT", 587))
 app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
 app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
-
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USE_SSL'] = False
-
 app.config['MAIL_USERNAME'] = os.getenv("EMAIL_USER")
 app.config['MAIL_PASSWORD'] = os.getenv("EMAIL_PASS")
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv("EMAIL_USER")
-
-app.config['MAIL_MAX_EMAILS'] = 5
-app.config['MAIL_SUPPRESS_SEND'] = False
-
-mail = Mail(app)
-app.mail = mail
 
 # Configurações adicionais para Gmail
 app.config['MAIL_MAX_EMAILS'] = 5
@@ -209,14 +201,18 @@ def login_required(f):
         # Verificação do status da assinatura no banco de dados
         user_id = session.get('usuario_id')
         user = None
-        if user_id:
-            try:
-                from bson import ObjectId
-                user = usuario.find_one({'_id': ObjectId(user_id)})
-            except Exception:
+        try:
+            if user_id:
+                try:
+                    from bson import ObjectId
+                    user = usuario.find_one({'_id': ObjectId(user_id)})
+                except Exception:
+                    user = usuario.find_one({'email': session.get('usuario_email')}) if session.get('usuario_email') else None
+            elif session.get('usuario_email'):
                 user = usuario.find_one({'email': session.get('usuario_email')})
-        elif session.get('usuario_email'):
-            user = usuario.find_one({'email': session.get('usuario_email')})
+        except Exception as err_db:
+            print(f"[Aviso DB login_required]: {err_db}")
+            user = None
 
         if user:
             # Sincroniza sempre o tipo_perfil na sessão
@@ -488,6 +484,28 @@ def pagina_home():
 @app.route("/analises")
 @login_required
 def pagina_analise():
+    user = session.get("usuario_id")
+    if user and "analise_selecionada" not in session:
+        try:
+            doc = dados_colecao.find_one({"usuario_id": user}, sort=[("atualizado_em", -1), ("criado_em", -1)])
+            if doc and "ultimo_periodo" in doc:
+                up = doc["ultimo_periodo"]
+                session["analise_selecionada"] = {
+                    "periodo_inicio": up.get("inicio"),
+                    "periodo_fim": up.get("fim"),
+                    "tabela_id": up.get("tabela_id", "todas")
+                }
+            elif ObjectId.is_valid(user):
+                u_doc = usuarios_colecao.find_one({"_id": ObjectId(user)})
+                if u_doc and "ultimo_periodo" in u_doc:
+                    up = u_doc["ultimo_periodo"]
+                    session["analise_selecionada"] = {
+                        "periodo_inicio": up.get("inicio"),
+                        "periodo_fim": up.get("fim"),
+                        "tabela_id": up.get("tabela_id", "todas")
+                    }
+        except Exception:
+            pass
     return render_template("analises.html")
 
 @app.route("/planejamento-financeiro")
@@ -773,7 +791,13 @@ def rota_alternar_perfil():
 @login_required
 def get_controles_essenciais():
     """Retorna faturamento acumulado, termômetro MEI e equação de caixa"""
-    return obter_dados_controles_essenciais()
+    try:
+        return obter_dados_controles_essenciais()
+    except Exception as err:
+        import traceback
+        print(f"[Erro /api/controles-essenciais]: {err}")
+        traceback.print_exc()
+        return jsonify({"sucesso": False, "mensagem": f"Erro interno ao processar controles essenciais: {str(err)}"}), 500
 
 
 @app.route("/api/controles-essenciais/lancamento", methods=["POST"])
@@ -948,10 +972,27 @@ def api_analise():
     return analise_por_periodo()
 
 
-@app.route('/api/ultimo-periodo', methods=['GET'])
+@app.route('/api/ultimo-periodo', methods=['GET', 'POST'])
 @login_required
 def ultimo_periodo():
+    if request.method == 'POST':
+        user = session.get('usuario_id')
+        dados = request.get_json() or {}
+        inicio = dados.get('inicio') or dados.get('periodo_inicio')
+        fim = dados.get('fim') or dados.get('periodo_fim')
+        tabela_id = dados.get('tabela_id', 'todas')
+        if user and inicio and fim:
+            salvar_ultimo_periodo(user, inicio, fim, tabela_id)
+            return jsonify({'sucesso': True}), 200
+        return jsonify({'mensagem': 'Dados incompletos'}), 400
     return obter_ultimo_periodo()
+
+
+@app.route('/api/analise/limites-datas', methods=['GET'])
+@login_required
+def api_analise_limites_datas():
+    """Retorna as datas reais mínimas e máximas dos dados para a tabela/escopo selecionado"""
+    return obter_limites_datas_analise()
 
 
 @app.route('/api/analise-estrategica', methods=['GET'])
@@ -1085,14 +1126,18 @@ def api_exportar_documento():
         metadados = dados.get("metadados") or {}
         usuario_id = session.get("usuario_id")
 
-        if dados.get("conversa_completa") and sessao_id and usuario_id:
+        if dados.get("conversa_completa"):
             from backend.chatbot.document_generator import compilar_conversa_para_documento
-            compilado = compilar_conversa_para_documento(sessao_id, usuario_id)
-            conteudo_html = compilado["conteudo_html"]
+            compilado = compilar_conversa_para_documento(sessao_id or "", usuario_id or "")
+            if compilado.get("conteudo_html"):
+                conteudo_html = compilado["conteudo_html"]
             if not dados.get("titulo"):
-                titulo = compilado["titulo"]
+                titulo = compilado.get("titulo", titulo)
             if not metadados and compilado.get("metadados"):
                 metadados = compilado["metadados"]
+
+        if not conteudo_html or not str(conteudo_html).strip():
+            conteudo_html = "<p>Relatório de Análise DataInsight Copiloto IA</p>"
 
         from backend.chatbot.document_generator import gerar_documento_docx, gerar_documento_xlsx, gerar_documento_pdf
 
@@ -1557,14 +1602,71 @@ Analise a volumetria e integridade da base contábil/financeira do cliente:
         elif pagina == "analises":
             data_inicio = contexto.get("data_inicio", "Início")
             data_fim = contexto.get("data_fim", "Fim")
-            metricas_resumo = contexto.get("metricas_resumo", [])
-            resumo_str = " | ".join(metricas_resumo) if metricas_resumo else "Vendas, custos operacionais, margem bruta e ticket médio"
+            fat_val = contexto.get("faturamento", {}).get("valor", contexto.get("faturamento", "R$ 0,00"))
+            fat_var = contexto.get("faturamento", {}).get("variacao", "0.0%")
+            luc_val = contexto.get("lucro", {}).get("valor", contexto.get("lucro", "R$ 0,00"))
+            luc_var = contexto.get("lucro", {}).get("variacao", "0.0%")
+            desp_val = contexto.get("despesa", {}).get("valor", contexto.get("despesas", "R$ 0,00"))
+            mg_val = contexto.get("margem", {}).get("valor", contexto.get("margem", "0.0%"))
+            contabil = contexto.get("contabil", {})
+            mei_info = contexto.get("mei", {})
 
-            prompt = f"""Você é o diretor de inteligência comercial e análise financeira da plataforma DataInsight.
-Analise o desempenho e cruzamento de indicadores da página de Análise de Métricas:
+            if is_usuario_mei:
+                teto_ano = mei_info.get("faturamento_ano", fat_val)
+                pct_teto = mei_info.get("percentual_teto", "0%")
+                status_teto = mei_info.get("status_titulo", "Seguro")
+                saldo_teto = mei_info.get("saldo_restante_teto", "R$ 81.000,00")
+                pro_labore = mei_info.get("pro_labore_sugerido", luc_val)
+                reserva = mei_info.get("reserva_pj_recomendada", "R$ 1.500,00")
+
+                prompt = f"""Você é o Mentor Financeiro Especialista em MEI e Gestão de Microempresas da plataforma DataInsight.
+Analise a saúde contábil, financeira e enquadramento fiscal do microempreendedor individual:
 - Fonte / Tabela Analisada: {origem}
 - Período Selecionado: {periodo} (De {data_inicio} até {data_fim})
-- Indicadores observados em tela: {resumo_str}
+- Faturamento do Período: R$ {fat_val} (Variação: {fat_var}%)
+- Despesas e Custos Totais: R$ {desp_val}
+- Lucro Real no Bolso: R$ {luc_val} (Margem Líquida: {mg_val}%)
+- Faturamento Acumulado no Ano: R$ {teto_ano} (Consumo do Teto de R$ 81.000: {pct_teto} - Situação: {status_teto})
+- Saldo Restante do Teto Anual: R$ {saldo_teto}
+- Sugestão de Retirada Pró-Labore Pessoal: R$ {pro_labore}
+- Sugestão de Reserva de Emergência PJ: R$ {reserva}
+
+DIRETRIZES DA ANÁLISE PARA O MEI:
+1. Avalie com linguagem clara e encorajadora o lucro real que sobrou no bolso do microempreendedor.
+2. Destaque o termômetro do teto de R$ 81.000, orientando se há risco de desenquadramento e quando começar a planejar a transição para Microempresa (ME).
+3. Reforce a regra de ouro de não misturar finanças pessoais (PF) com despesas da empresa (PJ).
+4. Recomende ações práticas para aumentar o ticket médio e pontualidade no pagamento do DAS.
+"""
+            else:
+                pe_val = contabil.get("ponto_equilibrio", "—")
+                pe_status = contabil.get("ponto_equilibrio_status", "atingido")
+                imc_val = contabil.get("indice_margem_contribuicao", "—")
+                marg_seg = contabil.get("margem_seguranca_operacional", "—")
+                ebitda_val = contabil.get("ebitda", "—")
+                marg_ebitda = contabil.get("margem_ebitda", "—")
+                cobertura_fix = contabil.get("cobertura_custos_fixos", "—")
+                desp_fix = contabil.get("despesas_fixas", "—")
+                cust_var = contabil.get("custos_variaveis", "—")
+
+                prompt = f"""Você é o CFO virtual, auditor de controladoria e consultor contábil executivo da plataforma DataInsight.
+Analise a Demonstração de Resultados (DRE), Ponto de Equilíbrio e Performance Contábil da empresa (ME):
+- Fonte / Tabela Analisada: {origem}
+- Período Selecionado: {periodo} (De {data_inicio} até {data_fim})
+- Receita Operacional Bruta: R$ {fat_val} (Variação: {fat_var}%)
+- Custos Operacionais / CMV: R$ {cust_var}
+- Despesas Fixas e Estruturais: R$ {desp_fix}
+- EBITDA / LAJIDA Gerencial: R$ {ebitda_val} (Margem EBITDA: {marg_ebitda}%)
+- Lucro Líquido do Exercício: R$ {luc_val} (Margem Líquida: {mg_val}%)
+- Ponto de Equilíbrio Contábil (Break-even): R$ {pe_val} (Situação: {pe_status})
+- Índice de Margem de Contribuição (IMC): {imc_val}%
+- Margem de Segurança Operacional: {marg_seg}%
+- Índice de Cobertura de Despesas Fixas: {cobertura_fix}x
+
+DIRETRIZES DA ANÁLISE CONTÁBIL PARA ME:
+1. Forneça um diagnóstico de alto nível executivo (linguagem de CFO / Controladoria), analisando a DRE gerencial e a margem operacional.
+2. Analise se a receita supera com segurança o Ponto de Equilíbrio e qual a solidez da Margem de Contribuição.
+3. Avalie a rigidez das despesas fixas e o índice de cobertura de custos.
+4. Apresente 3 recomendações estratégicas priorizadas para alavancar EBITDA, otimizar custos e maximizar geração de caixa.
 """
         elif pagina in ["dashboard", "graficos-avancados"]:
             periodo_sel = contexto.get("periodo_selecionado", periodo)
@@ -1993,11 +2095,6 @@ def api_excluir_analise_salva(analise_id):
         print("[Erro ao excluir análise salva]:", e)
         return jsonify({"sucesso": False, "mensagem": str(e)}), 500
 
-@app.route("/debug-usuario")
-def debug_usuario():
-    return {
-        "usuario_id": session.get("usuario_id")
-    }
 
 
 # =================== RUN ===================
