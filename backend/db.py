@@ -35,26 +35,71 @@ def criar_index():
     relatorios_colecao.create_index([("usuario_id", 1), ("criado_em", -1)])
 
 def salvar_dados(usuario_id, nome_planilha, colunas, dados, tipo_dominio=None):
-    """Salva os dados no banco de dados com categoria de domínio"""
+
     if not tipo_dominio:
         try:
             from backend.dados.agregador import detectar_dominio_tabela
-            tipo_dominio = detectar_dominio_tabela(nome_planilha, colunas, dados)
+            tipo_dominio = detectar_dominio_tabela(
+                nome_planilha,
+                colunas,
+                dados
+            )
         except Exception:
             tipo_dominio = "MISTA_GERAL"
-            
-    documento = {
+
+    agora = datetime.now()
+
+    filtro = {
         "usuario_id": usuario_id,
-        "nome_planilha": nome_planilha,
-        "colunas": colunas,
-        "dados": dados,
-        "tipo_dominio": tipo_dominio,
-        "criado_em": datetime.now(),
-        "atualizado_em": datetime.now()
+        "nome_planilha": nome_planilha
     }
-    
-    resultado = dados_colecao.insert_one(documento)
-    return resultado.inserted_id
+
+    print("\n========== DEBUG SALVAR DADOS ==========")
+    print("usuario_id:", repr(usuario_id))
+    print("tipo usuario_id:", type(usuario_id))
+    print("nome_planilha:", repr(nome_planilha))
+
+    existentes_antes = dados_colecao.count_documents(filtro)
+    print("Documentos com esse filtro ANTES:", existentes_antes)
+
+    atualizacao = {
+        "$set": {
+            "colunas": colunas,
+            "dados": dados,
+            "tipo_dominio": tipo_dominio,
+            "atualizado_em": agora
+        },
+        "$setOnInsert": {
+            "usuario_id": usuario_id,
+            "nome_planilha": nome_planilha,
+            "criado_em": agora
+        }
+    }
+
+    resultado = dados_colecao.update_one(
+        filtro,
+        atualizacao,
+        upsert=True
+    )
+
+    print("matched_count:", resultado.matched_count)
+    print("modified_count:", resultado.modified_count)
+    print("upserted_id:", resultado.upserted_id)
+
+    existentes_depois = dados_colecao.count_documents(filtro)
+    print("Documentos com esse filtro DEPOIS:", existentes_depois)
+    print("========================================\n")
+
+    if resultado.upserted_id:
+        return resultado.upserted_id
+
+    documento_existente = dados_colecao.find_one(
+        filtro,
+        {"_id": 1}
+    )
+
+    return documento_existente["_id"] if documento_existente else None
+
 
 if __name__ == "__main__":
     criar_index()

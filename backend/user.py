@@ -452,21 +452,21 @@ def reenviar_codigo():
     if not user:
         return redirect(url_for('esqueceu_senha_route'))
 
-    codigo = user.get("codigo_recuperacao")
+    # Gera SEMPRE um novo código de recuperação e renova a expiração para 10 minutos, invalidando o anterior
+    novo_codigo = str(secrets.randbelow(1000000)).zfill(6)
+    nova_expiracao = datetime.now() + timedelta(minutes=10)
 
-    if not codigo:
-        codigo = str(secrets.randbelow(1000000)).zfill(6)
-        usuario.update_one(
-            {"_id": user["_id"]},
-            {
-                "$set": {
-                    "codigo_recuperacao": codigo,
-                    "codigo_expiracao": datetime.now() + timedelta(minutes=10)
-                }
+    usuario.update_one(
+        {"_id": user["_id"]},
+        {
+            "$set": {
+                "codigo_recuperacao": novo_codigo,
+                "codigo_expiracao": nova_expiracao
             }
-        )
+        }
+    )
 
-    sucesso = enviar_email_codigo(email, codigo)
+    sucesso = enviar_email_codigo(email, novo_codigo)
 
     if sucesso:
         return render_template("verificar_codigo.html", sucesso=True, msg="Um novo código foi enviado para seu e-mail!")
