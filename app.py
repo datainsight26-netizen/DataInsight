@@ -156,12 +156,25 @@ def inject_user_perfil():
     }
 
 # =================== EMAIL ===================
+print("EMAIL_USER:", os.getenv("EMAIL_USER"))
+print("EMAIL_PASS carregado:", bool(os.getenv("EMAIL_PASS")))
+print("MAIL_SERVER:", os.getenv("MAIL_SERVER", "smtp.gmail.com"))
+print("MAIL_PORT:", os.getenv("MAIL_PORT", 587))
 app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
 app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
+
 app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USE_SSL'] = False
+
 app.config['MAIL_USERNAME'] = os.getenv("EMAIL_USER")
 app.config['MAIL_PASSWORD'] = os.getenv("EMAIL_PASS")
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv("EMAIL_USER")
+
+app.config['MAIL_MAX_EMAILS'] = 5
+app.config['MAIL_SUPPRESS_SEND'] = False
+
+mail = Mail(app)
+app.mail = mail
 
 # Configurações adicionais para Gmail
 app.config['MAIL_MAX_EMAILS'] = 5
@@ -196,18 +209,14 @@ def login_required(f):
         # Verificação do status da assinatura no banco de dados
         user_id = session.get('usuario_id')
         user = None
-        try:
-            if user_id:
-                try:
-                    from bson import ObjectId
-                    user = usuario.find_one({'_id': ObjectId(user_id)})
-                except Exception:
-                    user = usuario.find_one({'email': session.get('usuario_email')}) if session.get('usuario_email') else None
-            elif session.get('usuario_email'):
+        if user_id:
+            try:
+                from bson import ObjectId
+                user = usuario.find_one({'_id': ObjectId(user_id)})
+            except Exception:
                 user = usuario.find_one({'email': session.get('usuario_email')})
-        except Exception as err_db:
-            print(f"[Aviso DB login_required]: {err_db}")
-            user = None
+        elif session.get('usuario_email'):
+            user = usuario.find_one({'email': session.get('usuario_email')})
 
         if user:
             # Sincroniza sempre o tipo_perfil na sessão
@@ -764,13 +773,7 @@ def rota_alternar_perfil():
 @login_required
 def get_controles_essenciais():
     """Retorna faturamento acumulado, termômetro MEI e equação de caixa"""
-    try:
-        return obter_dados_controles_essenciais()
-    except Exception as err:
-        import traceback
-        print(f"[Erro /api/controles-essenciais]: {err}")
-        traceback.print_exc()
-        return jsonify({"sucesso": False, "mensagem": f"Erro interno ao processar controles essenciais: {str(err)}"}), 500
+    return obter_dados_controles_essenciais()
 
 
 @app.route("/api/controles-essenciais/lancamento", methods=["POST"])
@@ -1082,18 +1085,14 @@ def api_exportar_documento():
         metadados = dados.get("metadados") or {}
         usuario_id = session.get("usuario_id")
 
-        if dados.get("conversa_completa"):
+        if dados.get("conversa_completa") and sessao_id and usuario_id:
             from backend.chatbot.document_generator import compilar_conversa_para_documento
-            compilado = compilar_conversa_para_documento(sessao_id or "", usuario_id or "")
-            if compilado.get("conteudo_html"):
-                conteudo_html = compilado["conteudo_html"]
+            compilado = compilar_conversa_para_documento(sessao_id, usuario_id)
+            conteudo_html = compilado["conteudo_html"]
             if not dados.get("titulo"):
-                titulo = compilado.get("titulo", titulo)
+                titulo = compilado["titulo"]
             if not metadados and compilado.get("metadados"):
                 metadados = compilado["metadados"]
-
-        if not conteudo_html or not str(conteudo_html).strip():
-            conteudo_html = "<p>Relatório de Análise DataInsight Copiloto IA</p>"
 
         from backend.chatbot.document_generator import gerar_documento_docx, gerar_documento_xlsx, gerar_documento_pdf
 
@@ -1994,6 +1993,11 @@ def api_excluir_analise_salva(analise_id):
         print("[Erro ao excluir análise salva]:", e)
         return jsonify({"sucesso": False, "mensagem": str(e)}), 500
 
+@app.route("/debug-usuario")
+def debug_usuario():
+    return {
+        "usuario_id": session.get("usuario_id")
+    }
 
 
 # =================== RUN ===================
