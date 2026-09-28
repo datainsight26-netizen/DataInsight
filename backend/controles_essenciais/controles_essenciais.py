@@ -1,4 +1,3 @@
-import unicodedata
 from datetime import datetime
 from bson import ObjectId
 import pandas as pd
@@ -12,12 +11,6 @@ MESES_NOMES = [
     "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
     "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
 ]
-
-def _normalizar_str(v):
-    if not v:
-        return ""
-    s = unicodedata.normalize('NFKD', str(v)).encode('ASCII', 'ignore').decode('utf-8')
-    return s.lower().replace("_", " ").replace("-", " ").strip()
 
 def _converter_numero(v):
     if v is None or v == "":
@@ -161,32 +154,7 @@ def obter_dados_controles_essenciais():
                 }
                 for i in range(12)
             ],
-            "dashboard_graficos": {
-                "recebimentos": {
-                    "total_mes": 0.0,
-                    "fatias_mes": [],
-                    "total_ano": 0.0,
-                    "fatias_ano": []
-                },
-                "composicao_custos": {
-                    "custo_fixo_total": 0.0,
-                    "custo_variavel_total": 0.0,
-                    "custo_total": 0.0,
-                    "pct_fixo": 0.0,
-                    "pct_variavel": 0.0,
-                    "detalhes_fixo": [],
-                    "detalhes_variavel": [],
-                    "ano_custo_fixo": 0.0,
-                    "ano_custo_variavel": 0.0,
-                    "ano_custo_total": 0.0,
-                    "ano_pct_fixo": 0.0,
-                    "ano_pct_variavel": 0.0,
-                    "ano_detalhes_fixo": [],
-                    "ano_detalhes_variavel": []
-                }
-            },
             "lancamentos_recentes": [],
-            "novas_despesas": [],
             "sem_dados": True
         })
 
@@ -195,10 +163,8 @@ def obter_dados_controles_essenciais():
 
     def achar_col(padroes):
         for p in padroes:
-            p_norm = _normalizar_str(p)
             for c in df.columns:
-                c_norm = _normalizar_str(c)
-                if p_norm in c_norm or c_norm == p_norm:
+                if p in str(c).lower():
                     return c
         return None
 
@@ -207,67 +173,26 @@ def obter_dados_controles_essenciais():
     col_rec_prod = mapeamento_fin.get("receita_produtos")
     col_rec_serv = mapeamento_fin.get("receita_servicos")
     col_desp_total = mapeamento_fin.get("despesas") or mapeamento_geral.get("despesa")
-
-    col_custo_var = mapeamento_fin.get("custo_variavel") or mapeamento_geral.get("custo_variavel")
-    col_fornec = mapeamento_fin.get("fornecedores") or mapeamento_geral.get("fornecedores")
-    col_publicidade = mapeamento_fin.get("publicidade") or mapeamento_geral.get("publicidade")
-    col_custo_var_outros = mapeamento_fin.get("custo_variavel_outros") or mapeamento_geral.get("custo_variavel_outros")
-    col_impostos = mapeamento_fin.get("impostos") or mapeamento_geral.get("impostos")
-
-    col_das_mei = mapeamento_fin.get("das_mei") or mapeamento_geral.get("das_mei")
-    col_pro_labore = mapeamento_fin.get("pro_labore") or mapeamento_geral.get("pro_labore")
-    col_aluguel = mapeamento_fin.get("aluguel") or mapeamento_geral.get("aluguel")
-    col_folha = mapeamento_fin.get("folha_pagamento") or mapeamento_geral.get("folha_pagamento")
+    col_das_mei = mapeamento_fin.get("das_mei")
+    col_fornec = mapeamento_fin.get("fornecedores")
+    col_pro_labore = mapeamento_fin.get("pro_labore")
+    col_aluguel = mapeamento_fin.get("aluguel")
+    col_folha = mapeamento_fin.get("folha_pagamento")
     das_mei_manual = _converter_numero(mapeamento_fin.get("das_mei_manual", 0))
-    cats_custom_lista = mapeamento_fin.get("categorias_custom") or mapeamento_fin.get("_categorias_custom") or []
-    if not isinstance(cats_custom_lista, list):
-        cats_custom_lista = []
 
     # 2. Heurísticas para colunas padrão da tabela do usuário
-    col_data = mapeamento_geral.get("data") or mapeamento_fin.get("data") or achar_col(["data", "date", "periodo", "vencimento", "dia"])
-    col_entrada = achar_col(["valor entrada", "entrada", "receita", "faturamento", "venda", "preco"])
-    col_saida = achar_col(["valor saida", "saida", "despesa", "custo", "gasto"])
+    col_data = mapeamento_geral.get("data") or mapeamento_fin.get("data") or achar_col(["data", "date", "periodo", "período", "vencimento", "dia"])
+    col_entrada = achar_col(["valor_entrada", "entrada", "receita", "faturamento", "venda", "preco", "preço"])
+    col_saida = achar_col(["valor_saida", "valor_saída", "saida", "saída", "despesa", "custo", "gasto"])
     col_valor_geral = achar_col(["valor", "total", "montante"])
-    col_tipo = achar_col(["tipo", "fluxo", "natureza", "operacao"])
-    col_categoria = mapeamento_geral.get("categoria") or achar_col(["categoria", "cat", "rubrica", "grupo", "classificacao"])
-    col_descricao = mapeamento_geral.get("descricao") or achar_col(["descricao", "historico", "item", "produto", "servico"])
+    col_tipo = achar_col(["tipo", "fluxo", "natureza", "operacao", "operação"])
+    col_categoria = mapeamento_geral.get("categoria") or achar_col(["categoria", "cat", "rubrica", "grupo", "classificacao", "classificação"])
+    col_descricao = mapeamento_geral.get("descricao") or achar_col(["descricao", "descrição", "historico", "histórico", "item", "produto", "servico", "serviço"])
 
-    # Heurísticas adicionais para custos específicos com normalização
-    if not col_custo_var:
-        col_custo_var = achar_col([
-            "custo variavel", "custos variaveis", "gasto variavel", "gastos variaveis",
-            "despesa variavel", "despesas variaveis", "cmv", "cpv", "cme",
-            "custo mercadoria", "custo produto", "variavel"
-        ])
-    if not col_fornec:
-        col_fornec = achar_col([
-            "fornecedor", "fornecedores", "compra", "compras", "materia prima",
-            "insumo", "insumos", "estoque", "suprimento"
-        ])
-    if not col_publicidade:
-        col_publicidade = achar_col([
-            "publicidade", "marketing", "propaganda", "anuncio", "anuncios", "trafego", "ads"
-        ])
-    if not col_custo_var_outros:
-        col_custo_var_outros = achar_col([
-            "comissao", "comissoes", "frete", "fretes", "embalagem", "embalagens", "entrega", "logistica"
-        ])
-    if not col_das_mei:
-        col_das_mei = achar_col(["das mei", "das", "boleto das", "tributo das", "simei"])
-    if not col_pro_labore:
-        col_pro_labore = achar_col(["pro labore", "retirada"])
-    if not col_aluguel:
-        col_aluguel = achar_col(["aluguel", "locacao", "condominio"])
-    if not col_folha:
-        col_folha = achar_col(["folha", "salario", "salarios", "funcionario", "funcionarios"])
-
+    col_das_ident = achar_col(["das_mei", "das-mei", "das mei", "boleto das", "tributo das", "simei"])
     col_serv_ident = achar_col(["servico", "serviço", "servicos", "receita_servicos", "venda servico"])
-
-    # Identificar se a tabela possui colunas dedicadas de custos
-    cols_dedicadas_var = [c for c in [col_custo_var, col_fornec, col_publicidade, col_custo_var_outros] if c and c in df.columns]
-    cols_dedicadas_fix = [c for c in [col_das_mei, col_pro_labore, col_aluguel, col_folha] if c and c in df.columns]
-    cols_dedicadas_custom = [mapeamento_fin.get(c.get("id")) for c in cats_custom_lista if isinstance(c, dict) and mapeamento_fin.get(c.get("id")) in df.columns]
-    tem_cols_dedicadas = bool(cols_dedicadas_var or cols_dedicadas_fix or cols_dedicadas_custom)
+    col_fornec_ident = achar_col(["fornecedor", "fornecedores", "cmv", "cpv", "compra", "estoque", "materia"])
+    col_prolab_ident = achar_col(["pro_labore", "pro-labore", "pro labore", "pró-labore", "retirada"])
 
     transacoes = []
 
@@ -283,8 +208,10 @@ def obter_dados_controles_essenciais():
         cat_str = str(row.get(col_categoria, "")).lower() if col_categoria and col_categoria in row else ""
         desc_str = str(row.get(col_descricao, "Lançamento")).strip() if col_descricao and col_descricao in row else "Lançamento"
 
-        # 1. Coleta e Registro de Receita/Entrada
         val_ent = 0.0
+        val_sai = 0.0
+
+        # Coleta de Receita/Entrada
         if col_rec_total and col_rec_total in row:
             val_ent += _converter_numero(row.get(col_rec_total))
         if col_rec_prod and col_rec_prod in row and col_rec_prod != col_rec_total:
@@ -303,13 +230,47 @@ def obter_dados_controles_essenciais():
             elif "Valor_Entrada" in row:
                 val_ent = _converter_numero(row.get("Valor_Entrada"))
 
-        if val_ent == 0.0 and col_valor_geral and col_valor_geral in row:
+        # Coleta de Despesa/Saída
+        if col_desp_total and col_desp_total in row:
+            val_sai += _converter_numero(row.get(col_desp_total))
+        if col_das_mei and col_das_mei in row and col_das_mei != col_desp_total:
+            val_sai += _converter_numero(row.get(col_das_mei))
+        if col_fornec and col_fornec in row and col_fornec != col_desp_total:
+            val_sai += _converter_numero(row.get(col_fornec))
+        if col_pro_labore and col_pro_labore in row and col_pro_labore != col_desp_total:
+            val_sai += _converter_numero(row.get(col_pro_labore))
+        if col_aluguel and col_aluguel in row and col_aluguel != col_desp_total:
+            val_sai += _converter_numero(row.get(col_aluguel))
+        if col_folha and col_folha in row and col_folha != col_desp_total:
+            val_sai += _converter_numero(row.get(col_folha))
+
+        if val_sai == 0.0 and col_saida and col_saida in row:
+            val_sai = _converter_numero(row.get(col_saida))
+
+        if val_sai == 0.0:
+            if "Despesa" in row:
+                val_sai = _converter_numero(row.get("Despesa"))
+            elif "Despesas" in row:
+                val_sai = _converter_numero(row.get("Despesas"))
+            elif "Valor_Saída" in row:
+                val_sai = _converter_numero(row.get("Valor_Saída"))
+            elif "Valor_Saida" in row:
+                val_sai = _converter_numero(row.get("Valor_Saida"))
+
+        # Caso a tabela possua apenas uma coluna genérica de "Valor"
+        if val_ent == 0.0 and val_sai == 0.0 and col_valor_geral and col_valor_geral in row:
             v_gen = _converter_numero(row.get(col_valor_geral))
             if any(k in tipo_str for k in ["entrada", "receita", "venda", "credito", "crédito"]) or any(k in cat_str for k in ["receita", "venda", "servico", "serviço"]):
                 val_ent = abs(v_gen)
-            elif not col_saida and not tem_cols_dedicadas and v_gen > 0 and not any(k in tipo_str for k in ["saida", "saída", "despesa", "custo", "debito"]):
-                val_ent = v_gen
+            elif any(k in tipo_str for k in ["saida", "saída", "despesa", "custo", "debito", "débito"]) or any(k in cat_str for k in ["despesa", "custo", "das", "aluguel", "fornecedor", "retirada"]):
+                val_sai = abs(v_gen)
+            else:
+                if v_gen >= 0:
+                    val_ent = v_gen
+                else:
+                    val_sai = abs(v_gen)
 
+        # 1. Registrar Entrada se houver
         if val_ent > 0:
             is_serv = (
                 (col_rec_serv and col_rec_serv in row and _converter_numero(row.get(col_rec_serv)) > 0) or
@@ -332,242 +293,49 @@ def obter_dados_controles_essenciais():
                 "valor_saida": 0.0
             })
 
-        # 2. Coleta e Registro de Custos e Despesas (Saídas)
-        # Abordagem A: Linha com colunas de custos específicas
-        custos_especificos_linha = []
+        # 2. Registrar Saída se houver
+        if val_sai > 0:
+            is_das = (
+                (col_das_mei and col_das_mei in row and _converter_numero(row.get(col_das_mei)) > 0) or
+                (col_das_ident and col_das_ident in row and _converter_numero(row.get(col_das_ident)) > 0) or
+                any(w in desc_str.lower() or w in cat_str for w in ["das", "das-mei", "das_mei", "simei", "guia", "tributo", "imposto fixo"])
+            )
+            is_fornec = (
+                (col_fornec and col_fornec in row and _converter_numero(row.get(col_fornec)) > 0) or
+                (col_fornec_ident and col_fornec_ident in row and _converter_numero(row.get(col_fornec_ident)) > 0) or
+                any(w in desc_str.lower() or w in cat_str for w in ["fornecedor", "mercadoria", "estoque", "compra", "materia", "insumo", "cmv", "cpv"])
+            )
+            is_prolab = (
+                (col_pro_labore and col_pro_labore in row and _converter_numero(row.get(col_pro_labore)) > 0) or
+                (col_prolab_ident and col_prolab_ident in row and _converter_numero(row.get(col_prolab_ident)) > 0) or
+                any(w in desc_str.lower() or w in cat_str for w in ["retirada", "pro labore", "pró-labore", "pessoal", "socio", "sócio"])
+            )
 
-        if col_custo_var and col_custo_var in row and col_custo_var != col_desp_total:
-            v = _converter_numero(row.get(col_custo_var))
-            if v > 0:
-                custos_especificos_linha.append({
-                    "valor": v,
-                    "sub_tipo": "compras_mercadorias",
-                    "natureza": "variavel",
-                    "categoria": "Custos Variáveis",
-                    "descricao": str(col_custo_var)
-                })
+            if is_das:
+                sub_sai = "das_mei"
+                cat_label = "Boleto DAS-MEI"
+            elif is_fornec:
+                sub_sai = "compras_mercadorias"
+                cat_label = "Compras e Mercadorias"
+            elif is_prolab:
+                sub_sai = "pro_labore"
+                cat_label = "Pró-labore / Retirada"
+            else:
+                sub_sai = "custos_operacionais"
+                cat_label = cat_str.title() if cat_str else "Custos Operacionais"
 
-        if col_fornec and col_fornec in row and col_fornec != col_desp_total and col_fornec != col_custo_var:
-            v = _converter_numero(row.get(col_fornec))
-            if v > 0:
-                custos_especificos_linha.append({
-                    "valor": v,
-                    "sub_tipo": "compras_mercadorias",
-                    "natureza": "variavel",
-                    "categoria": "Fornecedores e Estoque",
-                    "descricao": "Fornecedores / Mercadorias"
-                })
-
-        if col_publicidade and col_publicidade in row and col_publicidade != col_desp_total and col_publicidade != col_custo_var:
-            v = _converter_numero(row.get(col_publicidade))
-            if v > 0:
-                custos_especificos_linha.append({
-                    "valor": v,
-                    "sub_tipo": "custos_operacionais",
-                    "natureza": "variavel",
-                    "categoria": "Marketing e Anúncios",
-                    "descricao": "Publicidade / Anúncios"
-                })
-
-        if col_custo_var_outros and col_custo_var_outros in row and col_custo_var_outros != col_desp_total and col_custo_var_outros != col_custo_var:
-            v = _converter_numero(row.get(col_custo_var_outros))
-            if v > 0:
-                custos_especificos_linha.append({
-                    "valor": v,
-                    "sub_tipo": "custos_operacionais",
-                    "natureza": "variavel",
-                    "categoria": "Custos Variáveis Diversos",
-                    "descricao": "Fretes / Comissões / Outros"
-                })
-
-        if col_das_mei and col_das_mei in row and col_das_mei != col_desp_total:
-            v = _converter_numero(row.get(col_das_mei))
-            if v > 0:
-                custos_especificos_linha.append({
-                    "valor": v,
-                    "sub_tipo": "das_mei",
-                    "natureza": "fixo",
-                    "categoria": "Boleto DAS-MEI",
-                    "descricao": "Boleto DAS-MEI"
-                })
-
-        if col_pro_labore and col_pro_labore in row and col_pro_labore != col_desp_total:
-            v = _converter_numero(row.get(col_pro_labore))
-            if v > 0:
-                custos_especificos_linha.append({
-                    "valor": v,
-                    "sub_tipo": "pro_labore",
-                    "natureza": "fixo",
-                    "categoria": "Pró-labore / Retirada",
-                    "descricao": "Pró-labore"
-                })
-
-        if col_aluguel and col_aluguel in row and col_aluguel != col_desp_total:
-            v = _converter_numero(row.get(col_aluguel))
-            if v > 0:
-                custos_especificos_linha.append({
-                    "valor": v,
-                    "sub_tipo": "custos_operacionais",
-                    "natureza": "fixo",
-                    "categoria": "Aluguel",
-                    "descricao": "Aluguel"
-                })
-
-        if col_folha and col_folha in row and col_folha != col_desp_total:
-            v = _converter_numero(row.get(col_folha))
-            if v > 0:
-                custos_especificos_linha.append({
-                    "valor": v,
-                    "sub_tipo": "custos_operacionais",
-                    "natureza": "fixo",
-                    "categoria": "Folha de Pagamento",
-                    "descricao": "Salários / Folha"
-                })
-
-        for c_item in cats_custom_lista:
-            cid = c_item.get("id")
-            if not cid:
-                continue
-            clabel = c_item.get("label") or cid
-            cgrupo = c_item.get("grupo") or "Gastos Fixos"
-            ccol = mapeamento_fin.get(cid)
-            cnatureza = "variavel" if cgrupo == "Custos Variáveis" else "fixo"
-            if ccol and ccol in row and ccol != col_desp_total:
-                v = _converter_numero(row.get(ccol))
-                if v > 0:
-                    custos_especificos_linha.append({
-                        "valor": v,
-                        "sub_tipo": f"custom_{cid}",
-                        "natureza": cnatureza,
-                        "categoria": clabel,
-                        "descricao": clabel,
-                        "custom_id": cid,
-                        "custom_label": clabel,
-                        "custom_grupo": cgrupo,
-                        "is_custom": True
-                    })
-
-        if custos_especificos_linha:
-            for item in custos_especificos_linha:
-                transacoes.append({
-                    "data": dt if dt and pd.notna(dt) else datetime.now(),
-                    "ano": dt.year if dt and pd.notna(dt) else ano_atual,
-                    "mes": dt.month if dt and pd.notna(dt) else mes_atual,
-                    "is_entrada": False,
-                    "is_saida": True,
-                    "sub_tipo": item["sub_tipo"],
-                    "natureza_custo": item["natureza"],
-                    "descricao": item["descricao"],
-                    "categoria": item["categoria"],
-                    "valor_entrada": 0.0,
-                    "valor_saida": float(item["valor"])
-                })
-
-            # Se houver coluna de despesa total e o valor for maior que a soma das específicas, registra a diferença
-            if col_desp_total and col_desp_total in row:
-                tot_linha = _converter_numero(row.get(col_desp_total))
-                soma_esp = sum(i["valor"] for i in custos_especificos_linha)
-                sobra = tot_linha - soma_esp
-                if sobra > 0.01:
-                    transacoes.append({
-                        "data": dt if dt and pd.notna(dt) else datetime.now(),
-                        "ano": dt.year if dt and pd.notna(dt) else ano_atual,
-                        "mes": dt.month if dt and pd.notna(dt) else mes_atual,
-                        "is_entrada": False,
-                        "is_saida": True,
-                        "sub_tipo": "custos_operacionais",
-                        "natureza_custo": "fixo",
-                        "descricao": "Outros Custos Operacionais",
-                        "categoria": "Outros Custos Operacionais",
-                        "valor_entrada": 0.0,
-                        "valor_saida": float(sobra)
-                    })
-        else:
-            # Abordagem B: Linha de tabela transacional ou coluna de saída única
-            val_sai = 0.0
-            if col_desp_total and col_desp_total in row:
-                val_sai += _converter_numero(row.get(col_desp_total))
-            if val_sai == 0.0 and col_saida and col_saida in row:
-                val_sai = _converter_numero(row.get(col_saida))
-
-            if val_sai == 0.0:
-                if "Despesa" in row:
-                    val_sai = _converter_numero(row.get("Despesa"))
-                elif "Despesas" in row:
-                    val_sai = _converter_numero(row.get("Despesas"))
-                elif "Valor_Saída" in row:
-                    val_sai = _converter_numero(row.get("Valor_Saída"))
-                elif "Valor_Saida" in row:
-                    val_sai = _converter_numero(row.get("Valor_Saida"))
-
-            if val_sai == 0.0 and col_valor_geral and col_valor_geral in row:
-                v_gen = _converter_numero(row.get(col_valor_geral))
-                if any(k in tipo_str for k in ["saida", "saída", "despesa", "custo", "debito", "débito"]) or any(k in cat_str for k in ["despesa", "custo", "das", "aluguel", "fornecedor", "retirada", "variavel", "variável"]):
-                    val_sai = abs(v_gen)
-                elif not col_entrada and v_gen < 0:
-                    val_sai = abs(v_gen)
-
-            if val_sai > 0:
-                texto_completo = _normalizar_str(f"{desc_str} {cat_str} {tipo_str}")
-
-                palavras_var = [
-                    "variavel", "custo variavel", "custos variaveis",
-                    "despesa variavel", "despesas variaveis", "gasto variavel", "gastos variaveis",
-                    "fornecedor", "fornecedores", "mercadoria", "mercadorias", "compra", "compras",
-                    "insumo", "insumos", "materia prima", "estoque", "cmv", "cpv", "cme",
-                    "frete", "fretes", "comissao", "comissoes", "embalagem", "embalagens",
-                    "marketing", "publicidade", "propaganda", "anuncio", "anuncios", "trafego",
-                    "ads", "combustivel", "entrega", "entregas", "logistica", "suprimento",
-                    "revenda", "produto", "produtos", "terceirizado"
-                ]
-                palavras_fixo = [
-                    "aluguel", "locacao", "condominio", "iptu",
-                    "folha", "salario", "salarios", "funcionario", "funcionarios",
-                    "energia", "luz", "agua", "internet", "telefone", "telefonia", "celular",
-                    "contabilidade", "contador", "software", "sistema", "assinatura", "licenca",
-                    "mensalidade", "tarifa bancaria", "taxa bancaria", "das", "das mei",
-                    "simei", "retirada", "pro labore", "socio", "fixo", "fixos",
-                    "custo fixo", "custos fixos", "despesa fixa", "despesas fixas"
-                ]
-
-                is_das = any(w in texto_completo for w in ["das", "das mei", "simei", "guia", "tributo", "imposto fixo"])
-                is_prolab = any(w in texto_completo for w in ["retirada", "pro labore", "socio", "pessoal"])
-                is_var = any(w in texto_completo for w in palavras_var)
-
-                if is_das:
-                    sub_sai = "das_mei"
-                    cat_label = "Boleto DAS-MEI"
-                    natureza_custo = "fixo"
-                elif is_prolab:
-                    sub_sai = "pro_labore"
-                    cat_label = "Pró-labore / Retirada"
-                    natureza_custo = "fixo"
-                elif is_var:
-                    sub_sai = "compras_mercadorias"
-                    cat_label = cat_str.title() if cat_str else ("Custos Variáveis" if "variavel" in texto_completo else "Compras e Mercadorias")
-                    natureza_custo = "variavel"
-                elif any(w in texto_completo for w in palavras_fixo):
-                    sub_sai = "custos_operacionais"
-                    cat_label = cat_str.title() if cat_str else "Custos Fixos Operacionais"
-                    natureza_custo = "fixo"
-                else:
-                    sub_sai = "custos_operacionais"
-                    cat_label = cat_str.title() if cat_str else "Custos Operacionais"
-                    natureza_custo = "fixo"
-
-                transacoes.append({
-                    "data": dt if dt and pd.notna(dt) else datetime.now(),
-                    "ano": dt.year if dt and pd.notna(dt) else ano_atual,
-                    "mes": dt.month if dt and pd.notna(dt) else mes_atual,
-                    "is_entrada": False,
-                    "is_saida": True,
-                    "sub_tipo": sub_sai,
-                    "natureza_custo": natureza_custo,
-                    "descricao": desc_str if desc_str != "Lançamento" else cat_label,
-                    "categoria": cat_label,
-                    "valor_entrada": 0.0,
-                    "valor_saida": float(val_sai)
-                })
+            transacoes.append({
+                "data": dt if dt and pd.notna(dt) else datetime.now(),
+                "ano": dt.year if dt and pd.notna(dt) else ano_atual,
+                "mes": dt.month if dt and pd.notna(dt) else mes_atual,
+                "is_entrada": False,
+                "is_saida": True,
+                "sub_tipo": sub_sai,
+                "descricao": desc_str if desc_str != "Lançamento" else cat_label,
+                "categoria": cat_label,
+                "valor_entrada": 0.0,
+                "valor_saida": float(val_sai)
+            })
 
     # Adicionar DAS-MEI fixo configurado manualmente caso não exista lançamento explícito no mês
     if das_mei_manual > 0:
@@ -583,7 +351,6 @@ def obter_dados_controles_essenciais():
                 "is_entrada": False,
                 "is_saida": True,
                 "sub_tipo": "das_mei",
-                "natureza_custo": "fixo",
                 "descricao": "Boleto DAS-MEI (Configurado)",
                 "categoria": "Boleto DAS-MEI",
                 "valor_entrada": 0.0,
@@ -631,31 +398,7 @@ def obter_dados_controles_essenciais():
     lucro_mes = entradas_mes - saidas_mes
     saldo_atual = saldo_anterior + entradas_mes - saidas_mes
 
-    # Categorias de Saída do Mês (Hardcoded + Novas Despesas Customizadas)
-    cats_custom_lista = mapeamento_fin.get("categorias_custom") or mapeamento_fin.get("_categorias_custom") or []
-    novas_despesas_dict = {}
-    for c_item in cats_custom_lista:
-        cid = c_item.get("id")
-        if not cid:
-            continue
-        cgrupo = c_item.get("grupo") or "Gastos Fixos"
-        if cgrupo in ["Gastos Fixos", "Custos Variáveis"]:
-            clabel = c_item.get("label") or cid
-            cor = c_item.get("cor") or "#6366f1"
-            icone = c_item.get("icone") or "fa-tag"
-            cnatureza = "variavel" if cgrupo == "Custos Variáveis" else "fixo"
-            v_manual = _converter_numero(mapeamento_fin.get(f"{cid}_manual", 0))
-
-            novas_despesas_dict[cid] = {
-                "id": cid,
-                "nome": clabel,
-                "valor": float(v_manual),
-                "natureza": cnatureza,
-                "grupo": cgrupo,
-                "cor": cor,
-                "icone": icone
-            }
-
+    # Categorias de Saída do Mês
     cats_saida = {
         "das_mei": 0.0,
         "compras_mercadorias": 0.0,
@@ -666,21 +409,7 @@ def obter_dados_controles_essenciais():
     for t in transacoes:
         if t["ano"] == ano_filtro and t["mes"] == mes_filtro and t["is_saida"]:
             st = t["sub_tipo"]
-            if st.startswith("custom_") or t.get("is_custom"):
-                cid = t.get("custom_id") or st.replace("custom_", "")
-                if cid in novas_despesas_dict:
-                    novas_despesas_dict[cid]["valor"] += t["valor_saida"]
-                else:
-                    novas_despesas_dict[cid] = {
-                        "id": cid,
-                        "nome": t.get("custom_label") or t.get("categoria") or t.get("descricao") or cid,
-                        "valor": float(t["valor_saida"]),
-                        "natureza": t.get("natureza_custo", "fixo"),
-                        "grupo": t.get("custom_grupo", "Gastos Fixos"),
-                        "cor": "#6366f1",
-                        "icone": "fa-tag"
-                    }
-            elif st in cats_saida:
+            if st in cats_saida:
                 cats_saida[st] += t["valor_saida"]
             else:
                 cats_saida["outros"] += t["valor_saida"]
@@ -707,127 +436,7 @@ def obter_dados_controles_essenciais():
             "acumulado_ano": round(acumulado_acum, 2)
         })
 
-    # 4. Dados para Dashboard de Gráficos (Detalhamento de Recebimentos & Composição de Custos)
-    # A) Recebimentos do Mês
-    fatias_rec_mes_dict = {}
-    for t in transacoes:
-        if t["is_entrada"] and t["ano"] == ano_filtro and t["mes"] == mes_filtro:
-            c_label = t.get("categoria") or ("Prestação de Serviços" if t.get("sub_tipo") == "servico" else "Venda de Mercadorias")
-            fatias_rec_mes_dict[c_label] = fatias_rec_mes_dict.get(c_label, 0.0) + t["valor_entrada"]
-
-    fatias_rec_mes = [
-        {
-            "nome": k,
-            "valor": round(v, 2),
-            "percentual": round((v / entradas_mes) * 100, 1) if entradas_mes > 0 else 0.0
-        }
-        for k, v in sorted(fatias_rec_mes_dict.items(), key=lambda x: x[1], reverse=True)
-    ]
-
-    # B) Recebimentos do Ano
-    fatias_rec_ano_dict = {}
-    for t in transacoes:
-        if t["is_entrada"] and t["ano"] == ano_filtro:
-            c_label = t.get("categoria") or ("Prestação de Serviços" if t.get("sub_tipo") == "servico" else "Venda de Mercadorias")
-            fatias_rec_ano_dict[c_label] = fatias_rec_ano_dict.get(c_label, 0.0) + t["valor_entrada"]
-
-    fatias_rec_ano = [
-        {
-            "nome": k,
-            "valor": round(v, 2),
-            "percentual": round((v / faturado_ano) * 100, 1) if faturado_ano > 0 else 0.0
-        }
-        for k, v in sorted(fatias_rec_ano_dict.items(), key=lambda x: x[1], reverse=True)
-    ]
-
-    # C) Composição de Custos do Mês (Fixo vs Variável)
-    fixo_dict_mes = {}
-    var_dict_mes = {}
-    total_fixo_mes = 0.0
-    total_var_mes = 0.0
-
-    for t in transacoes:
-        if t["is_saida"] and t["ano"] == ano_filtro and t["mes"] == mes_filtro:
-            nat = t.get("natureza_custo", "fixo")
-            cat = t.get("categoria") or "Outros Custos"
-            val = t["valor_saida"]
-            if nat == "fixo":
-                total_fixo_mes += val
-                fixo_dict_mes[cat] = fixo_dict_mes.get(cat, 0.0) + val
-            else:
-                total_var_mes += val
-                var_dict_mes[cat] = var_dict_mes.get(cat, 0.0) + val
-
-    total_custos_mes = total_fixo_mes + total_var_mes
-    pct_fixo_mes = round((total_fixo_mes / total_custos_mes) * 100, 1) if total_custos_mes > 0 else 0.0
-    pct_var_mes = round((total_var_mes / total_custos_mes) * 100, 1) if total_custos_mes > 0 else 0.0
-
-    detalhes_fixo_mes = [
-        {"nome": k, "valor": round(v, 2), "percentual": round((v / total_fixo_mes) * 100, 1) if total_fixo_mes > 0 else 0.0}
-        for k, v in sorted(fixo_dict_mes.items(), key=lambda x: x[1], reverse=True)
-    ]
-    detalhes_var_mes = [
-        {"nome": k, "valor": round(v, 2), "percentual": round((v / total_var_mes) * 100, 1) if total_var_mes > 0 else 0.0}
-        for k, v in sorted(var_dict_mes.items(), key=lambda x: x[1], reverse=True)
-    ]
-
-    # D) Composição de Custos do Ano (Fixo vs Variável)
-    fixo_dict_ano = {}
-    var_dict_ano = {}
-    total_fixo_ano = 0.0
-    total_var_ano = 0.0
-
-    for t in transacoes:
-        if t["is_saida"] and t["ano"] == ano_filtro:
-            nat = t.get("natureza_custo", "fixo")
-            cat = t.get("categoria") or "Outros Custos"
-            val = t["valor_saida"]
-            if nat == "fixo":
-                total_fixo_ano += val
-                fixo_dict_ano[cat] = fixo_dict_ano.get(cat, 0.0) + val
-            else:
-                total_var_ano += val
-                var_dict_ano[cat] = var_dict_ano.get(cat, 0.0) + val
-
-    total_custos_ano = total_fixo_ano + total_var_ano
-    pct_fixo_ano = round((total_fixo_ano / total_custos_ano) * 100, 1) if total_custos_ano > 0 else 0.0
-    pct_var_ano = round((total_var_ano / total_custos_ano) * 100, 1) if total_custos_ano > 0 else 0.0
-
-    detalhes_fixo_ano = [
-        {"nome": k, "valor": round(v, 2), "percentual": round((v / total_fixo_ano) * 100, 1) if total_fixo_ano > 0 else 0.0}
-        for k, v in sorted(fixo_dict_ano.items(), key=lambda x: x[1], reverse=True)
-    ]
-    detalhes_var_ano = [
-        {"nome": k, "valor": round(v, 2), "percentual": round((v / total_var_ano) * 100, 1) if total_var_ano > 0 else 0.0}
-        for k, v in sorted(var_dict_ano.items(), key=lambda x: x[1], reverse=True)
-    ]
-
-    dashboard_graficos = {
-        "recebimentos": {
-            "total_mes": round(entradas_mes, 2),
-            "fatias_mes": fatias_rec_mes,
-            "total_ano": round(faturado_ano, 2),
-            "fatias_ano": fatias_rec_ano
-        },
-        "composicao_custos": {
-            "custo_fixo_total": round(total_fixo_mes, 2),
-            "custo_variavel_total": round(total_var_mes, 2),
-            "custo_total": round(total_custos_mes, 2),
-            "pct_fixo": pct_fixo_mes,
-            "pct_variavel": pct_var_mes,
-            "detalhes_fixo": detalhes_fixo_mes,
-            "detalhes_variavel": detalhes_var_mes,
-            "ano_custo_fixo": round(total_fixo_ano, 2),
-            "ano_custo_variavel": round(total_var_ano, 2),
-            "ano_custo_total": round(total_custos_ano, 2),
-            "ano_pct_fixo": pct_fixo_ano,
-            "ano_pct_variavel": pct_var_ano,
-            "ano_detalhes_fixo": detalhes_fixo_ano,
-            "ano_detalhes_variavel": detalhes_var_ano
-        }
-    }
-
-    # 5. Últimos lançamentos (ordenados por data descendente)
+    # 4. Últimos lançamentos (ordenados por data descendente)
     transacoes_ordenadas = sorted(transacoes, key=lambda x: x["data"], reverse=True)
     lancamentos_recentes = []
     for t in transacoes_ordenadas[:25]:
@@ -866,20 +475,7 @@ def obter_dados_controles_essenciais():
             "saldo_atual": round(saldo_atual, 2)
         },
         "categorias_saida": {k: round(v, 2) for k, v in cats_saida.items()},
-        "novas_despesas": [
-            {
-                "id": d["id"],
-                "nome": d["nome"],
-                "valor": round(d["valor"], 2),
-                "natureza": d["natureza"],
-                "grupo": d["grupo"],
-                "cor": d["cor"],
-                "icone": d["icone"]
-            }
-            for d in novas_despesas_dict.values()
-        ],
         "meses_resumo": meses_resumo,
-        "dashboard_graficos": dashboard_graficos,
         "lancamentos_recentes": lancamentos_recentes,
         "sem_dados": len(transacoes) == 0
     })
