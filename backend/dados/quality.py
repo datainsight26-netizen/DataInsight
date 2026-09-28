@@ -13,7 +13,7 @@ Funciona como um cientista de dados analisando os dados, identificando:
 import pandas as pd
 import numpy as np
 from typing import Dict, Any, Tuple, List
-from backend.dados.dados import detectar_tipo_coluna, limpar_dados_conservador
+from backend.dados.dados import detectar_tipo_coluna, limpar_dados_conservador, eh_coluna_financeira
 
 
 # Strings que representam valores nulos
@@ -392,7 +392,9 @@ def sugerir_acoes(report: Dict[str, Any]) -> Dict[str, Any]:
         if pct == 0:
             continue
         lista = []
-        if pct <= 20:
+        if eh_coluna_financeira(col):
+            lista.append("preservar_nulos_financeiros")
+        elif pct <= 20:
             lista.append("preencher_automaticamente")
         elif pct <= 50:
             lista.append("preencher_com_cuidado")
@@ -466,6 +468,11 @@ def aplicar_limpeza_automatica(
     for col, info in nulos.items():
         pct = info['percentual']
         if pct == 0 or col not in df.columns:
+            continue
+
+        # Colunas financeiras: NUNCA preencher com média ou moda. Preservar ausência como nulo contábil.
+        if eh_coluna_financeira(col):
+            print(f"[PRESERVED] {col}: coluna financeira com nulos preservada como ausente (sem imputacao por media/moda)")
             continue
 
         # Mais de 50% nulos: não preencher automaticamente

@@ -1,9 +1,10 @@
 
-from flask import request, jsonify, session, current_app
-from werkzeug.utils import secure_filename
 import os
+import uuid
 import json
 import pandas as pd
+from flask import request, jsonify, session, current_app
+from werkzeug.utils import secure_filename
 from backend.dados.dados import limpar_dados
 from backend.db import salvar_dados
 
@@ -26,9 +27,12 @@ def upload_arquivo():
     if not nome_seguro:
         nome_seguro = f"upload_{os.urandom(4).hex()}_{arquivo.filename.split('.')[-1] if '.' in arquivo.filename else 'dat'}"
 
+    # Gera nome temporário único com UUID para prevenir colisão entre usuários concorrentes
+    temp_filename = f"{uuid.uuid4().hex}_{nome_seguro}"
+
     upload_folder = current_app.config.get("UPLOAD_FOLDER", "uploads")
     os.makedirs(upload_folder, exist_ok=True)
-    caminho = os.path.join(upload_folder, nome_seguro)
+    caminho = os.path.join(upload_folder, temp_filename)
     arquivo.save(caminho)
 
     # Parâmetro opcional: qual aba importar (para Excel multi-abas)
@@ -103,22 +107,22 @@ def upload_arquivo():
         colunas = [str(c) for c in df.columns.tolist()]
         dados = converter_para_tipos_nativos(df.to_dict('records'))
 
-        # Salvar no banco de dados
+        # Salvar no banco de dados (preservando o nome original para exibição)
         usuario_id = session.get('usuario_id')
         nome_planilha = arquivo.filename
 
         try:
             salvar_dados(usuario_id, nome_planilha, colunas, dados)
-            print(f"✓ Arquivo '{arquivo.filename}' processado com sucesso - {len(dados)} linhas")
+            print(f"[OK] Arquivo '{arquivo.filename}' processado com sucesso - {len(dados)} linhas")
 
             # Extrair e salvar produtos no histórico de autocomplete
             try:
                 from backend.dados.salvar_dados import extrair_e_salvar_produtos
                 extrair_e_salvar_produtos(usuario_id, colunas, dados)
             except Exception as e:
-                print(f"⚠ Aviso ao extrair produtos para autocomplete: {e}")
+                print(f"[AVISO] Erro ao extrair produtos para autocomplete: {e}")
         except Exception as e:
-            print(f"⚠ Aviso ao salvar no BD: {e}")
+            print(f"[AVISO] Erro ao salvar no BD: {e}")
 
         return jsonify({
             "mensagem": "Arquivo enviado com sucesso!",
@@ -128,10 +132,18 @@ def upload_arquivo():
         }), 200
 
     except Exception as e:
-        print(f"✗ Erro ao processar arquivo: {e}")
+        print(f"[ERRO] Erro ao processar arquivo: {e}")
         return jsonify({
             "mensagem": f"Erro ao processar arquivo: {str(e)}"
         }), 400
+
+    finally:
+        # Só remove o arquivo se o caminho existir, para não mascarar exceções anteriores
+        if caminho and os.path.exists(caminho):
+            try:
+                os.remove(caminho)
+            except Exception as e_rem:
+                print(f"[AVISO] Erro ao remover arquivo temporário {caminho}: {e_rem}")
 
 
 def listar_abas_excel():
@@ -149,7 +161,8 @@ def listar_abas_excel():
     upload_folder = current_app.config.get("UPLOAD_FOLDER", "uploads")
     os.makedirs(upload_folder, exist_ok=True)
     nome_seguro = secure_filename(arquivo.filename) or "temp_excel.xlsx"
-    caminho = os.path.join(upload_folder, nome_seguro)
+    temp_filename = f"{uuid.uuid4().hex}_{nome_seguro}"
+    caminho = os.path.join(upload_folder, temp_filename)
     arquivo.save(caminho)
 
     try:
@@ -157,3 +170,9 @@ def listar_abas_excel():
         return jsonify({"abas": xl.sheet_names}), 200
     except Exception as e:
         return jsonify({"mensagem": f"Erro ao ler arquivo: {str(e)}"}), 400
+    finally:
+        if caminho and os.path.exists(caminho):
+            try:
+                os.remove(caminho)
+            except Exception as e_rem:
+                print(f"⚠ Aviso ao remover arquivo temporário {caminho}: {e_rem}")

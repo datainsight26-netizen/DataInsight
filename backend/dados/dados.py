@@ -14,6 +14,25 @@ def _normalizar(texto):
     return ''.join(c for c in texto if unicodedata.category(c) != 'Mn')
 
 
+def eh_coluna_financeira(nome_coluna: str) -> bool:
+    """
+    Identifica se uma coluna representa valores financeiros sensíveis
+    (Receita, Faturamento, Despesa, Custo, Imposto, Lucro, Margem, Preço, Investimento).
+    Para essas colunas, é estritamente proibido inventar valores sintéticos (média ou moda).
+    """
+    norm = _normalizar(nome_coluna)
+    padroes_financeiros = [
+        r"receita", r"faturament", r"faturad", r"venda", r"preco", r"valor",
+        r"despesa", r"gasto", r"custo", r"imposto", r"tributo", r"taxa", r"aliquota",
+        r"lucro", r"resultado", r"margem", r"investiment", r"cmv", r"cpv", r"das",
+        r"salario", r"folha", r"pro_labore", r"aluguel", r"fornecedor"
+    ]
+    for p in padroes_financeiros:
+        if re.search(p, norm):
+            return True
+    return False
+
+
 def limpar_e_converter_numero(val):
     """Converte valores numéricos bagunçados (com símbolos monetários, vírgula como decimal) para float."""
     if pd.isna(val) or val == "" or str(val).strip().lower() in ("nan", "none", "null", "-", "n/a", "n.a."):
@@ -59,6 +78,7 @@ def converter_para_tipos_nativos(registros):
     """
     Converte estruturas de dados com tipos numpy (int64, float64, bool_, NaN) 
     para tipos Python puros compatíveis 100% com PyMongo BSON.
+    Preserva ausências como None/null em colunas financeiras em vez de converter para 0.0.
     """
     import math
     if not isinstance(registros, list):
@@ -69,21 +89,27 @@ def converter_para_tipos_nativos(registros):
             continue
         novo = {}
         for k, v in reg.items():
+            col_str = str(k)
+            is_fin = eh_coluna_financeira(col_str)
             if v is None:
-                novo[str(k)] = ""
+                novo[col_str] = None if is_fin else ""
             elif isinstance(v, (np.floating, float)):
                 if math.isnan(v) or math.isinf(v):
-                    novo[str(k)] = ""
+                    novo[col_str] = None if is_fin else ""
                 else:
-                    novo[str(k)] = float(v)
+                    novo[col_str] = float(v)
             elif isinstance(v, (np.integer, int)):
-                novo[str(k)] = int(v)
+                novo[col_str] = int(v)
             elif isinstance(v, (np.bool_, bool)):
-                novo[str(k)] = bool(v)
+                novo[col_str] = bool(v)
             elif isinstance(v, str):
-                novo[str(k)] = v
+                val_strip = v.strip()
+                if val_strip.lower() in ("nan", "none", "null", "") and is_fin:
+                    novo[col_str] = None
+                else:
+                    novo[col_str] = v
             else:
-                novo[str(k)] = str(v)
+                novo[col_str] = str(v)
         limpos.append(novo)
     return limpos
 
@@ -169,13 +195,22 @@ def validar_completude_dados(df: pd.DataFrame) -> float:
 def preencher_inteligente(df: pd.DataFrame) -> pd.DataFrame:
     """
     Preenche valores vazios de forma conservadora:
-    - Numéricos com ≤20% de nulos → média
-    - Texto com ≤20% de nulos → moda
+    - Colunas financeiras: NUNCA preenche com média ou moda. Preserva nulo para evitar distorção contábil.
+    - Numéricos não-financeiros com ≤20% de nulos → média
+    - Texto não-financeiro com ≤20% de nulos → moda
     - Mais de 20%: não preenche para evitar distorção
     """
     df = df.copy()
 
     for col in df.columns:
+        # Se for coluna financeira crítica, NÃO imputar média nem moda!
+        if eh_coluna_financeira(col):
+            mascara_vazio = df[col].isna() | (df[col].astype(str).str.strip().str.lower().isin(['', 'nan', 'none', 'null']))
+            total_vazios = mascara_vazio.sum()
+            if total_vazios > 0:
+                print(f"[AVISO] Coluna financeira '{col}': {total_vazios} valor(es) ausente(s) preservado(s) como nulo (sem imputação artificial de média)")
+            continue
+
         # Considera NaN e strings vazias como vazios
         mascara_vazio = df[col].isna() | (df[col].astype(str).str.strip() == '')
         total_vazios = mascara_vazio.sum()
@@ -222,8 +257,8 @@ def limpar_dados_conservador(df: pd.DataFrame) -> pd.DataFrame:
     1. Remove espaços extras em células de texto
     2. Remove linhas completamente vazias
     3. Converte datetime para string (evitar erros BSON)
-    4. Preenche nulos conservadoramente (≤20%)
-    5. Garante que numéricos e textos não fiquem com NaN no final
+    4. Preenche nulos conservadoramente apenas em colunas não financeiras (≤20%)
+    5. Preserva nulos/ausências em colunas financeiras sem fillna(0) global
     
     NÃO renomeia colunas, NÃO calcula campos derivados.
     """
@@ -284,11 +319,14 @@ def limpar_dados_conservador(df: pd.DataFrame) -> pd.DataFrame:
         if tipo == "numerico":
             df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    # 6. Preenchimento conservador de nulos
+    # 6. Preenchimento conservador de nulos (excluindo colunas financeiras)
     df = preencher_inteligente(df)
 
-    # 7. Garantir que não haja NaN no resultado final (MongoDB não aceita NaN/NaT)
+    # 7. Garantir tipos para MongoDB sem fazer fillna(0) global em campos financeiros
     for col in df.columns:
+        if eh_coluna_financeira(col):
+            # Preserva ausência como None/NaN em campos financeiros (tratamento local nos cálculos)
+            continue
         if df[col].dtype in ["float64", "int64"]:
             df[col] = df[col].fillna(0)
         else:

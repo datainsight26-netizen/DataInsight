@@ -209,10 +209,13 @@ def confirmar_exclusao_dados():
         if not bcrypt.checkpw(senha.encode("utf-8"), user.get("senha")):
             return jsonify({"sucesso": False, "mensagem": "Senha incorreta"}), 401
 
-        # APAGAR DADOS
-        dados_colecao.delete_many({"usuario_id": usuario_id_str})
+        # APAGAR DADOS EM CASCATA EM TODAS AS COLEÇÕES VINCULADAS
+        from backend.dados.apagar_dados import expurgar_dados_usuario
+        res_expurgo = expurgar_dados_usuario(usuario_id_str)
+        if not res_expurgo.get("sucesso"):
+            return jsonify({"sucesso": False, "mensagem": f"Erro ao excluir dados: {res_expurgo.get('erro')}"}), 500
 
-        # LIMPAR TOKEN
+        # LIMPAR TOKEN (mantendo o cadastro do usuário ativo)
         usuario.update_one(
             {"_id": usuario_id},
             {
@@ -225,7 +228,9 @@ def confirmar_exclusao_dados():
 
         return jsonify({
             "sucesso": True,
-            "mensagem": "Dados apagados com sucesso"
+            "mensagem": "Dados apagados com sucesso",
+            "detalhes": res_expurgo.get("detalhes", {}),
+            "total_removidos": res_expurgo.get("total_removidos", 0)
         }), 200
 
     except Exception as e:
