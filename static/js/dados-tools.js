@@ -1668,7 +1668,35 @@ function ativarTabela(id, salvarAtual = true) {
     if (!tab) return;
 
     _tabelaAtualId = tab.id;
-    preencherTabela(tab.colunas, tab.dados);
+
+    // Se a tabela tem dados em memória, renderizar imediatamente
+    if (tab.dados && tab.dados.length > 0) {
+        preencherTabela(tab.colunas, tab.dados);
+        _finalizarAtivacaoTabela(tab);
+    } else if (tab.id && !String(tab.id).startsWith('tab-local-') && !String(tab.id).startsWith('tab-')) {
+        // Tabela vazia em memória mas tem ID de banco — buscar dados reais
+        fetch(`/api/tabelas/${tab.id}`)
+            .then(r => r.json())
+            .then(json => {
+                if (json && Array.isArray(json.dados) && json.dados.length > 0) {
+                    tab.dados = json.dados;
+                    tab.colunas = json.colunas && json.colunas.length > 0 ? json.colunas : tab.colunas;
+                }
+                preencherTabela(tab.colunas, tab.dados || []);
+                _finalizarAtivacaoTabela(tab);
+            })
+            .catch(e => {
+                console.warn('Aviso ao carregar dados da tabela:', e);
+                preencherTabela(tab.colunas, tab.dados || []);
+                _finalizarAtivacaoTabela(tab);
+            });
+    } else {
+        preencherTabela(tab.colunas, tab.dados || []);
+        _finalizarAtivacaoTabela(tab);
+    }
+}
+
+function _finalizarAtivacaoTabela(tab) {
     renderizarAbasTabelas();
     atualizarIndicadorTabelaAtiva();
     registrarLog(`Trocou visualização para tabela "${tab.nome}".`);

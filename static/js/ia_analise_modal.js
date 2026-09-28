@@ -720,6 +720,31 @@ function coletarContextoIaAnalises() {
     return el.textContent.replace(/\s+/g, ' ').trim();
   }).filter(t => t.length > 5 && t.length < 150);
 
+  if (typeof AC !== 'undefined' && AC && AC.dados) {
+    const d = AC.dados;
+    const e = AC.estrategico || {};
+    return {
+      periodo: periodoStr,
+      tabela_id: seletorPlanilha ? seletorPlanilha.value : 'todas',
+      perfil: (typeof window !== 'undefined' && window.USUARIO_PERFIL) ? window.USUARIO_PERFIL : 'ME',
+      dados: {
+        periodo: periodoStr,
+        origem: origemTexto,
+        data_inicio: inicio || 'Início da Base',
+        data_fim: fim || 'Data Atual',
+        faturamento: d.faturamento || {},
+        despesa: d.despesa || {},
+        lucro: d.lucro || {},
+        margem: d.margem || {},
+        contabil: d.contabil || {},
+        mei: d.mei || {},
+        saude: e.saude || {},
+        cenarios: e.cenarios || {},
+        metricas_resumo: metricasCards
+      }
+    };
+  }
+
   return {
     periodo: periodoStr,
     tabela_id: seletorPlanilha ? seletorPlanilha.value : 'todas',

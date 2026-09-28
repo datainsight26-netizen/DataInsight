@@ -2096,7 +2096,7 @@ async function salvarDados(silencioso = false) {
         // Salvar classificação financeira e mapeamentos associados
         if (typeof salvarClassificacaoFinanceira === 'function') {
             try {
-                await salvarClassificacaoFinanceira(true);
+                await salvarClassificacaoFinanceira(true, true);
             } catch (errFin) {
                 console.warn('[SalvarDados] Aviso ao sincronizar classificação financeira:', errFin);
             }

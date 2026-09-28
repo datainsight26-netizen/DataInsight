@@ -40,7 +40,7 @@
     { id: "publicidade",       label: "Publicidade / Marketing",      grupo: "Custos Variáveis",                 cor: "#f59e0b", icone: "fa-bullhorn",           temManual: true },
 
     // GASTOS FIXOS
-    { id: "das_mei",           label: "Boleto DAS-MEI (Tributo MEI)", grupo: "Gastos Fixos",                     cor: "#f59e0b", icone: "fa-file-invoice-dollar", temManual: true, placeholder: "Valor mensal DAS-MEI R$", desc: "Tributo fixo mensal do MEI. Pagar at\u00e9 o dia 20." },
+    { id: "das",           label: "Boleto DAS", grupo: "Gastos Fixos",                     cor: "#f59e0b", icone: "fa-file-invoice-dollar", temManual: true, placeholder: "Valor mensal DAS R$", desc: "Tributo fixo mensal Pagar at\u00e9 o dia 20." },
     { id: "aluguel",           label: "Aluguel / Locação",            grupo: "Gastos Fixos",                     cor: "#ef4444", icone: "fa-building",           temManual: true, placeholder: "Valor fixo mensal R$" },
     { id: "folha_pagamento",   label: "Folha de Pagamento",           grupo: "Gastos Fixos",                     cor: "#ef4444", icone: "fa-users",              temManual: true, placeholder: "Total folha mensal R$" },
     { id: "pro_labore",        label: "Pró-labore / Retirada",        grupo: "Gastos Fixos",                     cor: "#ef4444", icone: "fa-user-tie",           temManual: true, placeholder: "Valor pró-labore R$" },
@@ -75,7 +75,7 @@
     publicidade:               { nome: "Marketing",              tipo: "moeda",      tipoLabel: "💰 Moeda (R$)",  valorPadrao: 0.0 },
     custo_variavel:            { nome: "Custos Variáveis",       tipo: "moeda",      tipoLabel: "💰 Moeda (R$)",  valorPadrao: 0.0 },
     custo_variavel_outros:     { nome: "Custos Diversos",        tipo: "moeda",      tipoLabel: "💰 Moeda (R$)",  valorPadrao: 0.0 },
-    das_mei:                   { nome: "DAS-MEI",              tipo: "moeda",      tipoLabel: "💰 Moeda (R$)",  valorPadrao: 0.0 },
+    das_mei:                   { nome: "DAS",              tipo: "moeda",      tipoLabel: "💰 Moeda (R$)",  valorPadrao: 0.0 },
     aluguel:                   { nome: "Aluguel",                tipo: "moeda",      tipoLabel: "💰 Moeda (R$)",  valorPadrao: 0.0 },
     folha_pagamento:           { nome: "Folha de Pagamento",     tipo: "moeda",      tipoLabel: "💰 Moeda (R$)",  valorPadrao: 0.0 },
     pro_labore:                { nome: "Pró-labore",             tipo: "moeda",      tipoLabel: "💰 Moeda (R$)",  valorPadrao: 0.0 },
@@ -509,9 +509,7 @@
       periodo:           [/data/i, /per[ií]odo/i, /m[eê]s/i, /ano/i],
       despesas:          [/despesa/i, /gasto/i, /custo/i, /saida/i],
     };
-    if (isMei) {
-      aliases.das_mei = [/das.*mei/i, /simei/i, /boleto.*das/i, /guia.*das/i];
-    }
+    aliases.das_mei = [/das.*mei/i, /simei/i, /boleto.*das/i, /guia.*das/i];
     const sugestoes = {};
     colunas.forEach(col => {
       Object.entries(aliases).forEach(([cat, pats]) => {
@@ -656,7 +654,7 @@
     // Calcular campos essenciais faltantes para o banner respeitando perfil (MEI vs ME)
     const isMei = (FinState.is_mei === true) || (typeof window !== 'undefined' && window.IS_MEI === true) || (FinState.perfil === 'MEI');
     const essenciais = isMei 
-      ? ['periodo', 'receita_total', 'despesas', 'resultado', 'das_mei']
+      ? ['periodo', 'receita_total', 'despesas', 'resultado', 'das']
       : ['periodo', 'receita_total', 'despesas', 'resultado', 'impostos', 'aluguel', 'folha_pagamento'];
     const faltantesEssenciais = essenciais.filter(c => !FinState.mapeamentoUsuario[c] && !FinState.mapeamentoUsuario[`${c}_manual`]);
 
@@ -692,10 +690,10 @@
 
     gruposPadrao.forEach(grp => {
       let catsFixas = FIN_CATEGORIAS_LOCAL.filter(c => c.grupo === grp.nome);
-      // Para plano ME, remover DAS-MEI de Gastos Fixos (exclusivo para plano MEI)
-      if (!isMei) {
-        catsFixas = catsFixas.filter(c => c.id !== 'das_mei');
-      }
+      // Para plano ME, mantemos o DAS-MEI (Tributo) conforme solicitado.
+      // if (!isMei) {
+      //   catsFixas = catsFixas.filter(c => c.id !== 'das_mei');
+      // }
       const catsCustom = (FinState.categoriasCustom || []).filter(c => c.grupo === grp.nome);
       const todasCats = [...catsFixas, ...catsCustom];
 
@@ -1075,7 +1073,7 @@
 
     const isMei = (FinState.is_mei === true) || (typeof window !== 'undefined' && window.IS_MEI === true) || (FinState.perfil === 'MEI');
     const essenciais = isMei 
-      ? ['periodo', 'receita_total', 'despesas', 'resultado', 'das_mei']
+      ? ['periodo', 'receita_total', 'despesas', 'resultado', 'das']
       : ['periodo', 'receita_total', 'despesas', 'resultado', 'impostos', 'aluguel', 'folha_pagamento'];
     const faltantes = essenciais.filter(c => !FinState.mapeamentoUsuario[c] && !FinState.mapeamentoUsuario[`${c}_manual`]);
 
@@ -1109,7 +1107,7 @@
     const modal = document.getElementById('modalCriarTodasFaltantes');
     const isMei = (FinState.is_mei === true) || (typeof window !== 'undefined' && window.IS_MEI === true) || (FinState.perfil === 'MEI');
     const essenciais = isMei 
-      ? ['periodo', 'receita_total', 'despesas', 'resultado', 'das_mei']
+      ? ['periodo', 'receita_total', 'despesas', 'resultado', 'das']
       : ['periodo', 'receita_total', 'despesas', 'resultado', 'impostos', 'aluguel', 'folha_pagamento'];
     const faltantes = essenciais.filter(c => !FinState.mapeamentoUsuario[c] && !FinState.mapeamentoUsuario[`${c}_manual`]);
 
@@ -1147,7 +1145,7 @@
   function debounceSalvarClassificacao() {
     if (_timerFinAutoSave) clearTimeout(_timerFinAutoSave);
     _timerFinAutoSave = setTimeout(() => {
-      salvarClassificacaoFinanceira(true); // silencioso
+      salvarClassificacaoFinanceira(true, true); // silencioso + sem recursão
     }, 600);
   }
 
@@ -1438,11 +1436,11 @@
       }
       if (!m.das_mei && !m.das_mei_manual) {
         recomendacoes.push({
-          mensagem: 'Boleto DAS-MEI não identificado. Mapeie a coluna ou informe o valor mensal para acompanhar nos Controles Essenciais e Fluxo de Caixa.',
+          mensagem: 'Boleto DAS não identificado. Mapeie a coluna ou informe o valor mensal para acompanhar nos Controles Essenciais e Fluxo de Caixa.',
           acao: 'Informar DAS-MEI manualmente',
           nivel: 'aviso',
-          categoria: 'das_mei',
-          coluna_sugerida: 'DAS-MEI',
+          categoria: 'das',
+          coluna_sugerida: 'DA',
           valor_padrao: { das_mei_manual: 75 }
         });
       }
@@ -1559,7 +1557,7 @@
   /* ================================================================
      SALVAR MAPEAMENTO
      ================================================================ */
-  async function salvarClassificacaoFinanceira(silencioso = false) {
+  async function salvarClassificacaoFinanceira(silencioso = false, preventRecursion = false) {
     const btnRodape = document.getElementById('btnSalvarMapeamentoFin');
     const btnHeader = document.getElementById('btnSalvarFinHeader');
     const statusEl = document.getElementById('finSalvarStatus');
@@ -1594,7 +1592,7 @@
       });
 
       // 1. Salvar os dados da tabela em background (não bloqueia o mapeamento)
-      const promiseSalvarDados = (typeof salvarDados === 'function')
+      const promiseSalvarDados = (!preventRecursion && typeof salvarDados === 'function')
         ? salvarDados(true).catch(e => console.warn('[Fin] salvarDados:', e))
         : Promise.resolve();
 
