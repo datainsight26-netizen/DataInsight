@@ -11,28 +11,41 @@ from backend.dados.agregador import detectar_dominio_tabela, DOMINIOS_CONFIG
 def listar_todas_tabelas():
     """
     Retorna todas as tabelas (planilhas) salvas do usuário no MongoDB com metadados de domínio.
+    Usa projeção sem 'dados' para evitar transferência desnecessária de dados via SSL.
     """
     usuario_id = session.get('usuario_id')
     if not usuario_id:
         return jsonify({"mensagem": "Não autorizado"}), 401
 
     try:
-        docs = list(dados_colecao.find(
-            {"usuario_id": usuario_id},
-            sort=[("atualizado_em", -1), ("criado_em", -1)]
-        ))
+        import time
+        docs = []
+        for tentativa in range(3):
+            try:
+                docs = list(dados_colecao.find(
+                    {"usuario_id": usuario_id},
+                    {"dados": 0},  # exclui array pesado — não precisamos dos registros para o sumário
+                    sort=[("atualizado_em", -1), ("criado_em", -1)]
+                ))
+                break
+            except Exception as e_ssl:
+                if tentativa < 2:
+                    time.sleep(0.4)
+                else:
+                    raise e_ssl
 
         tabelas = []
         for doc in docs:
-            dados = doc.get("dados", [])
             colunas = doc.get("colunas", [])
             criado_em = doc.get("criado_em")
             atualizado_em = doc.get("atualizado_em")
             nome = doc.get("nome_planilha", "Planilha")
-            
+            # Usa total_linhas salvo no documento, ou 0 (sem carregar o array 'dados')
+            total_linhas = doc.get("total_linhas", 0)
+
             dominio = doc.get("tipo_dominio")
             if not dominio or dominio not in DOMINIOS_CONFIG:
-                dominio = detectar_dominio_tabela(nome, colunas, dados)
+                dominio = detectar_dominio_tabela(nome, colunas, [])
 
             cfg_dom = DOMINIOS_CONFIG.get(dominio, DOMINIOS_CONFIG["MISTA_GERAL"])
 
@@ -40,8 +53,8 @@ def listar_todas_tabelas():
                 "id": str(doc["_id"]),
                 "nome": nome,
                 "colunas": colunas,
-                "dados": dados,
-                "total_linhas": len(dados),
+                "dados": [],  # vazio aqui — carregado só quando necessário (obter_tabela)
+                "total_linhas": total_linhas,
                 "tipo_dominio": dominio,
                 "dominio_label": cfg_dom["label"],
                 "dominio_icone": cfg_dom["icone"],
@@ -72,6 +85,7 @@ def listar_todas_tabelas():
     except Exception as e:
         print(f"Erro ao listar tabelas: {e}", flush=True)
         return jsonify({"mensagem": "Erro ao listar tabelas", "erro": str(e)}), 500
+
 
 
 def obter_tabela(tabela_id):
@@ -165,6 +179,7 @@ def salvar_tabela_especifica():
                         "colunas": colunas_limpas,
                         "dados": dados_limpos,
                         "tipo_dominio": tipo_dominio,
+                        "total_linhas": len(dados_limpos),
                         "atualizado_em": datetime.now()
                     }
                 }
@@ -180,6 +195,7 @@ def salvar_tabela_especifica():
                 "colunas": colunas_limpas,
                 "dados": dados_limpos,
                 "tipo_dominio": tipo_dominio,
+                "total_linhas": len(dados_limpos),
                 "criado_em": datetime.now(),
                 "atualizado_em": datetime.now()
             }

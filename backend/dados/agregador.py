@@ -157,37 +157,54 @@ def _normalizar_data(v):
 def listar_planilhas_usuario(usuario_id):
     """
     Retorna lista sumária de todas as planilhas do usuário com seus metadados de domínio.
+    IMPORTANTE: exclui o campo 'dados' da projeção para não transferir megabytes de registros
+    só para contar linhas — evita timeouts e erros SSL (DECRYPTION_FAILED_OR_BAD_RECORD_MAC).
     """
     if not usuario_id:
         return []
 
-    docs = list(dados_colecao.find(
-        {"usuario_id": usuario_id},
-        sort=[("atualizado_em", -1), ("criado_em", -1)]
-    ))
+    # Projeção sem 'dados' — evita transferência desnecessária de dados via SSL
+    import time
+    docs = []
+    for tentativa in range(3):
+        try:
+            docs = list(dados_colecao.find(
+                {"usuario_id": usuario_id},
+                {"dados": 0},  # exclui o array pesado — não precisamos dos registros aqui
+                sort=[("atualizado_em", -1), ("criado_em", -1)]
+            ))
+            break
+        except Exception as e_ssl:
+            if tentativa < 2:
+                time.sleep(0.4)
+            else:
+                raise e_ssl
 
     resumo = []
     for doc in docs:
         t_id = str(doc["_id"])
         nome = doc.get("nome_planilha", "Planilha Sem Nome")
         cols = doc.get("colunas", [])
-        linhas = doc.get("dados", [])
-        
+        # 'dados' foi excluído da projeção; usamos total_linhas salvo ou 0
+        total_linhas = doc.get("total_linhas", 0)
+
         dominio = doc.get("tipo_dominio")
         if not dominio or dominio not in DOMINIOS_CONFIG:
-            dominio = detectar_dominio_tabela(nome, cols, linhas)
+            # Detecta só pelo nome + colunas (sem os dados brutos)
+            dominio = detectar_dominio_tabela(nome, cols, [])
 
         cfg_dom = DOMINIOS_CONFIG.get(dominio, DOMINIOS_CONFIG["MISTA_GERAL"])
 
         resumo.append({
             "id": t_id,
+            "_id": t_id,
             "nome": nome,
             "dominio": dominio,
             "dominio_label": cfg_dom["label"],
             "dominio_icone": cfg_dom["icone"],
             "dominio_cor": cfg_dom["cor"],
             "tipo_fluxo": cfg_dom["tipo_fluxo"],
-            "total_linhas": len(linhas),
+            "total_linhas": total_linhas,
             "total_colunas": len(cols),
             "colunas": cols,
             "criado_em": str(doc.get("criado_em", "")),
@@ -216,56 +233,64 @@ def obter_contexto_dados(usuario_id, escopo="todas", mapeamento=None):
             "metricas_resumo": {"total_receitas": 0.0, "total_despesas": 0.0, "lucro_liquido": 0.0}
         }
 
-    # Se for individual
-    if escopo and escopo not in ("todas", "consolidado", "all", "global"):
-        filtro = {"usuario_id": usuario_id}
-        if ObjectId.is_valid(escopo):
-            filtro["_id"] = ObjectId(escopo)
-        else:
-            filtro["$or"] = [{"nome_planilha": escopo}, {"tabela_id": escopo}]
+    # Tenta obter documentos com retentativas em caso de falhas transitórias de conexão SSL
+    docs = None
+    for tentativa in range(3):
+        try:
+            if escopo and escopo not in ("todas", "consolidado", "all", "global"):
+                filtro = {"usuario_id": usuario_id}
+                if ObjectId.is_valid(escopo):
+                    filtro["_id"] = ObjectId(escopo)
+                else:
+                    filtro["$or"] = [{"nome_planilha": escopo}, {"tabela_id": escopo}]
 
-        doc = dados_colecao.find_one(filtro)
-        if not doc:
-            # Fallback para mais recente
-            doc = dados_colecao.find_one({"usuario_id": usuario_id}, sort=[("atualizado_em", -1), ("criado_em", -1)])
+                doc = dados_colecao.find_one(filtro)
+                if not doc:
+                    doc = dados_colecao.find_one({"usuario_id": usuario_id}, sort=[("atualizado_em", -1), ("criado_em", -1)])
 
-        if not doc:
-            return {
-                "escopo": "individual",
-                "tabela_id": escopo,
-                "nome_contexto": "Nenhuma planilha encontrada",
-                "colunas": [],
-                "dados": [],
-                "planilhas_envolvidas": [],
-                "metricas_resumo": {"total_receitas": 0.0, "total_despesas": 0.0, "lucro_liquido": 0.0}
-            }
+                if not doc:
+                    return {
+                        "escopo": "individual",
+                        "tabela_id": escopo,
+                        "nome_contexto": "Nenhuma planilha encontrada",
+                        "colunas": [],
+                        "dados": [],
+                        "planilhas_envolvidas": [],
+                        "metricas_resumo": {"total_receitas": 0.0, "total_despesas": 0.0, "lucro_liquido": 0.0}
+                    }
 
-        cols = doc.get("colunas", [])
-        linhas = doc.get("dados", [])
-        nome = doc.get("nome_planilha", "Planilha")
-        dominio = doc.get("tipo_dominio") or detectar_dominio_tabela(nome, cols, linhas)
+                cols = doc.get("colunas", [])
+                linhas = doc.get("dados", [])
+                nome = doc.get("nome_planilha", "Planilha")
+                dominio = doc.get("tipo_dominio") or detectar_dominio_tabela(nome, cols, linhas)
 
-        return {
-            "escopo": "individual",
-            "tabela_id": str(doc["_id"]),
-            "nome_contexto": nome,
-            "dominio": dominio,
-            "colunas": cols,
-            "dados": linhas,
-            "planilhas_envolvidas": [{
-                "id": str(doc["_id"]),
-                "nome": nome,
-                "dominio": dominio,
-                "total_linhas": len(linhas)
-            }],
-            "metricas_resumo": _calcular_resumo_tabela_unica(cols, linhas, dominio)
-        }
-
-    # Escopo CONSOLIDADO (Todas as planilhas)
-    docs = list(dados_colecao.find(
-        {"usuario_id": usuario_id},
-        sort=[("atualizado_em", -1), ("criado_em", -1)]
-    ))
+                return {
+                    "escopo": "individual",
+                    "tabela_id": str(doc["_id"]),
+                    "nome_contexto": nome,
+                    "dominio": dominio,
+                    "colunas": cols,
+                    "dados": linhas,
+                    "planilhas_envolvidas": [{
+                        "id": str(doc["_id"]),
+                        "nome": nome,
+                        "dominio": dominio,
+                        "total_linhas": len(linhas)
+                    }],
+                    "metricas_resumo": _calcular_resumo_tabela_unica(cols, linhas, dominio)
+                }
+            else:
+                docs = list(dados_colecao.find(
+                    {"usuario_id": usuario_id},
+                    sort=[("atualizado_em", -1), ("criado_em", -1)]
+                ))
+                break
+        except Exception as err_db:
+            print(f"[AGREGADOR] Tentativa {tentativa + 1}/3 falhou na consulta MongoDB: {err_db}")
+            if tentativa == 2:
+                docs = []
+            import time
+            time.sleep(0.3)
 
     if not docs:
         return {

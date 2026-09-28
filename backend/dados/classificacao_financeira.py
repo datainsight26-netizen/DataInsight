@@ -59,7 +59,7 @@ MAPA_FINANCEIRO = {
     ],
 
     # ── GASTOS FIXOS ──────────────────────────────────
-    "das_mei": [
+    "das": [
         r"das.?mei", r"^das$", r"boleto.?das", r"tributo.?das", r"simei", r"guia.?das",
     ],
     "aluguel": [
@@ -110,6 +110,31 @@ MAPA_FINANCEIRO = {
         r"^despesa$", r"^gasto$", r"^custo$", r"^saida$",
         r"expense", r"cost\b", r"outgoing", r"val.*gasto",
     ],
+
+    # ── DATAS DE LIQUIDAÇÃO E PRAZOS ──────────────────
+    "data_recebimento": [
+        r"data.*recebimento", r"recebimento.*data", r"data.*receb",
+        r"dt.*recebimento", r"data.*credito", r"previsao.*recebimento",
+    ],
+    "data_pagamento": [
+        r"data.*pagamento", r"pagamento.*data", r"data.*pag",
+        r"dt.*pagamento", r"data.*quitacao", r"data.*liquidacao",
+        r"data.*baixa",
+    ],
+    "data_vencimento": [
+        r"data.*vencimento", r"vencimento.*data", r"^vencimento$",
+        r"dt.*vencimento", r"^data.?venc$", r"venc\b",
+    ],
+    "forma_pagamento": [
+        r"forma.*pagamento", r"metodo.*pagamento", r"meio.*pagamento",
+        r"tipo.*pagamento", r"condicao.*pagamento",
+    ],
+    "prazo_venda": [
+        r"prazo.*venda", r"prazo.*recebimento", r"dias.*venda",
+    ],
+    "prazo_compra": [
+        r"prazo.*compra", r"prazo.*pagamento", r"dias.*compra",
+    ],
 }
 
 # Labels amigáveis para exibição no frontend e sugestão automática de criação
@@ -136,11 +161,19 @@ LABELS_CATEGORIAS = {
     "custo_variavel_outros":   {"label": "Custos Variáveis Diversos",    "grupo": "Custos Variáveis",                 "cor": "#f59e0b", "icone": "fa-ellipsis", "coluna_sugerida": "Custos Diversos", "tipo_sugerido": "moeda"},
 
     # Gastos Fixos
-    "das_mei":                 {"label": "Boleto DAS-MEI (Tributo MEI)", "grupo": "Gastos Fixos",                     "cor": "#f59e0b", "icone": "fa-file-invoice-dollar", "coluna_sugerida": "DAS-MEI", "tipo_sugerido": "moeda"},
+    "das":                 {"label": "Boleto DAS-MEI (Tributo MEI)", "grupo": "Gastos Fixos",                     "cor": "#f59e0b", "icone": "fa-file-invoice-dollar", "coluna_sugerida": "DAS-MEI", "tipo_sugerido": "moeda"},
     "aluguel":                 {"label": "Aluguel / Locação",            "grupo": "Gastos Fixos",                     "cor": "#ef4444", "icone": "fa-building", "coluna_sugerida": "Aluguel", "tipo_sugerido": "moeda"},
     "folha_pagamento":         {"label": "Folha de Pagamento",           "grupo": "Gastos Fixos",                     "cor": "#ef4444", "icone": "fa-users", "coluna_sugerida": "Folha de Pagamento", "tipo_sugerido": "moeda"},
     "pro_labore":              {"label": "Pró-labore / Retirada",        "grupo": "Gastos Fixos",                     "cor": "#ef4444", "icone": "fa-user-tie", "coluna_sugerida": "Pró-labore", "tipo_sugerido": "moeda"},
     "gasto_fixo_outros":       {"label": "Outros Gastos Fixos",          "grupo": "Gastos Fixos",                     "cor": "#ef4444", "icone": "fa-file-alt", "coluna_sugerida": "Gastos Fixos", "tipo_sugerido": "moeda"},
+
+    # Prazos e Liquidação
+    "data_recebimento":        {"label": "Data de Recebimento",          "grupo": "Prazos e Liquidação",              "cor": "#06b6d4", "icone": "fa-calendar-check", "coluna_sugerida": "Data Recebimento", "tipo_sugerido": "data"},
+    "data_pagamento":          {"label": "Data de Pagamento",            "grupo": "Prazos e Liquidação",              "cor": "#f59e0b", "icone": "fa-calendar-day", "coluna_sugerida": "Data Pagamento", "tipo_sugerido": "data"},
+    "data_vencimento":         {"label": "Data de Vencimento",           "grupo": "Prazos e Liquidação",              "cor": "#ec4899", "icone": "fa-calendar-xmark", "coluna_sugerida": "Vencimento", "tipo_sugerido": "data"},
+    "forma_pagamento":         {"label": "Forma / Método de Pagamento",  "grupo": "Prazos e Liquidação",              "cor": "#64748b", "icone": "fa-credit-card", "coluna_sugerida": "Forma Pagamento", "tipo_sugerido": "texto"},
+    "prazo_venda":             {"label": "Prazo de Venda (Dias)",        "grupo": "Prazos e Liquidação",              "cor": "#10b981", "icone": "fa-clock", "coluna_sugerida": "Prazo Venda", "tipo_sugerido": "numero"},
+    "prazo_compra":            {"label": "Prazo de Compra (Dias)",       "grupo": "Prazos e Liquidação",              "cor": "#f97316", "icone": "fa-clock", "coluna_sugerida": "Prazo Compra", "tipo_sugerido": "numero"},
 
     # Investimentos
     "investimento_infra":      {"label": "Investimento – Infraestrutura","grupo": "Investimentos",                    "cor": "#8b5cf6", "icone": "fa-hammer", "coluna_sugerida": "Investimento Infra", "tipo_sugerido": "moeda"},
@@ -168,7 +201,7 @@ REQUISITOS_FERRAMENTAS_ME = {
         "label": "Fluxo de Caixa",
         "icone": "fa-money-bill-transfer",
         "obrigatorios": ["receita_total", "despesas", "periodo"],
-        "opcionais": ["impostos", "investimento_outros", "custo_variavel", "resultado"],
+        "opcionais": ["impostos", "das", "investimento_outros", "custo_variavel", "resultado"],
     },
 }
 
@@ -178,13 +211,13 @@ REQUISITOS_FERRAMENTAS_MEI = {
         "label": "Fluxo de Caixa",
         "icone": "fa-money-bill-transfer",
         "obrigatorios": ["receita_total", "despesas", "periodo"],
-        "opcionais": ["das_mei", "custo_variavel", "investimento_outros", "resultado"],
+        "opcionais": ["das", "custo_variavel", "investimento_outros", "resultado"],
     },
     "controles_essenciais": {
         "label": "Controles Essenciais",
         "icone": "fa-sliders",
         "obrigatorios": ["receita_total", "periodo", "despesas"],
-        "opcionais": ["das_mei", "fornecedores", "pro_labore", "resultado"],
+        "opcionais": ["das", "fornecedores", "pro_labore", "resultado", "data_recebimento", "data_pagamento", "data_vencimento", "forma_pagamento", "prazo_venda", "prazo_compra"],
     },
 }
 
@@ -334,7 +367,7 @@ def analisar_completude_financeira(mapeamento_usuario: dict, perfil: str = "ME")
             return True
         if c == "receita_total" and (mapeamento_usuario.get("receita_produtos") or mapeamento_usuario.get("receita_servicos") or mapeamento_usuario.get("receita_outros")):
             return True
-        if c == "despesas" and (mapeamento_usuario.get("custo_variavel") or mapeamento_usuario.get("fornecedores") or mapeamento_usuario.get("aluguel") or mapeamento_usuario.get("das_mei") or mapeamento_usuario.get("das_mei_manual")):
+        if c == "despesas" and (mapeamento_usuario.get("custo_variavel") or mapeamento_usuario.get("fornecedores") or mapeamento_usuario.get("aluguel") or mapeamento_usuario.get("das") or mapeamento_usuario.get("das_manual")):
             return True
         return False
 
@@ -432,10 +465,10 @@ _RECOMENDACOES_MEI = [
         "tipo_sugerido": "moeda",
     },
     {
-        "categoria_ausente": "das_mei",
+        "categoria_ausente": "das",
         "mensagem": "Boleto DAS-MEI não identificado. Mapeie a coluna ou informe o valor mensal para acompanhar nos Controles Essenciais e Fluxo de Caixa.",
         "acao": "Informar DAS-MEI manualmente",
-        "valor_padrao": {"das_mei_manual": 75.0},
+        "valor_padrao": {"das_manual": 75.0},
         "nivel": "aviso",
         "coluna_sugerida": "DAS-MEI",
         "tipo_sugerido": "moeda",
