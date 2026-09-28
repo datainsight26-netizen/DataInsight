@@ -11,8 +11,6 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/ia_analise_modal.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='acessibilidade/acessibilidade.css') }}" />
   
-  <!-- Biblioteca de Gráficos ApexCharts -->
-  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
   <style>
     /* Força display flex no container para que gap funcione e evite sobreposição de especificidade do premium.css */
     .pagina > .container.mei-container,
@@ -632,340 +630,6 @@
       gap: 10px;
     }
 
-    /* ==========================================================================
-       DASHBOARD VISUAL: RECEBIMENTOS E COMPOSIÇÃO DE CUSTOS (MEI)
-       ========================================================================== */
-    .mei-dashboard-wrapper {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .mei-dashboard-topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 14px;
-      padding: 0 4px;
-    }
-
-    .mei-dashboard-title-group h2 {
-      font-size: 1.25rem;
-      font-weight: 800;
-      color: var(--texto);
-      margin: 0 0 4px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .mei-dashboard-title-group p {
-      margin: 0;
-      color: var(--suave);
-      font-size: 0.84rem;
-    }
-
-    .mei-periodo-pills {
-      display: inline-flex;
-      background: var(--cartao);
-      border: 1px solid var(--borda);
-      border-radius: 999px;
-      padding: 4px;
-      gap: 4px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-    }
-
-    .mei-periodo-pill-btn {
-      border: none;
-      background: transparent;
-      padding: 6px 14px;
-      border-radius: 999px;
-      font-size: 0.78rem;
-      font-weight: 700;
-      color: var(--suave);
-      cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .mei-periodo-pill-btn:hover {
-      color: var(--texto);
-    }
-
-    .mei-periodo-pill-btn.ativo {
-      background: var(--primaria);
-      color: #fff;
-      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
-    }
-
-    .mei-dashboard-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 24px;
-    }
-
-    .mei-chart-card {
-      background: var(--cartao);
-      border: 1px solid var(--borda);
-      border-radius: 16px;
-      padding: 24px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      min-height: 440px;
-      position: relative;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .mei-chart-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
-    }
-
-    .mei-chart-card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 12px;
-      margin-bottom: 14px;
-    }
-
-    .mei-chart-card-title {
-      font-size: 1.05rem;
-      font-weight: 800;
-      color: var(--texto);
-      margin: 0 0 4px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .mei-chart-card-subtitle {
-      font-size: 0.8rem;
-      color: var(--suave);
-      margin: 0;
-    }
-
-    .mei-chart-kpi-badge {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      padding: 6px 12px;
-      border-radius: 10px;
-      background: var(--fundo);
-      border: 1px solid var(--borda);
-      flex-shrink: 0;
-    }
-
-    .mei-chart-kpi-badge-label {
-      font-size: 0.66rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: var(--suave);
-      letter-spacing: 0.04em;
-    }
-
-    .mei-chart-kpi-badge-val {
-      font-size: 1.15rem;
-      font-weight: 800;
-      line-height: 1.2;
-    }
-
-    .mei-chart-wrapper {
-      min-height: 250px;
-      width: 100%;
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    /* Estado vazio elegante para os gráficos */
-    .mei-chart-empty {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 36px 16px;
-      gap: 10px;
-      color: var(--suave);
-      width: 100%;
-    }
-
-    .mei-chart-empty i {
-      font-size: 2.5rem;
-      opacity: 0.35;
-    }
-
-    .mei-chart-empty span {
-      font-size: 0.88rem;
-      font-weight: 600;
-    }
-
-    /* Legenda e breakdown de fatias */
-    .mei-breakdown-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-top: 14px;
-      max-height: 160px;
-      overflow-y: auto;
-      padding-right: 4px;
-    }
-
-    .mei-breakdown-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 12px;
-      border-radius: 8px;
-      background: var(--fundo);
-      border: 1px solid var(--borda);
-      font-size: 0.82rem;
-      transition: transform 0.15s ease, background 0.15s ease;
-    }
-
-    .mei-breakdown-item:hover {
-      background: rgba(255, 255, 255, 0.04);
-      transform: translateX(2px);
-    }
-
-    .mei-breakdown-item-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .mei-breakdown-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    .mei-breakdown-name {
-      font-weight: 700;
-      color: var(--texto);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .mei-breakdown-item-right {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-shrink: 0;
-    }
-
-    .mei-breakdown-val {
-      font-weight: 800;
-      color: var(--texto);
-    }
-
-    .mei-breakdown-pct {
-      font-size: 0.72rem;
-      font-weight: 800;
-      padding: 2px 6px;
-      border-radius: 4px;
-      background: rgba(255, 255, 255, 0.08);
-      color: var(--suave);
-    }
-
-    /* Barra visual de proporção de custos (Fixo vs Variável) */
-    .custos-ratio-container {
-      margin-top: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .custos-ratio-labels {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.78rem;
-      font-weight: 700;
-    }
-
-    .custos-ratio-track {
-      height: 12px;
-      border-radius: 6px;
-      background: rgba(255, 255, 255, 0.08);
-      overflow: hidden;
-      display: flex;
-      border: 1px solid var(--borda);
-    }
-
-    .custos-ratio-fill-fixo {
-      background: linear-gradient(90deg, #3b82f6, #6366f1);
-      height: 100%;
-      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .custos-ratio-fill-var {
-      background: linear-gradient(90deg, #f59e0b, #ef4444);
-      height: 100%;
-      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .custos-duo-cards {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-top: 14px;
-    }
-
-    .custo-mini-bloco {
-      padding: 12px;
-      border-radius: 10px;
-      background: var(--fundo);
-      border: 1px solid var(--borda);
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .custo-mini-bloco-fixo {
-      border-top: 3px solid #3b82f6;
-    }
-
-    .custo-mini-bloco-var {
-      border-top: 3px solid #f59e0b;
-    }
-
-    .custo-mini-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.74rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-    }
-
-    .custo-mini-val {
-      font-size: 1.08rem;
-      font-weight: 800;
-      color: var(--texto);
-    }
-
-    .custo-mini-itens {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin-top: 4px;
-      font-size: 0.72rem;
-      color: var(--suave);
-    }
-
     /* Regras Responsivas */
     @media (max-width: 1200px) {
       .mei-grid-2 {
@@ -989,10 +653,6 @@
         grid-template-columns: 1fr;
         gap: 20px;
       }
-      .mei-dashboard-grid {
-        grid-template-columns: 1fr;
-        gap: 20px;
-      }
     }
 
     @media (max-width: 768px) {
@@ -1011,11 +671,8 @@
       .mei-hero {
         padding: 18px 20px;
       }
-      .termometro-card, .mei-card, .mei-chart-card {
+      .termometro-card, .mei-card {
         padding: 18px 20px;
-      }
-      .custos-duo-cards {
-        grid-template-columns: 1fr;
       }
     }
 
@@ -1245,127 +902,12 @@
           </div>
         </section>
 
-        <!-- 4. DASHBOARD VISUAL: RECEBIMENTOS & COMPOSIÇÃO DE CUSTOS (MEI) -->
-        <section class="mei-dashboard-wrapper" aria-label="Dashboard de Recebimentos e Custos">
-          <div class="mei-dashboard-topbar">
-            <div class="mei-dashboard-title-group">
-              <h2>
-           
-                Dashboard Financeiro MEI
-              </h2>
-              <p>Detalhamento das fontes de recebimento e equilíbrio entre custos fixos e variáveis.</p>
-            </div>
-
-            <!-- Seletor de Período dos Gráficos (Mês vs Ano) -->
-            <div class="mei-periodo-pills" role="radiogroup" aria-label="Período do Dashboard">
-              <button type="button" id="btnDashPeriodoMes" class="mei-periodo-pill-btn ativo" onclick="alternarPeriodoDashboard('mes')">
-                <i class="fa-solid fa-calendar-day"></i> Mês Selecionado
-              </button>
-              <button type="button" id="btnDashPeriodoAno" class="mei-periodo-pill-btn" onclick="alternarPeriodoDashboard('ano')">
-                <i class="fa-solid fa-calendar"></i> Ano Acumulado
-              </button>
-            </div>
-          </div>
-
-          <div class="mei-dashboard-grid">
-            <!-- Card 1: Detalhamento do Total de Recebimento -->
-            <div class="mei-chart-card">
-              <div>
-                <div class="mei-chart-card-header">
-                  <div>
-                    <h3 class="mei-chart-card-title">
-                  
-                      Detalhamento dos Recebimentos
-                    </h3>
-                    <p id="subtituloRecebimentos" class="mei-chart-card-subtitle">Distribuição das entradas por categoria</p>
-                  </div>
-                  <div class="mei-chart-kpi-badge">
-                    <span class="mei-chart-kpi-badge-label">Total Recebido</span>
-                    <span id="badgeTotalRecebido" class="mei-chart-kpi-badge-val" style="color: #10b981;">R$ 0,00</span>
-                  </div>
-                </div>
-
-                <!-- Gráfico ApexCharts de Pizza / Donut -->
-                <div class="mei-chart-wrapper">
-                  <div id="graficoRecebimentosPizza" style="width: 100%; min-height: 250px;"></div>
-                </div>
-              </div>
-
-              <!-- Lista de Detalhamento / Breakdown das Fatias -->
-              <div id="breakdownRecebimentos" class="mei-breakdown-list">
-                <!-- Inserido dinamicamente via JS -->
-              </div>
-            </div>
-
-            <!-- Card 2: Composição dos Custos (Fixo vs Variável) -->
-            <div class="mei-chart-card">
-              <div>
-                <div class="mei-chart-card-header">
-                  <div>
-                    <h3 class="mei-chart-card-title">
-         
-                      Composição dos Custos (Fixo vs Variável)
-                    </h3>
-                    <p id="subtituloCustos" class="mei-chart-card-subtitle">Análise da estrutura de gastos e saídas operacionais</p>
-                  </div>
-                  <div class="mei-chart-kpi-badge">
-                    <span class="mei-chart-kpi-badge-label">Total de Custos</span>
-                    <span id="badgeTotalCustos" class="mei-chart-kpi-badge-val" style="color: #ef4444;">R$ 0,00</span>
-                  </div>
-                </div>
-
-                <!-- Gráfico ApexCharts de Pizza / Donut de Custos -->
-                <div class="mei-chart-wrapper">
-                  <div id="graficoCustosFixoVariavel" style="width: 100%; min-height: 250px;"></div>
-                </div>
-
-                <!-- Barra de Proporção Visual Fixo vs Variável -->
-                <div class="custos-ratio-container">
-                  <div class="custos-ratio-labels">
-                    <span id="labelRatioFixo" style="color: #3b82f6;"> Fixos: 0.0%</span>
-                    <span id="labelRatioVar" style="color: #f59e0b;">Variáveis: 0.0%</span>
-                  </div>
-                  <div class="custos-ratio-track" title="Proporção Custo Fixo vs Custo Variável">
-                    <div id="barRatioFixo" class="custos-ratio-fill-fixo" style="width: 50%;"></div>
-                    <div id="barRatioVar" class="custos-ratio-fill-var" style="width: 50%;"></div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Mini Cards Comparativos (Fixos vs Variáveis) -->
-              <div class="custos-duo-cards">
-                <div class="custo-mini-bloco custo-mini-bloco-fixo">
-                  <div class="custo-mini-header">
-                    <span style="color: #3b82f6;"> Custos Fixos</span>
-                    <span id="tagPctFixo" class="badge-mei-tag" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3);">0%</span>
-                  </div>
-                  <div id="valCustoFixoTotal" class="custo-mini-val">R$ 0,00</div>
-                  <div id="itensCustoFixo" class="custo-mini-itens">
-                    <span>• DAS-MEI, Pró-labore, etc.</span>
-                  </div>
-                </div>
-
-                <div class="custo-mini-bloco custo-mini-bloco-var">
-                  <div class="custo-mini-header">
-                    <span style="color: #f59e0b;"> Custos Variáveis</span>
-                    <span id="tagPctVar" class="badge-mei-tag" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3);">0%</span>
-                  </div>
-                  <div id="valCustoVarTotal" class="custo-mini-val">R$ 0,00</div>
-                  <div id="itensCustoVar" class="custo-mini-itens">
-                    <span>• Fornecedores, Insumos, etc.</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- 5. GRID 2 COLUNAS: Saídas por Categoria + Resumo Mensal 12 Meses -->
+        <!-- 4. GRID 2 COLUNAS: Saídas por Categoria + Resumo Mensal 12 Meses -->
         <section class="mei-grid-2">
           <!-- Coluna Esquerda: Detalhamento de Saídas -->
           <div class="mei-card">
             <h3 class="mei-card-title">
-        
+              <i class="fa-solid fa-receipt" style="color: #ef4444;"></i>
               Despesas do Mês
             </h3>
             <div class="saidas-list">
@@ -1445,7 +987,7 @@
           <!-- Coluna Direita: Resumo Mensal 12 Meses -->
           <div class="mei-card">
             <h3 class="mei-card-title">
-      
+              <i class="fa-solid fa-calendar-days" style="color: #3b82f6;"></i>
               Acompanhamento Mensal do Ano
             </h3>
             <div class="tabela-mensal-wrap">
@@ -1454,6 +996,7 @@
                   <tr>
                     <th>Mês</th>
                     <th>Serviços</th>
+                    <th>Comércio</th>
                     <th>Total Entradas</th>
                     <th>Total Saídas</th>
                     <th>Lucro Mês</th>
@@ -1462,7 +1005,7 @@
                 </thead>
                 <tbody id="tbodyMeses">
                   <tr>
-                    <td colspan="6" style="text-align: center; color: var(--suave);">Carregando dados mensais...</td>
+                    <td colspan="7" style="text-align: center; color: var(--suave);">Carregando dados mensais...</td>
                   </tr>
                 </tbody>
               </table>
@@ -1474,6 +1017,7 @@
         <section class="mei-card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
             <h3 class="mei-card-title" style="margin: 0;">
+              <i class="fa-solid fa-list-check" style="color: var(--primaria);"></i>
               Últimas Movimentações Registradas
             </h3>
             <button type="button" class="botao botao--pequeno botao--primario" onclick="abrirModalLancamento()">
@@ -1512,7 +1056,7 @@
   <div id="modalLancamentoRapido" class="modal-overlay">
     <div class="modal-card">
       <div class="modal-header">
-        <h3> Registrar Movimentação MEI</h3>
+        <h3><i class="fa-solid fa-bolt" style="color:#10b981;"></i> Registrar Movimentação MEI</h3>
         <button type="button" class="modal-close-btn" onclick="fecharModalLancamento()">&times;</button>
       </div>
       <form id="formLancamentoRapido" onsubmit="salvarLancamentoRapido(event)">
@@ -1582,7 +1126,7 @@
   <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
   <script src="{{ url_for('static', filename='js/ia_analise_modal.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/controles_essenciais.js') }}?v=2.2"></script>
+  <script src="{{ url_for('static', filename='js/controles_essenciais.js') }}?v=2.1"></script>
   <script>
     function abrirSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sidebarOverlay')?.classList.add('active');}
     function fecharSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay')?.classList.remove('active');}
