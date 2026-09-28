@@ -6,13 +6,6 @@
 let dadosControlesAtuais = null;
 let tabelaAtualId = 'todas';
 let planilhasCarregadas = [];
-let chartRecebimentosInstancia = null;
-let chartCustosInstancia = null;
-let periodoDashboardAtual = 'mes'; // 'mes' ou 'ano'
-
-function isDarkMode() {
-  return document.body.classList.contains('tema-escuro') || localStorage.getItem('tema') === 'escuro';
-}
 
 function formatarBRL(val) {
   const n = Number(val) || 0;
@@ -30,22 +23,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const mesAtual = new Date().getMonth() + 1;
   const selMes = document.getElementById('selMes');
   if (selMes) selMes.value = String(mesAtual);
-
-  // Observar alternância de tema para atualizar gráficos dinamicamente
-  const btnTema = document.getElementById('btnTema');
-  if (btnTema) {
-    btnTema.addEventListener('click', () => {
-      setTimeout(() => {
-        const modo = isDarkMode() ? 'dark' : 'light';
-        if (chartRecebimentosInstancia && chartRecebimentosInstancia.updateOptions) {
-          chartRecebimentosInstancia.updateOptions({ theme: { mode: modo } });
-        }
-        if (chartCustosInstancia && chartCustosInstancia.updateOptions) {
-          chartCustosInstancia.updateOptions({ theme: { mode: modo } });
-        }
-      }, 100);
-    });
-  }
 
   // Inicializar seletor de planilha e depois carregar dados
   await configurarSeletorPlanilhaCE();
@@ -256,35 +233,6 @@ function renderizarControles(data) {
   const valTotalDesp = document.getElementById('valTotalDespesasMes');
   if (valTotalDesp) valTotalDesp.textContent = formatarBRL(caixa.saidas || 0);
 
-  // Renderização dinâmica de Novas Despesas Customizadas (criadas na página Dados)
-  const saidasList = document.querySelector('.saidas-list');
-  if (saidasList) {
-    saidasList.querySelectorAll('.saida-item-custom').forEach(el => el.remove());
-    const novasDespesas = data.novas_despesas || [];
-    novasDespesas.forEach(desp => {
-      const item = document.createElement('div');
-      item.className = 'saida-item saida-item-custom';
-      const cor = desp.cor || '#6366f1';
-      const icone = desp.icone || 'fa-tag';
-      const natText = desp.natureza === 'variavel' ? 'Custo variável' : 'Gasto fixo';
-      const nomeLimpo = String(desp.nome || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-
-      item.innerHTML = `
-        <div class="saida-item-left">
-          <div class="saida-icon-box" style="background: ${cor}26; color: ${cor};">
-            <i class="fa-solid ${icone}"></i>
-          </div>
-          <div>
-            <div class="saida-name">${nomeLimpo}</div>
-            <small style="color: var(--suave); font-size: 0.72rem;">${natText}</small>
-          </div>
-        </div>
-        <div class="saida-val">${formatarBRL(desp.valor || 0)}</div>
-      `;
-      saidasList.appendChild(item);
-    });
-  }
-
   // 4. Tabela Mensal 12 Meses
   const tbodyMeses = document.getElementById('tbodyMeses');
   if (tbodyMeses) {
@@ -299,6 +247,7 @@ function renderizarControles(data) {
       tr.innerHTML = `
         <td><strong>${m.mes_nome}</strong></td>
         <td>${formatarBRL(m.servicos)}</td>
+        <td>${formatarBRL(m.comercio)}</td>
         <td style="color:#10b981; font-weight:700;">${formatarBRL(m.entradas)}</td>
         <td style="color:#ef4444;">${formatarBRL(m.saidas)}</td>
         <td style="color:${corLucro}; font-weight:700;">${formatarBRL(m.lucro)}</td>
@@ -339,313 +288,6 @@ function renderizarControles(data) {
       });
     }
   }
-
-  // 6. Dashboard Visual: Gráficos de Recebimentos e Composição de Custos
-  renderizarDashboardGraficos(data);
-}
-
-// ==============================================================================
-// DASHBOARD VISUAL: RECEBIMENTOS & COMPOSIÇÃO DE CUSTOS (MEI)
-// ==============================================================================
-function alternarPeriodoDashboard(periodo) {
-  periodoDashboardAtual = periodo;
-  const btnMes = document.getElementById('btnDashPeriodoMes');
-  const btnAno = document.getElementById('btnDashPeriodoAno');
-
-  if (btnMes) btnMes.classList.toggle('ativo', periodo === 'mes');
-  if (btnAno) btnAno.classList.toggle('ativo', periodo === 'ano');
-
-  if (dadosControlesAtuais) {
-    renderizarDashboardGraficos(dadosControlesAtuais);
-  }
-}
-
-function renderizarDashboardGraficos(data) {
-  if (!data) return;
-  const dash = data.dashboard_graficos || {};
-  const mesNome = data.mes_nome || 'Mês';
-  const ano = data.ano || new Date().getFullYear();
-
-  renderizarGraficoRecebimentos(dash.recebimentos || {}, periodoDashboardAtual, mesNome, ano);
-  renderizarGraficoCustos(dash.composicao_custos || {}, periodoDashboardAtual, mesNome, ano);
-}
-
-function renderizarGraficoRecebimentos(recDados, periodo, mesNome, ano) {
-  const container = document.getElementById('graficoRecebimentosPizza');
-  const breakdownEl = document.getElementById('breakdownRecebimentos');
-  const badgeTotal = document.getElementById('badgeTotalRecebido');
-  const subtitulo = document.getElementById('subtituloRecebimentos');
-
-  if (!container) return;
-
-  const isMes = periodo === 'mes';
-  const total = isMes ? (recDados.total_mes || 0) : (recDados.total_ano || 0);
-  const fatias = isMes ? (recDados.fatias_mes || []) : (recDados.fatias_ano || []);
-
-  if (subtitulo) {
-    subtitulo.textContent = isMes
-      ? `Distribuição das entradas de ${mesNome} de ${ano}`
-      : `Distribuição de todas as entradas do ano ${ano}`;
-  }
-  if (badgeTotal) badgeTotal.textContent = formatarBRL(total);
-
-  if (chartRecebimentosInstancia) {
-    chartRecebimentosInstancia.destroy();
-    chartRecebimentosInstancia = null;
-  }
-
-  if (total <= 0 || fatias.length === 0) {
-    container.innerHTML = `
-      <div class="mei-chart-empty">
-        <i class="fa-solid fa-coins"></i>
-        <span>Nenhum recebimento registrado para este período.</span>
-      </div>
-    `;
-    if (breakdownEl) breakdownEl.innerHTML = '';
-    return;
-  }
-
-  container.innerHTML = '';
-
-  const cores = ['#10b981', '#3b82f6', '#8b5cf6', '#06b6d4', '#f59e0b', '#ec4899', '#64748b', '#14b8a6'];
-  const labels = fatias.map(f => f.nome);
-  const series = fatias.map(f => f.valor);
-  const fatiasCores = fatias.map((_, i) => cores[i % cores.length]);
-
-  const options = {
-    chart: {
-      type: 'donut',
-      height: 255,
-      animations: { enabled: true, speed: 600 },
-      background: 'transparent',
-      fontFamily: 'inherit'
-    },
-    series: series,
-    labels: labels,
-    colors: fatiasCores,
-    stroke: {
-      width: 2,
-      colors: [isDarkMode() ? '#1e293b' : '#ffffff']
-    },
-    dataLabels: {
-      enabled: false
-    },
-    legend: {
-      show: false
-    },
-    tooltip: {
-      theme: isDarkMode() ? 'dark' : 'light',
-      y: {
-        formatter: (val) => `${formatarBRL(val)} (${total > 0 ? ((val / total) * 100).toFixed(1) : 0}%)`
-      }
-    },
-    plotOptions: {
-      pie: {
-        donut: {
-          size: '68%',
-          labels: {
-            show: true,
-            name: {
-              show: true,
-              fontSize: '12px',
-              fontWeight: 600,
-              color: 'var(--suave)',
-              offsetY: -4
-            },
-            value: {
-              show: true,
-              fontSize: '15px',
-              fontWeight: 800,
-              color: 'var(--texto)',
-              offsetY: 4,
-              formatter: (val) => formatarBRL(val)
-            },
-            total: {
-              show: true,
-              label: 'Total Recebido',
-              fontSize: '11px',
-              fontWeight: 700,
-              color: 'var(--suave)',
-              formatter: () => formatarBRL(total)
-            }
-          }
-        }
-      }
-    }
-  };
-
-  chartRecebimentosInstancia = new ApexCharts(container, options);
-  chartRecebimentosInstancia.render();
-
-  // Preencher breakdown list
-  if (breakdownEl) {
-    breakdownEl.innerHTML = fatias.map((item, idx) => {
-      const cor = fatiasCores[idx];
-      return `
-        <div class="mei-breakdown-item">
-          <div class="mei-breakdown-item-left">
-            <span class="mei-breakdown-dot" style="background: ${cor};"></span>
-            <span class="mei-breakdown-name" title="${item.nome}">${item.nome}</span>
-          </div>
-          <div class="mei-breakdown-item-right">
-            <span class="mei-breakdown-val">${formatarBRL(item.valor)}</span>
-            <span class="mei-breakdown-pct" style="color: ${cor}; background: ${cor}18;">${item.percentual}%</span>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
-}
-
-function renderizarGraficoCustos(custosDados, periodo, mesNome, ano) {
-  const container = document.getElementById('graficoCustosFixoVariavel');
-  const badgeTotal = document.getElementById('badgeTotalCustos');
-  const subtitulo = document.getElementById('subtituloCustos');
-
-  const valFixo = document.getElementById('valCustoFixoTotal');
-  const valVar = document.getElementById('valCustoVarTotal');
-  const tagFixo = document.getElementById('tagPctFixo');
-  const tagVar = document.getElementById('tagPctVar');
-
-  const barFixo = document.getElementById('barRatioFixo');
-  const barVar = document.getElementById('barRatioVar');
-  const labelFixo = document.getElementById('labelRatioFixo');
-  const labelVar = document.getElementById('labelRatioVar');
-
-  const itensFixoEl = document.getElementById('itensCustoFixo');
-  const itensVarEl = document.getElementById('itensCustoVar');
-
-  if (!container) return;
-
-  const isMes = periodo === 'mes';
-  const cFixo = isMes ? (custosDados.custo_fixo_total || 0) : (custosDados.ano_custo_fixo || 0);
-  const cVar = isMes ? (custosDados.custo_variavel_total || 0) : (custosDados.ano_custo_variavel || 0);
-  const total = isMes ? (custosDados.custo_total || 0) : (custosDados.ano_custo_total || 0);
-  const pFixo = isMes ? (custosDados.pct_fixo || 0) : (custosDados.ano_pct_fixo || 0);
-  const pVar = isMes ? (custosDados.pct_variavel || 0) : (custosDados.ano_pct_variavel || 0);
-  const detFixo = isMes ? (custosDados.detalhes_fixo || []) : (custosDados.ano_detalhes_fixo || []);
-  const detVar = isMes ? (custosDados.detalhes_variavel || []) : (custosDados.ano_detalhes_variavel || []);
-
-  if (subtitulo) {
-    subtitulo.textContent = isMes
-      ? `Análise da estrutura de custos em ${mesNome} de ${ano}`
-      : `Análise da estrutura de custos acumulada em ${ano}`;
-  }
-  if (badgeTotal) badgeTotal.textContent = formatarBRL(total);
-
-  if (valFixo) valFixo.textContent = formatarBRL(cFixo);
-  if (valVar) valVar.textContent = formatarBRL(cVar);
-  if (tagFixo) tagFixo.textContent = `${pFixo}%`;
-  if (tagVar) tagVar.textContent = `${pVar}%`;
-
-  if (labelFixo) labelFixo.innerHTML = `Fixos: ${pFixo}% (${formatarBRL(cFixo)})`;
-  if (labelVar) labelVar.innerHTML = `Variáveis: ${pVar}% (${formatarBRL(cVar)})`;
-
-  if (barFixo) barFixo.style.width = total > 0 ? `${pFixo}%` : '50%';
-  if (barVar) barVar.style.width = total > 0 ? `${pVar}%` : '50%';
-
-  // Preencher mini-itens
-  if (itensFixoEl) {
-    if (detFixo.length > 0) {
-      itensFixoEl.innerHTML = detFixo.slice(0, 3).map(item => `
-        <span>• ${item.nome}: <strong>${formatarBRL(item.valor)}</strong> (${item.percentual}%)</span>
-      `).join('');
-    } else {
-      itensFixoEl.innerHTML = '<span>• DAS-MEI, Pró-labore, Operacionais</span>';
-    }
-  }
-
-  if (itensVarEl) {
-    if (detVar.length > 0) {
-      itensVarEl.innerHTML = detVar.slice(0, 3).map(item => `
-        <span>• ${item.nome}: <strong>${formatarBRL(item.valor)}</strong> (${item.percentual}%)</span>
-      `).join('');
-    } else {
-      itensVarEl.innerHTML = '<span>• Fornecedores, Mercadorias, Insumos</span>';
-    }
-  }
-
-  if (chartCustosInstancia) {
-    chartCustosInstancia.destroy();
-    chartCustosInstancia = null;
-  }
-
-  if (total <= 0) {
-    container.innerHTML = `
-      <div class="mei-chart-empty">
-        <i class="fa-solid fa-receipt"></i>
-        <span>Nenhum custo registrado para este período.</span>
-      </div>
-    `;
-    return;
-  }
-
-  container.innerHTML = '';
-
-  const options = {
-    chart: {
-      type: 'donut',
-      height: 255,
-      animations: { enabled: true, speed: 600 },
-      background: 'transparent',
-      fontFamily: 'inherit'
-    },
-    series: [cFixo, cVar],
-    labels: ['Custos Fixos', 'Custos Variáveis'],
-    colors: ['#3b82f6', '#f59e0b'],
-    stroke: {
-      width: 2,
-      colors: [isDarkMode() ? '#1e293b' : '#ffffff']
-    },
-    dataLabels: {
-      enabled: false
-    },
-    legend: {
-      show: false
-    },
-    tooltip: {
-      theme: isDarkMode() ? 'dark' : 'light',
-      y: {
-        formatter: (val) => `${formatarBRL(val)} (${total > 0 ? ((val / total) * 100).toFixed(1) : 0}%)`
-      }
-    },
-    plotOptions: {
-      pie: {
-        donut: {
-          size: '68%',
-          labels: {
-            show: true,
-            name: {
-              show: true,
-              fontSize: '12px',
-              fontWeight: 600,
-              color: 'var(--suave)',
-              offsetY: -4
-            },
-            value: {
-              show: true,
-              fontSize: '15px',
-              fontWeight: 800,
-              color: 'var(--texto)',
-              offsetY: 4,
-              formatter: (val) => formatarBRL(val)
-            },
-            total: {
-              show: true,
-              label: 'Total Custos',
-              fontSize: '11px',
-              fontWeight: 700,
-              color: 'var(--suave)',
-              formatter: () => formatarBRL(total)
-            }
-          }
-        }
-      }
-    }
-  };
-
-  chartCustosInstancia = new ApexCharts(container, options);
-  chartCustosInstancia.render();
 }
 
 // =================== MODAL DE LANÇAMENTO RÁPIDO ===================
@@ -683,21 +325,12 @@ function selecionarTipoLancamento(tipo) {
     btnEntrada.className = 'modal-tipo-btn';
     btnSaida.className = 'modal-tipo-btn active-saida';
 
-    let customOptionsHtml = '';
-    if (dadosControlesAtuais && Array.isArray(dadosControlesAtuais.novas_despesas)) {
-      dadosControlesAtuais.novas_despesas.forEach(d => {
-        const nomeEsc = String(d.nome || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        customOptionsHtml += `<option value="${d.id}">${nomeEsc}</option>`;
-      });
-    }
-
     selSubtipo.innerHTML = `
       <option value="das_mei">Boleto DAS-MEI (Tributo)</option>
       <option value="compras_mercadorias" selected>Fornecedores / Compras de Mercadorias</option>
       <option value="custos_operacionais">Custos Operacionais (Luz, Internet, Ferramentas)</option>
       <option value="pro_labore">Pró-labore / Retirada Pessoal</option>
       <option value="outro">Outras Despesas</option>
-      ${customOptionsHtml}
     `;
   }
 }
