@@ -7,6 +7,61 @@
 <!-- Overlay de fundo -->
 <div class="acc-overlay" id="accOverlay" aria-hidden="true"></div>
 
+<style>
+  /* Correção de Overflow e Encolhimento de Conteúdo no Painel de Acessibilidade */
+  #painelAcessibilidade {
+    width: 375px !important;
+    max-width: 92vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+  #painelAcessibilidade .acc-painel-body {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+    padding: 16px 18px 24px !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(59, 130, 246, 0.4) transparent;
+  }
+  #painelAcessibilidade .acc-painel-body::-webkit-scrollbar {
+    width: 6px;
+  }
+  #painelAcessibilidade .acc-painel-body::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.35);
+    border-radius: 4px;
+  }
+  #painelAcessibilidade .acc-secao {
+    flex-shrink: 0 !important;
+    width: 100% !important;
+    min-height: fit-content !important;
+    overflow: visible !important;
+  }
+  #painelAcessibilidade .acc-secao-body {
+    flex-shrink: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+  #painelAcessibilidade .acc-atalhos {
+    flex-shrink: 0 !important;
+    width: 100% !important;
+  }
+  #painelAcessibilidade .acc-btn-reset {
+    flex-shrink: 0 !important;
+    width: 100% !important;
+    margin-top: 4px !important;
+    margin-bottom: 16px !important;
+  }
+</style>
+
 <!-- Botão flutuante (canto inferior ESQUERDO) -->
 <div class="acc-flutuante-wrapper" id="accFlutuante" role="complementary" aria-label="Recursos de Acessibilidade">
   <button
