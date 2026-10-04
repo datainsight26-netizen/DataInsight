@@ -157,17 +157,6 @@ _registrar_aliases_blueprints(app)
 
 
 # ==============================================================================
-# 10. INICIALIZAÇÃO DO ASSISTENTE AUTÔNOMO 24/7 (DOT)
-# ==============================================================================
-
-try:
-    from backend.chatbot.autonomous_assistant import inicializar_motor_assistente
-    inicializar_motor_assistente()
-except Exception as e_assistente:
-    print(f"[AVISO ASSISTENTE]: Não foi possível inicializar motor autônomo: {e_assistente}")
-
-
-# ==============================================================================
 # 11. INICIALIZAÇÃO DO SERVIDOR
 # ==============================================================================
 
