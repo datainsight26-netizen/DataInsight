@@ -1,11 +1,48 @@
-import re
-import urllib.request
+# ==============================================================================
+# cnpj_service.py
+# ==============================================================================
+# Este código pertence à plataforma @DataInsight.
+# Todos os códigos da plataforma devem seguir a mesma estrutura de organização
+# em seções numeradas, conforme o padrão abaixo.
+#
+# Observação técnica: o formato original sugerido usava "//" (estilo JavaScript).
+# Em Python, "//" é o operador de divisão inteira e causaria erro de sintaxe,
+# portanto os cabeçalhos foram adaptados para "#", preservando a mesma função
+# de demarcação visual e numeração sequencial.
+
+# ==============================================================================
+# 1. IMPORTAÇÕES
+# ==============================================================================
+
 import json
+import re
+import urllib.error
+import urllib.request
 from datetime import datetime
+
+
+# ==============================================================================
+# 2. CONSTANTES E TABELAS DE REFERÊNCIA
+# ==============================================================================
+
+# Histórico e valores vigentes do Salário Mínimo nacional
+TABELA_SALARIO_MINIMO = {
+    2023: 1320.00,
+    2024: 1412.00,
+    2025: 1518.00,
+    2026: 1518.00,
+}
+
+SALARIO_MINIMO_PADRAO = 1518.00
+
+
+# ==============================================================================
+# 3. VALIDAÇÃO E FORMATAÇÃO DE CNPJ
+# ==============================================================================
 
 def validar_formato_cnpj(cnpj: str) -> bool:
     """Valida se o CNPJ possui 14 dígitos numéricos e cálculo de dígitos verificadores válido."""
-    digitos = re.sub(r'\D', '', str(cnpj or ''))
+    digitos = re.sub(r"\D", "", str(cnpj or ""))
     if len(digitos) != 14:
         return False
     # Elimina CNPJs com todos os dígitos iguais (ex: 00000000000000)
@@ -27,12 +64,18 @@ def validar_formato_cnpj(cnpj: str) -> bool:
     d2 = 0 if resto_2 < 2 else 11 - resto_2
     return int(digitos[13]) == d2
 
+
 def formatar_cnpj(cnpj: str) -> str:
     """Formata 14 dígitos no padrão 00.000.000/0000-00"""
-    d = re.sub(r'\D', '', str(cnpj or ''))
+    d = re.sub(r"\D", "", str(cnpj or ""))
     if len(d) == 14:
         return f"{d[:2]}.{d[2:5]}.{d[5:8]}/{d[8:12]}-{d[12:]}"
     return d
+
+
+# ==============================================================================
+# 4. CÁLCULO DO TETO ANUAL DO MEI
+# ==============================================================================
 
 def calcular_teto_anual_mei(data_abertura_str: str = None) -> dict:
     """
@@ -49,17 +92,17 @@ def calcular_teto_anual_mei(data_abertura_str: str = None) -> dict:
             "teto_anual": teto_padrao,
             "proporcional": False,
             "meses_ativos": 12,
-            "limite_mensal_medio": mensalidade_teto
+            "limite_mensal_medio": mensalidade_teto,
         }
 
     try:
         # Formatos comuns: 'YYYY-MM-DD' ou 'DD/MM/YYYY'
         dt = None
-        if '-' in data_abertura_str:
-            partes = data_abertura_str.split('-')
+        if "-" in data_abertura_str:
+            partes = data_abertura_str.split("-")
             if len(partes[0]) == 4:
                 dt = datetime.strptime(data_abertura_str[:10], "%Y-%m-%d")
-        elif '/' in data_abertura_str:
+        elif "/" in data_abertura_str:
             dt = datetime.strptime(data_abertura_str[:10], "%d/%m/%Y")
 
         if dt and dt.year == ano_atual:
@@ -72,7 +115,7 @@ def calcular_teto_anual_mei(data_abertura_str: str = None) -> dict:
                 "meses_ativos": meses_ativos,
                 "limite_mensal_medio": mensalidade_teto,
                 "mes_abertura": dt.month,
-                "ano_abertura": dt.year
+                "ano_abertura": dt.year,
             }
     except Exception as e:
         print(f"[Aviso] Erro ao calcular teto proporcional do MEI: {e}")
@@ -81,15 +124,92 @@ def calcular_teto_anual_mei(data_abertura_str: str = None) -> dict:
         "teto_anual": teto_padrao,
         "proporcional": False,
         "meses_ativos": 12,
-        "limite_mensal_medio": mensalidade_teto
+        "limite_mensal_medio": mensalidade_teto,
     }
+
+
+# ==============================================================================
+# 5. SALÁRIO MÍNIMO E CÁLCULO DO DAS-MEI
+# ==============================================================================
+
+def obter_salario_minimo_vigente(ano: int = None) -> float:
+    """Retorna o valor oficial do salário mínimo vigente para o ano especificado ou corrente."""
+    ano_ref = ano or datetime.now().year
+    return TABELA_SALARIO_MINIMO.get(ano_ref, SALARIO_MINIMO_PADRAO)
+
+
+def calcular_das_mei(
+    ano: int = None,
+    tipo_atividade: str = "servicos",
+    salario_minimo_custom: float = None,
+) -> dict:
+    """
+    Realiza a apuração do DAS-MEI conforme a legislação vigente (Simei / LC 123/2006):
+    - INSS Previdenciário: exatamente 5% do Salário Mínimo nacional vigente.
+    - ICMS (Comércio / Indústria / Transporte intermunicipal): + R$ 1,00
+    - ISS (Prestação de Serviços em geral): + R$ 5,00
+    - Atividade Mista (Comércio + Serviços): + R$ 6,00 (R$ 1,00 ICMS + R$ 5,00 ISS)
+    """
+    ano_ref = int(ano) if ano else datetime.now().year
+    if salario_minimo_custom and float(salario_minimo_custom) > 0:
+        sm = float(salario_minimo_custom)
+    else:
+        sm = obter_salario_minimo_vigente(ano_ref)
+
+    inss = round(sm * 0.05, 2)
+    tipo = str(tipo_atividade or "servicos").strip().lower()
+
+    if tipo in ("comercio", "industria", "varejo", "atacado"):
+        icms = 1.00
+        iss = 0.00
+        tipo_normalizado = "comercio"
+        desc_categoria = "Comércio / Indústria (ICMS: R$ 1,00)"
+    elif tipo in ("servicos", "servico", "prestacao_servicos"):
+        icms = 0.00
+        iss = 5.00
+        tipo_normalizado = "servicos"
+        desc_categoria = "Prestação de Serviços (ISS: R$ 5,00)"
+    else:
+        icms = 1.00
+        iss = 5.00
+        tipo_normalizado = "misto"
+        desc_categoria = "Comércio e Serviços (ICMS: R$ 1,00 + ISS: R$ 5,00)"
+
+    total = round(inss + icms + iss, 2)
+
+    return {
+        "ano": ano_ref,
+        "salario_minimo": round(sm, 2),
+        "inss": inss,
+        "aliquota_inss_percentual": 5.0,
+        "icms": icms,
+        "iss": iss,
+        "total_das": total,
+        "tipo_atividade": tipo_normalizado,
+        "categoria_descricao": desc_categoria,
+        "formula": (
+            f"5% SM (R$ {inss:.2f}) + ICMS (R$ {icms:.2f}) + "
+            f"ISS (R$ {iss:.2f}) = R$ {total:.2f}"
+        ),
+        "detalhamento": {
+            "inss_previdenciario": inss,
+            "icms_estadual": icms,
+            "iss_municipal": iss,
+            "total": total,
+        },
+    }
+
+
+# ==============================================================================
+# 6. CONSULTA EXTERNA DE CNPJ (BRASILAPI)
+# ==============================================================================
 
 def consultar_cnpj_externo(cnpj: str) -> dict:
     """
     Consulta dados cadastrais oficiais do CNPJ via BrasilAPI pública gratuita.
     Retorna razão social, se é optante pelo MEI, porte da empresa, data de abertura e classificação.
     """
-    digitos = re.sub(r'\D', '', str(cnpj or ''))
+    digitos = re.sub(r"\D", "", str(cnpj or ""))
     if len(digitos) != 14:
         return {"sucesso": False, "mensagem": "CNPJ deve conter exatamente 14 dígitos."}
 
@@ -101,34 +221,54 @@ def consultar_cnpj_externo(cnpj: str) -> dict:
             url_brasilapi,
             headers={
                 "User-Agent": "DataInsight/2.0 (FinanceBI-Platform)",
-                "Accept": "application/json"
-            }
+                "Accept": "application/json",
+            },
         )
         with urllib.request.urlopen(req, timeout=5) as response:
             if response.status == 200:
-                data = json.loads(response.read().decode('utf-8'))
-                
-                razao_social = data.get("razao_social") or data.get("nome_fantasia") or "Empresa Cadastrada"
+                data = json.loads(response.read().decode("utf-8"))
+
+                razao_social = (
+                    data.get("razao_social")
+                    or data.get("nome_fantasia")
+                    or "Empresa Cadastrada"
+                )
                 nome_fantasia = data.get("nome_fantasia") or razao_social
-                
+
                 # BrasilAPI retorna opcao_pelo_mei como boolean ou null
                 opcao_pelo_mei = bool(data.get("opcao_pelo_mei", False))
                 porte = str(data.get("porte", "")).strip().upper()
-                
+
                 # Se for optante pelo MEI ou tiver 'MEI' na descrição
                 is_mei = opcao_pelo_mei or ("MEI" in porte)
                 tipo_perfil = "MEI" if is_mei else "ME"
-                
+
                 data_abertura = data.get("data_inicio_atividade") or ""
-                teto_info = calcular_teto_anual_mei(data_abertura) if is_mei else {"teto_anual": None}
+                teto_info = (
+                    calcular_teto_anual_mei(data_abertura)
+                    if is_mei
+                    else {"teto_anual": None}
+                )
 
                 cnae_desc = data.get("cnae_fiscal_descricao") or ""
                 # Identifica se é predominantemente Serviços ou Comércio
                 cnae_tipo = "misto"
                 cnae_lower = cnae_desc.lower()
-                if any(w in cnae_lower for w in ["comercio", "varejista", "atacadista", "venda"]):
+                if any(
+                    w in cnae_lower
+                    for w in ["comercio", "varejista", "atacadista", "venda"]
+                ):
                     cnae_tipo = "comercio"
-                elif any(w in cnae_lower for w in ["servico", "manutencao", "consultoria", "desenvolvimento", "reparo"]):
+                elif any(
+                    w in cnae_lower
+                    for w in [
+                        "servico",
+                        "manutencao",
+                        "consultoria",
+                        "desenvolvimento",
+                        "reparo",
+                    ]
+                ):
                     cnae_tipo = "servicos"
 
                 return {
@@ -146,16 +286,26 @@ def consultar_cnpj_externo(cnpj: str) -> dict:
                     "cnae_principal": cnae_desc,
                     "cnae_tipo": cnae_tipo,
                     "teto_info": teto_info,
-                    "fonte": "Receita Federal via BrasilAPI"
+                    "das_info": calcular_das_mei(tipo_atividade=cnae_tipo) if is_mei else None,
+                    "fonte": "Receita Federal via BrasilAPI",
                 }
 
     except urllib.error.HTTPError as he:
         if he.code == 404:
-            return {"sucesso": False, "mensagem": "CNPJ não encontrado na base da Receita Federal."}
+            return {
+                "sucesso": False,
+                "mensagem": "CNPJ não encontrado na base da Receita Federal.",
+            }
         elif he.code == 429:
-            return {"sucesso": False, "mensagem": "Muitas consultas ao CNPJ no momento. Tente novamente em alguns instantes."}
+            return {
+                "sucesso": False,
+                "mensagem": "Muitas consultas ao CNPJ no momento. Tente novamente em alguns instantes.",
+            }
         else:
-            return {"sucesso": False, "mensagem": f"Erro na consulta do CNPJ (HTTP {he.code})."}
+            return {
+                "sucesso": False,
+                "mensagem": f"Erro na consulta do CNPJ (HTTP {he.code}).",
+            }
     except Exception as e:
         print(f"[Aviso] Falha ao consultar BrasilAPI ({e}).")
 
@@ -177,7 +327,8 @@ def consultar_cnpj_externo(cnpj: str) -> dict:
             "cnae_principal": "",
             "cnae_tipo": "misto",
             "teto_info": calcular_teto_anual_mei(),
-            "fonte": "Validação de Dígitos Verificadores"
+            "das_info": calcular_das_mei(tipo_atividade="misto"),
+            "fonte": "Validação de Dígitos Verificadores",
         }
 
     return {"sucesso": False, "mensagem": "CNPJ com dígitos verificadores inválidos."}

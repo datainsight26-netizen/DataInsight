@@ -4,6 +4,18 @@ DataInsight — Centro de Análise Estratégica, Saúde do Negócio, Alertas e P
 Federa dados de múltiplas planilhas e calcula cenários preditivos por regressão linear.
 """
 
+# ==============================================================================
+# analise_estrategica.py
+# ==============================================================================
+# Este código pertence à plataforma @DataInsight.
+# Todos os códigos da plataforma devem seguir a mesma estrutura de organização
+# em seções numeradas, conforme este arquivo.
+# ==============================================================================
+
+# ==============================================================================
+# 1. IMPORTS
+# ==============================================================================
+
 from flask import session, jsonify, request
 from backend.db import dados_colecao, usuario as usuarios_colecao
 from datetime import datetime, timedelta
@@ -26,8 +38,9 @@ from backend.analise.analise import (
 
 
 # ==============================================================================
-# 1. SCORE MULTIFATORIAL DE SAÚDE DO NEGÓCIO (0 a 100)
+# 2. SCORE MULTIFATORIAL DE SAÚDE DO NEGÓCIO (0 a 100)
 # ==============================================================================
+
 def calcular_saude_negocio(*args, **kwargs):
     """
     Calcula score contábil e operacional (0-100).
@@ -197,8 +210,9 @@ def calcular_saude_negocio(*args, **kwargs):
 
 
 # ==============================================================================
-# 2. GERADOR DE ALERTAS INTELIGENTES
+# 3. GERADOR DE ALERTAS INTELIGENTES
 # ==============================================================================
+
 def gerar_alertas_estrategicos(estrutura, cresc_fat, cresc_luc, is_mei=False, mei_data=None):
     alertas = []
     fat = estrutura.get("receita_bruta", 0.0)
@@ -280,8 +294,9 @@ def gerar_alertas_estrategicos(estrutura, cresc_fat, cresc_luc, is_mei=False, me
 
 
 # ==============================================================================
-# 3. GERADOR DE RECOMENDAÇÕES ESTRATÉGICAS
+# 4. GERADOR DE RECOMENDAÇÕES ESTRATÉGICAS
 # ==============================================================================
+
 def gerar_recomendacoes_estrategicas(estrutura, cresc_fat, cresc_luc, is_mei=False, mei_data=None):
     recs = []
     mg = estrutura.get("margem_liquida", 0.0)
@@ -347,8 +362,9 @@ def gerar_recomendacoes_estrategicas(estrutura, cresc_fat, cresc_luc, is_mei=Fal
 
 
 # ==============================================================================
-# 4. CÁLCULO DE CENÁRIOS E PROJEÇÕES ESTATÍSTICAS
+# 5. CÁLCULO DE CENÁRIOS E PROJEÇÕES ESTATÍSTICAS
 # ==============================================================================
+
 def calcular_cenarios_completos(fat_atual, desp_atual, series_faturamento, series_lucro):
     """
     Projeta 3 cenários probabilísticos para o próximo período:
@@ -450,6 +466,10 @@ def calcular_cenarios(faturamento, despesas, lucro, margem, series_faturamento, 
     }
 
 
+# ==============================================================================
+# 6. WRAPPERS DE COMPATIBILIDADE (ASSINATURA LEGADA)
+# ==============================================================================
+
 def gerar_alertas(*args, **kwargs):
     if args and isinstance(args[0], dict):
         return gerar_alertas_estrategicos(*args, **kwargs)
@@ -479,8 +499,9 @@ def gerar_recomendacoes(*args, **kwargs):
 
 
 # ==============================================================================
-# 5. ENDPOINT PRINCIPAL: OBTER ANÁLISE ESTRATÉGICA
+# 7. ENDPOINT PRINCIPAL: OBTER ANÁLISE ESTRATÉGICA
 # ==============================================================================
+
 def obter_analise_estrategica():
     usuario_id = session.get("usuario_id")
     if not usuario_id:

@@ -1,59 +1,101 @@
-from flask import session, request, jsonify
-from backend.db import usuario
-from bson import ObjectId
-import pandas as pd
+# ==============================================================================
+# mapeamento.py
+# ==============================================================================
+# Este código pertence à plataforma @DataInsight.
+# Todos os códigos da plataforma devem seguir a mesma estrutura de organização
+# em seções numeradas, conforme o padrão abaixo.
+#
+# Observação técnica: o formato original sugerido usava "//" (estilo JavaScript).
+# Em Python, "//" é o operador de divisão inteira e causaria erro de sintaxe,
+# portanto os cabeçalhos foram adaptados para "#", preservando a mesma função
+# de demarcação visual e numeração sequencial.
 
-# ─────────────────────────────────────────────────────────────
-# MAPEAMENTO BÁSICO (colunas genéricas → categorias padrão)
-# ─────────────────────────────────────────────────────────────
+# ==============================================================================
+# 1. IMPORTAÇÕES
+# ==============================================================================
+
+import json
+import traceback
+from datetime import datetime
+
+import pandas as pd
+from bson import ObjectId
+from flask import jsonify, request, session
+
+from backend.db import usuario
+
+
+# ==============================================================================
+# 2. AUXILIARES DE FILTRO DE USUÁRIO
+# ==============================================================================
 
 def _get_user_filter(user_id):
-    return {"_id": ObjectId(user_id)} if (user_id and ObjectId.is_valid(str(user_id))) else {"_id": user_id}
+    return (
+        {"_id": ObjectId(user_id)}
+        if (user_id and ObjectId.is_valid(str(user_id)))
+        else {"_id": user_id}
+    )
 
+
+# ==============================================================================
+# 3. MAPEAMENTO BÁSICO DE COLUNAS
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 3.1 Leitura do mapeamento básico
+# ------------------------------------------------------------------------------
 
 def obter_mapeamento():
     """Recupera o mapeamento de colunas do usuário"""
-    user_id = session.get('usuario_id')
+    user_id = session.get("usuario_id")
     if not user_id:
         return jsonify({"mensagem": "Não autorizado"}), 401
-    
+
     user = usuario.find_one(_get_user_filter(user_id))
     if not user:
         return jsonify({"mensagem": "Usuário não encontrado"}), 404
-    
+
     return jsonify(user.get("mapeamento", {})), 200
 
 
+# ------------------------------------------------------------------------------
+# 3.2 Gravação do mapeamento básico
+# ------------------------------------------------------------------------------
+
 def salvar_mapeamento():
     """Salva o mapeamento de colunas do usuário"""
-    user_id = session.get('usuario_id')
+    user_id = session.get("usuario_id")
     if not user_id:
         return jsonify({"mensagem": "Não autorizado"}), 401
-    
+
     dados = request.get_json()
     # Permitir dicionário vazio, mas não None
     if dados is None:
         return jsonify({"mensagem": "Dados inválidos"}), 400
-    
+
     # Mapeamento esperado: { "faturamento": "NomeColuna", "despesa": "NomeColuna", ... }
     usuario.update_one(
         _get_user_filter(user_id),
-        {"$set": {"mapeamento": dados}}
+        {"$set": {"mapeamento": dados}},
     )
-    
+
     return jsonify({"mensagem": "Mapeamento salvo com sucesso"}), 200
 
 
-# ─────────────────────────────────────────────────────────────
-# MAPEAMENTO FINANCEIRO EXPANDIDO
-# ─────────────────────────────────────────────────────────────
+# ==============================================================================
+# 4. MAPEAMENTO FINANCEIRO EXPANDIDO
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 4.1 Leitura do mapeamento financeiro + completude + recomendações
+# ------------------------------------------------------------------------------
 
 def obter_mapeamento_financeiro():
     """
     Recupera o mapeamento financeiro completo do usuário.
     Inclui: mapeamento salvo + análise de completude por ferramenta + recomendações.
     """
-    user_id = session.get('usuario_id')
+    user_id = session.get("usuario_id")
     if not user_id:
         return jsonify({"mensagem": "Não autorizado"}), 401
 
@@ -66,54 +108,81 @@ def obter_mapeamento_financeiro():
         base = user.get("mapeamento", {})
         if base:
             mapeamento = {}
-            if base.get("data"): mapeamento["periodo"] = base["data"]
-            if base.get("faturamento"): mapeamento["receita_total"] = base["faturamento"]
-            if base.get("despesa"): mapeamento["despesas"] = base["despesa"]
-            if base.get("lucro"): mapeamento["resultado"] = base["lucro"]
+            if base.get("data"):
+                mapeamento["periodo"] = base["data"]
+            if base.get("faturamento"):
+                mapeamento["receita_total"] = base["faturamento"]
+            if base.get("despesa"):
+                mapeamento["despesas"] = base["despesa"]
+            if base.get("lucro"):
+                mapeamento["resultado"] = base["lucro"]
 
     # ── DEBUG: Imprimir mapeamento financeiro salvo no banco ──────────
-    print("\n" + "="*60, flush=True)
-    print("[DEBUG] MAPEAMENTO FINANCEIRO CARREGADO DO BANCO (usuario_id:", user_id, ")", flush=True)
-    print("="*60, flush=True)
-    import json
+    print("\n" + "=" * 60, flush=True)
+    print(
+        "[DEBUG] MAPEAMENTO FINANCEIRO CARREGADO DO BANCO (usuario_id:",
+        user_id,
+        ")",
+        flush=True,
+    )
+    print("=" * 60, flush=True)
     if mapeamento:
         for chave, valor in mapeamento.items():
             print(f"  {chave}: {valor!r}", flush=True)
     else:
         print("  (mapeamento vazio — nenhuma categoria configurada)", flush=True)
-    print("="*60 + "\n", flush=True)
+    print("=" * 60 + "\n", flush=True)
 
     # Agora, buscar os dados reais do banco e imprimir os valores de cada coluna mapeada
     try:
         from backend.db import dados_colecao
+
+        ids_user = [str(user_id)]
+        if ObjectId.is_valid(str(user_id)):
+            ids_user.append(ObjectId(str(user_id)))
         doc_ativo = dados_colecao.find_one(
-            {"usuario_id": user_id},
-            sort=[("atualizado_em", -1), ("criado_em", -1)]
+            {"usuario_id": {"$in": ids_user}},
+            sort=[("atualizado_em", -1), ("criado_em", -1)],
         )
         if doc_ativo and doc_ativo.get("dados") and mapeamento:
             linhas = doc_ativo.get("dados", [])
             colunas_bd = doc_ativo.get("colunas", [])
             print("[DEBUG] VALORES DAS COLUNAS FINANCEIRAS NO BANCO:", flush=True)
-            print("-"*60, flush=True)
+            print("-" * 60, flush=True)
             for cat_id, col_nome in mapeamento.items():
                 if cat_id.endswith("_manual"):
-                    print(f"  {cat_id} (valor fixo manual): {col_nome!r}", flush=True)
+                    print(
+                        f"  {cat_id} (valor fixo manual): {col_nome!r}", flush=True
+                    )
                     continue
                 if col_nome and col_nome in colunas_bd:
                     valores = [linha.get(col_nome) for linha in linhas]
                     print(f"  {cat_id} → coluna '{col_nome}': {valores}", flush=True)
                 else:
-                    print(f"  {cat_id} → coluna '{col_nome}': (coluna não encontrada na tabela)", flush=True)
-            print("-"*60 + "\n", flush=True)
+                    print(
+                        f"  {cat_id} → coluna '{col_nome}': "
+                        "(coluna não encontrada na tabela)",
+                        flush=True,
+                    )
+            print("-" * 60 + "\n", flush=True)
         elif not doc_ativo:
-            print("[DEBUG] Nenhuma tabela de dados encontrada no banco para este usuário.\n", flush=True)
+            print(
+                "[DEBUG] Nenhuma tabela de dados encontrada no banco para este usuário.\n",
+                flush=True,
+            )
     except Exception as e:
         print(f"[DEBUG] Erro ao buscar dados para debug: {e}\n", flush=True)
     # ─────────────────────────────────────────────────────────────────
 
     # Análise de completude por ferramenta (respeitando MEI vs ME)
-    perfil = session.get('usuario_perfil') or (user.get('tipo_perfil', 'ME') if user else 'ME')
-    from backend.dados.classificacao_financeira import analisar_completude_financeira, gerar_recomendacoes
+    perfil = session.get("usuario_perfil") or (
+        user.get("tipo_perfil", "ME") if user else "ME"
+    )
+    from backend.dados.classificacao_financeira import (
+        analisar_completude_financeira,
+        gerar_recomendacoes,
+    )
+
     completude = analisar_completude_financeira(mapeamento, perfil=perfil)
     recomendacoes = gerar_recomendacoes(mapeamento, perfil=perfil)
 
@@ -126,11 +195,16 @@ def obter_mapeamento_financeiro():
     }), 200
 
 
+# ------------------------------------------------------------------------------
+# 4.2 Gravação do mapeamento financeiro + sincronização com tabela ativa
+# ------------------------------------------------------------------------------
+
 def salvar_mapeamento_financeiro():
     """
-    Salva o mapeamento financeiro completo do usuário e sincroniza com o mapeamento básico e a tabela ativa.
+    Salva o mapeamento financeiro completo do usuário e sincroniza com o
+    mapeamento básico e a tabela ativa.
     """
-    user_id = session.get('usuario_id')
+    user_id = session.get("usuario_id")
     if not user_id:
         return jsonify({"mensagem": "Não autorizado"}), 401
 
@@ -138,30 +212,51 @@ def salvar_mapeamento_financeiro():
     if dados_raw is None:
         return jsonify({"mensagem": "Dados inválidos"}), 400
 
-    # Limpar chaves vazias do payload (evita persistir valores removidos)
+    # --------------------------------------------------------------------------
+    # 4.2.1 Limpeza do payload
+    # --------------------------------------------------------------------------
     dados = {
-        k: v for k, v in dados_raw.items()
+        k: v
+        for k, v in dados_raw.items()
         if v not in ("", None, "null", "undefined")
     }
 
     # ── DEBUG: Imprimir o mapeamento que está sendo salvo ─────────────
-    import json
-    print("\n" + "="*60, flush=True)
-    print("[DEBUG] SALVANDO MAPEAMENTO FINANCEIRO (usuario_id:", user_id, ")", flush=True)
-    print("="*60, flush=True)
+    print("\n" + "=" * 60, flush=True)
+    print(
+        "[DEBUG] SALVANDO MAPEAMENTO FINANCEIRO (usuario_id:",
+        user_id,
+        ")",
+        flush=True,
+    )
+    print("=" * 60, flush=True)
     if dados:
         for chave, valor in dados.items():
             print(f"  {chave}: {valor!r}", flush=True)
     else:
         print("  (payload vazio)", flush=True)
-    print("="*60 + "\n", flush=True)
+    print("=" * 60 + "\n", flush=True)
     # ─────────────────────────────────────────────────────────────────
 
+    # --------------------------------------------------------------------------
+    # 4.2.2 Sincronização com o mapeamento básico
+    # --------------------------------------------------------------------------
     mapeamento_basico = {
         "data": dados.get("periodo") or dados.get("data") or "",
-        "faturamento": dados.get("receita_total") or dados.get("receita_produtos") or dados.get("faturamento") or "",
-        "despesa": dados.get("despesas") or dados.get("custo_variavel") or dados.get("fornecedores") or dados.get("despesa") or "",
-        "lucro": dados.get("resultado") or dados.get("lucro") or ""
+        "faturamento": (
+            dados.get("receita_total")
+            or dados.get("receita_produtos")
+            or dados.get("faturamento")
+            or ""
+        ),
+        "despesa": (
+            dados.get("despesas")
+            or dados.get("custo_variavel")
+            or dados.get("fornecedores")
+            or dados.get("despesa")
+            or ""
+        ),
+        "lucro": dados.get("resultado") or dados.get("lucro") or "",
     }
 
     # Capturar mapeamento financeiro anterior para detectar remoções de valores manuais
@@ -170,19 +265,26 @@ def salvar_mapeamento_financeiro():
 
     usuario.update_one(
         _get_user_filter(user_id),
-        {"$set": {
-            "mapeamento_financeiro": dados,
-            "mapeamento": mapeamento_basico
-        }}
+        {
+            "$set": {
+                "mapeamento_financeiro": dados,
+                "mapeamento": mapeamento_basico,
+            }
+        },
     )
 
-    # Sincronizar valores fixos manuais com a tabela ativa no MongoDB
+    # --------------------------------------------------------------------------
+    # 4.2.3 Sincronizar valores fixos manuais com a tabela ativa no MongoDB
+    # --------------------------------------------------------------------------
     try:
         from backend.db import dados_colecao
-        from datetime import datetime
+
+        ids_user = [str(user_id)]
+        if ObjectId.is_valid(str(user_id)):
+            ids_user.append(ObjectId(str(user_id)))
         doc_ativo = dados_colecao.find_one(
-            {"usuario_id": user_id},
-            sort=[("atualizado_em", -1), ("criado_em", -1)]
+            {"usuario_id": {"$in": ids_user}},
+            sort=[("atualizado_em", -1), ("criado_em", -1)],
         )
         if doc_ativo and doc_ativo.get("dados"):
             linhas = doc_ativo.get("dados", [])
@@ -228,8 +330,10 @@ def salvar_mapeamento_financeiro():
             # 2) Detectar chaves manuais que existiam antes e agora foram removidas
             #    (chave não presente no payload OU payload enviou string vazia)
             removed_manual_keys = [
-                k for k in prev_map_fin.keys()
-                if k.endswith('_manual') and (k not in dados or dados.get(k) in ("", None))
+                k
+                for k in prev_map_fin.keys()
+                if k.endswith("_manual")
+                and (k not in dados or dados.get(k) in ("", None))
             ]
             for chave in removed_manual_keys:
                 prev_val = prev_map_fin.get(chave)
@@ -249,17 +353,26 @@ def salvar_mapeamento_financeiro():
             if modificado:
                 dados_colecao.update_one(
                     {"_id": doc_ativo["_id"]},
-                    {"$set": {"dados": linhas, "atualizado_em": datetime.now()}}
+                    {"$set": {"dados": linhas, "atualizado_em": datetime.now()}},
                 )
     except Exception as e:
-        print(f"Aviso ao sincronizar valores manuais com tabela ativa: {e}", flush=True)
+        print(
+            f"Aviso ao sincronizar valores manuais com tabela ativa: {e}",
+            flush=True,
+        )
 
-    # Retornar completude atualizada (respeitando MEI vs ME)
-    perfil = session.get('usuario_perfil')
+    # --------------------------------------------------------------------------
+    # 4.2.4 Retornar completude atualizada (respeitando MEI vs ME)
+    # --------------------------------------------------------------------------
+    perfil = session.get("usuario_perfil")
     if not perfil:
         user_doc = usuario.find_one(_get_user_filter(user_id))
-        perfil = user_doc.get('tipo_perfil', 'ME') if user_doc else 'ME'
-    from backend.dados.classificacao_financeira import analisar_completude_financeira, gerar_recomendacoes
+        perfil = user_doc.get("tipo_perfil", "ME") if user_doc else "ME"
+    from backend.dados.classificacao_financeira import (
+        analisar_completude_financeira,
+        gerar_recomendacoes,
+    )
+
     completude = analisar_completude_financeira(dados, perfil=perfil)
     recomendacoes = gerar_recomendacoes(dados, perfil=perfil)
 
@@ -273,13 +386,21 @@ def salvar_mapeamento_financeiro():
     }), 200
 
 
+# ==============================================================================
+# 5. ANÁLISE E PREVIEW DE COLUNAS FINANCEIRAS
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 5.1 Análise automática de colunas financeiras
+# ------------------------------------------------------------------------------
+
 def analisar_colunas_financeiras():
     """
     Recebe as colunas disponíveis e analisa automaticamente quais
     correspondem a cada categoria financeira.
     Body JSON esperado: { "colunas": ["Col A", "Col B", ...], "dados_amostra": [[...], ...] }
     """
-    user_id = session.get('usuario_id')
+    user_id = session.get("usuario_id")
     if not user_id:
         return jsonify({"mensagem": "Não autorizado"}), 401
 
@@ -292,20 +413,28 @@ def analisar_colunas_financeiras():
 
     # Montar DataFrame de amostra para análise comportamental
     try:
-        df = pd.DataFrame(dados_amostra, columns=colunas) if dados_amostra else pd.DataFrame(columns=colunas)
+        df = (
+            pd.DataFrame(dados_amostra, columns=colunas)
+            if dados_amostra
+            else pd.DataFrame(columns=colunas)
+        )
     except ValueError:
         df = pd.DataFrame(columns=colunas)
     except Exception:
         df = pd.DataFrame(columns=colunas)
 
     # Identificar perfil do usuário (MEI vs ME)
-    perfil = session.get('usuario_perfil')
+    perfil = session.get("usuario_perfil")
     if not perfil:
         user_doc = usuario.find_one(_get_user_filter(user_id))
-        perfil = user_doc.get('tipo_perfil', 'ME') if user_doc else 'ME'
+        perfil = user_doc.get("tipo_perfil", "ME") if user_doc else "ME"
     is_mei = str(perfil).upper() == "MEI"
 
-    from backend.dados.classificacao_financeira import classificar_colunas_financeiras, LABELS_CATEGORIAS
+    from backend.dados.classificacao_financeira import (
+        LABELS_CATEGORIAS,
+        classificar_colunas_financeiras,
+    )
+
     analise = classificar_colunas_financeiras(df)
 
     mapeamento_sugerido = analise["mapeamento_sugerido"]
@@ -325,12 +454,16 @@ def analisar_colunas_financeiras():
     }), 200
 
 
+# ------------------------------------------------------------------------------
+# 5.2 Preview dos indicadores financeiros
+# ------------------------------------------------------------------------------
+
 def preview_financeiro():
     """
     Calcula um preview dos indicadores financeiros com base no mapeamento atual.
     Body JSON esperado: { "mapeamento": {...}, "dados_amostra": [[...]], "colunas": [...] }
     """
-    user_id = session.get('usuario_id')
+    user_id = session.get("usuario_id")
     if not user_id:
         return jsonify({"mensagem": "Não autorizado"}), 401
 
@@ -340,7 +473,11 @@ def preview_financeiro():
     dados_amostra = payload.get("dados_amostra", [])
 
     try:
-        df = pd.DataFrame(dados_amostra, columns=colunas) if dados_amostra else pd.DataFrame(columns=colunas)
+        df = (
+            pd.DataFrame(dados_amostra, columns=colunas)
+            if dados_amostra
+            else pd.DataFrame(columns=colunas)
+        )
     except ValueError:
         df = pd.DataFrame(columns=colunas)
     except Exception:
@@ -348,9 +485,9 @@ def preview_financeiro():
 
     # ── DEBUG: Imprimir cada atributo financeiro com todos os seus valores ──
     if mapeamento and not df.empty:
-        print("\n" + "="*60, flush=True)
+        print("\n" + "=" * 60, flush=True)
         print("[DEBUG] PREVIEW FINANCEIRO — DADOS POR CATEGORIA:", flush=True)
-        print("="*60, flush=True)
+        print("=" * 60, flush=True)
         for cat_id, col_nome in mapeamento.items():
             if cat_id.endswith("_manual"):
                 print(f"  {cat_id} (valor fixo manual): {col_nome!r}", flush=True)
@@ -359,27 +496,37 @@ def preview_financeiro():
                 valores = df[col_nome].tolist()
                 print(f"  {cat_id} → '{col_nome}': {valores}", flush=True)
             else:
-                print(f"  {cat_id} → '{col_nome}': (coluna não encontrada nos dados)", flush=True)
-        print("="*60 + "\n", flush=True)
+                print(
+                    f"  {cat_id} → '{col_nome}': (coluna não encontrada nos dados)",
+                    flush=True,
+                )
+        print("=" * 60 + "\n", flush=True)
     # ───────────────────────────────────────────────────────────────────────
 
     try:
         from backend.dados.classificacao_financeira import calcular_preview_financeiro
+
         preview = calcular_preview_financeiro(mapeamento, df)
+
         # ── DEBUG: Imprimir os indicadores calculados ──────────────────────
         print("[DEBUG] INDICADORES FINANCEIROS CALCULADOS:", flush=True)
-        print("-"*60, flush=True)
-        import json
+        print("-" * 60, flush=True)
         print(json.dumps(preview, ensure_ascii=False, indent=2), flush=True)
-        print("-"*60 + "\n", flush=True)
+        print("-" * 60 + "\n", flush=True)
         # ───────────────────────────────────────────────────────────────────
     except Exception as e:
-        import traceback
         traceback.print_exc()
-        return jsonify({"mensagem": "Erro interno no cálculo do preview", "erro": str(e)}), 500
+        return jsonify({
+            "mensagem": "Erro interno no cálculo do preview",
+            "erro": str(e),
+        }), 500
 
     return jsonify({"preview": preview}), 200
 
+
+# ==============================================================================
+# 6. CRIAÇÃO DE COLUNAS FINANCEIRAS
+# ==============================================================================
 
 def criar_coluna_financeira_api():
     """
@@ -388,9 +535,11 @@ def criar_coluna_financeira_api():
     Body JSON: { "nome_coluna": "Faturamento", "categoria_id": "receita_total", "valor_padrao": 0.0 }
     """
     from backend.db import dados_colecao
-    from datetime import datetime
 
-    user_id = session.get('usuario_id')
+    # --------------------------------------------------------------------------
+    # 6.1 Autenticação e parsing do payload
+    # --------------------------------------------------------------------------
+    user_id = session.get("usuario_id")
     if not user_id:
         return jsonify({"mensagem": "Não autorizado"}), 401
 
@@ -401,9 +550,13 @@ def criar_coluna_financeira_api():
     tipo = payload.get("tipo", "moeda")
 
     if not nome_coluna or not categoria_id:
-        return jsonify({"mensagem": "Nome da coluna e categoria são obrigatórios"}), 400
+        return jsonify({
+            "mensagem": "Nome da coluna e categoria são obrigatórios"
+        }), 400
 
-    # Converter valor_padrao se numérico
+    # --------------------------------------------------------------------------
+    # 6.2 Normalização do valor padrão
+    # --------------------------------------------------------------------------
     val_limpo = valor_padrao
     if tipo in ("moeda", "numero", "percentual") and valor_padrao not in ("", None):
         try:
@@ -411,10 +564,15 @@ def criar_coluna_financeira_api():
         except Exception:
             val_limpo = valor_padrao
 
-    # 1. Atualizar documento de dados mais recente/ativo do usuário se existir
+    # --------------------------------------------------------------------------
+    # 6.3 Atualizar documento de dados mais recente/ativo do usuário se existir
+    # --------------------------------------------------------------------------
+    ids_user = [str(user_id)]
+    if ObjectId.is_valid(str(user_id)):
+        ids_user.append(ObjectId(str(user_id)))
     doc_recente = dados_colecao.find_one(
-        {"usuario_id": user_id},
-        sort=[("atualizado_em", -1), ("criado_em", -1)]
+        {"usuario_id": {"$in": ids_user}},
+        sort=[("atualizado_em", -1), ("criado_em", -1)],
     )
 
     colunas_atualizadas = []
@@ -437,13 +595,15 @@ def criar_coluna_financeira_api():
                 "$set": {
                     "colunas": colunas,
                     "dados": dados,
-                    "atualizado_em": datetime.now()
+                    "atualizado_em": datetime.now(),
                 }
-            }
+            },
         )
         colunas_atualizadas = colunas
 
-    # 2. Atualizar mapeamento_financeiro do usuário no MongoDB
+    # --------------------------------------------------------------------------
+    # 6.4 Atualizar mapeamento_financeiro do usuário no MongoDB
+    # --------------------------------------------------------------------------
     user = usuario.find_one({"_id": ObjectId(user_id)})
     mapeamento_fin = user.get("mapeamento_financeiro", {}) if user else {}
     mapeamento_fin[categoria_id] = nome_coluna
@@ -453,29 +613,52 @@ def criar_coluna_financeira_api():
     # Sincronizar mapeamento básico
     mapeamento_basico = {
         "data": mapeamento_fin.get("periodo") or mapeamento_fin.get("data") or "",
-        "faturamento": mapeamento_fin.get("receita_total") or mapeamento_fin.get("receita_produtos") or mapeamento_fin.get("faturamento") or "",
-        "despesa": mapeamento_fin.get("despesas") or mapeamento_fin.get("custo_variavel") or mapeamento_fin.get("fornecedores") or mapeamento_fin.get("despesa") or "",
-        "lucro": mapeamento_fin.get("resultado") or mapeamento_fin.get("lucro") or ""
+        "faturamento": (
+            mapeamento_fin.get("receita_total")
+            or mapeamento_fin.get("receita_produtos")
+            or mapeamento_fin.get("faturamento")
+            or ""
+        ),
+        "despesa": (
+            mapeamento_fin.get("despesas")
+            or mapeamento_fin.get("custo_variavel")
+            or mapeamento_fin.get("fornecedores")
+            or mapeamento_fin.get("despesa")
+            or ""
+        ),
+        "lucro": mapeamento_fin.get("resultado") or mapeamento_fin.get("lucro") or "",
     }
 
     usuario.update_one(
         {"_id": ObjectId(user_id)},
-        {"$set": {
-            "mapeamento_financeiro": mapeamento_fin,
-            "mapeamento": mapeamento_basico
-        }}
+        {
+            "$set": {
+                "mapeamento_financeiro": mapeamento_fin,
+                "mapeamento": mapeamento_basico,
+            }
+        },
     )
 
-    perfil = session.get('usuario_perfil')
+    # --------------------------------------------------------------------------
+    # 6.5 Retornar completude + recomendações (respeitando MEI vs ME)
+    # --------------------------------------------------------------------------
+    perfil = session.get("usuario_perfil")
     if not perfil:
         user_doc = usuario.find_one(_get_user_filter(user_id))
-        perfil = user_doc.get('tipo_perfil', 'ME') if user_doc else 'ME'
-    from backend.dados.classificacao_financeira import analisar_completude_financeira, gerar_recomendacoes
+        perfil = user_doc.get("tipo_perfil", "ME") if user_doc else "ME"
+    from backend.dados.classificacao_financeira import (
+        analisar_completude_financeira,
+        gerar_recomendacoes,
+    )
+
     completude = analisar_completude_financeira(mapeamento_fin, perfil=perfil)
     recomendacoes = gerar_recomendacoes(mapeamento_fin, perfil=perfil)
 
     return jsonify({
-        "mensagem": f"Coluna '{nome_coluna}' criada e vinculada com sucesso à categoria '{categoria_id}'!",
+        "mensagem": (
+            f"Coluna '{nome_coluna}' criada e vinculada com sucesso à categoria "
+            f"'{categoria_id}'!"
+        ),
         "colunas": colunas_atualizadas,
         "mapeamento": mapeamento_fin,
         "completude": completude,
@@ -483,4 +666,3 @@ def criar_coluna_financeira_api():
         "perfil": perfil,
         "is_mei": str(perfil).upper() == "MEI",
     }), 200
-

@@ -1,3 +1,15 @@
+# ==============================================================================
+# analytics.py
+# ==============================================================================
+# Este código pertence à plataforma @DataInsight.
+# Todos os códigos da plataforma devem seguir a mesma estrutura de organização
+# em seções numeradas, conforme este arquivo.
+# ==============================================================================
+
+# ==============================================================================
+# 1. IMPORTS
+# ==============================================================================
+
 from datetime import datetime
 from typing import Optional
 import numpy as np
@@ -17,6 +29,10 @@ from backend.home.home import (
 )
 from backend.db import dados_colecao
 
+
+# ==============================================================================
+# 2. FERRAMENTAS DE ANÁLISE FINANCEIRA (RESUMO, TRANSAÇÕES, PREVISÃO, ANOMALIAS)
+# ==============================================================================
 
 def obter_resumo_financeiro(periodo: str = "30_dias", **kwargs) -> str:
     periodo = kwargs.get("periodo", periodo)
@@ -159,6 +175,10 @@ def detectar_anomalias_despesas(**kwargs) -> str:
         return f"Erro na análise de anomalias: {err}"
 
 
+# ==============================================================================
+# 3. CLASSE DE RESULTADO DO PONTO DE EQUILÍBRIO
+# ==============================================================================
+
 class PontoEquilibrioResultado(str):
     def __new__(cls, texto, pe=None, imc=None, mc=None, calculavel=True):
         obj = str.__new__(cls, texto)
@@ -174,6 +194,10 @@ class PontoEquilibrioResultado(str):
             return float(self.pe)
         raise ValueError(f"Ponto de equilíbrio incalculável: {self}")
 
+
+# ==============================================================================
+# 4. CÁLCULO DO PONTO DE EQUILÍBRIO (BREAK-EVEN)
+# ==============================================================================
 
 def calcular_ponto_equilibrio(receita: float = None, impostos: float = None, custos_variaveis: float = None, gastos_fixos: float = None, **kwargs):
     rec = kwargs.get("receita", receita)

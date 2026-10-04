@@ -1,3 +1,15 @@
+# ==============================================================================
+# planejameneto_financeiro.py
+# ==============================================================================
+# Este código pertence à plataforma @DataInsight.
+# Todos os códigos da plataforma devem seguir a mesma estrutura de organização
+# em seções numeradas, exatamente como neste arquivo.
+# ==============================================================================
+
+# ==============================================================================
+# 1. IMPORTAÇÕES
+# ==============================================================================
+
 from flask import jsonify, request, session
 from bson import ObjectId
 import pandas as pd
@@ -6,13 +18,22 @@ from backend.db import usuario
 from backend.dados.agregador import obter_contexto_dados
 
 
+# ==============================================================================
+# 2. CONSTANTES
+# ==============================================================================
+
 MESES = [
     "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
     "Jul", "Ago", "Set", "Out", "Nov", "Dez"
 ]
 
 
+# ==============================================================================
+# 3. FUNÇÕES AUXILIARES DE DADOS
+# ==============================================================================
+
 def _filtro_usuario(user_id):
+    """Monta o filtro de busca do usuário no Mongo (ObjectId quando válido)."""
     if user_id and ObjectId.is_valid(str(user_id)):
         return {"_id": ObjectId(user_id)}
 
@@ -113,6 +134,10 @@ def _serie_custom_grupo(df, mapeamento, grupo_nome):
     return serie_soma
 
 
+# ==============================================================================
+# 4. INDICADORES FINANCEIROS
+# ==============================================================================
+
 def _receita(df, mapeamento):
     """
     Receita total.
@@ -137,6 +162,7 @@ def _receita(df, mapeamento):
 
 
 def _custos_variaveis(df, mapeamento):
+    """Custos variáveis totais (com categorias customizadas do grupo)."""
     custom_var = _serie_custom_grupo(df, mapeamento, "Custos Variáveis")
     custo_total = _serie_financeira(
         df,
@@ -174,6 +200,7 @@ def _gastos_fixos(df, mapeamento):
 
 
 def _investimentos(df, mapeamento):
+    """Investimentos totais (infra + equipamentos + outros + customizados)."""
     custom_inv = _serie_custom_grupo(df, mapeamento, "Investimentos")
     investimento_total = _serie_financeira(
         df,
@@ -193,6 +220,10 @@ def _investimentos(df, mapeamento):
 
     return investimento_total + componentes
 
+
+# ==============================================================================
+# 5. CONVERSÃO DE PERÍODO
+# ==============================================================================
 
 def _converter_periodo(valor):
     """
@@ -248,6 +279,10 @@ def _converter_periodo(valor):
 
     return None
 
+
+# ==============================================================================
+# 6. CENÁRIOS FINANCEIROS
+# ==============================================================================
 
 def _calcular_cenario_otimista(meses_base, fator_crescimento=1.15):
     """
@@ -499,12 +534,19 @@ def _calcular_cenario_pessimista(meses_base, percentual_manual=None):
     return meses_pessimista
 
 
+# ==============================================================================
+# 7. ENDPOINT: PLANEJAMENTO FINANCEIRO
+# ==============================================================================
+
 def obter_planejamento_financeiro():
     """
     Retorna os dados financeiros preparados para a página
     de Planejamento Financeiro.
     """
 
+    # --------------------------------------------------------------------------
+    # 7.1. Autenticação e parâmetros de entrada
+    # --------------------------------------------------------------------------
     usuario_id = session.get("usuario_id")
 
     if not usuario_id:
@@ -519,10 +561,9 @@ def obter_planejamento_financeiro():
     )
 
     try:
-        # ---------------------------------------
-        # 1. Buscar dados através do agregador
-        # ---------------------------------------
-
+        # ----------------------------------------------------------------------
+        # 7.2. Buscar dados através do agregador
+        # ----------------------------------------------------------------------
         contexto = obter_contexto_dados(
             usuario_id,
             escopo=tabela_id
@@ -544,10 +585,9 @@ def obter_planejamento_financeiro():
 
         df = pd.DataFrame(dados)
 
-        # ---------------------------------------
-        # 2. Buscar mapeamento financeiro
-        # ---------------------------------------
-
+        # ----------------------------------------------------------------------
+        # 7.3. Buscar mapeamento financeiro do usuário
+        # ----------------------------------------------------------------------
         user = usuario.find_one(
             _filtro_usuario(usuario_id)
         )
@@ -563,10 +603,9 @@ def obter_planejamento_financeiro():
             {}
         )
 
-        # ---------------------------------------
-        # 3. Identificar período
-        # ---------------------------------------
-
+        # ----------------------------------------------------------------------
+        # 7.4. Identificar a coluna de período
+        # ----------------------------------------------------------------------
         coluna_periodo = mapeamento.get("periodo")
 
         if not coluna_periodo or coluna_periodo not in df.columns:
@@ -598,10 +637,9 @@ def obter_planejamento_financeiro():
         else:
             df["_mes_planejamento"] = None
 
-        # ---------------------------------------
-        # 4. Calcular indicadores por linha
-        # ---------------------------------------
-
+        # ----------------------------------------------------------------------
+        # 7.5. Calcular indicadores por linha
+        # ----------------------------------------------------------------------
         df["_receita"] = _receita(
             df,
             mapeamento
@@ -665,10 +703,9 @@ def obter_planejamento_financeiro():
             mapeamento
         )
 
-        # ---------------------------------------
-        # 5. Detalhamentos
-        # ---------------------------------------
-
+        # ----------------------------------------------------------------------
+        # 7.6. Detalhamentos (séries individuais por subcategoria)
+        # ----------------------------------------------------------------------
         detalhes = {
             "produtos": _serie_financeira(
                 df,
@@ -758,12 +795,11 @@ def obter_planejamento_financeiro():
                     else:
                         df[f"_{cid}"] = pd.Series([0.0] * len(df), index=df.index)
 
-        # ---------------------------------------
-        # 6. Criar janeiro → dezembro
+        # ----------------------------------------------------------------------
+        # 7.7. Montar janeiro → dezembro
         # Meses com dados reais → projetado: False
         # Meses sem dados → projetado: True (estimativa)
-        # ---------------------------------------
-
+        # ----------------------------------------------------------------------
         meses_saida = []
 
         for numero_mes in range(1, 13):
@@ -908,7 +944,7 @@ def obter_planejamento_financeiro():
                     ),
                     2
                 ),
-                
+
                 "outrosFixos": round(
                     float(
                         df_mes[
@@ -969,10 +1005,9 @@ def obter_planejamento_financeiro():
 
             meses_saida.append(mes_dado)
 
-        # ---------------------------------------
-        # 7. Totais anuais (soma dos valores reais)
-        # ---------------------------------------
-
+        # ----------------------------------------------------------------------
+        # 7.8. Totais anuais (soma dos valores reais)
+        # ----------------------------------------------------------------------
         receita_total = sum(
             m["receita"]
             for m in meses_saida
@@ -1016,10 +1051,9 @@ def obter_planejamento_financeiro():
             else 0
         )
 
-        # ---------------------------------------
-        # 7.1 Cenários Financeiros (Provável, Otimista, Pessimista)
-        # ---------------------------------------
-
+        # ----------------------------------------------------------------------
+        # 7.9. Cenários financeiros (Provável, Otimista, Pessimista)
+        # ----------------------------------------------------------------------
         # Configuração do Ponto de Equilíbrio (Automático vs Manual)
         pe_modo = request.args.get("pe_modo") or mapeamento.get("ponto_equilibrio_modo", "automatico")
         pe_percentual_param = request.args.get("pe_percentual")
@@ -1049,10 +1083,9 @@ def obter_planejamento_financeiro():
             percentual_manual=percentual_manual
         )
 
-        # ---------------------------------------
-        # 8. Resposta
-        # ---------------------------------------
-
+        # ----------------------------------------------------------------------
+        # 7.10. Resposta
+        # ----------------------------------------------------------------------
         return jsonify({
             "sucesso": True,
 
@@ -1169,14 +1202,24 @@ def obter_planejamento_financeiro():
         }), 500
 
 
+# ==============================================================================
+# 8. ENDPOINT: CONFIGURAÇÃO DO PONTO DE EQUILÍBRIO
+# ==============================================================================
+
 def salvar_configuracao_ponto_equilibrio():
     """
     Salva a configuração do Ponto de Equilíbrio (modo automático ou manual e o percentual).
     """
+    # --------------------------------------------------------------------------
+    # 8.1. Autenticação
+    # --------------------------------------------------------------------------
     usuario_id = session.get("usuario_id")
     if not usuario_id:
         return jsonify({"sucesso": False, "mensagem": "Usuário não autenticado"}), 401
 
+    # --------------------------------------------------------------------------
+    # 8.2. Validação dos parâmetros de entrada
+    # --------------------------------------------------------------------------
     dados = request.get_json(silent=True) or {}
     modo = dados.get("modo", "automatico")
     if modo not in ["automatico", "manual"]:
@@ -1195,6 +1238,9 @@ def salvar_configuracao_ponto_equilibrio():
     else:
         percentual = None
 
+    # --------------------------------------------------------------------------
+    # 8.3. Persistência
+    # --------------------------------------------------------------------------
     try:
         usuario.update_one(
             _filtro_usuario(usuario_id),
@@ -1213,4 +1259,4 @@ def salvar_configuracao_ponto_equilibrio():
         return jsonify({
             "sucesso": False,
             "mensagem": f"Erro ao salvar configuração: {str(e)}"
-        }), 500
+        }), 500

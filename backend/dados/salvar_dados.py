@@ -1,20 +1,40 @@
-from datetime import datetime
-from flask import request, jsonify, session
-import pandas as pd
+# ==============================================================================
+# salvar_dados.py
+# ==============================================================================
+# Este código pertence à plataforma @DataInsight.
+# Todos os códigos da plataforma devem seguir a mesma estrutura de organização
+# em seções numeradas, conforme o padrão abaixo.
+#
+# Observação técnica: o formato original sugerido usava "//" (estilo JavaScript).
+# Em Python, "//" é o operador de divisão inteira e causaria erro de sintaxe,
+# portanto os cabeçalhos foram adaptados para "#", preservando a mesma função
+# de demarcação visual e numeração sequencial.
+
+# ==============================================================================
+# 1. IMPORTAÇÕES
+# ==============================================================================
+
 import re
+import traceback
 import unicodedata
-from backend.db import salvar_dados
-from backend.dados.dados import limpar_dados, converter_para_tipos_nativos
+from datetime import datetime
+
+import pandas as pd
+from flask import jsonify, request, session
+
+from backend.dados.dados import converter_para_tipos_nativos
 from backend.dados.quality import analisar_e_limpar
+from backend.db import salvar_dados
 
 
-# ============================================================
-# AUXILIAR: detecta qual coluna casa com um padrão de nomes
-# ============================================================
+# ==============================================================================
+# 2. AUXILIARES DE DETECÇÃO DE COLUNAS
+# ==============================================================================
+
 def _normalizar(texto):
     """Remove acentos e coloca em minúsculas para comparação."""
-    texto = unicodedata.normalize('NFD', str(texto).lower())
-    return ''.join(c for c in texto if unicodedata.category(c) != 'Mn')
+    texto = unicodedata.normalize("NFD", str(texto).lower())
+    return "".join(c for c in texto if unicodedata.category(c) != "Mn")
 
 
 def _detectar_coluna(colunas, padroes, exclusoes=None):
@@ -31,9 +51,10 @@ def _detectar_coluna(colunas, padroes, exclusoes=None):
     return None
 
 
-# ============================================================
-# SALVA PRODUTOS NO HISTÓRICO PARA AUTOCOMPLETE
-# ============================================================
+# ==============================================================================
+# 3. SALVA PRODUTOS NO HISTÓRICO PARA AUTOCOMPLETE
+# ==============================================================================
+
 def extrair_e_salvar_produtos(usuario_id, colunas, dados):
     """
     Detecta colunas de produto/preço/estoque/desconto/categoria/sku
@@ -45,50 +66,56 @@ def extrair_e_salvar_produtos(usuario_id, colunas, dados):
     try:
         from backend.produtos import salvar_produto
 
+        # ----------------------------------------------------------------------
+        # 3.1 Detecção de colunas
+        # ----------------------------------------------------------------------
         # Detecta coluna de nome do produto (obrigatória)
         col_produto = _detectar_coluna(colunas, [
-            r'produto', r'product', r'\bnome\b', r'\bname\b', r'\bitem\b',
-            r'descri[cç]', r'mercadoria'
+            r"produto", r"product", r"\bnome\b", r"\bname\b", r"\bitem\b",
+            r"descri[cç]", r"mercadoria",
         ])
 
         if not col_produto:
             return  # Sem coluna de produto identificada, não há o que salvar
 
         # Detecta demais colunas opcionais
-        col_preco = _detectar_coluna(colunas, [
-            r'pre[cç]o', r'\bpreco\b', r'\bvalor\b', r'\bprice\b', r'unit[a-z]*'
-        ], exclusoes=[r'total', r'faturamento', r'receita', r'custo', r'despesa', r'lucro'])
-        
-        col_estoque = _detectar_coluna(colunas, [
-            r'estoque', r'\bstock\b'
-        ])
+        col_preco = _detectar_coluna(
+            colunas,
+            [r"pre[cç]o", r"\bpreco\b", r"\bvalor\b", r"\bprice\b", r"unit[a-z]*"],
+            exclusoes=[r"total", r"faturamento", r"receita", r"custo", r"despesa", r"lucro"],
+        )
+
+        col_estoque = _detectar_coluna(colunas, [r"estoque", r"\bstock\b"])
         if not col_estoque:
             col_estoque = _detectar_coluna(colunas, [
-                r'quantidade', r'\bqtd\b', r'\bquant\b', r'\bamount\b'
+                r"quantidade", r"\bqtd\b", r"\bquant\b", r"\bamount\b",
             ])
-            
+
         col_desconto = _detectar_coluna(colunas, [
-            r'desconto', r'discount', r'\bdesc\b'
+            r"desconto", r"discount", r"\bdesc\b",
         ])
         col_categoria = _detectar_coluna(colunas, [
-            r'categoria', r'category', r'\btipo\b', r'\btype\b', r'\bgrupo\b'
+            r"categoria", r"category", r"\btipo\b", r"\btype\b", r"\bgrupo\b",
         ])
         col_sku = _detectar_coluna(colunas, [
-            r'\bsku\b', r'c[oó]digo', r'\bcod\b', r'\bcode\b', r'\bref\b'
+            r"\bsku\b", r"c[oó]digo", r"\bcod\b", r"\bcode\b", r"\bref\b",
         ])
 
+        # ----------------------------------------------------------------------
+        # 3.2 Processamento linha a linha
+        # ----------------------------------------------------------------------
         salvos = 0
         for linha in dados:
-            nome = str(linha.get(col_produto, '')).strip()
-            if not nome or nome.lower() in ('', 'none', 'nan'):
+            nome = str(linha.get(col_produto, "")).strip()
+            if not nome or nome.lower() in ("", "none", "nan"):
                 continue
 
             # Preço
             preco = None
             if col_preco:
                 try:
-                    val = str(linha.get(col_preco, '')).replace(',', '.').strip()
-                    preco = float(val) if val and val not in ('none', 'nan') else None
+                    val = str(linha.get(col_preco, "")).replace(",", ".").strip()
+                    preco = float(val) if val and val not in ("none", "nan") else None
                 except (ValueError, TypeError):
                     preco = None
 
@@ -96,8 +123,10 @@ def extrair_e_salvar_produtos(usuario_id, colunas, dados):
             estoque = None
             if col_estoque:
                 try:
-                    val = str(linha.get(col_estoque, '')).replace(',', '.').strip()
-                    estoque = int(float(val)) if val and val not in ('none', 'nan') else None
+                    val = str(linha.get(col_estoque, "")).replace(",", ".").strip()
+                    estoque = (
+                        int(float(val)) if val and val not in ("none", "nan") else None
+                    )
                 except (ValueError, TypeError):
                     estoque = None
 
@@ -105,8 +134,8 @@ def extrair_e_salvar_produtos(usuario_id, colunas, dados):
             descricao = None
             if col_desconto:
                 try:
-                    val = str(linha.get(col_desconto, '')).replace(',', '.').strip()
-                    if val and val not in ('none', 'nan'):
+                    val = str(linha.get(col_desconto, "")).replace(",", ".").strip()
+                    if val and val not in ("none", "nan"):
                         descricao = f"Desconto: {val}"
                 except (ValueError, TypeError):
                     pass
@@ -114,14 +143,16 @@ def extrair_e_salvar_produtos(usuario_id, colunas, dados):
             # Categoria
             categoria = None
             if col_categoria:
-                cat = str(linha.get(col_categoria, '')).strip()
-                categoria = cat if cat and cat.lower() not in ('none', 'nan') else None
+                cat = str(linha.get(col_categoria, "")).strip()
+                categoria = (
+                    cat if cat and cat.lower() not in ("none", "nan") else None
+                )
 
             # SKU
             sku = None
             if col_sku:
-                s = str(linha.get(col_sku, '')).strip()
-                sku = s if s and s.lower() not in ('none', 'nan') else None
+                s = str(linha.get(col_sku, "")).strip()
+                sku = s if s and s.lower() not in ("none", "nan") else None
 
             salvar_produto(
                 usuario_id=usuario_id,
@@ -130,22 +161,29 @@ def extrair_e_salvar_produtos(usuario_id, colunas, dados):
                 preco=preco,
                 estoque=estoque,
                 sku=sku,
-                descricao=descricao
+                descricao=descricao,
             )
             salvos += 1
 
         if salvos > 0:
-            print(f"[AUTOCOMPLETE] {salvos} produto(s) salvos no historico", flush=True)
+            print(
+                f"[AUTOCOMPLETE] {salvos} produto(s) salvos no historico",
+                flush=True,
+            )
 
     except Exception as e:
         # Não bloqueia o salvamento principal
         print(f"[AVISO] erro ao salvar produtos no historico: {e}", flush=True)
 
 
-# ============================================================
-# ROTA PRINCIPAL
-# ============================================================
+# ==============================================================================
+# 4. ROTA PRINCIPAL — SALVAR DADOS MANUAIS
+# ==============================================================================
+
 def salvar_dados_manuais():
+    # --------------------------------------------------------------------------
+    # 4.1 Leitura e validação do payload
+    # --------------------------------------------------------------------------
     dados_json = request.get_json()
 
     if not dados_json or "colunas" not in dados_json or "dados" not in dados_json:
@@ -155,43 +193,50 @@ def salvar_dados_manuais():
     dados = dados_json.get("dados", [])
     nome_planilha = dados_json.get(
         "nome_planilha",
-        f"Planilha_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        f"Planilha_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
     )
 
-    usuario_id = session.get('usuario_id')
+    usuario_id = session.get("usuario_id")
 
+    # --------------------------------------------------------------------------
+    # 4.2 Processamento, limpeza e persistência
+    # --------------------------------------------------------------------------
     try:
         # Converter para DataFrame para aplicar análise e limpeza
         df = pd.DataFrame(dados, columns=colunas)
 
         # Permite ao frontend controlar se deseja limpeza automática
-        auto_clean = bool(dados_json.get('auto_clean', True))
+        auto_clean = bool(dados_json.get("auto_clean", True))
 
         # Executar análise de qualidade e limpeza automática (conservadora)
         df, relatorio_qualidade = analisar_e_limpar(df, auto_clean=auto_clean)
 
         # Extrair dados limpos e converter para tipos nativos BSON
         colunas_limpas = [str(c) for c in df.columns.tolist()]
-        dados_limpos = converter_para_tipos_nativos(df.to_dict('records'))
+        dados_limpos = converter_para_tipos_nativos(df.to_dict("records"))
 
         # Salvar no banco de dados principal
         id_salvo = salvar_dados(usuario_id, nome_planilha, colunas_limpas, dados_limpos)
 
-        # ============================================================
-        # SALVAR PRODUTOS NO HISTÓRICO PARA AUTOCOMPLETE
-        # ============================================================
+        # ----------------------------------------------------------------------
+        # 4.3 Salvar produtos no histórico para autocomplete
+        # ----------------------------------------------------------------------
         extrair_e_salvar_produtos(usuario_id, colunas_limpas, dados_limpos)
-        # ============================================================
 
+        # ----------------------------------------------------------------------
+        # 4.4 Resposta de sucesso
+        # ----------------------------------------------------------------------
         return jsonify({
             "mensagem": "Dados salvos com sucesso!",
             "id": str(id_salvo),
             "linhas_processadas": len(dados_limpos),
-            "relatorio_qualidade": relatorio_qualidade
+            "relatorio_qualidade": relatorio_qualidade,
         }), 200
 
     except Exception as e:
-        import traceback
         traceback.print_exc()
         print(f"Erro ao salvar dados: {e}", flush=True)
-        return jsonify({"mensagem": "Erro ao salvar dados", "erro": str(e)}), 500
+        return jsonify({
+            "mensagem": "Erro ao salvar dados",
+            "erro": str(e),
+        }), 500

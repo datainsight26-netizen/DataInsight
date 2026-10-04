@@ -1,10 +1,30 @@
+# ==============================================================================
+# gerar_relatorio.py
+# ==============================================================================
+# Este código pertence à plataforma @DataInsight.
+# Todos os códigos da plataforma devem seguir a mesma estrutura de organização
+# em seções numeradas, exatamente como neste arquivo.
+# ==============================================================================
+
+# ==============================================================================
+# 1. IMPORTAÇÕES
+# ==============================================================================
+
 from flask import request, jsonify, session, url_for
 from datetime import datetime
 from bson import ObjectId
 from backend.db import relatorios_colecao
 
 
+# ==============================================================================
+# 2. GERAÇÃO DE RELATÓRIO
+# ==============================================================================
+
 def gerar_relatorio():
+    """Salva um novo relatório no Mongo e atualiza a sessão (fallback + histórico)."""
+    # --------------------------------------------------------------------------
+    # 2.1. Autenticação e leitura do payload
+    # --------------------------------------------------------------------------
     usuario_id = session.get('usuario_id')
     if not usuario_id:
         return jsonify({'mensagem': 'Usuário não autenticado'}), 401
@@ -15,6 +35,9 @@ def gerar_relatorio():
     if not dados.get('nome') or not dados.get('periodo'):
         return jsonify({'mensagem': 'Dados de relatório incompletos'}), 400
 
+    # --------------------------------------------------------------------------
+    # 2.2. Montagem do documento a ser persistido
+    # --------------------------------------------------------------------------
     agora = datetime.now()
     documento = {
         'usuario_id': str(usuario_id),
@@ -45,6 +68,9 @@ def gerar_relatorio():
         'atualizado_em': agora
     }
 
+    # --------------------------------------------------------------------------
+    # 2.3. Persistência no MongoDB (com fallback silencioso para sessão)
+    # --------------------------------------------------------------------------
     try:
         resultado = relatorios_colecao.insert_one(documento)
         relatorio_id = str(resultado.inserted_id)
@@ -53,11 +79,15 @@ def gerar_relatorio():
         print(f"Erro ao salvar relatório no MongoDB: {e}")
         relatorio_id = ""
 
-    # Armazenar no session para renderizar em /relatorio_pdf como fallback rápido
+    # --------------------------------------------------------------------------
+    # 2.4. Armazenar na sessão para renderizar em /relatorio_pdf (fallback)
+    # --------------------------------------------------------------------------
     dados_com_id = {**dados, **documento, '_id': relatorio_id, 'id': relatorio_id}
     session['relatorio_dados'] = dados_com_id
 
-    # Histórico na sessão (compatibilidade retroativa)
+    # --------------------------------------------------------------------------
+    # 2.5. Histórico na sessão (compatibilidade retroativa)
+    # --------------------------------------------------------------------------
     historico = session.get('relatorios_gerados', [])
     item_historico = {
         'id': relatorio_id,
@@ -83,18 +113,38 @@ def gerar_relatorio():
     historico.insert(0, item_historico)
     session['relatorios_gerados'] = historico[:10]
 
-    redirect_url = url_for('pagina_relatorio_pdf', id=relatorio_id) if relatorio_id else url_for('pagina_relatorio_pdf')
+    # --------------------------------------------------------------------------
+    # 2.6. Resposta
+    # --------------------------------------------------------------------------
+    redirect_url = (
+        url_for('pagina_relatorio_pdf', id=relatorio_id)
+        if relatorio_id
+        else url_for('pagina_relatorio_pdf')
+    )
     return jsonify({'success': True, 'id': relatorio_id, 'redirect': redirect_url}), 200
 
 
+# ==============================================================================
+# 3. LISTAGEM DE RELATÓRIOS
+# ==============================================================================
+
 def listar_relatorios_api():
     """Retorna a lista de relatórios salvos no MongoDB do usuário logado."""
+    # --------------------------------------------------------------------------
+    # 3.1. Autenticação
+    # --------------------------------------------------------------------------
     usuario_id = session.get('usuario_id')
     if not usuario_id:
         return jsonify({'erro': 'Não autenticado', 'relatorios': []}), 401
 
+    # --------------------------------------------------------------------------
+    # 3.2. Consulta no MongoDB
+    # --------------------------------------------------------------------------
     try:
-        cursor = relatorios_colecao.find({'usuario_id': str(usuario_id)}).sort('criado_em', -1)
+        ids_busca = [str(usuario_id)]
+        if ObjectId.is_valid(str(usuario_id)):
+            ids_busca.append(ObjectId(str(usuario_id)))
+        cursor = relatorios_colecao.find({'usuario_id': {'$in': ids_busca}}).sort('criado_em', -1)
         relatorios = []
         for doc in cursor:
             doc_id = str(doc['_id'])
@@ -127,24 +177,48 @@ def listar_relatorios_api():
         return jsonify({'erro': str(e), 'relatorios': []}), 500
 
 
+# ==============================================================================
+# 4. EXCLUSÃO DE RELATÓRIO
+# ==============================================================================
+
 def excluir_relatorio_api(relatorio_id):
     """Exclui um relatório do MongoDB do usuário logado."""
+    # --------------------------------------------------------------------------
+    # 4.1. Autenticação
+    # --------------------------------------------------------------------------
     usuario_id = session.get('usuario_id')
     if not usuario_id:
         return jsonify({'mensagem': 'Não autenticado'}), 401
 
+    # --------------------------------------------------------------------------
+    # 4.2. Consulta e exclusão no MongoDB
+    # --------------------------------------------------------------------------
     try:
-        query = {'_id': ObjectId(relatorio_id), 'usuario_id': str(usuario_id)} if ObjectId.is_valid(relatorio_id) else {'_id': relatorio_id, 'usuario_id': str(usuario_id)}
+        ids_busca = [str(usuario_id)]
+        if ObjectId.is_valid(str(usuario_id)):
+            ids_busca.append(ObjectId(str(usuario_id)))
+        query = (
+            {'_id': ObjectId(relatorio_id), 'usuario_id': {'$in': ids_busca}}
+            if ObjectId.is_valid(relatorio_id)
+            else {'_id': relatorio_id, 'usuario_id': {'$in': ids_busca}}
+        )
         res = relatorios_colecao.delete_one(query)
 
-        # Atualizar session se aplicável
+        # ----------------------------------------------------------------------
+        # 4.3. Atualizar a sessão se o relatório estiver no histórico local
+        # ----------------------------------------------------------------------
         hist = session.get('relatorios_gerados', [])
-        session['relatorios_gerados'] = [r for r in hist if str(r.get('id', '')) != str(relatorio_id)]
+        session['relatorios_gerados'] = [
+            r for r in hist if str(r.get('id', '')) != str(relatorio_id)
+        ]
 
+        # ----------------------------------------------------------------------
+        # 4.4. Resposta
+        # ----------------------------------------------------------------------
         if res.deleted_count > 0:
             return jsonify({'success': True, 'mensagem': 'Relatório excluído com sucesso'}), 200
         else:
             return jsonify({'success': False, 'mensagem': 'Relatório não encontrado'}), 404
     except Exception as e:
         print(f"Erro ao excluir relatório no MongoDB: {e}")
-        return jsonify({'mensagem': str(e)}), 500
+        return jsonify({'mensagem': str(e)}), 500

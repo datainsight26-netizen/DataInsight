@@ -1,3 +1,15 @@
+# ==============================================================================
+# export.py
+# ==============================================================================
+# Este código pertence à plataforma @DataInsight.
+# Todos os códigos da plataforma devem seguir a mesma estrutura de organização
+# em seções numeradas, conforme este arquivo.
+# ==============================================================================
+
+# ==============================================================================
+# 1. IMPORTS
+# ==============================================================================
+
 import io
 import pandas as pd
 from flask import send_file, session
@@ -5,6 +17,10 @@ from typing import Optional
 
 from backend.db import dados_colecao
 
+
+# ==============================================================================
+# 2. GERAÇÃO DE LINK/MENSAGEM DE DOWNLOAD
+# ==============================================================================
 
 def gerar_arquivo_download(tipo: str = "pdf", periodo: str = "30_dias", **kwargs) -> str:
     tipo = str(kwargs.get("tipo", tipo)).lower()
@@ -84,6 +100,10 @@ def gerar_arquivo_download(tipo: str = "pdf", periodo: str = "30_dias", **kwargs
 
     return "Tipo de arquivo inválido. Formatos suportados: PDF, Excel ou CSV."
 
+
+# ==============================================================================
+# 3. EXPORTAÇÃO DIRETA DOS DADOS DO USUÁRIO (CSV / EXCEL)
+# ==============================================================================
 
 def exportar_dados_usuario(tipo: str):
     usuario_id = session.get("usuario_id")

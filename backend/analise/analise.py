@@ -5,6 +5,18 @@ Suporta cálculos avançados para ME e MEI, DRE gerencial, ponto de equilíbrio,
 teto do MEI, métricas mensais/anuais, séries temporais e diagnósticos executivos.
 """
 
+# ==============================================================================
+# analise.py
+# ==============================================================================
+# Este código pertence à plataforma @DataInsight.
+# Todos os códigos da plataforma devem seguir a mesma estrutura de organização
+# em seções numeradas, conforme este arquivo.
+# ==============================================================================
+
+# ==============================================================================
+# 1. IMPORTS
+# ==============================================================================
+
 from flask import session, jsonify, request
 from backend.db import dados_colecao, usuario as usuarios_colecao
 from datetime import datetime, timedelta
@@ -14,8 +26,9 @@ from bson import ObjectId
 
 
 # ==============================================================================
-# 1. ALIASES E NOMENCLATURAS CONTÁBEIS E FINANCEIRAS
+# 2. ALIASES E NOMENCLATURAS CONTÁBEIS E FINANCEIRAS
 # ==============================================================================
+
 COL_FATURAMENTO = [
     "Total", "Faturamento", "faturamento", "Vendas", "vendas", "Receita", "receita",
     "Valor_Total", "Preco_Total", "Valor", "receita_total", "total_vendas"
@@ -45,8 +58,9 @@ COL_DESPESAS_FIXAS = [
 
 
 # ==============================================================================
-# 2. FUNÇÕES AUXILIARES DE TRATAMENTO DE DADOS
+# 3. FUNÇÕES AUXILIARES DE TRATAMENTO DE DADOS
 # ==============================================================================
+
 def encontrar_coluna_data(df):
     if df.empty:
         return None
@@ -185,8 +199,9 @@ def projetar_valor(series, horizonte=1, permitir_negativo=False):
 
 
 # ==============================================================================
-# 3. MOTOR DE CÁLCULO CONTÁBIL & FINANCEIRO (DRE, MARGENS, PONTO DE EQUILÍBRIO)
+# 4. MOTOR DE CÁLCULO CONTÁBIL & FINANCEIRO (DRE, MARGENS, PONTO DE EQUILÍBRIO)
 # ==============================================================================
+
 def calcular_estrutura_contabil(df, mapeamento=None, is_mei=False):
     """
     Calcula a estrutura contábil completa:
@@ -229,7 +244,9 @@ def calcular_estrutura_contabil(df, mapeamento=None, is_mei=False):
         elif das_manual and float(das_manual) > 0:
             impostos_estimados = float(das_manual)
         elif is_mei:
-            impostos_estimados = float(mapeamento.get("das_mei_manual", 75.0))
+            from backend.cnpj.cnpj_service import calcular_das_mei
+            tipo_ativ = mapeamento.get("tipo_atividade") or mapeamento.get("cnae_tipo") or "servicos"
+            impostos_estimados = float(calcular_das_mei(tipo_atividade=tipo_ativ)["total_das"])
         else:
             # Alíquota média do Simples Nacional (~5.5% para ME)
             impostos_estimados = round(receita_bruta * 0.055, 2)
@@ -367,8 +384,9 @@ def calcular_estrutura_contabil(df, mapeamento=None, is_mei=False):
 
 
 # ==============================================================================
-# 4. MOTOR ESPECÍFICO MEI (TETO, DAS, PRÓ-LABORE, ENQUADRAMENTO FISCAL)
+# 5. MOTOR ESPECÍFICO MEI (TETO, DAS, PRÓ-LABORE, ENQUADRAMENTO FISCAL)
 # ==============================================================================
+
 def calcular_metricas_mei(df, col_data, faturamento_periodo, despesas_periodo, lucro_periodo, ano_referencia=None):
     """
     Calcula indicadores exclusivos para o Microempreendedor Individual (MEI):
@@ -472,8 +490,9 @@ def calcular_metricas_mei(df, col_data, faturamento_periodo, despesas_periodo, l
 
 
 # ==============================================================================
-# 5. GERADOR DE SÉRIES MENSAIS E ANÁLISE DE SAZONALIDADE
+# 6. GERADOR DE SÉRIES MENSAIS E ANÁLISE DE SAZONALIDADE
 # ==============================================================================
+
 def gerar_series_mensais_detalhadas(df, col_data, mapeamento=None):
     """
     Agrupa os dados por mês (YYYY-MM), computando faturamento, despesas,
@@ -591,8 +610,9 @@ def gerar_series_mensais_detalhadas(df, col_data, mapeamento=None):
 
 
 # ==============================================================================
-# 6. SÍNTESE EXECUTIVA & PARECER DE IA PRÉ-AVALIADO
+# 7. SÍNTESE EXECUTIVA & PARECER DE IA PRÉ-AVALIADO
 # ==============================================================================
+
 def gerar_parecer_executivo_ia(estrutura, mei_data, cresc_fat, cresc_luc, is_mei=False):
     """
     Gera parecer do Diretor Financeiro / CFO Virtual fundamentado
@@ -765,8 +785,9 @@ def gerar_parecer_executivo_ia(estrutura, mei_data, cresc_fat, cresc_luc, is_mei
 
 
 # ==============================================================================
-# 7. ROTAS E ENDPOINTS DA CENTRAL DE ANÁLISE
+# 8. PERSISTÊNCIA E CONSULTA DE PERÍODO
 # ==============================================================================
+
 def salvar_ultimo_periodo(user, inicio, fim, tabela_id="todas"):
     """Persiste o último período analisado e tabela na sessão, na coleção de usuários e na coleção de dados."""
     try:
@@ -776,8 +797,11 @@ def salvar_ultimo_periodo(user, inicio, fim, tabela_id="todas"):
             "periodo_fim": fim,
             "tabela_id": tabela_id
         }
+        ids_user = [str(user)]
+        if ObjectId.is_valid(str(user)):
+            ids_user.append(ObjectId(str(user)))
         dados_colecao.update_many(
-            {"usuario_id": user},
+            {"usuario_id": {"$in": ids_user}},
             {"$set": {"ultimo_periodo": {"inicio": inicio, "fim": fim, "tabela_id": tabela_id}}}
         )
         if ObjectId.is_valid(user):
@@ -798,17 +822,25 @@ def obter_ultimo_periodo():
     if "analise_selecionada" in session:
         return jsonify(session["analise_selecionada"]), 200
 
+    ids_user = [str(user)]
+    if ObjectId.is_valid(str(user)):
+        ids_user.append(ObjectId(str(user)))
+
     if ObjectId.is_valid(user):
         u_doc = usuarios_colecao.find_one({"_id": ObjectId(user)})
         if u_doc and "ultimo_periodo" in u_doc:
             return jsonify(u_doc["ultimo_periodo"]), 200
 
-    doc = dados_colecao.find_one({"usuario_id": user}, sort=[("atualizado_em", -1), ("criado_em", -1)])
+    doc = dados_colecao.find_one({"usuario_id": {"$in": ids_user}}, sort=[("atualizado_em", -1), ("criado_em", -1)])
     if doc and "ultimo_periodo" in doc:
         return jsonify(doc["ultimo_periodo"]), 200
 
     return jsonify({}), 200
 
+
+# ==============================================================================
+# 9. ENDPOINTS DA CENTRAL DE ANÁLISE
+# ==============================================================================
 
 def obter_limites_datas_analise():
     """

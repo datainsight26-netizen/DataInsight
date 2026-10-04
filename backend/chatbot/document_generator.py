@@ -1,3 +1,15 @@
+# ==============================================================================
+# document_generator.py
+# ==============================================================================
+# Este código pertence à plataforma @DataInsight.
+# Todos os códigos da plataforma devem seguir a mesma estrutura de organização
+# em seções numeradas, conforme este arquivo.
+# ==============================================================================
+
+# ==============================================================================
+# 1. IMPORTS
+# ==============================================================================
+
 import io
 import re
 from datetime import datetime
@@ -6,6 +18,10 @@ from typing import Any, Dict, List, Optional
 import pandas as pd
 from bs4 import BeautifulSoup
 
+
+# ==============================================================================
+# 2. UTILITÁRIOS DE LIMPEZA E EXTRAÇÃO DE HTML
+# ==============================================================================
 
 def _limpar_tags_html(texto: str) -> str:
     """Remove tags HTML mantendo quebras de linha limpas."""
@@ -67,6 +83,10 @@ def extrair_tabelas_html(html_content: str) -> List[pd.DataFrame]:
 
     return dataframes
 
+
+# ==============================================================================
+# 3. GERAÇÃO DE DOCUMENTO MICROSOFT WORD (.DOCX)
+# ==============================================================================
 
 def gerar_documento_docx(
     titulo: str,
@@ -260,6 +280,10 @@ def gerar_documento_docx(
     return buffer
 
 
+# ==============================================================================
+# 4. GERAÇÃO DE PLANILHA MICROSOFT EXCEL (.XLSX)
+# ==============================================================================
+
 def gerar_documento_xlsx(
     titulo: str,
     conteudo_html_ou_texto: str,
@@ -376,6 +400,10 @@ def gerar_documento_xlsx(
     buffer.seek(0)
     return buffer
 
+
+# ==============================================================================
+# 5. GERAÇÃO DE DOCUMENTO PDF (VIA REPORTLAB)
+# ==============================================================================
 
 def gerar_documento_pdf(
     titulo: str,
@@ -569,6 +597,10 @@ def gerar_documento_pdf(
     buffer.seek(0)
     return buffer
 
+
+# ==============================================================================
+# 6. COMPILAÇÃO DE CONVERSA EM DOCUMENTO
+# ==============================================================================
 
 def compilar_conversa_para_documento(sessao_id: str, usuario_id: str) -> Dict[str, Any]:
     """Recupera e estrutura todas as mensagens da sessão em um relatório compilado."""

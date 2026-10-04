@@ -1,13 +1,30 @@
+# ==============================================================================
+# classificacao_financeira.py
+# ==============================================================================
+# Este código pertence à plataforma @DataInsight.
+# Todos os códigos da plataforma devem seguir a mesma estrutura de organização
+# em seções numeradas, conforme o padrão abaixo.
+#
+# Observação técnica: o formato original sugerido usava "//" (estilo JavaScript).
+# Em Python, "//" é o operador de divisão inteira e causaria erro de sintaxe,
+# portanto os cabeçalhos foram adaptados para "#", preservando a mesma função
+# de demarcação visual e numeração sequencial.
+
+# ==============================================================================
+# 1. IMPORTAÇÕES
+# ==============================================================================
+
 import re
 import unicodedata
-import numpy as np
-import pandas as pd
 from typing import Optional
 
-# =====================================================
-#  MAPA FINANCEIRO COMPLETO
-#  Chave = categoria interna | Valor = lista de aliases
-# =====================================================
+import pandas as pd
+
+
+# ==============================================================================
+# 2. MAPA FINANCEIRO COMPLETO
+#    Chave = categoria interna | Valor = lista de aliases (regex)
+# ==============================================================================
 
 MAPA_FINANCEIRO = {
     # ── RECEITAS ──────────────────────────────────────
@@ -137,59 +154,74 @@ MAPA_FINANCEIRO = {
     ],
 }
 
-# Labels amigáveis para exibição no frontend e sugestão automática de criação
+
+# ==============================================================================
+# 3. LABELS E METADADOS DAS CATEGORIAS
+#    (exibição no frontend + sugestão automática de criação)
+# ==============================================================================
+
 LABELS_CATEGORIAS = {
     # Indicadores Principais (Essenciais do Negócio)
-    "periodo":                 {"label": "Data dos Registros / Período", "grupo": "Indicadores Principais do Negócio", "cor": "#3b82f6", "icone": "fa-calendar", "coluna_sugerida": "Data", "tipo_sugerido": "data"},
-    "receita_total":           {"label": "Faturamento / Receita Total",  "grupo": "Indicadores Principais do Negócio", "cor": "#10b981", "icone": "fa-chart-line", "coluna_sugerida": "Faturamento", "tipo_sugerido": "moeda"},
-    "despesas":                {"label": "Despesas / Gastos Totais",     "grupo": "Indicadores Principais do Negócio", "cor": "#ef4444", "icone": "fa-money-bill-wave", "coluna_sugerida": "Despesas", "tipo_sugerido": "moeda"},
-    "resultado":               {"label": "Lucro Líquido / Resultado",    "grupo": "Indicadores Principais do Negócio", "cor": "#8b5cf6", "icone": "fa-trophy", "coluna_sugerida": "Lucro Líquido", "tipo_sugerido": "moeda"},
+    "periodo":                  {"label": "Data dos Registros / Período", "grupo": "Indicadores Principais do Negócio", "cor": "#3b82f6", "icone": "fa-calendar",         "coluna_sugerida": "Data",              "tipo_sugerido": "data"},
+    "receita_total":            {"label": "Faturamento / Receita Total",  "grupo": "Indicadores Principais do Negócio", "cor": "#10b981", "icone": "fa-chart-line",       "coluna_sugerida": "Faturamento",       "tipo_sugerido": "moeda"},
+    "despesas":                 {"label": "Despesas / Gastos Totais",     "grupo": "Indicadores Principais do Negócio", "cor": "#ef4444", "icone": "fa-money-bill-wave",  "coluna_sugerida": "Despesas",          "tipo_sugerido": "moeda"},
+    "resultado":                {"label": "Lucro Líquido / Resultado",    "grupo": "Indicadores Principais do Negócio", "cor": "#8b5cf6", "icone": "fa-trophy",           "coluna_sugerida": "Lucro Líquido",     "tipo_sugerido": "moeda"},
 
     # Detalhamento de Receitas
-    "receita_produtos":        {"label": "Venda de Produtos",            "grupo": "Detalhamento de Receitas",          "cor": "#10b981", "icone": "fa-box", "coluna_sugerida": "Venda Produtos", "tipo_sugerido": "moeda"},
-    "receita_servicos":        {"label": "Venda de Serviços",            "grupo": "Detalhamento de Receitas",          "cor": "#10b981", "icone": "fa-screwdriver-wrench", "coluna_sugerida": "Venda Serviços", "tipo_sugerido": "moeda"},
-    "receita_outros":          {"label": "Outras Receitas",              "grupo": "Detalhamento de Receitas",          "cor": "#10b981", "icone": "fa-plus-circle", "coluna_sugerida": "Outras Receitas", "tipo_sugerido": "moeda"},
+    "receita_produtos":         {"label": "Venda de Produtos",            "grupo": "Detalhamento de Receitas",          "cor": "#10b981", "icone": "fa-box",              "coluna_sugerida": "Venda Produtos",    "tipo_sugerido": "moeda"},
+    "receita_servicos":         {"label": "Venda de Serviços",            "grupo": "Detalhamento de Receitas",          "cor": "#10b981", "icone": "fa-screwdriver-wrench", "coluna_sugerida": "Venda Serviços",    "tipo_sugerido": "moeda"},
+    "receita_outros":           {"label": "Outras Receitas",              "grupo": "Detalhamento de Receitas",          "cor": "#10b981", "icone": "fa-plus-circle",      "coluna_sugerida": "Outras Receitas",   "tipo_sugerido": "moeda"},
 
     # Impostos
-    "impostos":                {"label": "Impostos (Valor R$)",          "grupo": "Impostos",                         "cor": "#6366f1", "icone": "fa-file-invoice-dollar", "coluna_sugerida": "Impostos", "tipo_sugerido": "moeda"},
-    "taxa_imposto":            {"label": "Taxa de Imposto (%)",          "grupo": "Impostos",                         "cor": "#6366f1", "icone": "fa-percent", "coluna_sugerida": "Taxa Imposto (%)", "tipo_sugerido": "numero"},
+    "impostos":                 {"label": "Impostos (Valor R$)",          "grupo": "Impostos",                          "cor": "#6366f1", "icone": "fa-file-invoice-dollar", "coluna_sugerida": "Impostos",        "tipo_sugerido": "moeda"},
+    "taxa_imposto":             {"label": "Taxa de Imposto (%)",          "grupo": "Impostos",                          "cor": "#6366f1", "icone": "fa-percent",          "coluna_sugerida": "Taxa Imposto (%)",  "tipo_sugerido": "numero"},
 
     # Custos Variáveis
-    "fornecedores":            {"label": "Fornecedores / CMV",           "grupo": "Custos Variáveis",                 "cor": "#f59e0b", "icone": "fa-truck", "coluna_sugerida": "Fornecedores", "tipo_sugerido": "moeda"},
-    "publicidade":             {"label": "Publicidade / Marketing",      "grupo": "Custos Variáveis",                 "cor": "#f59e0b", "icone": "fa-bullhorn", "coluna_sugerida": "Marketing", "tipo_sugerido": "moeda"},
-    "custo_variavel":          {"label": "Outros Custos Variáveis",      "grupo": "Custos Variáveis",                 "cor": "#f59e0b", "icone": "fa-arrows-rotate", "coluna_sugerida": "Custos Variáveis", "tipo_sugerido": "moeda"},
-    "custo_variavel_outros":   {"label": "Custos Variáveis Diversos",    "grupo": "Custos Variáveis",                 "cor": "#f59e0b", "icone": "fa-ellipsis", "coluna_sugerida": "Custos Diversos", "tipo_sugerido": "moeda"},
+    "fornecedores":             {"label": "Fornecedores / CMV",           "grupo": "Custos Variáveis",                  "cor": "#f59e0b", "icone": "fa-truck",            "coluna_sugerida": "Fornecedores",      "tipo_sugerido": "moeda"},
+    "publicidade":              {"label": "Publicidade / Marketing",      "grupo": "Custos Variáveis",                  "cor": "#f59e0b", "icone": "fa-bullhorn",         "coluna_sugerida": "Marketing",         "tipo_sugerido": "moeda"},
+    "custo_variavel":           {"label": "Outros Custos Variáveis",      "grupo": "Custos Variáveis",                  "cor": "#f59e0b", "icone": "fa-arrows-rotate",    "coluna_sugerida": "Custos Variáveis",  "tipo_sugerido": "moeda"},
+    "custo_variavel_outros":    {"label": "Custos Variáveis Diversos",    "grupo": "Custos Variáveis",                  "cor": "#f59e0b", "icone": "fa-ellipsis",         "coluna_sugerida": "Custos Diversos",   "tipo_sugerido": "moeda"},
 
     # Gastos Fixos
-    "das":                 {"label": "Boleto DAS-MEI (Tributo MEI)", "grupo": "Gastos Fixos",                     "cor": "#f59e0b", "icone": "fa-file-invoice-dollar", "coluna_sugerida": "DAS-MEI", "tipo_sugerido": "moeda"},
-    "aluguel":                 {"label": "Aluguel / Locação",            "grupo": "Gastos Fixos",                     "cor": "#ef4444", "icone": "fa-building", "coluna_sugerida": "Aluguel", "tipo_sugerido": "moeda"},
-    "folha_pagamento":         {"label": "Folha de Pagamento",           "grupo": "Gastos Fixos",                     "cor": "#ef4444", "icone": "fa-users", "coluna_sugerida": "Folha de Pagamento", "tipo_sugerido": "moeda"},
-    "pro_labore":              {"label": "Pró-labore / Retirada",        "grupo": "Gastos Fixos",                     "cor": "#ef4444", "icone": "fa-user-tie", "coluna_sugerida": "Pró-labore", "tipo_sugerido": "moeda"},
-    "gasto_fixo_outros":       {"label": "Outros Gastos Fixos",          "grupo": "Gastos Fixos",                     "cor": "#ef4444", "icone": "fa-file-alt", "coluna_sugerida": "Gastos Fixos", "tipo_sugerido": "moeda"},
+    "das":                      {"label": "Boleto DAS-MEI (Tributo MEI)", "grupo": "Gastos Fixos",                      "cor": "#f59e0b", "icone": "fa-file-invoice-dollar", "coluna_sugerida": "DAS-MEI",        "tipo_sugerido": "moeda"},
+    "aluguel":                  {"label": "Aluguel / Locação",            "grupo": "Gastos Fixos",                      "cor": "#ef4444", "icone": "fa-building",         "coluna_sugerida": "Aluguel",           "tipo_sugerido": "moeda"},
+    "folha_pagamento":          {"label": "Folha de Pagamento",           "grupo": "Gastos Fixos",                      "cor": "#ef4444", "icone": "fa-users",            "coluna_sugerida": "Folha de Pagamento", "tipo_sugerido": "moeda"},
+    "pro_labore":               {"label": "Pró-labore / Retirada",        "grupo": "Gastos Fixos",                      "cor": "#ef4444", "icone": "fa-user-tie",         "coluna_sugerida": "Pró-labore",        "tipo_sugerido": "moeda"},
+    "gasto_fixo_outros":        {"label": "Outros Gastos Fixos",          "grupo": "Gastos Fixos",                      "cor": "#ef4444", "icone": "fa-file-alt",         "coluna_sugerida": "Gastos Fixos",      "tipo_sugerido": "moeda"},
 
     # Prazos e Liquidação
-    "data_recebimento":        {"label": "Data de Recebimento",          "grupo": "Prazos e Liquidação",              "cor": "#06b6d4", "icone": "fa-calendar-check", "coluna_sugerida": "Data Recebimento", "tipo_sugerido": "data"},
-    "data_pagamento":          {"label": "Data de Pagamento",            "grupo": "Prazos e Liquidação",              "cor": "#f59e0b", "icone": "fa-calendar-day", "coluna_sugerida": "Data Pagamento", "tipo_sugerido": "data"},
-    "data_vencimento":         {"label": "Data de Vencimento",           "grupo": "Prazos e Liquidação",              "cor": "#ec4899", "icone": "fa-calendar-xmark", "coluna_sugerida": "Vencimento", "tipo_sugerido": "data"},
-    "forma_pagamento":         {"label": "Forma / Método de Pagamento",  "grupo": "Prazos e Liquidação",              "cor": "#64748b", "icone": "fa-credit-card", "coluna_sugerida": "Forma Pagamento", "tipo_sugerido": "texto"},
-    "prazo_venda":             {"label": "Prazo de Venda (Dias)",        "grupo": "Prazos e Liquidação",              "cor": "#10b981", "icone": "fa-clock", "coluna_sugerida": "Prazo Venda", "tipo_sugerido": "numero"},
-    "prazo_compra":            {"label": "Prazo de Compra (Dias)",       "grupo": "Prazos e Liquidação",              "cor": "#f97316", "icone": "fa-clock", "coluna_sugerida": "Prazo Compra", "tipo_sugerido": "numero"},
+    "data_recebimento":         {"label": "Data de Recebimento",          "grupo": "Prazos e Liquidação",               "cor": "#06b6d4", "icone": "fa-calendar-check",   "coluna_sugerida": "Data Recebimento",  "tipo_sugerido": "data"},
+    "data_pagamento":           {"label": "Data de Pagamento",            "grupo": "Prazos e Liquidação",               "cor": "#f59e0b", "icone": "fa-calendar-day",     "coluna_sugerida": "Data Pagamento",    "tipo_sugerido": "data"},
+    "data_vencimento":          {"label": "Data de Vencimento",           "grupo": "Prazos e Liquidação",               "cor": "#ec4899", "icone": "fa-calendar-xmark",   "coluna_sugerida": "Vencimento",        "tipo_sugerido": "data"},
+    "forma_pagamento":          {"label": "Forma / Método de Pagamento",  "grupo": "Prazos e Liquidação",               "cor": "#64748b", "icone": "fa-credit-card",      "coluna_sugerida": "Forma Pagamento",   "tipo_sugerido": "texto"},
+    "prazo_venda":              {"label": "Prazo de Venda (Dias)",        "grupo": "Prazos e Liquidação",               "cor": "#10b981", "icone": "fa-clock",            "coluna_sugerida": "Prazo Venda",       "tipo_sugerido": "numero"},
+    "prazo_compra":             {"label": "Prazo de Compra (Dias)",       "grupo": "Prazos e Liquidação",               "cor": "#f97316", "icone": "fa-clock",            "coluna_sugerida": "Prazo Compra",      "tipo_sugerido": "numero"},
 
     # Investimentos
-    "investimento_infra":      {"label": "Investimento – Infraestrutura","grupo": "Investimentos",                    "cor": "#8b5cf6", "icone": "fa-hammer", "coluna_sugerida": "Investimento Infra", "tipo_sugerido": "moeda"},
-    "investimento_equipamentos":{"label": "Investimento – Equipamentos",  "grupo": "Investimentos",                    "cor": "#8b5cf6", "icone": "fa-computer", "coluna_sugerida": "Investimento Equipamentos", "tipo_sugerido": "moeda"},
-    "investimento_outros":     {"label": "Outros Investimentos",         "grupo": "Investimentos",                    "cor": "#8b5cf6", "icone": "fa-coins", "coluna_sugerida": "Investimentos", "tipo_sugerido": "moeda"},
+    "investimento_infra":       {"label": "Investimento – Infraestrutura", "grupo": "Investimentos",                    "cor": "#8b5cf6", "icone": "fa-hammer",           "coluna_sugerida": "Investimento Infra",         "tipo_sugerido": "moeda"},
+    "investimento_equipamentos": {"label": "Investimento – Equipamentos",  "grupo": "Investimentos",                    "cor": "#8b5cf6", "icone": "fa-computer",         "coluna_sugerida": "Investimento Equipamentos",  "tipo_sugerido": "moeda"},
+    "investimento_outros":      {"label": "Outros Investimentos",          "grupo": "Investimentos",                    "cor": "#8b5cf6", "icone": "fa-coins",            "coluna_sugerida": "Investimentos",              "tipo_sugerido": "moeda"},
 }
 
-# Campos mínimos necessários por ferramenta para ME (Padrão)
+
+# ==============================================================================
+# 4. REQUISITOS POR FERRAMENTA
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 4.1 Requisitos para perfil ME (padrão)
+# ------------------------------------------------------------------------------
+
 REQUISITOS_FERRAMENTAS_ME = {
     "planejamento_financeiro": {
         "label": "Planejamento Financeiro",
         "icone": "fa-chart-pie",
         "obrigatorios": ["receita_total", "aluguel", "folha_pagamento"],
-        "opcionais": ["receita_produtos", "receita_servicos", "impostos",
-                      "taxa_imposto", "fornecedores", "publicidade",
-                      "investimento_outros", "periodo"],
+        "opcionais": [
+            "receita_produtos", "receita_servicos", "impostos",
+            "taxa_imposto", "fornecedores", "publicidade",
+            "investimento_outros", "periodo",
+        ],
     },
     "dre": {
         "label": "DRE",
@@ -205,7 +237,11 @@ REQUISITOS_FERRAMENTAS_ME = {
     },
 }
 
-# Campos mínimos necessários por ferramenta para MEI (Fluxo de Caixa e Controles Essenciais)
+
+# ------------------------------------------------------------------------------
+# 4.2 Requisitos para perfil MEI (Fluxo de Caixa e Controles Essenciais)
+# ------------------------------------------------------------------------------
+
 REQUISITOS_FERRAMENTAS_MEI = {
     "fluxo_caixa": {
         "label": "Fluxo de Caixa",
@@ -217,7 +253,11 @@ REQUISITOS_FERRAMENTAS_MEI = {
         "label": "Controles Essenciais",
         "icone": "fa-sliders",
         "obrigatorios": ["receita_total", "periodo", "despesas"],
-        "opcionais": ["das", "fornecedores", "pro_labore", "resultado", "data_recebimento", "data_pagamento", "data_vencimento", "forma_pagamento", "prazo_venda", "prazo_compra"],
+        "opcionais": [
+            "das", "fornecedores", "pro_labore", "resultado",
+            "data_recebimento", "data_pagamento", "data_vencimento",
+            "forma_pagamento", "prazo_venda", "prazo_compra",
+        ],
     },
 }
 
@@ -225,18 +265,63 @@ REQUISITOS_FERRAMENTAS_MEI = {
 REQUISITOS_FERRAMENTAS = REQUISITOS_FERRAMENTAS_ME
 
 
-# =====================================================
-#  NORMALIZAÇÃO
-# =====================================================
+# ==============================================================================
+# 5. NORMALIZAÇÃO
+# ==============================================================================
 
 def _normalizar(texto: str) -> str:
     texto = unicodedata.normalize("NFD", str(texto).lower())
     return "".join(c for c in texto if unicodedata.category(c) != "Mn")
 
 
-# =====================================================
-#  DETECÇÃO AUTOMÁTICA DE CATEGORIA POR COLUNA
-# =====================================================
+# ==============================================================================
+# 6. DETECÇÃO AUTOMÁTICA DE CATEGORIA POR COLUNA
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 6.1 Heurística auxiliar: detecção de séries percentuais
+# ------------------------------------------------------------------------------
+
+def values_between_pct(series: pd.Series) -> bool:
+    return series.between(0, 100).all() and series.mean() < 50
+
+
+# ------------------------------------------------------------------------------
+# 6.2 Inferência por comportamento dos dados
+# ------------------------------------------------------------------------------
+
+def _inferir_por_comportamento(serie: pd.Series, col_norm: str) -> Optional[str]:
+    """Tenta inferir categoria pelo padrão dos dados."""
+    valores = pd.to_numeric(serie, errors="coerce").dropna()
+
+    if valores.empty:
+        # Coluna de texto — pode ser período?
+        try:
+            pd.to_datetime(serie.dropna(), errors="raise", dayfirst=True)
+            return "periodo"
+        except Exception:
+            return None
+
+    # Percentuais (0-100 ou 0-1)
+    if valores.between(0, 1).all() or values_between_pct(valores):
+        return "taxa_imposto"
+
+    # Valores positivos grandes → receita?
+    if valores.gt(0).all() and valores.mean() > 500:
+        return "receita_total"
+
+    # Valores constantes (desvio padrão baixo em relação à média) → fixo?
+    if len(valores) > 1:
+        cv = valores.std() / (valores.mean() + 1e-9)
+        if cv < 0.05:
+            return "aluguel"  # fixo → provavelmente aluguel
+
+    return None
+
+
+# ------------------------------------------------------------------------------
+# 6.3 Classificação de uma coluna individual
+# ------------------------------------------------------------------------------
 
 def classificar_coluna(nome_coluna: str, serie: Optional[pd.Series] = None) -> dict:
     """
@@ -274,42 +359,9 @@ def classificar_coluna(nome_coluna: str, serie: Optional[pd.Series] = None) -> d
     return {"categoria": None, "confianca": 0, "metodo": "nenhum"}
 
 
-def _inferir_por_comportamento(serie: pd.Series, col_norm: str) -> Optional[str]:
-    """Tenta inferir categoria pelo padrão dos dados."""
-    valores = pd.to_numeric(serie, errors="coerce").dropna()
-
-    if valores.empty:
-        # Coluna de texto — pode ser período?
-        try:
-            pd.to_datetime(serie.dropna(), errors="raise", dayfirst=True)
-            return "periodo"
-        except Exception:
-            return None
-
-    # Percentuais (0-100 ou 0-1)
-    if valores.between(0, 1).all() or values_between_pct(valores):
-        return "taxa_imposto"
-
-    # Valores positivos grandes → receita?
-    if valores.gt(0).all() and valores.mean() > 500:
-        return "receita_total"
-
-    # Valores constantes (desvio padrão baixo em relação à média) → fixo?
-    if len(valores) > 1:
-        cv = valores.std() / (valores.mean() + 1e-9)
-        if cv < 0.05:
-            return "aluguel"  # fixo → provavelmente aluguel
-
-    return None
-
-
-def values_between_pct(series: pd.Series) -> bool:
-    return series.between(0, 100).all() and series.mean() < 50
-
-
-# =====================================================
-#  CLASSIFICAR TODAS AS COLUNAS DO DATAFRAME
-# =====================================================
+# ==============================================================================
+# 7. CLASSIFICAÇÃO DE TODAS AS COLUNAS DO DATAFRAME
+# ==============================================================================
 
 def classificar_colunas_financeiras(df: pd.DataFrame) -> dict:
     """
@@ -347,9 +399,9 @@ def classificar_colunas_financeiras(df: pd.DataFrame) -> dict:
     }
 
 
-# =====================================================
-#  ANÁLISE DE COMPLETUDE POR FERRAMENTA
-# =====================================================
+# ==============================================================================
+# 8. ANÁLISE DE COMPLETUDE POR FERRAMENTA
+# ==============================================================================
 
 def analisar_completude_financeira(mapeamento_usuario: dict, perfil: str = "ME") -> dict:
     """
@@ -365,9 +417,19 @@ def analisar_completude_financeira(mapeamento_usuario: dict, perfil: str = "ME")
     def _esta_presente(c: str) -> bool:
         if mapeamento_usuario.get(c) or mapeamento_usuario.get(f"{c}_manual"):
             return True
-        if c == "receita_total" and (mapeamento_usuario.get("receita_produtos") or mapeamento_usuario.get("receita_servicos") or mapeamento_usuario.get("receita_outros")):
+        if c == "receita_total" and (
+            mapeamento_usuario.get("receita_produtos")
+            or mapeamento_usuario.get("receita_servicos")
+            or mapeamento_usuario.get("receita_outros")
+        ):
             return True
-        if c == "despesas" and (mapeamento_usuario.get("custo_variavel") or mapeamento_usuario.get("fornecedores") or mapeamento_usuario.get("aluguel") or mapeamento_usuario.get("das") or mapeamento_usuario.get("das_manual")):
+        if c == "despesas" and (
+            mapeamento_usuario.get("custo_variavel")
+            or mapeamento_usuario.get("fornecedores")
+            or mapeamento_usuario.get("aluguel")
+            or mapeamento_usuario.get("das")
+            or mapeamento_usuario.get("das_manual")
+        ):
             return True
         return False
 
@@ -413,9 +475,13 @@ def analisar_completude_financeira(mapeamento_usuario: dict, perfil: str = "ME")
     return resultado
 
 
-# =====================================================
-#  RECOMENDAÇÕES INTELIGENTES
-# =====================================================
+# ==============================================================================
+# 9. RECOMENDAÇÕES INTELIGENTES
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 9.1 Catálogo de recomendações para ME
+# ------------------------------------------------------------------------------
 
 _RECOMENDACOES_ME = [
     {
@@ -453,6 +519,11 @@ _RECOMENDACOES_ME = [
         "nivel": "aviso",
     },
 ]
+
+
+# ------------------------------------------------------------------------------
+# 9.2 Catálogo de recomendações para MEI
+# ------------------------------------------------------------------------------
 
 _RECOMENDACOES_MEI = [
     {
@@ -496,6 +567,10 @@ _RECOMENDACOES_MEI = [
 _RECOMENDACOES_BASE = _RECOMENDACOES_ME
 
 
+# ------------------------------------------------------------------------------
+# 9.3 Geração de recomendações conforme o perfil
+# ------------------------------------------------------------------------------
+
 def gerar_recomendacoes(mapeamento_usuario: dict, perfil: str = "ME") -> list:
     """
     Gera lista de recomendações baseadas nos campos ausentes no mapeamento do usuário.
@@ -510,13 +585,26 @@ def gerar_recomendacoes(mapeamento_usuario: dict, perfil: str = "ME") -> list:
         grupo_ausente = rec.get("grupo_ausente")
 
         # Verificar se a categoria principal está ausente
-        tem_principal = bool(mapeamento_usuario.get(cat_ausente) or mapeamento_usuario.get(f"{cat_ausente}_manual"))
+        tem_principal = bool(
+            mapeamento_usuario.get(cat_ausente)
+            or mapeamento_usuario.get(f"{cat_ausente}_manual")
+        )
         # Verificar grupo alternativo
-        tem_grupo = bool(mapeamento_usuario.get(grupo_ausente) or mapeamento_usuario.get(f"{grupo_ausente}_manual")) if grupo_ausente else False
+        tem_grupo = (
+            bool(
+                mapeamento_usuario.get(grupo_ausente)
+                or mapeamento_usuario.get(f"{grupo_ausente}_manual")
+            )
+            if grupo_ausente
+            else False
+        )
 
         if not tem_principal and not tem_grupo:
             meta = LABELS_CATEGORIAS.get(cat_ausente, {})
-            col_sugerida = rec.get("coluna_sugerida") or meta.get("coluna_sugerida", cat_ausente.capitalize())
+            col_sugerida = (
+                rec.get("coluna_sugerida")
+                or meta.get("coluna_sugerida", cat_ausente.capitalize())
+            )
             tipo_sugerido = rec.get("tipo_sugerido") or meta.get("tipo_sugerido", "moeda")
             recomendacoes.append({
                 "mensagem": rec["mensagem"],
@@ -531,9 +619,9 @@ def gerar_recomendacoes(mapeamento_usuario: dict, perfil: str = "ME") -> list:
     return recomendacoes
 
 
-# =====================================================
-#  CÁLCULO DE CAMPOS DERIVADOS (PREVIEW)
-# =====================================================
+# ==============================================================================
+# 10. CÁLCULO DE CAMPOS DERIVADOS (PREVIEW)
+# ==============================================================================
 
 def calcular_preview_financeiro(mapeamento_usuario: dict, df: pd.DataFrame) -> dict:
     """
@@ -555,7 +643,11 @@ def calcular_preview_financeiro(mapeamento_usuario: dict, df: pd.DataFrame) -> d
         return 0.0
 
     rec_tot = soma_coluna("receita_total")
-    subs_rec = soma_coluna("receita_produtos") + soma_coluna("receita_servicos") + soma_coluna("receita_outros")
+    subs_rec = (
+        soma_coluna("receita_produtos")
+        + soma_coluna("receita_servicos")
+        + soma_coluna("receita_outros")
+    )
     receita = rec_tot if rec_tot > 0 else subs_rec
 
     taxa_raw = mapeamento_usuario.get("taxa_imposto_manual")
@@ -563,18 +655,34 @@ def calcular_preview_financeiro(mapeamento_usuario: dict, df: pd.DataFrame) -> d
 
     impostos = soma_coluna("impostos") or (receita * taxa)
 
-    subs_var = soma_coluna("fornecedores") + soma_coluna("publicidade") + soma_coluna("custo_variavel_outros")
+    subs_var = (
+        soma_coluna("fornecedores")
+        + soma_coluna("publicidade")
+        + soma_coluna("custo_variavel_outros")
+    )
     col_custo_var = soma_coluna("custo_variavel")
-    custos_var = (subs_var + col_custo_var) if (subs_var > 0 and col_custo_var > 0) else (subs_var or col_custo_var)
+    custos_var = (
+        (subs_var + col_custo_var)
+        if (subs_var > 0 and col_custo_var > 0)
+        else (subs_var or col_custo_var)
+    )
 
     margem = receita - impostos - custos_var
 
-    subs_fixos = soma_coluna("aluguel") + soma_coluna("folha_pagamento") + soma_coluna("pro_labore")
+    subs_fixos = (
+        soma_coluna("aluguel")
+        + soma_coluna("folha_pagamento")
+        + soma_coluna("pro_labore")
+    )
     outros_fixos = soma_coluna("gasto_fixo_outros")
     gastos_fixos = subs_fixos + outros_fixos
 
     col_res = soma_coluna("resultado")
-    resultado_val = col_res if (mapeamento_usuario.get("resultado") and col_res != 0) else (margem - gastos_fixos)
+    resultado_val = (
+        col_res
+        if (mapeamento_usuario.get("resultado") and col_res != 0)
+        else (margem - gastos_fixos)
+    )
 
     subs_inv = soma_coluna("investimento_infra") + soma_coluna("investimento_equipamentos")
     outros_inv = soma_coluna("investimento_outros")

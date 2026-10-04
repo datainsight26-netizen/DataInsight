@@ -1,15 +1,32 @@
+# ==============================================================================
+# file_processor.py
+# ==============================================================================
+# Este código pertence à plataforma @DataInsight.
+# Todos os códigos da plataforma devem seguir a mesma estrutura de organização
+# em seções numeradas, conforme o padrão abaixo.
+#
+# Observação técnica: o formato original sugerido usava "//" (estilo JavaScript).
+# Em Python, "//" é o operador de divisão inteira e causaria erro de sintaxe,
+# portanto os cabeçalhos foram adaptados para "#", preservando a mesma função
+# de demarcação visual e numeração sequencial.
+
+# ==============================================================================
+# 1. IMPORTAÇÕES
+# ==============================================================================
+
 import base64
-import csv
 import io
 import json
 import os
-import re
-import traceback
 import xml.etree.ElementTree as ET
 from typing import Any, Dict, Optional, Tuple
 
 import pandas as pd
 
+
+# ==============================================================================
+# 2. FUNÇÕES AUXILIARES GERAIS
+# ==============================================================================
 
 def formatar_tamanho_bytes(num_bytes: int) -> str:
     """Retorna tamanho legível (KB, MB)."""
@@ -22,7 +39,19 @@ def formatar_tamanho_bytes(num_bytes: int) -> str:
     return f"{num_bytes:.1f} TB"
 
 
-def extrair_texto_pdf(arquivo_bytes: bytes, max_paginas: int = 25, max_chars: int = 35000) -> Tuple[str, Dict[str, Any]]:
+# ==============================================================================
+# 3. EXTRATORES DE CONTEÚDO POR TIPO DE ARQUIVO
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 3.1 PDF
+# ------------------------------------------------------------------------------
+
+def extrair_texto_pdf(
+    arquivo_bytes: bytes,
+    max_paginas: int = 25,
+    max_chars: int = 35000,
+) -> Tuple[str, Dict[str, Any]]:
     """Extrai texto e metadados de PDF via pypdf."""
     info = {"paginas": 0, "chars": 0}
     try:
@@ -39,17 +68,31 @@ def extrair_texto_pdf(arquivo_bytes: bytes, max_paginas: int = 25, max_chars: in
                 textos.append(f"--- Página {i+1} ---\n{txt}")
                 chars_acumulados += len(txt)
                 if chars_acumulados >= max_chars:
-                    textos.append(f"\n[... Texto truncado após {max_chars} caracteres para otimização de contexto ...]")
+                    textos.append(
+                        f"\n[... Texto truncado após {max_chars} caracteres "
+                        "para otimização de contexto ...]"
+                    )
                     break
 
-        conteudo = "\n\n".join(textos) if textos else "Nenhum texto pôde ser extraído deste PDF (pode conter imagens escaneadas)."
+        conteudo = (
+            "\n\n".join(textos)
+            if textos
+            else "Nenhum texto pôde ser extraído deste PDF (pode conter imagens escaneadas)."
+        )
         info["chars"] = len(conteudo)
         return conteudo, info
     except Exception as e:
         return f"Erro ao ler PDF: {str(e)}", {"erro": str(e)}
 
 
-def extrair_dados_excel(arquivo_bytes: bytes, max_linhas: int = 25) -> Tuple[str, Dict[str, Any]]:
+# ------------------------------------------------------------------------------
+# 3.2 Excel (.xlsx, .xls)
+# ------------------------------------------------------------------------------
+
+def extrair_dados_excel(
+    arquivo_bytes: bytes,
+    max_linhas: int = 25,
+) -> Tuple[str, Dict[str, Any]]:
     """Extrai abas, resumo e prévias tabulares de planilha Excel (.xlsx, .xls)."""
     info = {"abas": [], "total_linhas": 0}
     try:
@@ -69,22 +112,28 @@ def extrair_dados_excel(arquivo_bytes: bytes, max_linhas: int = 25) -> Tuple[str
             blocos.append(f"Colunas: {', '.join([str(c) for c in df.columns])}")
 
             # Tipos numéricos e estatísticas resumidas
-            colunas_num = df.select_dtypes(include=['number']).columns.tolist()
+            colunas_num = df.select_dtypes(include=["number"]).columns.tolist()
             if colunas_num:
                 stats_resumo = []
                 for c in colunas_num[:5]:
                     soma = df[c].sum()
                     media = df[c].mean()
-                    stats_resumo.append(f"- **{c}**: Total = {soma:,.2f} | Média = {media:,.2f}")
+                    stats_resumo.append(
+                        f"- **{c}**: Total = {soma:,.2f} | Média = {media:,.2f}"
+                    )
                 blocos.append("Indicadores Rápidos:\n" + "\n".join(stats_resumo))
 
             # Prévia das primeiras linhas em Markdown
             preview_df = df.head(max_linhas).fillna("")
             try:
                 tabela_md = preview_df.to_markdown(index=False)
-                blocos.append(f"Amostra dos Dados (primeiras {len(preview_df)} linhas):\n{tabela_md}")
+                blocos.append(
+                    f"Amostra dos Dados (primeiras {len(preview_df)} linhas):\n{tabela_md}"
+                )
             except Exception:
-                blocos.append(f"Amostra dos Dados:\n{preview_df.to_string(index=False)}")
+                blocos.append(
+                    f"Amostra dos Dados:\n{preview_df.to_string(index=False)}"
+                )
 
         info["total_linhas"] = total_linhas
         return "\n\n".join(blocos), info
@@ -92,18 +141,25 @@ def extrair_dados_excel(arquivo_bytes: bytes, max_linhas: int = 25) -> Tuple[str
         return f"Erro ao processar planilha Excel: {str(e)}", {"erro": str(e)}
 
 
-def extrair_dados_csv(arquivo_bytes: bytes, max_linhas: int = 25) -> Tuple[str, Dict[str, Any]]:
+# ------------------------------------------------------------------------------
+# 3.3 CSV
+# ------------------------------------------------------------------------------
+
+def extrair_dados_csv(
+    arquivo_bytes: bytes,
+    max_linhas: int = 25,
+) -> Tuple[str, Dict[str, Any]]:
     """Extrai informações e amostra de arquivo CSV com detecção de separador."""
     info = {"linhas": 0, "colunas": 0}
     try:
         try:
-            texto = arquivo_bytes.decode('utf-8')
+            texto = arquivo_bytes.decode("utf-8")
         except UnicodeDecodeError:
-            texto = arquivo_bytes.decode('latin-1')
+            texto = arquivo_bytes.decode("latin-1")
 
-        delimitador = ','
-        for sep in [';', ',', '\t', '|']:
-            primeira_linha = texto.split('\n')[0] if '\n' in texto else texto
+        delimitador = ","
+        for sep in [";", ",", "\t", "|"]:
+            primeira_linha = texto.split("\n")[0] if "\n" in texto else texto
             if primeira_linha.count(sep) > 1:
                 delimitador = sep
                 break
@@ -114,36 +170,50 @@ def extrair_dados_csv(arquivo_bytes: bytes, max_linhas: int = 25) -> Tuple[str, 
         info["colunas"] = colunas
 
         blocos = [
-            f"Arquivo CSV com {linhas} linhas e {colunas} colunas (separador: '{delimitador}')",
-            f"Colunas identificadas: {', '.join([str(c) for c in df.columns])}"
+            f"Arquivo CSV com {linhas} linhas e {colunas} colunas "
+            f"(separador: '{delimitador}')",
+            f"Colunas identificadas: {', '.join([str(c) for c in df.columns])}",
         ]
 
-        colunas_num = df.select_dtypes(include=['number']).columns.tolist()
+        colunas_num = df.select_dtypes(include=["number"]).columns.tolist()
         if colunas_num:
             stats_resumo = []
             for c in colunas_num[:5]:
                 soma = df[c].sum()
                 media = df[c].mean()
-                stats_resumo.append(f"- **{c}**: Soma = {soma:,.2f} | Média = {media:,.2f}")
+                stats_resumo.append(
+                    f"- **{c}**: Soma = {soma:,.2f} | Média = {media:,.2f}"
+                )
             blocos.append("Indicadores Rápidos:\n" + "\n".join(stats_resumo))
 
         preview_df = df.head(max_linhas).fillna("")
         try:
             tabela_md = preview_df.to_markdown(index=False)
-            blocos.append(f"Amostra dos Dados (primeiras {len(preview_df)} linhas):\n{tabela_md}")
+            blocos.append(
+                f"Amostra dos Dados (primeiras {len(preview_df)} linhas):\n{tabela_md}"
+            )
         except Exception:
-            blocos.append(f"Amostra dos Dados:\n{preview_df.to_string(index=False)}")
+            blocos.append(
+                f"Amostra dos Dados:\n{preview_df.to_string(index=False)}"
+            )
 
         return "\n\n".join(blocos), info
     except Exception as e:
         return f"Erro ao processar CSV: {str(e)}", {"erro": str(e)}
 
 
-def extrair_dados_json(arquivo_bytes: bytes, max_chars: int = 30000) -> Tuple[str, Dict[str, Any]]:
+# ------------------------------------------------------------------------------
+# 3.4 JSON
+# ------------------------------------------------------------------------------
+
+def extrair_dados_json(
+    arquivo_bytes: bytes,
+    max_chars: int = 30000,
+) -> Tuple[str, Dict[str, Any]]:
     """Analisa e formata conteúdo de arquivo JSON."""
     info = {"tipo": "", "tamanho": 0}
     try:
-        texto = arquivo_bytes.decode('utf-8', errors='replace')
+        texto = arquivo_bytes.decode("utf-8", errors="replace")
         dados = json.loads(texto)
         if isinstance(dados, list):
             info["tipo"] = "lista"
@@ -152,55 +222,88 @@ def extrair_dados_json(arquivo_bytes: bytes, max_chars: int = 30000) -> Tuple[st
         elif isinstance(dados, dict):
             info["tipo"] = "objeto"
             info["tamanho"] = len(dados.keys())
-            resumo = f"JSON do tipo Objeto com {len(dados.keys())} chaves principais: {', '.join(list(dados.keys())[:20])}"
+            resumo = (
+                f"JSON do tipo Objeto com {len(dados.keys())} chaves principais: "
+                f"{', '.join(list(dados.keys())[:20])}"
+            )
         else:
             resumo = "JSON com valor primitivo."
 
         formatado = json.dumps(dados, indent=2, ensure_ascii=False)
         if len(formatado) > max_chars:
-            formatado = formatado[:max_chars] + f"\n\n[... Restante do JSON truncado ({len(formatado)} caracteres totais) ...]"
+            formatado = (
+                formatado[:max_chars]
+                + f"\n\n[... Restante do JSON truncado ({len(formatado)} caracteres totais) ...]"
+            )
 
         return f"{resumo}\n\nEstrutura JSON:\n```json\n{formatado}\n```", info
     except Exception as e:
         return f"Erro ao ler JSON: {str(e)}", {"erro": str(e)}
 
 
-def extrair_dados_xml(arquivo_bytes: bytes, max_chars: int = 25000) -> Tuple[str, Dict[str, Any]]:
+# ------------------------------------------------------------------------------
+# 3.5 XML
+# ------------------------------------------------------------------------------
+
+def extrair_dados_xml(
+    arquivo_bytes: bytes,
+    max_chars: int = 25000,
+) -> Tuple[str, Dict[str, Any]]:
     """Analisa e formata conteúdo de arquivo XML."""
     info = {"raiz": "", "filhos": 0}
     try:
-        texto = arquivo_bytes.decode('utf-8', errors='replace')
+        texto = arquivo_bytes.decode("utf-8", errors="replace")
         root = ET.fromstring(texto)
         info["raiz"] = root.tag
         info["filhos"] = len(root)
 
         resumo = f"Arquivo XML com elemento raiz <{root.tag}> e {len(root)} elementos filhos."
         if len(texto) > max_chars:
-            texto = texto[:max_chars] + f"\n\n[... Restante do XML truncado ({len(texto)} caracteres totais) ...]"
+            texto = (
+                texto[:max_chars]
+                + f"\n\n[... Restante do XML truncado ({len(texto)} caracteres totais) ...]"
+            )
 
         return f"{resumo}\n\nConteúdo XML:\n```xml\n{texto}\n```", info
     except Exception as e:
         return f"Erro ao ler XML: {str(e)}", {"erro": str(e)}
 
 
-def extrair_dados_texto(arquivo_bytes: bytes, max_chars: int = 30000) -> Tuple[str, Dict[str, Any]]:
+# ------------------------------------------------------------------------------
+# 3.6 Texto puro (.txt, .log, .md, .csv, .sql, .py, .html)
+# ------------------------------------------------------------------------------
+
+def extrair_dados_texto(
+    arquivo_bytes: bytes,
+    max_chars: int = 30000,
+) -> Tuple[str, Dict[str, Any]]:
     """Lê arquivo de texto puro (.txt, .log, .md)."""
     try:
         try:
-            texto = arquivo_bytes.decode('utf-8')
+            texto = arquivo_bytes.decode("utf-8")
         except UnicodeDecodeError:
-            texto = arquivo_bytes.decode('latin-1')
+            texto = arquivo_bytes.decode("latin-1")
 
         total = len(texto)
         if total > max_chars:
-            texto = texto[:max_chars] + f"\n\n[... Restante do texto truncado após {max_chars} caracteres ...]"
+            texto = (
+                texto[:max_chars]
+                + f"\n\n[... Restante do texto truncado após {max_chars} caracteres ...]"
+            )
 
         return texto, {"chars": total}
     except Exception as e:
         return f"Erro ao ler texto: {str(e)}", {"erro": str(e)}
 
 
-def extrair_info_imagem(arquivo_bytes: bytes, mime_type: str = "image/png") -> Tuple[str, Dict[str, Any]]:
+# ------------------------------------------------------------------------------
+# 3.7 Imagem
+# ------------------------------------------------------------------------------
+
+def extrair_info_imagem(
+    arquivo_bytes: bytes,
+    mime_type: str = "image/png",
+) -> Tuple[str, Dict[str, Any]]:
     """Gera metadados de imagem via PIL se disponível."""
     info = {"mime_type": mime_type, "largura": None, "altura": None, "formato": None}
     try:
@@ -220,7 +323,13 @@ def extrair_info_imagem(arquivo_bytes: bytes, mime_type: str = "image/png") -> T
     return descricao, info
 
 
-def processar_arquivo_anexo(arquivo_dict: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+# ==============================================================================
+# 4. PROCESSAMENTO DE ANEXOS
+# ==============================================================================
+
+def processar_arquivo_anexo(
+    arquivo_dict: Optional[Dict[str, Any]],
+) -> Optional[Dict[str, Any]]:
     """
     Processa o dicionário de anexo enviado pelo frontend.
     Espera: { 'nome': str, 'tipo': str, 'tamanho': int, 'base64': str }
@@ -309,6 +418,10 @@ def processar_arquivo_anexo(arquivo_dict: Optional[Dict[str, Any]]) -> Optional[
     }
 
 
+# ==============================================================================
+# 5. FORMATAÇÃO DE PROMPT PARA O COPILOTO
+# ==============================================================================
+
 def formatar_bloco_prompt_anexo(anexo_processado: Dict[str, Any]) -> str:
     """Monta a seção estruturada em Markdown para injeção no prompt do Copiloto."""
     if not anexo_processado:
@@ -330,9 +443,12 @@ def formatar_bloco_prompt_anexo(anexo_processado: Dict[str, Any]) -> str:
         conteudo,
         "==================================================",
         "INSTRUÇÃO DE RESPOSTA:",
-        "O usuário enviou este arquivo e deseja uma análise detalhada. Responda à pergunta dele ou forneça uma análise executiva abrangente, "
-        "destacando as principais conclusões, métricas-chave, tendências, eventuais anomalias e recomendações estratégicas.",
-        "Se o usuário não tiver feito uma pergunta específica, elabore um diagnóstico estruturado com síntese, tabelas dos dados e plano de ação.",
+        "O usuário enviou este arquivo e deseja uma análise detalhada. "
+        "Responda à pergunta dele ou forneça uma análise executiva abrangente, "
+        "destacando as principais conclusões, métricas-chave, tendências, "
+        "eventuais anomalias e recomendações estratégicas.",
+        "Se o usuário não tiver feito uma pergunta específica, elabore um "
+        "diagnóstico estruturado com síntese, tabelas dos dados e plano de ação.",
         "==================================================",
     ]
     return "\n".join(bloco)

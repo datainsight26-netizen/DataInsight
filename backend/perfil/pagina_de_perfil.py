@@ -1,3 +1,15 @@
+# ==============================================================================
+# pagina_de_perfil.py
+# ==============================================================================
+# Este código pertence à plataforma @DataInsight.
+# Todos os códigos da plataforma devem seguir a mesma estrutura de organização
+# em seções numeradas, exatamente como neste arquivo.
+# ==============================================================================
+
+# ==============================================================================
+# 1. IMPORTAÇÕES
+# ==============================================================================
+
 from datetime import datetime
 
 from bson import ObjectId
@@ -13,13 +25,22 @@ from backend.db import (
 )
 
 
+# ==============================================================================
+# 2. CONSTANTES
+# ==============================================================================
+
 MESES_PT = (
     "janeiro", "fevereiro", "março", "abril", "maio", "junho",
     "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
 )
 
 
+# ==============================================================================
+# 3. FUNÇÕES AUXILIARES
+# ==============================================================================
+
 def _iniciais(nome):
+    """Retorna as iniciais do nome (ex.: 'Maria Silva' -> 'MS')."""
     partes = [p for p in (nome or "").strip().split() if p]
     if not partes:
         return "U"
@@ -29,6 +50,7 @@ def _iniciais(nome):
 
 
 def _membro_desde(user_id, user_doc):
+    """Formata a data de criação da conta como 'mês de ano' em pt-BR."""
     dt = user_doc.get("criado_em") if user_doc else None
     if not isinstance(dt, datetime):
         try:
@@ -42,9 +64,18 @@ def _membro_desde(user_id, user_doc):
 
 
 def _contar_linhas_planilhas(usuario_id):
+    """
+    Conta quantas planilhas o usuário possui e o total de linhas somadas
+    entre elas. Usa agregação com fallback para contagem simples em caso
+    de falha.
+    """
     try:
+        ids_user = [str(usuario_id)]
+        if ObjectId.is_valid(str(usuario_id)):
+            ids_user.append(ObjectId(str(usuario_id)))
+        filtro_u = {"usuario_id": {"$in": ids_user}}
         pipeline = [
-            {"$match": {"usuario_id": usuario_id}},
+            {"$match": filtro_u},
             {"$project": {"n": {"$size": {"$ifNull": ["$dados", []]}}}},
             {"$group": {"_id": None, "planilhas": {"$sum": 1}, "linhas": {"$sum": "$n"}}},
         ]
@@ -54,17 +85,31 @@ def _contar_linhas_planilhas(usuario_id):
         return int(doc.get("planilhas") or 0), int(doc.get("linhas") or 0)
     except Exception:
         try:
-            return dados_colecao.count_documents({"usuario_id": usuario_id}), 0
+            return dados_colecao.count_documents(filtro_u), 0
         except Exception:
             return 0, 0
 
 
+# ==============================================================================
+# 4. CÁLCULO DE USO DA PLATAFORMA
+# ==============================================================================
+
 def obter_uso_plataforma():
+    """
+    Consolida métricas de uso do usuário logado (dados importados, mapeamento,
+    análises, relatórios, IA e gráficos) e monta o checklist de onboarding.
+    """
+    # --------------------------------------------------------------------------
+    # 4.1. Dados básicos da sessão
+    # --------------------------------------------------------------------------
     usuario_id = session.get("usuario_id")
     nome = session.get("usuario_nome") or "Usuário"
     email = session.get("usuario_email") or ""
     telefone = session.get("usuario_telefone") or ""
 
+    # --------------------------------------------------------------------------
+    # 4.2. Complementa dados com o documento do usuário no banco
+    # --------------------------------------------------------------------------
     user_doc = None
     mapeamento = {}
     mapeamento_fin = {}
@@ -81,7 +126,12 @@ def obter_uso_plataforma():
             if not telefone:
                 telefone = user_doc.get("telefone_formatado") or user_doc.get("telefone") or ""
 
-    total_planilhas, total_linhas = _contar_linhas_planilhas(usuario_id) if usuario_id else (0, 0)
+    # --------------------------------------------------------------------------
+    # 4.3. Contadores persistidos por coleção
+    # --------------------------------------------------------------------------
+    total_planilhas, total_linhas = (
+        _contar_linhas_planilhas(usuario_id) if usuario_id else (0, 0)
+    )
 
     analises_sessao = session.get("analises_realizadas") or []
     relatorios_sessao = session.get("relatorios_gerados") or []
@@ -91,26 +141,34 @@ def obter_uso_plataforma():
     conversas_ia = 0
     graficos_salvos = 0
     if usuario_id:
+        ids_user = [str(usuario_id)]
+        if ObjectId.is_valid(str(usuario_id)):
+            ids_user.append(ObjectId(str(usuario_id)))
+        filtro_u = {"usuario_id": {"$in": ids_user}}
+
         try:
-            analises_salvas = analises_salvas_colecao.count_documents({"usuario_id": str(usuario_id)})
+            analises_salvas = analises_salvas_colecao.count_documents(filtro_u)
         except Exception:
             analises_salvas = 0
         try:
-            relatorios_salvos = relatorios_colecao.count_documents({"usuario_id": str(usuario_id)})
+            relatorios_salvos = relatorios_colecao.count_documents(filtro_u)
         except Exception:
             relatorios_salvos = 0
         try:
             conversas_ia = chat_historico.count_documents({
-                "usuario_id": usuario_id,
+                **filtro_u,
                 "remetente": "user",
             })
         except Exception:
             conversas_ia = 0
         try:
-            graficos_salvos = galeria.count_documents({"usuario_id": usuario_id})
+            graficos_salvos = galeria.count_documents(filtro_u)
         except Exception:
             graficos_salvos = 0
 
+    # --------------------------------------------------------------------------
+    # 4.4. Flags de progresso do onboarding
+    # --------------------------------------------------------------------------
     tem_mapeamento = bool(
         (isinstance(mapeamento, dict) and any(mapeamento.values()))
         or (isinstance(mapeamento_fin, dict) and any(
@@ -121,6 +179,9 @@ def obter_uso_plataforma():
     tem_relatorio = relatorios_salvos > 0 or len(relatorios_sessao) > 0
     tem_ia = conversas_ia > 0
 
+    # --------------------------------------------------------------------------
+    # 4.5. Checklist de etapas
+    # --------------------------------------------------------------------------
     etapas = [
         {
             "id": "conta",
@@ -177,6 +238,9 @@ def obter_uso_plataforma():
         },
     ]
 
+    # --------------------------------------------------------------------------
+    # 4.6. Progresso, nível de uso e próxima etapa pendente
+    # --------------------------------------------------------------------------
     feitas = sum(1 for e in etapas if e["feito"])
     progresso = round((feitas / len(etapas)) * 100) if etapas else 0
 
@@ -198,6 +262,9 @@ def obter_uso_plataforma():
 
     proxima = next((e for e in etapas if not e["feito"]), None)
 
+    # --------------------------------------------------------------------------
+    # 4.7. Payload consolidado
+    # --------------------------------------------------------------------------
     return {
         "nome": nome,
         "email": email,
@@ -220,12 +287,29 @@ def obter_uso_plataforma():
     }
 
 
+# ==============================================================================
+# 5. PÁGINAS / ROTAS
+# ==============================================================================
+
 def pagina_perfil():
+    """Renderiza a página de perfil com dados de uso e histórico recente."""
     usuario_id = session.get("usuario_id")
     ultimos_relatorios = []
+
+    # --------------------------------------------------------------------------
+    # 5.1. Últimos relatórios salvos no banco (fallback para a sessão)
+    # --------------------------------------------------------------------------
     if usuario_id:
         try:
-            cursor = relatorios_colecao.find({"usuario_id": str(usuario_id)}).sort("criado_em", -1).limit(4)
+            ids_user = [str(usuario_id)]
+            if ObjectId.is_valid(str(usuario_id)):
+                ids_user.append(ObjectId(str(usuario_id)))
+            cursor = (
+                relatorios_colecao
+                .find({"usuario_id": {"$in": ids_user}})
+                .sort("criado_em", -1)
+                .limit(4)
+            )
             for doc in cursor:
                 ultimos_relatorios.append({
                     "id": str(doc["_id"]),
@@ -240,9 +324,15 @@ def pagina_perfil():
     if not ultimos_relatorios:
         ultimos_relatorios = (session.get("relatorios_gerados") or [])[:4]
 
+    # --------------------------------------------------------------------------
+    # 5.2. Últimas análises da sessão e dados de uso da plataforma
+    # --------------------------------------------------------------------------
     ultimas_analises = (session.get("analises_realizadas") or [])[:5]
     uso = obter_uso_plataforma()
 
+    # --------------------------------------------------------------------------
+    # 5.3. Render
+    # --------------------------------------------------------------------------
     return render_template(
         "perfil.html",
         ultimos_relatorios=ultimos_relatorios,

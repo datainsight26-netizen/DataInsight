@@ -1,18 +1,37 @@
+# ==============================================================================
+# agregador.py
+# ==============================================================================
+# Este código pertence à plataforma @DataInsight.
+# Todos os códigos da plataforma devem seguir a mesma estrutura de organização
+# em seções numeradas, conforme o padrão abaixo.
+#
+# Observação técnica: o formato original sugerido usava "//" (estilo JavaScript).
+# Em Python, "//" é o operador de divisão inteira e causaria erro de sintaxe,
+# portanto os cabeçalhos foram adaptados para "#", preservando a mesma função
+# de demarcação visual e numeração sequencial.
+
 """
 Módulo de Federação e Agregação Multi-Planilhas (DataInsight Data Aggregator)
 Permite processar e consolidar múltiplas planilhas de domínios diferentes
 (Vendas, Aluguéis, Custos, Produtos, Geral) de forma unificada ou individual.
 """
 
-from datetime import datetime, date
-from bson import ObjectId
-import pandas as pd
+# ==============================================================================
+# 1. IMPORTAÇÕES
+# ==============================================================================
+
+import time
+from datetime import date, datetime
+
 import numpy as np
-from backend.db import dados_colecao, usuario as usuarios_colecao
+import pandas as pd
+from bson import ObjectId
+
+from backend.db import dados_colecao
 
 
 # ==============================================================================
-# 1. CLASSIFICAÇÃO DE DOMÍNIO / TIPOS DE PLANILHA
+# 2. CLASSIFICAÇÃO DE DOMÍNIO / TIPOS DE PLANILHA
 # ==============================================================================
 
 DOMINIOS_CONFIG = {
@@ -24,8 +43,8 @@ DOMINIOS_CONFIG = {
         "palavras_chave": [
             "venda", "vendas", "faturamento", "receita", "pedido", "pedidos",
             "cliente", "clientes", "preco", "preço", "unitario", "unitário",
-            "qtd", "quantidade", "nf", "nota fiscal", "comissao", "comissão"
-        ]
+            "qtd", "quantidade", "nf", "nota fiscal", "comissao", "comissão",
+        ],
     },
     "DESPESAS_ALUGUEL": {
         "label": "Aluguéis & Imóveis",
@@ -35,8 +54,8 @@ DOMINIOS_CONFIG = {
         "palavras_chave": [
             "aluguel", "alugueis", "aluguéis", "imovel", "imóvel", "imoveis", "imóveis",
             "condominio", "condomínio", "iptu", "locacao", "locação", "inquilino",
-            "locatario", "locatário", "proprietario", "proprietário", "caucao", "caução"
-        ]
+            "locatario", "locatário", "proprietario", "proprietário", "caucao", "caução",
+        ],
     },
     "DESPESAS_GERAIS": {
         "label": "Despesas & Custos Operacionais",
@@ -46,8 +65,8 @@ DOMINIOS_CONFIG = {
         "palavras_chave": [
             "despesa", "despesas", "custo", "custos", "gasto", "gastos", "saida", "saída",
             "salario", "salário", "folha", "funcionario", "funcionário", "fornecedor",
-            "energia", "luz", "agua", "água", "internet", "manutencao", "manutenção", "imposto"
-        ]
+            "energia", "luz", "agua", "água", "internet", "manutencao", "manutenção", "imposto",
+        ],
     },
     "ESTOQUE_PRODUTOS": {
         "label": "Estoque & Catálogo de Produtos",
@@ -56,8 +75,8 @@ DOMINIOS_CONFIG = {
         "tipo_fluxo": "neutro",
         "palavras_chave": [
             "estoque", "sku", "codigo", "código", "produto", "produtos", "categoria",
-            "custo unitario", "custo unitário", "saldo", "reposicao", "reposição", "armazem"
-        ]
+            "custo unitario", "custo unitário", "saldo", "reposicao", "reposição", "armazem",
+        ],
     },
     "MISTA_GERAL": {
         "label": "Geral / Fluxo Completo",
@@ -65,11 +84,15 @@ DOMINIOS_CONFIG = {
         "cor": "#0ea5e9",
         "tipo_fluxo": "misto",
         "palavras_chave": [
-            "fluxo", "dre", "balanco", "balanço", "financeiro", "geral", "completo"
-        ]
-    }
+            "fluxo", "dre", "balanco", "balanço", "financeiro", "geral", "completo",
+        ],
+    },
 }
 
+
+# ==============================================================================
+# 3. DETECÇÃO DE DOMÍNIO
+# ==============================================================================
 
 def detectar_dominio_tabela(nome_planilha: str, colunas: list, dados: list = None) -> str:
     """
@@ -90,8 +113,12 @@ def detectar_dominio_tabela(nome_planilha: str, colunas: list, dados: list = Non
                 pontuacao[dom] += 1
 
     # Heurística para MISTA_GERAL: se tiver tanto receita quanto despesa
-    tem_receita = any(k in texto_analise for k in ["receita", "faturamento", "venda", "entrada"])
-    tem_despesa = any(k in texto_analise for k in ["despesa", "custo", "gasto", "saida", "saída"])
+    tem_receita = any(
+        k in texto_analise for k in ["receita", "faturamento", "venda", "entrada"]
+    )
+    tem_despesa = any(
+        k in texto_analise for k in ["despesa", "custo", "gasto", "saida", "saída"]
+    )
     if tem_receita and tem_despesa:
         pontuacao["MISTA_GERAL"] += 5
 
@@ -104,7 +131,7 @@ def detectar_dominio_tabela(nome_planilha: str, colunas: list, dados: list = Non
 
 
 # ==============================================================================
-# 2. CONVERSÃO E NORMALIZAÇÃO DE DADOS
+# 4. CONVERSÃO E NORMALIZAÇÃO DE DADOS
 # ==============================================================================
 
 def _limpar_valor_monetario(v):
@@ -112,7 +139,7 @@ def _limpar_valor_monetario(v):
         return 0.0
     if isinstance(v, (int, float)):
         return float(v) if not np.isnan(v) else 0.0
-    
+
     s = str(v).strip()
     s = s.replace("R$", "").replace("r$", "").replace(" ", "")
     # Formato brasileiro 1.234,56
@@ -120,11 +147,11 @@ def _limpar_valor_monetario(v):
         s = s.replace(".", "").replace(",", ".")
     elif "," in s and "." not in s:
         s = s.replace(",", ".")
-    
+
     try:
         val = float(s)
         return val if not np.isnan(val) else 0.0
-    except:
+    except Exception:
         return 0.0
 
 
@@ -133,25 +160,34 @@ def _normalizar_data(v):
         return None
     if isinstance(v, (datetime, date)):
         return v.strftime("%Y-%m-%d")
-    
+
     s = str(v).strip()
     # Tentar formatos comuns
-    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y", "%Y/%m/%d", "%d/%m/%y", "%Y-%m-%dT%H:%M:%S"):
+    for fmt in (
+        "%Y-%m-%d",
+        "%d/%m/%Y",
+        "%d-%m-%Y",
+        "%Y/%m/%d",
+        "%d/%m/%y",
+        "%Y-%m-%dT%H:%M:%S",
+    ):
         try:
-            return datetime.strptime(s.split(" ")[0].split("T")[0], fmt.split("T")[0]).strftime("%Y-%m-%d")
-        except:
+            return datetime.strptime(
+                s.split(" ")[0].split("T")[0], fmt.split("T")[0]
+            ).strftime("%Y-%m-%d")
+        except Exception:
             pass
     try:
         dt = pd.to_datetime(s, errors="coerce")
         if pd.notnull(dt):
             return dt.strftime("%Y-%m-%d")
-    except:
+    except Exception:
         pass
     return str(v)
 
 
 # ==============================================================================
-# 3. RECUPERAÇÃO E SUMÁRIO DE PLANILHAS
+# 5. RECUPERAÇÃO E SUMÁRIO DE PLANILHAS
 # ==============================================================================
 
 def listar_planilhas_usuario(usuario_id):
@@ -164,15 +200,18 @@ def listar_planilhas_usuario(usuario_id):
         return []
 
     # Projeção sem 'dados' — evita transferência desnecessária de dados via SSL
-    import time
-    docs = []
     for tentativa in range(3):
         try:
-            docs = list(dados_colecao.find(
-                {"usuario_id": usuario_id},
-                {"dados": 0},  # exclui o array pesado — não precisamos dos registros aqui
-                sort=[("atualizado_em", -1), ("criado_em", -1)]
-            ))
+            ids_busca = [str(usuario_id)]
+            if ObjectId.is_valid(str(usuario_id)):
+                ids_busca.append(ObjectId(str(usuario_id)))
+            docs = list(
+                dados_colecao.find(
+                    {"usuario_id": {"$in": ids_busca}},
+                    {"dados": 0},  # exclui o array pesado — não precisamos dos registros aqui
+                    sort=[("atualizado_em", -1), ("criado_em", -1)],
+                )
+            )
             break
         except Exception as e_ssl:
             if tentativa < 2:
@@ -208,14 +247,14 @@ def listar_planilhas_usuario(usuario_id):
             "total_colunas": len(cols),
             "colunas": cols,
             "criado_em": str(doc.get("criado_em", "")),
-            "atualizado_em": str(doc.get("atualizado_em", ""))
+            "atualizado_em": str(doc.get("atualizado_em", "")),
         })
 
     return resumo
 
 
 # ==============================================================================
-# 4. MOTOR DE FEDERAÇÃO / AGREGAÇÃO DE DADOS
+# 6. MOTOR DE FEDERAÇÃO — PONTO DE ENTRADA
 # ==============================================================================
 
 def obter_contexto_dados(usuario_id, escopo="todas", mapeamento=None):
@@ -224,21 +263,36 @@ def obter_contexto_dados(usuario_id, escopo="todas", mapeamento=None):
     - escopo == "todas" | "consolidado": consolida todas as planilhas em um dataset federado inteligente.
     - escopo == <tabela_id>: recupera exclusivamente os dados daquela tabela.
     """
+    # --------------------------------------------------------------------------
+    # 6.1 Guarda de entrada
+    # --------------------------------------------------------------------------
     if not usuario_id:
         return {
             "escopo": escopo,
             "colunas": [],
             "dados": [],
             "planilhas_envolvidas": [],
-            "metricas_resumo": {"total_receitas": 0.0, "total_despesas": 0.0, "lucro_liquido": 0.0}
+            "metricas_resumo": {
+                "total_receitas": 0.0,
+                "total_despesas": 0.0,
+                "lucro_liquido": 0.0,
+            },
         }
 
-    # Tenta obter documentos com retentativas em caso de falhas transitórias de conexão SSL
-    docs = None
+    # --------------------------------------------------------------------------
+    # 6.2 Consulta ao MongoDB (com retentativas)
+    # --------------------------------------------------------------------------
+    docs = []
     for tentativa in range(3):
         try:
+            ids_busca = [str(usuario_id)]
+            if ObjectId.is_valid(str(usuario_id)):
+                ids_busca.append(ObjectId(str(usuario_id)))
+            filtro_user = {"usuario_id": {"$in": ids_busca}}
+
+            # -------- 6.2.1 Escopo individual (tabela específica) --------
             if escopo and escopo not in ("todas", "consolidado", "all", "global"):
-                filtro = {"usuario_id": usuario_id}
+                filtro = dict(filtro_user)
                 if ObjectId.is_valid(escopo):
                     filtro["_id"] = ObjectId(escopo)
                 else:
@@ -246,7 +300,10 @@ def obter_contexto_dados(usuario_id, escopo="todas", mapeamento=None):
 
                 doc = dados_colecao.find_one(filtro)
                 if not doc:
-                    doc = dados_colecao.find_one({"usuario_id": usuario_id}, sort=[("atualizado_em", -1), ("criado_em", -1)])
+                    doc = dados_colecao.find_one(
+                        filtro_user,
+                        sort=[("atualizado_em", -1), ("criado_em", -1)],
+                    )
 
                 if not doc:
                     return {
@@ -256,13 +313,19 @@ def obter_contexto_dados(usuario_id, escopo="todas", mapeamento=None):
                         "colunas": [],
                         "dados": [],
                         "planilhas_envolvidas": [],
-                        "metricas_resumo": {"total_receitas": 0.0, "total_despesas": 0.0, "lucro_liquido": 0.0}
+                        "metricas_resumo": {
+                            "total_receitas": 0.0,
+                            "total_despesas": 0.0,
+                            "lucro_liquido": 0.0,
+                        },
                     }
 
                 cols = doc.get("colunas", [])
                 linhas = doc.get("dados", [])
                 nome = doc.get("nome_planilha", "Planilha")
-                dominio = doc.get("tipo_dominio") or detectar_dominio_tabela(nome, cols, linhas)
+                dominio = doc.get("tipo_dominio") or detectar_dominio_tabela(
+                    nome, cols, linhas
+                )
 
                 return {
                     "escopo": "individual",
@@ -275,23 +338,34 @@ def obter_contexto_dados(usuario_id, escopo="todas", mapeamento=None):
                         "id": str(doc["_id"]),
                         "nome": nome,
                         "dominio": dominio,
-                        "total_linhas": len(linhas)
+                        "total_linhas": len(linhas),
                     }],
-                    "metricas_resumo": _calcular_resumo_tabela_unica(cols, linhas, dominio)
+                    "metricas_resumo": _calcular_resumo_tabela_unica(
+                        cols, linhas, dominio
+                    ),
                 }
+
+            # -------- 6.2.2 Escopo consolidado (todas as planilhas) --------
             else:
-                docs = list(dados_colecao.find(
-                    {"usuario_id": usuario_id},
-                    sort=[("atualizado_em", -1), ("criado_em", -1)]
-                ))
+                docs = list(
+                    dados_colecao.find(
+                        filtro_user,
+                        sort=[("atualizado_em", -1), ("criado_em", -1)],
+                    )
+                )
                 break
+
         except Exception as err_db:
-            print(f"[AGREGADOR] Tentativa {tentativa + 1}/3 falhou na consulta MongoDB: {err_db}")
+            print(
+                f"[AGREGADOR] Tentativa {tentativa + 1}/3 falhou na consulta MongoDB: {err_db}"
+            )
             if tentativa == 2:
                 docs = []
-            import time
             time.sleep(0.3)
 
+    # --------------------------------------------------------------------------
+    # 6.3 Nenhuma planilha encontrada
+    # --------------------------------------------------------------------------
     if not docs:
         return {
             "escopo": "todas",
@@ -300,10 +374,16 @@ def obter_contexto_dados(usuario_id, escopo="todas", mapeamento=None):
             "colunas": [],
             "dados": [],
             "planilhas_envolvidas": [],
-            "metricas_resumo": {"total_receitas": 0.0, "total_despesas": 0.0, "lucro_liquido": 0.0}
+            "metricas_resumo": {
+                "total_receitas": 0.0,
+                "total_despesas": 0.0,
+                "lucro_liquido": 0.0,
+            },
         }
 
-    # Se só tiver 1 planilha cadastrada, retorna no formato unificado mas com os dados dela
+    # --------------------------------------------------------------------------
+    # 6.4 Planilha única (formato unificado simplificado)
+    # --------------------------------------------------------------------------
     if len(docs) == 1:
         doc = docs[0]
         cols = doc.get("colunas", [])
@@ -328,14 +408,20 @@ def obter_contexto_dados(usuario_id, escopo="todas", mapeamento=None):
                 "id": str(doc["_id"]),
                 "nome": nome,
                 "dominio": dominio,
-                "total_linhas": len(linhas)
+                "total_linhas": len(linhas),
             }],
-            "metricas_resumo": _calcular_resumo_tabela_unica(cols, linhas, dominio)
+            "metricas_resumo": _calcular_resumo_tabela_unica(cols, linhas, dominio),
         }
 
-    # Multi-Planilhas: Mapear e Unificar registros em um Dataset Federado Padronizado
+    # --------------------------------------------------------------------------
+    # 6.5 Múltiplas planilhas → Dataset Federado Padronizado
+    # --------------------------------------------------------------------------
     return _unificar_multiplas_tabelas(docs)
 
+
+# ==============================================================================
+# 7. MOTOR DE FEDERAÇÃO — UNIFICAÇÃO MULTI-TABELAS
+# ==============================================================================
 
 def _unificar_multiplas_tabelas(docs: list) -> dict:
     planilhas_info = []
@@ -345,16 +431,21 @@ def _unificar_multiplas_tabelas(docs: list) -> dict:
     total_despesas_global = 0.0
 
     for doc in docs:
+        # ----------------------------------------------------------------------
+        # 7.1 Metadados da planilha e detecção de domínio
+        # ----------------------------------------------------------------------
         nome_tab = doc.get("nome_planilha", "Planilha")
         cols = doc.get("colunas", [])
         dados = doc.get("dados", [])
-        dominio = doc.get("tipo_dominio") or detectar_dominio_tabela(nome_tab, cols, dados)
-        
+        dominio = doc.get("tipo_dominio") or detectar_dominio_tabela(
+            nome_tab, cols, dados
+        )
+
         planilhas_info.append({
             "id": str(doc["_id"]),
             "nome": nome_tab,
             "dominio": dominio,
-            "total_linhas": len(dados)
+            "total_linhas": len(dados),
         })
 
         if not dados:
@@ -362,6 +453,9 @@ def _unificar_multiplas_tabelas(docs: list) -> dict:
 
         cols_lower = {str(c).lower(): c for c in cols}
 
+        # ----------------------------------------------------------------------
+        # 7.2 Mapeamento heurístico de colunas
+        # ----------------------------------------------------------------------
         # 1. Coluna de Data
         col_data = None
         for alias in ["data", "date", "periodo", "período", "mes", "mês", "vencimento", "dia"]:
@@ -384,7 +478,10 @@ def _unificar_multiplas_tabelas(docs: list) -> dict:
 
         # 3. Coluna de Despesa / Saída
         col_despesa = None
-        for alias in ["despesa", "despesas", "custo", "custos", "saida", "saída", "gasto", "gastos", "valor aluguel", "condominio", "iptu"]:
+        for alias in [
+            "despesa", "despesas", "custo", "custos", "saida", "saída",
+            "gasto", "gastos", "valor aluguel", "condominio", "iptu",
+        ]:
             for cl, orig in cols_lower.items():
                 if alias in cl:
                     col_despesa = orig
@@ -394,7 +491,10 @@ def _unificar_multiplas_tabelas(docs: list) -> dict:
 
         # 4. Coluna de Categoria / Descrição
         col_cat = None
-        for alias in ["categoria", "category", "tipo", "produto", "imovel", "imóvel", "descricao", "descrição", "item", "servico", "serviço"]:
+        for alias in [
+            "categoria", "category", "tipo", "produto", "imovel", "imóvel",
+            "descricao", "descrição", "item", "servico", "serviço",
+        ]:
             for cl, orig in cols_lower.items():
                 if alias in cl:
                     col_cat = orig
@@ -412,10 +512,17 @@ def _unificar_multiplas_tabelas(docs: list) -> dict:
             if col_valor_generico:
                 break
 
+        # ----------------------------------------------------------------------
+        # 7.3 Normalização linha a linha
+        # ----------------------------------------------------------------------
         for linha in dados:
-            val_data = _normalizar_data(linha.get(col_data)) if col_data else datetime.now().strftime("%Y-%m-%d")
+            val_data = (
+                _normalizar_data(linha.get(col_data))
+                if col_data
+                else datetime.now().strftime("%Y-%m-%d")
+            )
             val_cat = str(linha.get(col_cat) or nome_tab) if col_cat else nome_tab
-            
+
             val_rec = 0.0
             val_desp = 0.0
 
@@ -458,9 +565,12 @@ def _unificar_multiplas_tabelas(docs: list) -> dict:
             reg["Categoria"] = val_cat
             reg["_origem_planilha"] = nome_tab
             reg["_tipo_dominio"] = dominio
-            
+
             registros_consolidados.append(reg)
 
+    # --------------------------------------------------------------------------
+    # 7.4 Retorno do dataset federado
+    # --------------------------------------------------------------------------
     colunas_padrao = ["Data", "Faturamento", "Despesas", "Lucro", "Categoria", "_origem_planilha"]
 
     lucro_global = total_receitas_global - total_despesas_global
@@ -476,23 +586,58 @@ def _unificar_multiplas_tabelas(docs: list) -> dict:
             "total_receitas": round(total_receitas_global, 2),
             "total_despesas": round(total_despesas_global, 2),
             "lucro_liquido": round(lucro_global, 2),
-            "margem_lucro": round((lucro_global / total_receitas_global * 100) if total_receitas_global > 0 else 0, 1)
-        }
+            "margem_lucro": round(
+                (lucro_global / total_receitas_global * 100)
+                if total_receitas_global > 0
+                else 0,
+                1,
+            ),
+        },
     }
 
 
+# ==============================================================================
+# 8. MOTOR DE FEDERAÇÃO — RESUMO DE TABELA ÚNICA
+# ==============================================================================
+
 def _calcular_resumo_tabela_unica(colunas: list, dados: list, dominio: str) -> dict:
     if not dados:
-        return {"total_receitas": 0.0, "total_despesas": 0.0, "lucro_liquido": 0.0, "margem_lucro": 0.0}
+        return {
+            "total_receitas": 0.0,
+            "total_despesas": 0.0,
+            "lucro_liquido": 0.0,
+            "margem_lucro": 0.0,
+        }
 
     total_rec = 0.0
     total_desp = 0.0
 
     cols_lower = {str(c).lower(): c for c in colunas}
 
-    col_rec = next((orig for cl, orig in cols_lower.items() if any(a in cl for a in ["receita", "faturamento", "venda", "entrada"])), None)
-    col_desp = next((orig for cl, orig in cols_lower.items() if any(a in cl for a in ["despesa", "custo", "gasto", "saida", "aluguel"])), None)
-    col_val = next((orig for cl, orig in cols_lower.items() if any(a in cl for a in ["valor", "total", "preco"])), None)
+    col_rec = next(
+        (
+            orig
+            for cl, orig in cols_lower.items()
+            if any(a in cl for a in ["receita", "faturamento", "venda", "entrada"])
+        ),
+        None,
+    )
+    col_desp = next(
+        (
+            orig
+            for cl, orig in cols_lower.items()
+            if any(a in cl for a in ["despesa", "custo", "gasto", "saida", "aluguel"])
+        ),
+        None,
+    )
+    col_val = next(
+        (
+            orig
+            for cl, orig in cols_lower.items()
+            if any(a in cl for a in ["valor", "total", "preco"])
+        ),
+        None,
+    )
 
     for l in dados:
         if col_rec and col_rec in l:
@@ -513,5 +658,5 @@ def _calcular_resumo_tabela_unica(colunas: list, dados: list, dominio: str) -> d
         "total_receitas": round(total_rec, 2),
         "total_despesas": round(total_desp, 2),
         "lucro_liquido": round(lucro, 2),
-        "margem_lucro": round(margem, 1)
+        "margem_lucro": round(margem, 1),
     }
