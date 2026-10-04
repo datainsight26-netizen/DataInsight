@@ -1,3 +1,11 @@
+// ==============================================================================
+// ia_analise_modal.js
+// ==============================================================================
+// Este código pertence à plataforma @DataInsight.
+// Todos os códigos da plataforma devem seguir a mesma estrutura de organização
+// em seções numeradas, conforme este arquivo.
+// ==============================================================================
+
 /**
  * ================================================================
  * DATAINSIGHT — IA ANÁLISE MODAL (ENGINE UNIVERSAL GEMINI)
@@ -6,12 +14,24 @@
  * ================================================================
  */
 
+// ==============================================================================
+// 1. MOTOR UNIVERSAL DE ANÁLISE IA (IaAnaliseModal)
+// ==============================================================================
+
 const IaAnaliseModal = {
+
+  // --------------------------------------------------------------------------
+  // 1.1. Estado interno
+  // --------------------------------------------------------------------------
   _timers: {},
   _relatorios: {},
   _coletores: {},
   _analisesUltimas: {},
   _contextos: {},
+
+  // --------------------------------------------------------------------------
+  // 1.2. Registro e abertura / fechamento do modal
+  // --------------------------------------------------------------------------
 
   /**
    * Registra uma função coletora de contexto para uma página específica.
@@ -82,6 +102,10 @@ const IaAnaliseModal = {
   reanalisar: function (pageId) {
     this.executar(pageId);
   },
+
+  // --------------------------------------------------------------------------
+  // 1.3. Ciclo de execução (animação HUD + chamada à API)
+  // --------------------------------------------------------------------------
 
   /**
    * Executa a animação de varredura HUD e faz a requisição à API Gemini.
@@ -220,6 +244,10 @@ const IaAnaliseModal = {
       }, 400);
     }, 400);
   },
+
+  // --------------------------------------------------------------------------
+  // 1.4. Renderização do relatório no modal
+  // --------------------------------------------------------------------------
 
   /**
    * Renderiza os dados no modal.
@@ -389,6 +417,10 @@ ${planoAcao.map((p, idx) => `${idx + 1}. ${p.replace(/<[^>]+>/g, '')}`).join('\n
 `;
   },
 
+  // --------------------------------------------------------------------------
+  // 1.5. Ações do rodapé (copiar, salvar)
+  // --------------------------------------------------------------------------
+
   /**
    * Copia o texto do relatório para a área de transferência.
    */
@@ -523,6 +555,10 @@ ${planoAcao.map((p, idx) => `${idx + 1}. ${p.replace(/<[^>]+>/g, '')}`).join('\n
       });
   },
 
+  // --------------------------------------------------------------------------
+  // 1.6. Metadados e mapeamento de páginas
+  // --------------------------------------------------------------------------
+
   obterNomePagina: function (pageId) {
     switch (pageId) {
       case 'home': return 'Visão Geral (Home)';
@@ -557,6 +593,10 @@ ${planoAcao.map((p, idx) => `${idx + 1}. ${p.replace(/<[^>]+>/g, '')}`).join('\n
       default: return () => ({});
     }
   },
+
+  // --------------------------------------------------------------------------
+  // 1.7. Fallback local (quando a API Gemini falha)
+  // --------------------------------------------------------------------------
 
   /**
    * Fallback gerador local para quando a API estiver offline ou indisponível.
@@ -601,6 +641,10 @@ ${planoAcao.map((p, idx) => `${idx + 1}. ${p.replace(/<[^>]+>/g, '')}`).join('\n
   }
 };
 
+// ==============================================================================
+// 2. ATALHOS GLOBAIS E EVENTOS DE TECLADO
+// ==============================================================================
+
 // Fechar com a tecla ESC
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
@@ -611,13 +655,12 @@ document.addEventListener('keydown', e => {
   }
 });
 
-
-/* ================================================================
-   COLETORES DE CONTEXTO ESPECÍFICOS POR PÁGINA
-   ================================================================ */
+// ==============================================================================
+// 3. COLETORES DE CONTEXTO POR PÁGINA
+// ==============================================================================
 
 /**
- * 1. Coletor de Contexto: HOME
+ * 3.1. Coletor de Contexto: HOME
  */
 function coletarContextoIaHome() {
   const fatEl = document.getElementById('faturamento-valor');
@@ -660,7 +703,7 @@ function coletarContextoIaHome() {
 }
 
 /**
- * 2. Coletor de Contexto: DADOS
+ * 3.2. Coletor de Contexto: DADOS
  */
 function coletarContextoIaDados() {
   const linhasEl = document.getElementById('statTotalLinhas');
@@ -674,7 +717,7 @@ function coletarContextoIaDados() {
 
   let colunasLista = [];
   if (typeof obterColunasValidas === 'function') {
-    try { colunasLista = obterColunasValidas(); } catch(e) {}
+    try { colunasLista = obterColunasValidas(); } catch (e) {}
   }
 
   return {
@@ -693,7 +736,7 @@ function coletarContextoIaDados() {
 }
 
 /**
- * 3. Coletor de Contexto: ANÁLISES
+ * 3.3. Coletor de Contexto: ANÁLISES
  */
 function coletarContextoIaAnalises() {
   const seletorPlanilha = document.getElementById('seletorPlanilhaAnalise');
@@ -759,7 +802,7 @@ function coletarContextoIaAnalises() {
 }
 
 /**
- * 4. Coletor de Contexto: DASHBOARD (GRÁFICOS AVANÇADOS)
+ * 3.4. Coletor de Contexto: DASHBOARD (GRÁFICOS AVANÇADOS)
  */
 function coletarContextoIaDashboard() {
   const seletorPlanilha = document.getElementById('seletorPlanilhaDash');
@@ -797,7 +840,7 @@ function coletarContextoIaDashboard() {
 }
 
 /**
- * 5. Coletor de Contexto: PLANEJAMENTO FINANCEIRO
+ * 3.5. Coletor de Contexto: PLANEJAMENTO FINANCEIRO
  */
 function coletarContextoIaPlanejamento() {
   const cenarioAtivo = document.querySelector('.pf-scenario button.is-active');
@@ -840,7 +883,7 @@ function coletarContextoIaPlanejamento() {
 }
 
 /**
- * 6. Coletor de Contexto: FLUXO DE CAIXA
+ * 3.6. Coletor de Contexto: FLUXO DE CAIXA
  */
 function coletarContextoIaFluxoCaixa() {
   const seletorPlanilha = document.getElementById('seletorPlanilhaDash') || document.getElementById('seletorPlanilhaFluxo');
@@ -876,6 +919,10 @@ function coletarContextoIaFluxoCaixa() {
     }
   };
 }
+
+// ==============================================================================
+// 4. INTEGRAÇÃO COM A PÁGINA HOME (COMPATIBILIDADE)
+// ==============================================================================
 
 // Compatibilidade com chamadas legadas de home.js
 function abrirModalIaAnaliseHome() {

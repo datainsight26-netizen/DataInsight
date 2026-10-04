@@ -3,6 +3,15 @@
  * Central Executiva de Análise Contábil & Inteligência Estratégica — DataInsight
  * Gerencia cálculos dinâmicos para ME e MEI, DRE, Break-Even, Teto MEI,
  * séries mensais, gráficos ApexCharts, Parecer de IA e integração universal.
+ *
+ * ------------------------------------------------------------------------------
+ * PROPRIEDADE INTELECTUAL
+ * ------------------------------------------------------------------------------
+ * Este código pertence à plataforma @DataInsight. Todos os arquivos da plataforma
+ * devem seguir esta mesma estrutura de organização: seções numeradas
+ * sequencialmente com cabeçalhos padronizados, separação clara de
+ * responsabilidades e agrupamento lógico de funções afins.
+ * ------------------------------------------------------------------------------
  */
 
 'use strict';
@@ -281,7 +290,7 @@ function atualizarAnoSeletor(anos, anoPadrao) {
 }
 
 // ==============================================================================
-// 5. FILTROS RÁPIDOS E GESTÃO DE PERÍODO (CALCULADOS PELA TABELA)
+// 5. FILTROS RÁPIDOS E GESTÃO DE PERÍODO
 // ==============================================================================
 function aplicarFiltroRapido(dias) {
     AC.filtroRapidoDias = dias;
@@ -332,7 +341,7 @@ async function aoTrocarPlanilhaAnalise() {
     // 1. Carrega os limites de datas reais da nova planilha
     await carregarLimitesDatas(tabelaId);
 
-    // 2. Se houver filtro rápido ativo (7, 30, 90, ano...), recalcula a partir da data máxima da planilha
+    // 2. Se houver filtro rápido ativo (7, 30, 90, ano...), recalcula a partir da data máxima
     if (AC.filtroRapidoDias) {
         if (AC.filtroRapidoDias === 'ano') {
             aplicarFiltroAnoAtual();
@@ -503,7 +512,7 @@ async function aplicarFiltros() {
         return;
     }
 
-    // Persiste o período selecionado para que reloads e retornos à página exibam a análise completa
+    // Persiste o período selecionado para reloads e retornos à página
     salvarUltimoPeriodo(inicio, fim, planilhaId);
 
     const btn = document.getElementById('btn-aplicar-filtros');
@@ -1118,8 +1127,78 @@ function renderizarGraficoCenarios(cenarios) {
     AC.charts['cenarios'] = chart;
 }
 
+/* --- ALERTAS --- */
+function renderizarAlertas(alertas) {
+    const container = document.getElementById('alertas-lista');
+    const badgeCount = document.getElementById('alertas-badge');
+    const countText = document.getElementById('alertas-count-text');
+
+    if (!container) return;
+
+    const lista = alertas || [];
+    if (badgeCount) {
+        badgeCount.textContent = lista.length;
+        badgeCount.style.display = lista.length > 0 ? 'inline-block' : 'none';
+    }
+    if (countText) countText.textContent = `${lista.length} alerta(s) identificado(s)`;
+
+    if (!lista.length) {
+        container.innerHTML = '<div class="empty-state"><i class="fa-solid fa-circle-check" style="color:#10b981;"></i><p>Nenhum alerta crítico ativo no período.</p></div>';
+        return;
+    }
+
+    container.innerHTML = lista.map(al => {
+        const cores = {
+            critico: { cor: '#ef4444', bg: 'rgba(239,68,68,0.06)' },
+            atencao: { cor: '#f59e0b', bg: 'rgba(245,158,11,0.06)' },
+            sucesso: { cor: '#10b981', bg: 'rgba(16,185,129,0.06)' }
+        };
+        const c = cores[al.tipo] || cores.atencao;
+        return `
+            <div class="alerta-item" style="--alerta-cor:${c.cor};--alerta-bg:${c.bg};">
+                <i class="${al.icone || 'fa-solid fa-triangle-exclamation'} alerta-item__icon" style="color:${c.cor};"></i>
+                <div style="flex:1;">
+                    <div class="alerta-item__titulo">${al.titulo}</div>
+                    <div class="alerta-item__desc">${al.descricao}</div>
+                    ${al.acao ? `<div style="font-size:0.75rem;font-weight:700;color:${c.cor};margin-top:4px;">Ação: ${al.acao}</div>` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+/* --- SCORE DETALHADO --- */
+function renderizarScoreDetalhe(saude) {
+    const container = document.getElementById('score-detalhe-lista');
+    if (!container || !saude?.pilares) return;
+
+    const pilares = saude.pilares;
+    const keys = Object.keys(pilares);
+
+    container.innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
+            ${keys.map(k => {
+                const p = pilares[k];
+                const pct = (p.pontos / p.max) * 100;
+                const cor = pct >= 75 ? '#10b981' : pct >= 50 ? '#3b82f6' : pct >= 25 ? '#f59e0b' : '#ef4444';
+                return `
+                    <div style="padding:14px;background:var(--fundo);border:1px solid var(--borda);border-radius:var(--raio);">
+                        <div style="display:flex;justify-content:space-between;font-size:0.75rem;font-weight:700;margin-bottom:6px;">
+                            <span>${p.rotulo}</span>
+                            <span style="color:${cor};">${p.pontos}/${p.max} pts</span>
+                        </div>
+                        <div style="height:6px;background:var(--borda);border-radius:10px;overflow:hidden;">
+                            <div style="height:100%;width:${pct}%;background:${cor};border-radius:10px;"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+}
+
 // ==============================================================================
-// SIMULADOR & PLANEJADOR DE METAS PARA MEI
+// 8. SIMULADOR E PLANEJADOR DE METAS MEI
 // ==============================================================================
 let _simMeiBase = {
     fatReal: 0,
@@ -1165,7 +1244,7 @@ function renderizarSimuladorMEI(dadosBase, dadosEst) {
     const inputFixos = document.getElementById('sim-mei-fixos');
 
     if (inputFat) {
-        const sugestaoMeta = mediaMesReal > 1000 
+        const sugestaoMeta = mediaMesReal > 1000
             ? Math.min(10000, Math.round((mediaMesReal * 1.15) / 100) * 100)
             : 5000;
         inputFat.value = sugestaoMeta;
@@ -1195,7 +1274,7 @@ function atualizarSimuladorMEI() {
     const custoTotal = custoVar + fixos;
     const sobraTotal = Math.max(0, metaFat - custoTotal);
     const metaDiaria = dias > 0 ? (metaFat / dias) : 0;
-    
+
     // Reserva de segurança PJ (10% da sobra)
     const reservaPj = Math.round(sobraTotal * 0.10 * 100) / 100;
     // Sobra limpa para conta pessoal do MEI (Pró-labore)
@@ -1421,82 +1500,14 @@ function atualizarGraficosSimuladorMEI() {
     atualizarSimuladorMEI();
 }
 
+// Exposição pública (eventos inline no HTML)
 window.atualizarSimuladorMEI = atualizarSimuladorMEI;
 window.definirMetaRapidaMEI = definirMetaRapidaMEI;
 window.resetarSimuladorMEI = resetarSimuladorMEI;
 window.atualizarGraficosSimuladorMEI = atualizarGraficosSimuladorMEI;
 
-/* --- ALERTAS & SCORE DETALHADO --- */
-function renderizarAlertas(alertas) {
-    const container = document.getElementById('alertas-lista');
-    const badgeCount = document.getElementById('alertas-badge');
-    const countText = document.getElementById('alertas-count-text');
-
-    if (!container) return;
-
-    const lista = alertas || [];
-    if (badgeCount) {
-        badgeCount.textContent = lista.length;
-        badgeCount.style.display = lista.length > 0 ? 'inline-block' : 'none';
-    }
-    if (countText) countText.textContent = `${lista.length} alerta(s) identificado(s)`;
-
-    if (!lista.length) {
-        container.innerHTML = '<div class="empty-state"><i class="fa-solid fa-circle-check" style="color:#10b981;"></i><p>Nenhum alerta crítico ativo no período.</p></div>';
-        return;
-    }
-
-    container.innerHTML = lista.map(al => {
-        const cores = {
-            critico: { cor: '#ef4444', bg: 'rgba(239,68,68,0.06)' },
-            atencao: { cor: '#f59e0b', bg: 'rgba(245,158,11,0.06)' },
-            sucesso: { cor: '#10b981', bg: 'rgba(16,185,129,0.06)' }
-        };
-        const c = cores[al.tipo] || cores.atencao;
-        return `
-            <div class="alerta-item" style="--alerta-cor:${c.cor};--alerta-bg:${c.bg};">
-                <i class="${al.icone || 'fa-solid fa-triangle-exclamation'} alerta-item__icon" style="color:${c.cor};"></i>
-                <div style="flex:1;">
-                    <div class="alerta-item__titulo">${al.titulo}</div>
-                    <div class="alerta-item__desc">${al.descricao}</div>
-                    ${al.acao ? `<div style="font-size:0.75rem;font-weight:700;color:${c.cor};margin-top:4px;">Ação: ${al.acao}</div>` : ''}
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
-function renderizarScoreDetalhe(saude) {
-    const container = document.getElementById('score-detalhe-lista');
-    if (!container || !saude?.pilares) return;
-
-    const pilares = saude.pilares;
-    const keys = Object.keys(pilares);
-
-    container.innerHTML = `
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
-            ${keys.map(k => {
-                const p = pilares[k];
-                const pct = (p.pontos / p.max) * 100;
-                const cor = pct >= 75 ? '#10b981' : pct >= 50 ? '#3b82f6' : pct >= 25 ? '#f59e0b' : '#ef4444';
-                return `
-                    <div style="padding:14px;background:var(--fundo);border:1px solid var(--borda);border-radius:var(--raio);">
-                        <div style="display:flex;justify-content:space-between;font-size:0.75rem;font-weight:700;margin-bottom:6px;">
-                            <span>${p.rotulo}</span>
-                            <span style="color:${cor};">${p.pontos}/${p.max} pts</span>
-                        </div>
-                        <div style="height:6px;background:var(--borda);border-radius:10px;overflow:hidden;">
-                            <div style="height:100%;width:${pct}%;background:${cor};border-radius:10px;"></div>
-                        </div>
-                    </div>
-                `;
-            }).join('')}
-        </div>
-    `;
-}
-
 // ==============================================================================
-// 8. NAVEGAÇÃO DE ABAS
+// 9. NAVEGAÇÃO DE ABAS
 // ==============================================================================
 function mudarTab(tab) {
     AC.tabAtual = tab;
@@ -1552,7 +1563,7 @@ async function carregarVisaoAnual() {
 }
 
 // ==============================================================================
-// 9. COLETOR DE CONTEXTO UNIVERSAL PARA O MODAL DA IA (GEMINI)
+// 10. COLETOR DE CONTEXTO UNIVERSAL PARA O MODAL DA IA (GEMINI)
 // ==============================================================================
 function coletarContextoIaAnalises() {
     const seletorPlanilha = document.getElementById('seletorPlanilhaAnalise');
@@ -1593,7 +1604,7 @@ function coletarContextoIaAnalises() {
 }
 
 // ==============================================================================
-// 10. NOTIFICAÇÕES TOAST
+// 11. NOTIFICAÇÕES TOAST
 // ==============================================================================
 function mostrarNotificacao(msg, tipo = 'info') {
     // Usa o toast global do sistema (dados.js) se disponível

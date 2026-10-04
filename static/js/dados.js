@@ -1,19 +1,46 @@
-// ===============================
-// CONFIGURAÇÕES GLOBAIS
-// ===============================
+/**
+ * dados.js
+ * Página Dados — DataInsight
+ *
+ * Módulo principal da página de dados. Responsável por:
+ *   - Estado global, undo/redo, copy/paste
+ *   - Upload de arquivos (Excel/CSV/JSON/TXT) com progresso
+ *   - Modal de seleção de abas de planilhas Excel
+ *   - Renderização e edição da tabela (células, colunas, linhas)
+ *   - Ordenação, paginação e busca
+ *   - Detecção e tratamento de anomalias
+ *   - Análise e limpeza científica de dados (backend + fallback local)
+ *   - Automação de indicadores, navegação por teclado estilo Excel
+ *   - Exportação simples e multi-abas para Excel
+ *   - Histórico de produtos para autocomplete
+ *   - Exclusão de dados e carregamento inicial
+ *
+ * ------------------------------------------------------------------------------
+ * PROPRIEDADE INTELECTUAL
+ * ------------------------------------------------------------------------------
+ * Este código pertence à plataforma @DataInsight. Todos os arquivos da plataforma
+ * devem seguir esta mesma estrutura de organização: seções numeradas
+ * sequencialmente com cabeçalhos padronizados, separação clara de
+ * responsabilidades e agrupamento lógico de funções afins.
+ * ------------------------------------------------------------------------------
+ */
+
+// ==============================================================================
+// 1. CONFIGURAÇÕES GLOBAIS
+// ==============================================================================
 const CONFIG = {
     LINHAS_POR_PAGINA: 10,
     EXTENSOES_VALIDAS: {
         excel: ['.xlsx', '.xls'],
-        csv: ['.csv'],
-        json: ['.json'],
-        txt: ['.txt']
+        csv:   ['.csv'],
+        json:  ['.json'],
+        txt:   ['.txt']
     }
 };
 
-// ===============================
-// ESTADO DA APLICAÇÃO
-// ===============================
+// ==============================================================================
+// 2. ESTADO DA APLICAÇÃO
+// ==============================================================================
 let estado = {
     paginaAtual: 1,
     todosDados: [],
@@ -35,17 +62,23 @@ let estado = {
     // Clipboard
     clipboard: null,
     // Upload multi-abas pendente
-    uploadPendente: { arquivo: null, abas: [], nomePendente: '' }
-    ,
+    uploadPendente: { arquivo: null, abas: [], nomePendente: '' },
     // Anomalias detectadas
     anomalias: [],
     anomaliasIds: new Set(),
     mostrarApenasAnomalias: false
 };
 
-// ───────────────────────────────
-// UTILITÁRIOS
-// ───────────────────────────────
+// Variáveis de estado auxiliares (resize de colunas, exportação, auto-save)
+let _resizeStartX     = 0;
+let _resizeTh         = null;
+let _resizeStartW     = 0;
+let _exportAbas       = [];
+let timeoutAutoSalvar = null;
+
+// ==============================================================================
+// 3. UTILITÁRIOS GERAIS
+// ==============================================================================
 function gerarIdLinha() {
     return `r-${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
 }
@@ -74,9 +107,9 @@ function normalizarNomeColuna(nome) {
         .trim();
 }
 
-// ───────────────────────────────
-// TOAST (feedback visual)
-// ───────────────────────────────
+// ==============================================================================
+// 4. NOTIFICAÇÕES (TOAST)
+// ==============================================================================
 function mostrarToast(texto, tipo = 'info') {
     const icons = { success: '✓', error: '✗', info: 'ℹ', warning: '⚠' };
     const toast = document.createElement('div');
@@ -86,12 +119,12 @@ function mostrarToast(texto, tipo = 'info') {
     setTimeout(() => toast.remove(), 3100);
 }
 
-// ───────────────────────────────
-// UNDO / REDO
-// ───────────────────────────────
+// ==============================================================================
+// 5. HISTÓRICO UNDO / REDO
+// ==============================================================================
 function salvarEstadoHistorico() {
     const snapshot = {
-        todosDados: JSON.parse(JSON.stringify(estado.todosDados)),
+        todosDados:    JSON.parse(JSON.stringify(estado.todosDados)),
         colunasAtuais: [...estado.colunasAtuais]
     };
     estado.historico.push(snapshot);
@@ -100,7 +133,7 @@ function salvarEstadoHistorico() {
     }
     estado.historicoFuturo = []; // limpa redo ao fazer nova ação
     atualizarBotoesUndoRedo();
-    
+
     // Auto-save to LocalStorage
     if (typeof persistirEstadoLocal === 'function') {
         persistirEstadoLocal();
@@ -114,12 +147,12 @@ function desfazer() {
     }
     // Salva estado atual no redo
     estado.historicoFuturo.push({
-        todosDados: JSON.parse(JSON.stringify(estado.todosDados)),
+        todosDados:    JSON.parse(JSON.stringify(estado.todosDados)),
         colunasAtuais: [...estado.colunasAtuais]
     });
     const anterior = estado.historico.pop();
-    estado.todosDados = anterior.todosDados;
-    estado.colunasAtuais = anterior.colunasAtuais;
+    estado.todosDados     = anterior.todosDados;
+    estado.colunasAtuais  = anterior.colunasAtuais;
     renderizarColunas();
     atualizarTabela();
     exibirPagina();
@@ -134,12 +167,12 @@ function refazer() {
         return;
     }
     estado.historico.push({
-        todosDados: JSON.parse(JSON.stringify(estado.todosDados)),
+        todosDados:    JSON.parse(JSON.stringify(estado.todosDados)),
         colunasAtuais: [...estado.colunasAtuais]
     });
     const proximo = estado.historicoFuturo.pop();
-    estado.todosDados = proximo.todosDados;
-    estado.colunasAtuais = proximo.colunasAtuais;
+    estado.todosDados     = proximo.todosDados;
+    estado.colunasAtuais  = proximo.colunasAtuais;
     renderizarColunas();
     atualizarTabela();
     exibirPagina();
@@ -155,19 +188,19 @@ function atualizarBotoesUndoRedo() {
     if (btnRedo) btnRedo.disabled = estado.historicoFuturo.length === 0;
 }
 
-// ───────────────────────────────
-// COPIAR / COLAR
-// ───────────────────────────────
+// ==============================================================================
+// 6. COPIAR / COLAR
+// ==============================================================================
 function copiarSelecao() {
     const { row, col } = estado.celulaSelecionada;
     if (row < 0 || col < 0) {
         mostrarToast('Selecione uma célula primeiro.', 'warning');
         return;
     }
-    const colunas = obterColunasValidas();
+    const colunas       = obterColunasValidas();
     const dadosVisiveis = obterDadosVisiveis();
-    const inicio = (estado.paginaAtual - 1) * CONFIG.LINHAS_POR_PAGINA;
-    const linha = dadosVisiveis[inicio + row];
+    const inicio        = (estado.paginaAtual - 1) * CONFIG.LINHAS_POR_PAGINA;
+    const linha         = dadosVisiveis[inicio + row];
     if (!linha || !colunas[col - 1]) return;
     const valor = String(linha[colunas[col - 1]] ?? '');
     estado.clipboard = valor;
@@ -185,10 +218,10 @@ function colarSelecao() {
         mostrarToast('Selecione uma célula para colar.', 'warning');
         return;
     }
-    const colunas = obterColunasValidas();
+    const colunas       = obterColunasValidas();
     const dadosVisiveis = obterDadosVisiveis();
-    const inicio = (estado.paginaAtual - 1) * CONFIG.LINHAS_POR_PAGINA;
-    const linha = dadosVisiveis[inicio + row];
+    const inicio        = (estado.paginaAtual - 1) * CONFIG.LINHAS_POR_PAGINA;
+    const linha         = dadosVisiveis[inicio + row];
     if (!linha || !colunas[col - 1]) return;
 
     salvarEstadoHistorico();
@@ -197,42 +230,46 @@ function colarSelecao() {
     mostrarToast('Colado com sucesso.', 'success');
 }
 
-// ───────────────────────────────
-// INICIALIZAÇÃO
-// ───────────────────────────────
+// ==============================================================================
+// 7. INICIALIZAÇÃO DA UI — ELEMENTOS E EVENT LISTENERS
+// ==============================================================================
 function inicializarElementos() {
     const ids = {
-        uploadArquivo: 'uploadArquivo',
-        uploadDropZone: 'uploadDropZone',
-        btnLimparUpload: 'btnLimparUpload',
-        uploadStatus: 'uploadStatus',
-        uploadError: 'uploadError',
-        colunasContainer: 'colunas-container',
-        tabelaDados: 'tabelaDados',
-        dadosTbody: 'dados-tbody',
+        uploadArquivo:      'uploadArquivo',
+        uploadDropZone:     'uploadDropZone',
+        btnLimparUpload:    'btnLimparUpload',
+        uploadStatus:       'uploadStatus',
+        uploadError:        'uploadError',
+        colunasContainer:   'colunas-container',
+        tabelaDados:        'tabelaDados',
+        dadosTbody:         'dados-tbody',
         btnAdicionarColuna: 'btnAdicionarColuna',
-        btnAdicionarLinha: 'btnAdicionarLinha',
-        btnSalvarDados: 'btnSalvarDados',
-        btnVoltar: 'btnVoltar',
-        btnProximo: 'btnProximo',
-        inicioPag: 'inicio-pag',
-        fimPag: 'fim-pag',
-        totalPag: 'total-pag',
-        inputBuscaTabela: 'inputBuscaTabela',
-        cellRef: 'cellRef',
+        btnAdicionarLinha:  'btnAdicionarLinha',
+        btnSalvarDados:     'btnSalvarDados',
+        btnVoltar:          'btnVoltar',
+        btnProximo:         'btnProximo',
+        inicioPag:          'inicio-pag',
+        fimPag:             'fim-pag',
+        totalPag:           'total-pag',
+        inputBuscaTabela:   'inputBuscaTabela',
+        cellRef:            'cellRef',
         linhasSelecionadas: 'linhas-selecionadas'
     };
+
     for (const [key, id] of Object.entries(ids)) {
         const el = document.getElementById(id);
         if (el) estado.elementos[key] = el;
     }
+
     // Expor estado globalmente para utilitários que o referenciam
     try { window.estado = estado; } catch (e) { /* ignora */ }
+
     const tabela = estado.elementos.tabelaDados;
     if (tabela) {
         const thead = tabela.querySelector('thead tr');
         if (thead) estado.elementos.thead = thead;
     }
+
     // Injetar estilo para linhas com anomalias
     if (!document.getElementById('estilo-anomalias')) {
         const style = document.createElement('style');
@@ -295,6 +332,7 @@ function configurarEventListeners() {
     if (estado.elementos.uploadArquivo) {
         estado.elementos.uploadArquivo.addEventListener('change', handleUpload);
     }
+
     // Drag & drop on upload zone
     const dropZone = estado.elementos.uploadDropZone;
     if (dropZone) {
@@ -308,9 +346,7 @@ function configurarEventListeners() {
             e.preventDefault(); e.stopPropagation();
             const files = e.dataTransfer.files;
             if (files && files.length > 0) {
-                // inferir tipo a partir da extensão? deixamos o usuário escolher via seleção rápida
                 if (estado.elementos.uploadArquivo) {
-                    // atribui arquivos ao input e chama handler
                     try { estado.elementos.uploadArquivo.files = files; } catch (err) { /* alguns browsers não permitem setFiles */ }
                 }
                 handleUpload({ target: { files } });
@@ -382,6 +418,7 @@ function configurarEventListeners() {
         estado.elementos.dadosTbody.addEventListener('click', e => {
             const btn = e.target.closest('.botao-acao-planilha');
             if (btn) { deletarLinha(e); return; }
+
             const btnA = e.target.closest('.btn-anomalia');
             if (btnA) {
                 const tr = e.target.closest('tr');
@@ -390,6 +427,7 @@ function configurarEventListeners() {
                 mostrarDetalhesAnomalia(rowId);
                 return;
             }
+
             const td = e.target.closest('td');
             const tr = e.target.closest('tr');
             if (td && tr && !btn) selecionarCelula(tr, td);
@@ -399,8 +437,7 @@ function configurarEventListeners() {
 
     // Busca
     if (estado.elementos.inputBuscaTabela) {
-        estado.elementos.inputBuscaTabela.addEventListener('input',
-            debounce(handleBuscaTabela, 300));
+        estado.elementos.inputBuscaTabela.addEventListener('input', debounce(handleBuscaTabela, 300));
     }
 
     // Auto-save toggle
@@ -465,16 +502,16 @@ function configurarEventListeners() {
     });
 }
 
-// ───────────────────────────────
-// SELEÇÃO DE CÉLULA
-// ───────────────────────────────
+// ==============================================================================
+// 8. SELEÇÃO DE CÉLULA
+// ==============================================================================
 function selecionarCelula(tr, td) {
     // Remove seleção anterior
     document.querySelectorAll('.cell-selected').forEach(el => el.classList.remove('cell-selected'));
 
-    const tbody = estado.elementos.dadosTbody;
-    const rows = Array.from(tbody.querySelectorAll('tr'));
-    const cells = Array.from(tr.querySelectorAll('td'));
+    const tbody  = estado.elementos.dadosTbody;
+    const rows   = Array.from(tbody.querySelectorAll('tr'));
+    const cells  = Array.from(tr.querySelectorAll('td'));
     const rowIdx = rows.indexOf(tr);
     const colIdx = cells.indexOf(td);
 
@@ -482,30 +519,33 @@ function selecionarCelula(tr, td) {
     td.classList.add('cell-selected');
 
     // Atualiza referência da célula (ex: B3)
-    const colunas = obterColunasValidas();
+    const colunas  = obterColunasValidas();
     const colLetra = colIdx > 0 && colIdx <= colunas.length
         ? String.fromCharCode(64 + colIdx)
         : '?';
     const inicio = (estado.paginaAtual - 1) * CONFIG.LINHAS_POR_PAGINA;
+
     if (estado.elementos.cellRef) {
-        estado.elementos.cellRef.textContent = colIdx > 0 ? `${colLetra}${inicio + rowIdx + 1}` : `#${inicio + rowIdx + 1}`;
+        estado.elementos.cellRef.textContent = colIdx > 0
+            ? `${colLetra}${inicio + rowIdx + 1}`
+            : `#${inicio + rowIdx + 1}`;
     }
 }
 
-// ───────────────────────────────
-// UPLOAD COM PROGRESSO
-// ───────────────────────────────
+// ==============================================================================
+// 9. UPLOAD DE ARQUIVOS
+// ==============================================================================
 function uploadArquivoComProgresso(url, formData, onProgress) {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', url);
-        
+
         xhr.upload.addEventListener('progress', (e) => {
             if (e.lengthComputable && onProgress) {
                 onProgress(e.loaded, e.total);
             }
         });
-        
+
         xhr.addEventListener('load', () => {
             let data;
             try {
@@ -514,16 +554,16 @@ function uploadArquivoComProgresso(url, formData, onProgress) {
                 data = { mensagem: 'Resposta inválida do servidor' };
             }
             if (xhr.status >= 200 && xhr.status < 300) {
-                resolve({ ok: true, data: data });
+                resolve({ ok: true,  data: data });
             } else {
                 resolve({ ok: false, data: data });
             }
         });
-        
+
         xhr.addEventListener('error', () => {
             reject(new Error('Erro na conexão com o servidor.'));
         });
-        
+
         xhr.send(formData);
     });
 }
@@ -532,11 +572,11 @@ function atualizarProgressoUpload(percent) {
     const status = estado.elementos.uploadStatus;
     if (!status) return;
     status.style.display = 'block';
-    
-    const textoProgresso = percent < 100 
-        ? `Enviando arquivo...` 
+
+    const textoProgresso = percent < 100
+        ? `Enviando arquivo...`
         : `⏳ Processando e limpando dados no servidor...`;
-        
+
     status.innerHTML = `
         <div style="padding: 12px 14px; border-radius: 8px; font-size: 14px; font-weight: 500; background: rgba(37,99,235,0.08); color: #2563eb; border: 1px solid #2563eb; margin-top: 8px;">
             <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; margin-bottom: 6px;">
@@ -598,7 +638,6 @@ async function handleUpload(event) {
                 if (typeof mostrarPainelFinanceiro === 'function') mostrarPainelFinanceiro();
             }, 1000);
         }
-
     } catch (error) {
         console.error('Erro:', error);
         mostrarMensagem('erro', `✗ ${error.message}`);
@@ -608,7 +647,7 @@ async function handleUpload(event) {
 function validarArquivo(file) {
     const extensao = '.' + file.name.split('.').pop().toLowerCase();
 
-    // Se o tipo de arquivo não foi definido (ex: arrastar e soltar direto), detecta pela extensão:
+    // Se o tipo de arquivo não foi definido (ex: arrastar e soltar direto), detecta pela extensão
     if (!estado.tipoArquivo) {
         for (const [tipo, exts] of Object.entries(CONFIG.EXTENSOES_VALIDAS)) {
             if (exts.includes(extensao)) {
@@ -645,7 +684,7 @@ function validarArquivo(file) {
 
 function mostrarMensagem(tipo, texto) {
     const status = estado.elementos.uploadStatus;
-    const erro = estado.elementos.uploadError;
+    const erro   = estado.elementos.uploadError;
 
     const estiloBase = 'padding: 10px 14px; border-radius: 8px; font-size: 14px; font-weight: 500;';
     if (tipo === 'sucesso') {
@@ -675,15 +714,15 @@ async function handleLimparDados() {
         const r = await fetch('/apagar-dados', { method: 'DELETE' });
         const data = await r.json();
         if (r.ok) {
-            estado.todosDados = [];
-            estado.colunasAtuais = [];
-            estado.paginaAtual = 1;
-            estado.historico = [];
+            estado.todosDados      = [];
+            estado.colunasAtuais   = [];
+            estado.paginaAtual     = 1;
+            estado.historico       = [];
             estado.historicoFuturo = [];
             limparUI();
             atualizarPaginacao();
             if (typeof atualizarEstatisticas === 'function') atualizarEstatisticas();
-            if (typeof atualizarMetasUI === 'function') atualizarMetasUI();
+            if (typeof atualizarMetasUI === 'function')     atualizarMetasUI();
             mostrarToast('Dados limpos com sucesso.', 'success');
         }
     } catch (e) {
@@ -693,21 +732,21 @@ async function handleLimparDados() {
 
 function limparUI() {
     if (estado.elementos.colunasContainer) estado.elementos.colunasContainer.innerHTML = '';
-    if (estado.elementos.thead) estado.elementos.thead.innerHTML = '';
-    if (estado.elementos.dadosTbody) estado.elementos.dadosTbody.innerHTML = '';
-    if (estado.elementos.uploadStatus) estado.elementos.uploadStatus.style.display = 'none';
-    if (estado.elementos.uploadError) estado.elementos.uploadError.style.display = 'none';
-    if (estado.elementos.uploadArquivo) estado.elementos.uploadArquivo.value = '';
+    if (estado.elementos.thead)            estado.elementos.thead.innerHTML = '';
+    if (estado.elementos.dadosTbody)       estado.elementos.dadosTbody.innerHTML = '';
+    if (estado.elementos.uploadStatus)     estado.elementos.uploadStatus.style.display = 'none';
+    if (estado.elementos.uploadError)      estado.elementos.uploadError.style.display = 'none';
+    if (estado.elementos.uploadArquivo)    estado.elementos.uploadArquivo.value = '';
     estado.tipoArquivo = null;
 }
 
-// ───────────────────────────────
-// MODAL ABAS EXCEL
-// ───────────────────────────────
+// ==============================================================================
+// 10. MODAL DE ABAS DO EXCEL
+// ==============================================================================
 function abrirModalAbas(abas, mensagem) {
     const modal = document.getElementById('modalAbas');
     const lista = document.getElementById('listaAbas');
-    const sub = document.getElementById('modalAbasSubtitle');
+    const sub   = document.getElementById('modalAbasSubtitle');
     if (!modal || !lista) return;
 
     sub.textContent = mensagem || 'Selecione qual aba deseja importar:';
@@ -757,7 +796,7 @@ async function _uploadComAba(abaNome, todasAbas) {
 
     const formData = new FormData();
     formData.append('file', arquivo);
-    if (abaNome) formData.append('sheet_name', abaNome);
+    if (abaNome)  formData.append('sheet_name', abaNome);
     if (todasAbas) formData.append('importar_todas', 'true');
 
     fecharModalAbas();
@@ -784,9 +823,9 @@ async function _uploadComAba(abaNome, todasAbas) {
     }
 }
 
-// ───────────────────────────────
-// TABELA — RENDERIZAÇÃO
-// ───────────────────────────────
+// ==============================================================================
+// 11. RENDERIZAÇÃO DA TABELA
+// ==============================================================================
 function preencherTabela(colunas, dados) {
     if (!colunas || !dados) return;
     estado.colunasAtuais = [...colunas];
@@ -797,15 +836,17 @@ function preencherTabela(colunas, dados) {
     });
     estado.filtroAtual = '';
     estado.paginaAtual = 1;
-    estado.sortColuna = null;
-    estado.sortDir = 'asc';
+    estado.sortColuna  = null;
+    estado.sortDir     = 'asc';
+
     aplicarAutomacaoDeIndicadores();
     renderizarColunas();
     atualizarTabela();
     exibirPagina();
     atualizarPaginacao();
+
     if (typeof atualizarEstatisticas === 'function') atualizarEstatisticas();
-    if (typeof atualizarMetasUI === 'function') atualizarMetasUI();
+    if (typeof atualizarMetasUI === 'function')     atualizarMetasUI();
     if (typeof atualizarIndicadorTabelaAtiva === 'function') atualizarIndicadorTabelaAtiva();
 }
 
@@ -813,6 +854,7 @@ function renderizarColunas() {
     const container = estado.elementos.colunasContainer;
     if (!container) return;
     container.innerHTML = '';
+
     estado.colunasAtuais.forEach(nome => {
         const div = document.createElement('div');
         div.className = 'column-chip-edit';
@@ -844,8 +886,8 @@ function atualizarTabela() {
         <th style="width:40px; text-align:center;">#</th>
         ${colunas.map((c, i) => {
             const isSort = estado.sortColuna === c;
-            const dir = isSort ? estado.sortDir : '';
-            const icon = isSort && dir === 'asc' ? '↑' : isSort && dir === 'desc' ? '↓' : '↕';
+            const dir    = isSort ? estado.sortDir : '';
+            const icon   = isSort && dir === 'asc' ? '↑' : isSort && dir === 'desc' ? '↓' : '↕';
             return `
                 <th class="${isSort ? 'sort-' + dir : ''}">
                     <div class="excel-th-inner" onclick="ordenarPorColuna('${escapeHtml(c)}')">
@@ -864,7 +906,7 @@ function exibirPagina() {
     const tbody = estado.elementos.dadosTbody;
     if (!tbody) return;
 
-    const colunas = obterColunasValidas();
+    const colunas       = obterColunasValidas();
     const dadosVisiveis = obterDadosVisiveis();
 
     if (colunas.length === 0 || dadosVisiveis.length === 0) {
@@ -878,18 +920,18 @@ function exibirPagina() {
         return;
     }
 
-    const inicio = (estado.paginaAtual - 1) * CONFIG.LINHAS_POR_PAGINA;
-    const dadosPagina = dadosVisiveis.slice(inicio, inicio + CONFIG.LINHAS_POR_PAGINA);
-    const termoBusca = estado.filtroAtual;
+    const inicio          = (estado.paginaAtual - 1) * CONFIG.LINHAS_POR_PAGINA;
+    const dadosPagina     = dadosVisiveis.slice(inicio, inicio + CONFIG.LINHAS_POR_PAGINA);
+    const termoBusca      = estado.filtroAtual;
     const temColunaEstoque = colunas.some(col => /estoque|\bstock\b/i.test(col));
 
     tbody.innerHTML = dadosPagina.map((linha, i) => {
-        const numLinha = inicio + i + 1;
+        const numLinha      = inicio + i + 1;
         const isSelecionada = estado.linhasSelecionadas.has(linha._id);
 
-        const celulas = colunas.map((col, colIndex) => {
-            const valor = linha[col] ?? '';
-            const ehDestaque = termoBusca && String(valor).toLowerCase().includes(termoBusca);
+        const celulas = colunas.map((col) => {
+            const valor        = linha[col] ?? '';
+            const ehDestaque   = termoBusca && String(valor).toLowerCase().includes(termoBusca);
             const classeDestaque = ehDestaque ? ' celula-destaque' : '';
 
             const partes = [];
@@ -943,16 +985,16 @@ function exibirPagina() {
     }
 }
 
-// ───────────────────────────────
-// ORDENAÇÃO
-// ───────────────────────────────
+// ==============================================================================
+// 12. ORDENAÇÃO
+// ==============================================================================
 function ordenarPorColuna(col) {
     salvarEstadoHistorico();
     if (estado.sortColuna === col) {
         estado.sortDir = estado.sortDir === 'asc' ? 'desc' : 'asc';
     } else {
         estado.sortColuna = col;
-        estado.sortDir = 'asc';
+        estado.sortDir    = 'asc';
     }
 
     estado.todosDados.sort((a, b) => {
@@ -960,6 +1002,7 @@ function ordenarPorColuna(col) {
         let vb = b[col] ?? '';
         const na = parseFloat(String(va).replace(/[^0-9.,-]/g, '').replace(',', '.'));
         const nb = parseFloat(String(vb).replace(/[^0-9.,-]/g, '').replace(',', '.'));
+
         if (!isNaN(na) && !isNaN(nb)) {
             return estado.sortDir === 'asc' ? na - nb : nb - na;
         }
@@ -977,9 +1020,9 @@ function ordenarPorColuna(col) {
     if (typeof persistirTabelaAtualDebounced === 'function') persistirTabelaAtualDebounced();
 }
 
-// ───────────────────────────────
-// ANOMALIAS: visualização e limpeza
-// ───────────────────────────────
+// ==============================================================================
+// 13. ANOMALIAS — VISUALIZAÇÃO E LIMPEZA
+// ==============================================================================
 function mostrarAnomalias() {
     if (!window.estado || !window.estado.anomalias || window.estado.anomalias.length === 0) {
         mostrarToast('Nenhuma anomalia detectada.', 'info');
@@ -1002,14 +1045,17 @@ function removerTodasAnomalias() {
         return;
     }
     if (!confirm(`Remover todas as ${window.estado.anomalias.length} linha(s) identificadas como anomalia? Esta ação não pode ser desfeita.`)) return;
+
     const ids = new Set(window.estado.anomalias.map(a => a._id));
     estado.todosDados = estado.todosDados.filter(l => !ids.has(l._id));
+
     // limpar estado de anomalias
-    window.estado.anomalias = [];
+    window.estado.anomalias    = [];
     window.estado.anomaliasIds = new Set();
-    estado.anomalias = [];
-    estado.anomaliasIds = new Set();
+    estado.anomalias           = [];
+    estado.anomaliasIds        = new Set();
     estado.mostrarApenasAnomalias = false;
+
     // Atualizar UI
     atualizarTabela();
     exibirPagina();
@@ -1025,6 +1071,7 @@ function mostrarDetalhesAnomalia(rowId) {
     }
     const a = window.estado.anomalias.find(x => x._id === rowId);
     if (!a) { mostrarToast('Anomalia não encontrada para esta linha.', 'warning'); return; }
+
     // criar modal simples
     const existing = document.getElementById('modalAnomalia'); if (existing) existing.remove();
     const modal = document.createElement('div'); modal.id = 'modalAnomalia'; modal.className = 'modal-overlay-anomalia';
@@ -1050,15 +1097,15 @@ function mostrarDetalhesAnomalia(rowId) {
     document.getElementById('btnCorrigirAnomalia').addEventListener('click', () => {
         modal.remove();
         // localizar célula e focar para correção
-        const colunas = obterColunasValidas();
+        const colunas  = obterColunasValidas();
         const colIndex = colunas.indexOf(a.coluna);
         if (colIndex < 0) { mostrarToast('Coluna não encontrada para correção.', 'warning'); return; }
         const tr = document.querySelector(`tr[data-row-id="${rowId}"]`);
         if (!tr) { mostrarToast('Linha não está na página atual. Ajuste a página.', 'warning'); return; }
-        const inputs = tr.querySelectorAll('input.entrada-linha');
+        const inputs  = tr.querySelectorAll('input.entrada-linha');
         const tdIndex = colIndex; // inputs correspondem às colunas order
-        const input = inputs[tdIndex];
-        if (input) { input.focus(); input.select(); mostrarToast('Corrija o valor e Aguarde...','info'); }
+        const input   = inputs[tdIndex];
+        if (input) { input.focus(); input.select(); mostrarToast('Corrija o valor e Aguarde...', 'info'); }
     });
 }
 
@@ -1067,36 +1114,34 @@ function removerLinhaPorId(id) {
     const idx = estado.todosDados.findIndex(item => item._id === id);
     if (idx >= 0) {
         estado.todosDados.splice(idx, 1);
+
         // limpar se estava em anomalias
         if (window.estado && window.estado.anomalias) {
-            window.estado.anomalias = window.estado.anomalias.filter(a => a._id !== id);
+            window.estado.anomalias    = window.estado.anomalias.filter(a => a._id !== id);
             window.estado.anomaliasIds = new Set(window.estado.anomalias.map(a => a._id));
         }
         estado.anomalias = estado.anomalias.filter(a => a._id !== id);
         estado.anomaliasIds.delete(id);
+
         exibirPagina(); atualizarPaginacao();
         if (typeof atualizarEstatisticas === 'function') atualizarEstatisticas();
         if (typeof persistirTabelaAtualDebounced === 'function') persistirTabelaAtualDebounced();
     }
 }
 
-// ───────────────────────────────
-// RESIZE DE COLUNAS
-// ───────────────────────────────
-let _resizeStartX = 0;
-let _resizeTh = null;
-let _resizeStartW = 0;
-
+// ==============================================================================
+// 14. RESIZE DE COLUNAS
+// ==============================================================================
 function iniciarResize(event, handle) {
     event.preventDefault();
     event.stopPropagation();
     _resizeStartX = event.clientX;
-    _resizeTh = handle.closest('th');
+    _resizeTh     = handle.closest('th');
     _resizeStartW = _resizeTh.offsetWidth;
 
     const onMove = e => {
         const diff = e.clientX - _resizeStartX;
-        _resizeTh.style.width = Math.max(60, _resizeStartW + diff) + 'px';
+        _resizeTh.style.width    = Math.max(60, _resizeStartW + diff) + 'px';
         _resizeTh.style.minWidth = _resizeTh.style.width;
     };
     const onUp = () => {
@@ -1107,9 +1152,9 @@ function iniciarResize(event, handle) {
     document.addEventListener('mouseup', onUp);
 }
 
-// ───────────────────────────────
-// MANIPULAÇÃO DE DADOS
-// ───────────────────────────────
+// ==============================================================================
+// 15. MANIPULAÇÃO DE COLUNAS E DADOS
+// ==============================================================================
 function obterColunasValidas() {
     return Array.from(document.querySelectorAll('.entrada-coluna'))
         .map(input => input.value.trim())
@@ -1126,19 +1171,302 @@ function obterDadosVisiveis() {
     }
     if (!estado.filtroAtual) return estado.todosDados;
     const colunas = obterColunasValidas();
-    const termo = estado.filtroAtual.toLowerCase();
+    const termo   = estado.filtroAtual.toLowerCase();
     return estado.todosDados.filter(linha =>
         colunas.some(col => String(linha[col] || '').toLowerCase().includes(termo))
     );
 }
 
+function criarLinhaVazia(colunas) {
+    const linha = { _id: gerarIdLinha() };
+    colunas.forEach(col => linha[col] = '');
+    return linha;
+}
 
+function sincronizarColunas() {
+    const novas = obterColunasValidas();
+    estado.todosDados = estado.todosDados.map(linha => {
+        const nova = { _id: linha._id };
+        novas.forEach(col => nova[col] = linha[col] ?? '');
+        return nova;
+    });
+    estado.colunasAtuais = [...novas];
+}
+
+function adicionarNovaColuna() {
+    const container = estado.elementos.colunasContainer;
+    if (!container) return;
+    salvarEstadoHistorico();
+
+    const div = document.createElement('div');
+    div.className = 'column-chip-edit';
+    div.innerHTML = `
+        <i class="fa-solid fa-grip-vertical" style="color:var(--suave); font-size:11px; opacity:0.6;"></i>
+        <input type="text" class="entrada entrada-coluna" placeholder="Nova coluna">
+        <button class="btn-remover-col botao-remover-coluna" type="button" title="Remover coluna">✕</button>
+    `;
+    container.appendChild(div);
+
+    const input = div.querySelector('.entrada-coluna');
+    if (input) {
+        input.addEventListener('input', () => {
+            sincronizarColunas();
+            atualizarTabela();
+            exibirPagina();
+            if (typeof persistirTabelaAtualDebounced === 'function') persistirTabelaAtualDebounced();
+        });
+        input.focus();
+    }
+    sincronizarColunas();
+    atualizarTabela();
+    exibirPagina();
+    if (typeof persistirTabelaAtualDebounced === 'function') persistirTabelaAtualDebounced();
+}
+
+/**
+ * Cria uma coluna com nome específico programaticamente e sincroniza tabela e banco.
+ */
+function adicionarColunaComNome(nomeColuna, valorPadrao = '', autoSalvar = true) {
+    if (!nomeColuna || typeof nomeColuna !== 'string') return null;
+    const nomeLimpo = nomeColuna.trim();
+    if (!nomeLimpo) return null;
+
+    const colunasExistentes = obterColunasValidas();
+    if (colunasExistentes.includes(nomeLimpo)) {
+        return nomeLimpo;
+    }
+
+    const container = estado.elementos.colunasContainer || document.getElementById('colunas-container');
+    if (!container) return null;
+
+    salvarEstadoHistorico();
+
+    // Se a tabela não tiver dados/linhas, cria pelo menos 1 linha com as colunas
+    if (!estado.todosDados || estado.todosDados.length === 0) {
+        const colunasTodas = [...colunasExistentes, nomeLimpo];
+        estado.todosDados  = [criarLinhaVazia(colunasTodas)];
+    } else {
+        // Preencher valor inicial nas linhas existentes
+        estado.todosDados = estado.todosDados.map(linha => {
+            const nova = { ...linha };
+            if (nova[nomeLimpo] === undefined || nova[nomeLimpo] === '') {
+                nova[nomeLimpo] = valorPadrao !== undefined ? valorPadrao : '';
+            }
+            return nova;
+        });
+    }
+
+    const div = document.createElement('div');
+    div.className = 'column-chip-edit';
+    div.innerHTML = `
+        <i class="fa-solid fa-grip-vertical" style="color:var(--suave); font-size:11px; opacity:0.6;"></i>
+        <input type="text" class="entrada entrada-coluna" value="${nomeLimpo}" placeholder="Nome da coluna">
+        <button class="btn-remover-col botao-remover-coluna" type="button" title="Remover coluna">✕</button>
+    `;
+    container.appendChild(div);
+
+    const input = div.querySelector('.entrada-coluna');
+    if (input) {
+        input.addEventListener('input', () => {
+            sincronizarColunas();
+            atualizarTabela();
+            exibirPagina();
+            if (typeof persistirTabelaAtualDebounced === 'function') persistirTabelaAtualDebounced();
+        });
+    }
+
+    sincronizarColunas();
+    atualizarTabela();
+    exibirPagina();
+
+    // Sincronizar imediatamente o objeto da tabela ativa (sem aguardar debounce de 800ms)
+    if (typeof sincronizarTabelaAtiva === 'function') sincronizarTabelaAtiva();
+
+    if (typeof persistirTabelaAtualDebounced === 'function') persistirTabelaAtualDebounced();
+
+    if (autoSalvar && typeof salvarDados === 'function') {
+        setTimeout(() => { salvarDados(true); }, 150);
+    }
+
+    return nomeLimpo;
+}
+window.adicionarColunaComNome = adicionarColunaComNome;
+
+function removerColuna(event) {
+    const colunaDiv = event.target.closest('div');
+    if (colunaDiv) {
+        salvarEstadoHistorico();
+        colunaDiv.remove();
+        sincronizarColunas();
+        aplicarAutomacaoDeIndicadores();
+        atualizarTabela();
+        exibirPagina();
+        if (typeof persistirTabelaAtualDebounced === 'function') persistirTabelaAtualDebounced();
+    }
+}
+
+function formatarDataHoje() {
+    const hoje = new Date();
+    return `${String(hoje.getDate()).padStart(2, '0')}/${String(hoje.getMonth() + 1).padStart(2, '0')}/${hoje.getFullYear()}`;
+}
+
+function detectarEFormatarDataHoje(nomeColuna, dadosExistentes) {
+    const hoje = new Date();
+    const d = String(hoje.getDate()).padStart(2, '0');
+    const m = String(hoje.getMonth() + 1).padStart(2, '0');
+    const y = hoje.getFullYear();
+
+    if (dadosExistentes?.length > 0) {
+        const valor = String(dadosExistentes[0][nomeColuna] ?? '').trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(valor))  return `${y}-${m}-${d}`;
+        if (/^\d{4}\/\d{2}\/\d{2}$/.test(valor)) return `${y}/${m}/${d}`;
+        if (/^\d{2}-\d{2}-\d{4}$/.test(valor))  return `${d}-${m}-${y}`;
+    }
+    return `${d}/${m}/${y}`;
+}
+
+function adicionarNovaLinha() {
+    const colunas = obterColunasValidas();
+    if (!colunas.length) { mostrarToast('Adicione pelo menos uma coluna!', 'warning'); return; }
+    salvarEstadoHistorico();
+
+    const linha = { _id: gerarIdLinha() };
+    colunas.forEach(col => {
+        const cn = normalizarNomeColuna(col);
+        linha[col] = /\bdata\b|^date\b|\bdia\b/i.test(cn)
+            ? detectarEFormatarDataHoje(col, estado.todosDados)
+            : '';
+    });
+    estado.todosDados.push(linha);
+    estado.paginaAtual = Math.ceil(obterDadosVisiveis().length / CONFIG.LINHAS_POR_PAGINA);
+    aplicarAutomacaoDeIndicadores();
+    exibirPagina();
+    atualizarPaginacao();
+    if (typeof atualizarEstatisticas === 'function') atualizarEstatisticas();
+    if (typeof atualizarMetasUI === 'function')     atualizarMetasUI();
+    if (window.AutocompleteManager) setTimeout(() => window.AutocompleteManager.inicializarTodos(), 150);
+    if (typeof persistirTabelaAtualDebounced === 'function') persistirTabelaAtualDebounced();
+}
+
+function atualizarValoresNoDom() {
+    const tbody = estado.elementos.dadosTbody;
+    if (!tbody) return;
+    const colunas    = obterColunasValidas();
+    const inputAtivo = document.activeElement;
+
+    tbody.querySelectorAll('tr.linha-dados').forEach(tr => {
+        const rowId = tr.dataset.rowId;
+        const linha = estado.todosDados.find(item => item._id === rowId);
+        if (!linha) return;
+
+        const inputs = tr.querySelectorAll('.entrada-linha');
+        colunas.forEach((col, i) => {
+            if (inputs[i] && inputs[i] !== inputAtivo) {
+                const novoValor = String(linha[col] ?? '');
+                if (inputs[i].value !== novoValor) inputs[i].value = novoValor;
+            }
+        });
+    });
+}
+
+function atualizarCelula(event, somenteAoSair = false) {
+    const tr = event.target.closest('tr');
+    if (!tr || !estado.elementos.dadosTbody) return;
+
+    const rowId   = tr.dataset.rowId;
+    const colunas = obterColunasValidas();
+    const linha   = estado.todosDados.find(item => item._id === rowId);
+    const inputs  = tr.querySelectorAll('.entrada-linha');
+
+    if (linha && inputs.length === colunas.length) {
+        let colEditada = null;
+        colunas.forEach((col, i) => {
+            if (inputs[i]) {
+                const novo = inputs[i].value ?? '';
+                if (String(linha[col]) !== novo) {
+                    if (somenteAoSair && colEditada === null) {
+                        salvarEstadoHistorico();
+                    }
+                    linha[col]  = novo;
+                    colEditada  = col;
+                }
+            }
+        });
+
+        if (colEditada) {
+            const colProduto = colunas.find(c => /produto|product|\bitem\b|\bnome\b|\bname\b|mercadoria/i.test(c));
+            const colEstoque = colunas.find(c => /estoque|\bstock\b/i.test(c));
+
+            if (colProduto && colEstoque) {
+                if (colEditada === colEstoque) {
+                    const prodAtual = String(linha[colProduto] || '').trim().toLowerCase();
+                    if (prodAtual) {
+                        estado.todosDados.forEach(r => {
+                            if (r._id !== rowId && String(r[colProduto] || '').trim().toLowerCase() === prodAtual) {
+                                r[colEstoque] = linha[colEstoque];
+                            }
+                        });
+                    }
+                } else if (colEditada === colProduto) {
+                    const prodNovo = String(linha[colProduto] || '').trim().toLowerCase();
+                    const outra = estado.todosDados.find(r =>
+                        r._id !== rowId &&
+                        String(r[colProduto] || '').trim().toLowerCase() === prodNovo &&
+                        String(r[colEstoque] || '').trim() !== ''
+                    );
+                    if (outra) linha[colEstoque] = outra[colEstoque];
+                }
+            }
+        }
+
+        if (somenteAoSair) {
+            aplicarAutomacaoDeIndicadores(rowId, colEditada);
+            atualizarValoresNoDom();
+            if (typeof atualizarEstatisticas === 'function') atualizarEstatisticas();
+            if (typeof atualizarMetasUI === 'function')     atualizarMetasUI();
+            const check = document.getElementById('checkSalvarAutomatico');
+            if (check?.checked) debounceAutoSalvar();
+            if (typeof persistirTabelaAtualDebounced === 'function') persistirTabelaAtualDebounced();
+        } else {
+            clearTimeout(atualizarCelula._debounce);
+            atualizarCelula._debounce = setTimeout(() => {
+                aplicarAutomacaoDeIndicadores(rowId, colEditada);
+                atualizarValoresNoDom();
+                if (typeof atualizarEstatisticas === 'function') atualizarEstatisticas();
+                if (typeof atualizarMetasUI === 'function')     atualizarMetasUI();
+                if (typeof persistirTabelaAtualDebounced === 'function') persistirTabelaAtualDebounced();
+            }, 150);
+        }
+    }
+}
+
+function deletarLinha(event) {
+    const tr = event.target.closest('tr');
+    if (!tr) return;
+    salvarEstadoHistorico();
+    const rowId = tr.dataset.rowId;
+    const idx   = estado.todosDados.findIndex(item => item._id === rowId);
+    if (idx >= 0) {
+        estado.todosDados.splice(idx, 1);
+        const total = Math.ceil(obterDadosVisiveis().length / CONFIG.LINHAS_POR_PAGINA);
+        estado.paginaAtual = Math.max(1, Math.min(estado.paginaAtual, total || 1));
+        exibirPagina();
+        atualizarPaginacao();
+        if (typeof atualizarEstatisticas === 'function') atualizarEstatisticas();
+        if (typeof atualizarMetasUI === 'function')     atualizarMetasUI();
+        if (typeof persistirTabelaAtualDebounced === 'function') persistirTabelaAtualDebounced();
+    }
+}
+
+// ==============================================================================
+// 16. ANÁLISE E LIMPEZA CIENTÍFICA DE DADOS
+// ==============================================================================
 function _calcularPercentilLocal(arr, q) {
     if (!arr || !arr.length) return 0;
     const sorted = [...arr].sort((a, b) => a - b);
-    const pos = (sorted.length - 1) * q;
-    const base = Math.floor(pos);
-    const rest = pos - base;
+    const pos    = (sorted.length - 1) * q;
+    const base   = Math.floor(pos);
+    const rest   = pos - base;
     if (sorted[base + 1] !== undefined) {
         return sorted[base] + rest * (sorted[base + 1] - sorted[base]);
     }
@@ -1146,9 +1474,9 @@ function _calcularPercentilLocal(arr, q) {
 }
 
 function _analisarQualidadeLocal(colunas, dados) {
-    const total = dados.length;
-    const nulos = {};
-    const outliers = {};
+    const total     = dados.length;
+    const nulos     = {};
+    const outliers  = {};
     const anomalias = [];
     const anomaliasIds = new Set();
 
@@ -1180,9 +1508,11 @@ function _analisarQualidadeLocal(colunas, dados) {
     // Outliers por IQR em colunas numéricas
     colunas.forEach(col => {
         const numVals = [];
-        const mapIdx = [];
+        const mapIdx  = [];
         dados.forEach((linha, idx) => {
-            const num = (typeof _parsearNumeroLimpo === 'function') ? _parsearNumeroLimpo(linha[col]) : parseFloat(String(linha[col] || '').replace(',', '.'));
+            const num = (typeof _parsearNumeroLimpo === 'function')
+                ? _parsearNumeroLimpo(linha[col])
+                : parseFloat(String(linha[col] || '').replace(',', '.'));
             if (!isNaN(num)) {
                 numVals.push(num);
                 mapIdx.push({ idx, rowId: linha._id, val: num, orig: linha[col] });
@@ -1190,13 +1520,15 @@ function _analisarQualidadeLocal(colunas, dados) {
         });
 
         if (numVals.length >= 4) {
-            const q1 = _calcularPercentilLocal(numVals, 0.25);
-            const q3 = _calcularPercentilLocal(numVals, 0.75);
+            const q1  = _calcularPercentilLocal(numVals, 0.25);
+            const q3  = _calcularPercentilLocal(numVals, 0.75);
             const iqr = q3 - q1;
+
             if (iqr > 0) {
                 const lower = q1 - 1.5 * iqr;
                 const upper = q3 + 1.5 * iqr;
                 const outlierIndices = [];
+
                 mapIdx.forEach(item => {
                     if (item.val < lower || item.val > upper) {
                         outlierIndices.push(item.idx);
@@ -1205,6 +1537,7 @@ function _analisarQualidadeLocal(colunas, dados) {
                         anomaliasIds.add(item.rowId);
                     }
                 });
+
                 if (outlierIndices.length > 0) {
                     outliers[col] = {
                         outliers: outlierIndices.length,
@@ -1237,8 +1570,10 @@ function _analisarQualidadeLocal(colunas, dados) {
 
 function _executarLimpezaCientificaLocal(colunas, dadosOriginais) {
     if (!dadosOriginais || !dadosOriginais.length) return { colunas, dados: [], score: 100 };
-    
-    let dados = (typeof clonarDadosTabela === 'function') ? clonarDadosTabela(dadosOriginais) : JSON.parse(JSON.stringify(dadosOriginais));
+
+    let dados = (typeof clonarDadosTabela === 'function')
+        ? clonarDadosTabela(dadosOriginais)
+        : JSON.parse(JSON.stringify(dadosOriginais));
 
     // 1. Remover duplicatas exatas
     const vistos = new Set();
@@ -1253,23 +1588,28 @@ function _executarLimpezaCientificaLocal(colunas, dadosOriginais) {
     dados = dados.filter(linha => {
         return colunas.some(col => {
             const v = linha[col];
-            return v !== null && v !== undefined && String(v).trim() !== '' && !['nan', 'none', 'null', 'n/a', '-', '--'].includes(String(v).trim().toLowerCase());
+            return v !== null && v !== undefined && String(v).trim() !== '' &&
+                   !['nan', 'none', 'null', 'n/a', '-', '--'].includes(String(v).trim().toLowerCase());
         });
     });
 
     // 3. Tratar cada coluna (imputação e capping)
     colunas.forEach(col => {
         const ehNum = (typeof _ehColunaNumerica === 'function') ? _ehColunaNumerica(col, dados) : false;
+
         if (ehNum) {
-            const nums = dados.map(l => (typeof _parsearNumeroLimpo === 'function') ? _parsearNumeroLimpo(l[col]) : parseFloat(l[col])).filter(n => !isNaN(n));
+            const nums = dados
+                .map(l => (typeof _parsearNumeroLimpo === 'function') ? _parsearNumeroLimpo(l[col]) : parseFloat(l[col]))
+                .filter(n => !isNaN(n));
+
             if (nums.length > 0) {
-                const media = nums.reduce((a, b) => a + b, 0) / nums.length;
+                const media          = nums.reduce((a, b) => a + b, 0) / nums.length;
                 const mediaFormatada = Number.isInteger(media) ? media : parseFloat(media.toFixed(2));
-                
+
                 let lower = -Infinity, upper = Infinity;
                 if (nums.length >= 4) {
-                    const q1 = _calcularPercentilLocal(nums, 0.25);
-                    const q3 = _calcularPercentilLocal(nums, 0.75);
+                    const q1  = _calcularPercentilLocal(nums, 0.25);
+                    const q3  = _calcularPercentilLocal(nums, 0.75);
                     const iqr = q3 - q1;
                     if (iqr > 0) {
                         lower = q1 - 1.5 * iqr;
@@ -1280,6 +1620,7 @@ function _executarLimpezaCientificaLocal(colunas, dadosOriginais) {
                 dados.forEach(linha => {
                     const raw = linha[col];
                     const num = (typeof _parsearNumeroLimpo === 'function') ? _parsearNumeroLimpo(raw) : parseFloat(raw);
+
                     if (isNaN(num) || raw === null || raw === undefined || String(raw).trim() === '' || ['nan', 'none', 'null', 'n/a', '-', '--'].includes(String(raw).trim().toLowerCase())) {
                         linha[col] = mediaFormatada;
                     } else if (num < lower) {
@@ -1375,22 +1716,22 @@ async function analisarQualidade(silencioso = false) {
 
         // Marcar anomalias e outliers
         if (!window.estado) window.estado = {};
-        window.estado.anomalias = [];
+        window.estado.anomalias    = [];
         window.estado.anomaliasIds = new Set();
-        estado.anomalias = [];
-        estado.anomaliasIds = new Set();
+        estado.anomalias           = [];
+        estado.anomaliasIds        = new Set();
 
         const outliers = rel.outliers || {};
         Object.entries(outliers).forEach(([col, info]) => {
             if (info.indices && info.indices.length > 0) {
                 info.indices.forEach(idx => {
                     if (estado.todosDados[idx]) {
-                        const rowId = estado.todosDados[idx]._id;
-                        const val = estado.todosDados[idx][col];
+                        const rowId  = estado.todosDados[idx]._id;
+                        const val    = estado.todosDados[idx][col];
                         const motivo = `Outlier estatístico (IQR): valor "${val}" fora da faixa [${info.limite_inferior}, ${info.limite_superior}]`;
                         estado.anomalias.push({ _id: rowId, coluna: col, valor: val, motivo });
                         estado.anomaliasIds.add(rowId);
-                        window.estado.anomalias = estado.anomalias;
+                        window.estado.anomalias    = estado.anomalias;
                         window.estado.anomaliasIds = estado.anomaliasIds;
                     }
                 });
@@ -1401,7 +1742,7 @@ async function analisarQualidade(silencioso = false) {
         const banner = document.getElementById('dataQualityAlerts');
         if (banner) {
             const alertas = [];
-            const nulos = rel.nulos || {};
+            const nulos   = rel.nulos || {};
             let totalNulos = 0;
             Object.entries(nulos).forEach(([c, inf]) => {
                 if (inf.percentual > 10) alertas.push(`<span class="dqa-item dqa-warn"><i class="fa-solid fa-triangle-exclamation"></i> Coluna "${c}": ${inf.percentual}% de campos vazios/nulos.</span>`);
@@ -1443,7 +1784,8 @@ async function analisarQualidade(silencioso = false) {
 }
 
 /**
- * Executa a limpeza e sanitização científica dos dados via backend e salva no banco (com fallback local automático)
+ * Executa a limpeza e sanitização científica dos dados via backend e salva no banco
+ * (com fallback local automático).
  */
 async function executarLimpezaCientifica() {
     const colunas = obterColunasValidas();
@@ -1468,8 +1810,8 @@ async function executarLimpezaCientifica() {
 
         let limpoComSucesso = false;
         let colunasResultado = colunas;
-        let dadosResultado = estado.todosDados;
-        let scoreFinal = 100;
+        let dadosResultado   = estado.todosDados;
+        let scoreFinal       = 100;
 
         try {
             const resp = await fetch('/api/dados/limpar', {
@@ -1492,9 +1834,9 @@ async function executarLimpezaCientifica() {
                 const json = await resp.json();
                 if (json.sucesso && Array.isArray(json.dados)) {
                     colunasResultado = json.colunas || colunas;
-                    dadosResultado = json.dados;
-                    scoreFinal = json.score_atual ?? 100;
-                    limpoComSucesso = true;
+                    dadosResultado   = json.dados;
+                    scoreFinal       = json.score_atual ?? 100;
+                    limpoComSucesso  = true;
                 }
             }
         } catch (fetchErr) {
@@ -1503,26 +1845,27 @@ async function executarLimpezaCientifica() {
 
         // Fallback local se backend estiver offline ou retornar erro
         if (!limpoComSucesso) {
-            const resLocal = _executarLimpezaCientificaLocal(colunas, estado.todosDados);
+            const resLocal   = _executarLimpezaCientificaLocal(colunas, estado.todosDados);
             colunasResultado = resLocal.colunas;
-            dadosResultado = resLocal.dados;
-            scoreFinal = resLocal.score;
+            dadosResultado   = resLocal.dados;
+            scoreFinal       = resLocal.score;
         }
 
         // Atualizar estado com os dados limpos
         salvarEstadoHistorico();
         preencherTabela(colunasResultado, dadosResultado);
+
         if (tabAtual) {
-            tabAtual.dados = (typeof clonarDadosTabela === 'function') ? clonarDadosTabela(estado.todosDados) : [...estado.todosDados];
+            tabAtual.dados   = (typeof clonarDadosTabela === 'function') ? clonarDadosTabela(estado.todosDados) : [...estado.todosDados];
             tabAtual.colunas = [...colunasResultado];
             if (typeof renderizarAbasTabelas === 'function') renderizarAbasTabelas();
         }
 
         // Limpar anomalias e restaurar visualização
-        window.estado.anomalias = [];
+        window.estado.anomalias    = [];
         window.estado.anomaliasIds = new Set();
-        estado.anomalias = [];
-        estado.anomaliasIds = new Set();
+        estado.anomalias           = [];
+        estado.anomaliasIds        = new Set();
         estado.mostrarApenasAnomalias = false;
 
         // Fechar modal de limpeza se aberto
@@ -1555,287 +1898,9 @@ async function executarLimpezaCientifica() {
     }
 }
 
-
-function criarLinhaVazia(colunas) {
-    const linha = { _id: gerarIdLinha() };
-    colunas.forEach(col => linha[col] = '');
-    return linha;
-}
-
-function sincronizarColunas() {
-    const novas = obterColunasValidas();
-    estado.todosDados = estado.todosDados.map(linha => {
-        const nova = { _id: linha._id };
-        novas.forEach(col => nova[col] = linha[col] ?? '');
-        return nova;
-    });
-    estado.colunasAtuais = [...novas];
-}
-
-function adicionarNovaColuna() {
-    const container = estado.elementos.colunasContainer;
-    if (!container) return;
-    salvarEstadoHistorico();
-    const div = document.createElement('div');
-    div.className = 'column-chip-edit';
-    div.innerHTML = `
-        <i class="fa-solid fa-grip-vertical" style="color:var(--suave); font-size:11px; opacity:0.6;"></i>
-        <input type="text" class="entrada entrada-coluna" placeholder="Nova coluna">
-        <button class="btn-remover-col botao-remover-coluna" type="button" title="Remover coluna">✕</button>
-    `;
-    container.appendChild(div);
-    const input = div.querySelector('.entrada-coluna');
-    if (input) {
-        input.addEventListener('input', () => {
-            sincronizarColunas();
-            atualizarTabela();
-            exibirPagina();
-            if (typeof persistirTabelaAtualDebounced === 'function') persistirTabelaAtualDebounced();
-        });
-        input.focus();
-    }
-    sincronizarColunas();
-    atualizarTabela();
-    exibirPagina();
-    if (typeof persistirTabelaAtualDebounced === 'function') persistirTabelaAtualDebounced();
-}
-
-/**
- * Cria uma coluna com nome específico programaticamente e sincroniza tabela e banco
- */
-function adicionarColunaComNome(nomeColuna, valorPadrao = '', autoSalvar = true) {
-    if (!nomeColuna || typeof nomeColuna !== 'string') return null;
-    const nomeLimpo = nomeColuna.trim();
-    if (!nomeLimpo) return null;
-
-    const colunasExistentes = obterColunasValidas();
-    if (colunasExistentes.includes(nomeLimpo)) {
-        return nomeLimpo;
-    }
-
-    const container = estado.elementos.colunasContainer || document.getElementById('colunas-container');
-    if (!container) return null;
-
-    salvarEstadoHistorico();
-
-    // Se a tabela não tiver dados/linhas, cria pelo menos 1 linha com as colunas
-    if (!estado.todosDados || estado.todosDados.length === 0) {
-        const colunasTodas = [...colunasExistentes, nomeLimpo];
-        estado.todosDados = [criarLinhaVazia(colunasTodas)];
-    } else {
-        // Preencher valor inicial nas linhas existentes
-        estado.todosDados = estado.todosDados.map(linha => {
-            const nova = { ...linha };
-            if (nova[nomeLimpo] === undefined || nova[nomeLimpo] === '') {
-                nova[nomeLimpo] = valorPadrao !== undefined ? valorPadrao : '';
-            }
-            return nova;
-        });
-    }
-
-    const div = document.createElement('div');
-    div.className = 'column-chip-edit';
-    div.innerHTML = `
-        <i class="fa-solid fa-grip-vertical" style="color:var(--suave); font-size:11px; opacity:0.6;"></i>
-        <input type="text" class="entrada entrada-coluna" value="${nomeLimpo}" placeholder="Nome da coluna">
-        <button class="btn-remover-col botao-remover-coluna" type="button" title="Remover coluna">✕</button>
-    `;
-    container.appendChild(div);
-
-    const input = div.querySelector('.entrada-coluna');
-    if (input) {
-        input.addEventListener('input', () => {
-            sincronizarColunas();
-            atualizarTabela();
-            exibirPagina();
-            if (typeof persistirTabelaAtualDebounced === 'function') persistirTabelaAtualDebounced();
-        });
-    }
-
-    sincronizarColunas();
-    atualizarTabela();
-    exibirPagina();
-
-    // Sincronizar imediatamente o objeto da tabela ativa (sem aguardar debounce de 800ms)
-    if (typeof sincronizarTabelaAtiva === 'function') sincronizarTabelaAtiva();
-
-    if (typeof persistirTabelaAtualDebounced === 'function') persistirTabelaAtualDebounced();
-
-    if (autoSalvar && typeof salvarDados === 'function') {
-        setTimeout(() => {
-            salvarDados(true);
-        }, 150);
-    }
-
-    return nomeLimpo;
-}
-window.adicionarColunaComNome = adicionarColunaComNome;
-
-
-function removerColuna(event) {
-    const colunaDiv = event.target.closest('div');
-    if (colunaDiv) {
-        salvarEstadoHistorico();
-        colunaDiv.remove();
-        sincronizarColunas();
-        aplicarAutomacaoDeIndicadores();
-        atualizarTabela();
-        exibirPagina();
-        if (typeof persistirTabelaAtualDebounced === 'function') persistirTabelaAtualDebounced();
-    }
-}
-
-function formatarDataHoje() {
-    const hoje = new Date();
-    return `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
-}
-
-function detectarEFormatarDataHoje(nomeColuna, dadosExistentes) {
-    const hoje = new Date();
-    const d = String(hoje.getDate()).padStart(2,'0');
-    const m = String(hoje.getMonth()+1).padStart(2,'0');
-    const y = hoje.getFullYear();
-    if (dadosExistentes?.length > 0) {
-        const valor = String(dadosExistentes[0][nomeColuna] ?? '').trim();
-        if (/^\d{4}-\d{2}-\d{2}$/.test(valor)) return `${y}-${m}-${d}`;
-        if (/^\d{4}\/\d{2}\/\d{2}$/.test(valor)) return `${y}/${m}/${d}`;
-        if (/^\d{2}-\d{2}-\d{4}$/.test(valor)) return `${d}-${m}-${y}`;
-    }
-    return `${d}/${m}/${y}`;
-}
-
-function adicionarNovaLinha() {
-    const colunas = obterColunasValidas();
-    if (!colunas.length) { mostrarToast('Adicione pelo menos uma coluna!', 'warning'); return; }
-    salvarEstadoHistorico();
-    const linha = { _id: gerarIdLinha() };
-    colunas.forEach(col => {
-        const cn = normalizarNomeColuna(col);
-        linha[col] = /\bdata\b|^date\b|\bdia\b/i.test(cn)
-            ? detectarEFormatarDataHoje(col, estado.todosDados)
-            : '';
-    });
-    estado.todosDados.push(linha);
-    estado.paginaAtual = Math.ceil(obterDadosVisiveis().length / CONFIG.LINHAS_POR_PAGINA);
-    aplicarAutomacaoDeIndicadores();
-    exibirPagina();
-    atualizarPaginacao();
-    if (typeof atualizarEstatisticas === 'function') atualizarEstatisticas();
-    if (typeof atualizarMetasUI === 'function') atualizarMetasUI();
-    if (window.AutocompleteManager) setTimeout(() => window.AutocompleteManager.inicializarTodos(), 150);
-    if (typeof persistirTabelaAtualDebounced === 'function') persistirTabelaAtualDebounced();
-}
-
-function atualizarValoresNoDom() {
-    const tbody = estado.elementos.dadosTbody;
-    if (!tbody) return;
-    const colunas = obterColunasValidas();
-    const inputAtivo = document.activeElement;
-    tbody.querySelectorAll('tr.linha-dados').forEach(tr => {
-        const rowId = tr.dataset.rowId;
-        const linha = estado.todosDados.find(item => item._id === rowId);
-        if (!linha) return;
-        const inputs = tr.querySelectorAll('.entrada-linha');
-        colunas.forEach((col, i) => {
-            if (inputs[i] && inputs[i] !== inputAtivo) {
-                const novoValor = String(linha[col] ?? '');
-                if (inputs[i].value !== novoValor) inputs[i].value = novoValor;
-            }
-        });
-    });
-}
-
-function atualizarCelula(event, somenteAoSair = false) {
-    const tr = event.target.closest('tr');
-    if (!tr || !estado.elementos.dadosTbody) return;
-
-    const rowId = tr.dataset.rowId;
-    const colunas = obterColunasValidas();
-    const linha = estado.todosDados.find(item => item._id === rowId);
-    const inputs = tr.querySelectorAll('.entrada-linha');
-
-    if (linha && inputs.length === colunas.length) {
-        let colEditada = null;
-        colunas.forEach((col, i) => {
-            if (inputs[i]) {
-                const novo = inputs[i].value ?? '';
-                if (String(linha[col]) !== novo) {
-                    if (somenteAoSair && colEditada === null) {
-                        salvarEstadoHistorico();
-                    }
-                    linha[col] = novo;
-                    colEditada = col;
-                }
-            }
-        });
-
-        if (colEditada) {
-            const colProduto = colunas.find(c => /produto|product|\bitem\b|\bnome\b|\bname\b|mercadoria/i.test(c));
-            const colEstoque = colunas.find(c => /estoque|\bstock\b/i.test(c));
-            if (colProduto && colEstoque) {
-                if (colEditada === colEstoque) {
-                    const prodAtual = String(linha[colProduto] || '').trim().toLowerCase();
-                    if (prodAtual) {
-                        estado.todosDados.forEach(r => {
-                            if (r._id !== rowId && String(r[colProduto] || '').trim().toLowerCase() === prodAtual) {
-                                r[colEstoque] = linha[colEstoque];
-                            }
-                        });
-                    }
-                } else if (colEditada === colProduto) {
-                    const prodNovo = String(linha[colProduto] || '').trim().toLowerCase();
-                    const outra = estado.todosDados.find(r =>
-                        r._id !== rowId &&
-                        String(r[colProduto] || '').trim().toLowerCase() === prodNovo &&
-                        String(r[colEstoque] || '').trim() !== ''
-                    );
-                    if (outra) linha[colEstoque] = outra[colEstoque];
-                }
-            }
-        }
-
-        if (somenteAoSair) {
-            aplicarAutomacaoDeIndicadores(rowId, colEditada);
-            atualizarValoresNoDom();
-            if (typeof atualizarEstatisticas === 'function') atualizarEstatisticas();
-            if (typeof atualizarMetasUI === 'function') atualizarMetasUI();
-            const check = document.getElementById('checkSalvarAutomatico');
-            if (check?.checked) debounceAutoSalvar();
-            if (typeof persistirTabelaAtualDebounced === 'function') persistirTabelaAtualDebounced();
-        } else {
-            clearTimeout(atualizarCelula._debounce);
-            atualizarCelula._debounce = setTimeout(() => {
-                aplicarAutomacaoDeIndicadores(rowId, colEditada);
-                atualizarValoresNoDom();
-                if (typeof atualizarEstatisticas === 'function') atualizarEstatisticas();
-                if (typeof atualizarMetasUI === 'function') atualizarMetasUI();
-                if (typeof persistirTabelaAtualDebounced === 'function') persistirTabelaAtualDebounced();
-            }, 150);
-        }
-    }
-}
-
-function deletarLinha(event) {
-    const tr = event.target.closest('tr');
-    if (!tr) return;
-    salvarEstadoHistorico();
-    const rowId = tr.dataset.rowId;
-    const idx = estado.todosDados.findIndex(item => item._id === rowId);
-    if (idx >= 0) {
-        estado.todosDados.splice(idx, 1);
-        const total = Math.ceil(obterDadosVisiveis().length / CONFIG.LINHAS_POR_PAGINA);
-        estado.paginaAtual = Math.max(1, Math.min(estado.paginaAtual, total || 1));
-        exibirPagina();
-        atualizarPaginacao();
-        if (typeof atualizarEstatisticas === 'function') atualizarEstatisticas();
-        if (typeof atualizarMetasUI === 'function') atualizarMetasUI();
-        if (typeof persistirTabelaAtualDebounced === 'function') persistirTabelaAtualDebounced();
-    }
-}
-
-// ───────────────────────────────
-// AUTOMAÇÃO DE INDICADORES
-// ───────────────────────────────
+// ==============================================================================
+// 17. AUTOMAÇÃO DE INDICADORES
+// ==============================================================================
 function mapearIndicadoresAutomaticos(colunas) {
     const normalizadas = colunas.map(col => normalizarNomeColuna(col));
     const encontrar = (termos, excluir = []) => {
@@ -1847,13 +1912,13 @@ function mapearIndicadoresAutomaticos(colunas) {
         return idx !== -1 ? colunas[idx] : null;
     };
     return {
-        preco:       encontrar(['preco','valor','price','unit'], ['total','faturamento','receita','custo','despesa','lucro']),
-        quantidade:  encontrar(['quantidade','qtd','quant','amount','volume'], ['estoque','stock']),
-        desconto:    encontrar(['desconto','discount','desc']),
-        custo:       encontrar(['custo','cost'], ['total','despesa','faturamento']),
-        faturamento: encontrar(['faturamento','receita','venda','valor total','total','receitas','vendas'], ['unit','unitario','custo','despesa','lucro']),
-        despesa:     encontrar(['despesa','despesas','gasto','gastos','custo total','custos','saida','saída','expense'], ['unit','unitario','preco']),
-        lucro:       encontrar(['lucro','profit','resultado','ganho','net','lucros'])
+        preco:       encontrar(['preco', 'valor', 'price', 'unit'], ['total', 'faturamento', 'receita', 'custo', 'despesa', 'lucro']),
+        quantidade:  encontrar(['quantidade', 'qtd', 'quant', 'amount', 'volume'], ['estoque', 'stock']),
+        desconto:    encontrar(['desconto', 'discount', 'desc']),
+        custo:       encontrar(['custo', 'cost'], ['total', 'despesa', 'faturamento']),
+        faturamento: encontrar(['faturamento', 'receita', 'venda', 'valor total', 'total', 'receitas', 'vendas'], ['unit', 'unitario', 'custo', 'despesa', 'lucro']),
+        despesa:     encontrar(['despesa', 'despesas', 'gasto', 'gastos', 'custo total', 'custos', 'saida', 'saída', 'expense'], ['unit', 'unitario', 'preco']),
+        lucro:       encontrar(['lucro', 'profit', 'resultado', 'ganho', 'net', 'lucros'])
     };
 }
 
@@ -1867,11 +1932,14 @@ function parseNumero(valor) {
 function mostrarStatusAutomacao(texto, tipo = 'info') {
     const status = document.getElementById('autoDadosStatus');
     if (!status) return;
+
     const cores = { info: 'var(--texto-secundario)', success: '#16a34a', warning: '#d97706', error: '#ef4444' };
     status.style.color = cores[tipo] || cores.info;
+
     // Adiciona ícone de status
     const icons = { info: 'ℹ️', success: '✅', warning: '⚠️', error: '✖️' };
     status.innerHTML = `<span style="margin-right:8px;">${icons[tipo] || icons.info}</span><span>${texto || ''}</span>`;
+
     if (texto) {
         clearTimeout(mostrarStatusAutomacao._t);
         mostrarStatusAutomacao._t = setTimeout(() => { status.innerHTML = ''; }, 6000);
@@ -1892,22 +1960,25 @@ function aplicarAutomacaoDeIndicadores(editandoRowId, editandoColuna) {
     return;
 }
 
-// ───────────────────────────────
-// NAVEGAÇÃO TECLADO (estilo Excel)
-// ───────────────────────────────
+// ==============================================================================
+// 18. NAVEGAÇÃO POR TECLADO (estilo Excel)
+// ==============================================================================
 function handleKeyboardNavigation(e) {
     if (!e.target.classList.contains('entrada-linha')) return;
-    const currentCell = e.target.closest('td');
-    const currentRow = e.target.closest('tr');
-    const cells = Array.from(currentRow.querySelectorAll('td'));
-    const cellIdx = cells.indexOf(currentCell);
-    const tbody = currentRow.closest('tbody');
-    const rows = Array.from(tbody.querySelectorAll('tr'));
-    const rowIdx = rows.indexOf(currentRow);
-    let targetRow = rowIdx, targetCol = cellIdx;
 
-    if (e.key === 'ArrowUp') { targetRow = rowIdx - 1; e.preventDefault(); }
-    else if (e.key === 'ArrowDown' || e.key === 'Enter') {
+    const currentCell = e.target.closest('td');
+    const currentRow  = e.target.closest('tr');
+    const cells       = Array.from(currentRow.querySelectorAll('td'));
+    const cellIdx     = cells.indexOf(currentCell);
+    const tbody       = currentRow.closest('tbody');
+    const rows        = Array.from(tbody.querySelectorAll('tr'));
+    const rowIdx      = rows.indexOf(currentRow);
+    let targetRow     = rowIdx;
+    let targetCol     = cellIdx;
+
+    if (e.key === 'ArrowUp') {
+        targetRow = rowIdx - 1; e.preventDefault();
+    } else if (e.key === 'ArrowDown' || e.key === 'Enter') {
         targetRow = rowIdx + 1; e.preventDefault();
         if (targetRow >= rows.length) {
             adicionarNovaLinha();
@@ -1938,7 +2009,7 @@ function handleKeyboardNavigation(e) {
 
     if (targetRow >= 0 && targetRow < rows.length) {
         const targetCells = Array.from(rows[targetRow].querySelectorAll('td'));
-        const colunas = obterColunasValidas();
+        const colunas     = obterColunasValidas();
         if (targetCol > 0 && targetCol <= colunas.length) {
             const input = targetCells[targetCol]?.querySelector('.entrada-linha');
             if (input) {
@@ -1949,34 +2020,37 @@ function handleKeyboardNavigation(e) {
     }
 }
 
-// ───────────────────────────────
-// PAGINAÇÃO
-// ───────────────────────────────
+// ==============================================================================
+// 19. PAGINAÇÃO
+// ==============================================================================
 function atualizarPaginacao() {
-    const total = obterDadosVisiveis().length;
+    const total    = obterDadosVisiveis().length;
     const totalPag = Math.ceil(total / CONFIG.LINHAS_POR_PAGINA) || 1;
     estado.paginaAtual = Math.max(1, Math.min(estado.paginaAtual, totalPag));
+
     const inicio = total > 0 ? (estado.paginaAtual - 1) * CONFIG.LINHAS_POR_PAGINA + 1 : 0;
-    const fim = Math.min(estado.paginaAtual * CONFIG.LINHAS_POR_PAGINA, total);
-    if (estado.elementos.inicioPag) estado.elementos.inicioPag.textContent = inicio;
-    if (estado.elementos.fimPag)    estado.elementos.fimPag.textContent = fim;
-    if (estado.elementos.totalPag)  estado.elementos.totalPag.textContent = total;
-    if (estado.elementos.btnVoltar) estado.elementos.btnVoltar.disabled = estado.paginaAtual <= 1;
-    if (estado.elementos.btnProximo) estado.elementos.btnProximo.disabled = estado.paginaAtual >= totalPag;
+    const fim    = Math.min(estado.paginaAtual * CONFIG.LINHAS_POR_PAGINA, total);
+
+    if (estado.elementos.inicioPag)          estado.elementos.inicioPag.textContent = inicio;
+    if (estado.elementos.fimPag)             estado.elementos.fimPag.textContent = fim;
+    if (estado.elementos.totalPag)           estado.elementos.totalPag.textContent = total;
+    if (estado.elementos.btnVoltar)          estado.elementos.btnVoltar.disabled = estado.paginaAtual <= 1;
+    if (estado.elementos.btnProximo)         estado.elementos.btnProximo.disabled = estado.paginaAtual >= totalPag;
     if (estado.elementos.linhasSelecionadas) estado.elementos.linhasSelecionadas.textContent = estado.linhasSelecionadas.size;
 }
 
 function paginaAnterior() {
     if (estado.paginaAtual > 1) { estado.paginaAtual--; exibirPagina(); atualizarPaginacao(); }
 }
+
 function paginaProxima() {
     const t = Math.ceil(obterDadosVisiveis().length / CONFIG.LINHAS_POR_PAGINA);
     if (estado.paginaAtual < t) { estado.paginaAtual++; exibirPagina(); atualizarPaginacao(); }
 }
 
-// ───────────────────────────────
-// BUSCA
-// ───────────────────────────────
+// ==============================================================================
+// 20. BUSCA
+// ==============================================================================
 function handleBuscaTabela(event) {
     estado.filtroAtual = event.target.value.toLowerCase().trim();
     estado.paginaAtual = 1;
@@ -1985,10 +2059,9 @@ function handleBuscaTabela(event) {
     exibirPagina();
 }
 
-// ───────────────────────────────
-// SALVAR DADOS
-// ───────────────────────────────
-let timeoutAutoSalvar = null;
+// ==============================================================================
+// 21. SALVAR DADOS
+// ==============================================================================
 function debounceAutoSalvar() {
     clearTimeout(timeoutAutoSalvar);
     timeoutAutoSalvar = setTimeout(() => salvarDados(true), 1500);
@@ -1996,7 +2069,7 @@ function debounceAutoSalvar() {
 
 async function salvarDados(silencioso = false) {
     const colunas = obterColunasValidas();
-    if (!colunas.length) { if (!silencioso) mostrarToast('Adicione pelo menos uma coluna!', 'warning'); return; }
+    if (!colunas.length)         { if (!silencioso) mostrarToast('Adicione pelo menos uma coluna!', 'warning'); return; }
     if (!estado.todosDados.length) { if (!silencioso) mostrarToast('Adicione pelo menos uma linha!', 'warning'); return; }
 
     aplicarAutomacaoDeIndicadores();
@@ -2011,40 +2084,42 @@ async function salvarDados(silencioso = false) {
     const _animarBotao = (estado_btn) => {
         if (!btn) return;
         btn.disabled = true;
+
         if (estado_btn === 'loading') {
-            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Salvando...`;
-            btn.style.background = 'linear-gradient(135deg, #3b82f6, #2563eb)';
-            btn.style.borderColor = '#2563eb';
-            btn.style.transform = 'scale(0.97)';
+            btn.innerHTML     = `<i class="fa-solid fa-spinner fa-spin"></i> Salvando...`;
+            btn.style.background   = 'linear-gradient(135deg, #3b82f6, #2563eb)';
+            btn.style.borderColor  = '#2563eb';
+            btn.style.transform    = 'scale(0.97)';
         } else if (estado_btn === 'success') {
-            btn.innerHTML = `<i class="fa-solid fa-circle-check"></i> Salvo!`;
-            btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
-            btn.style.borderColor = '#059669';
-            btn.style.transform = 'scale(1.06)';
-            btn.style.boxShadow = '0 0 18px rgba(16,185,129,0.45)';
-            btn.style.transition = 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)';
+            btn.innerHTML          = `<i class="fa-solid fa-circle-check"></i> Salvo!`;
+            btn.style.background   = 'linear-gradient(135deg, #10b981, #059669)';
+            btn.style.borderColor  = '#059669';
+            btn.style.transform    = 'scale(1.06)';
+            btn.style.boxShadow    = '0 0 18px rgba(16,185,129,0.45)';
+            btn.style.transition   = 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)';
+
             setTimeout(() => {
                 btn.style.transform = 'scale(1)';
                 btn.style.boxShadow = '';
             }, 300);
             setTimeout(() => {
-                btn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Salvar Alterações`;
-                btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                btn.innerHTML         = `<i class="fa-solid fa-floppy-disk"></i> Salvar Alterações`;
+                btn.style.background  = 'linear-gradient(135deg, #10b981, #059669)';
                 btn.style.borderColor = '#059669';
-                btn.style.transform = '';
-                btn.style.boxShadow = '';
-                btn.disabled = false;
+                btn.style.transform   = '';
+                btn.style.boxShadow   = '';
+                btn.disabled          = false;
             }, 2500);
         } else if (estado_btn === 'error') {
-            btn.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> Erro ao salvar`;
-            btn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+            btn.innerHTML         = `<i class="fa-solid fa-circle-xmark"></i> Erro ao salvar`;
+            btn.style.background  = 'linear-gradient(135deg, #ef4444, #dc2626)';
             btn.style.borderColor = '#dc2626';
-            btn.style.transform = 'scale(1)';
+            btn.style.transform   = 'scale(1)';
             setTimeout(() => {
-                btn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Salvar Alterações`;
-                btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                btn.innerHTML         = `<i class="fa-solid fa-floppy-disk"></i> Salvar Alterações`;
+                btn.style.background  = 'linear-gradient(135deg, #10b981, #059669)';
                 btn.style.borderColor = '#059669';
-                btn.disabled = false;
+                btn.disabled          = false;
             }, 2500);
         }
     };
@@ -2057,7 +2132,7 @@ async function salvarDados(silencioso = false) {
             ? _tabelas.find(t => t.id === _tabelaAtualId)
             : null;
         const nomePlanilha = (tabAtual && tabAtual.nome) ? tabAtual.nome : 'Planilha Principal';
-        const tabelaId = (tabAtual && tabAtual.id && !String(tabAtual.id).startsWith('tab-local-')) ? tabAtual.id : null;
+        const tabelaId     = (tabAtual && tabAtual.id && !String(tabAtual.id).startsWith('tab-local-')) ? tabAtual.id : null;
 
         const r = await fetch('/api/tabelas', {
             method: 'POST',
@@ -2076,13 +2151,13 @@ async function salvarDados(silencioso = false) {
         if (data && data.id && tabAtual) {
             tabAtual.id = data.id;
             _tabelaAtualId = data.id;
-            tabAtual.dados = clonarDadosTabela(estado.todosDados);
+            tabAtual.dados   = clonarDadosTabela(estado.todosDados);
             tabAtual.colunas = [...obterColunasValidas()];
-            if (data.tipo_dominio) tabAtual.tipo_dominio = data.tipo_dominio;
-            if (data.dominio_label) tabAtual.dominio_label = data.dominio_label;
-            if (data.dominio_cor) tabAtual.dominio_cor = data.dominio_cor;
-            if (data.dominio_icone) tabAtual.dominio_icone = data.dominio_icone;
-            if (data.tipo_fluxo) tabAtual.tipo_fluxo = data.tipo_fluxo;
+            if (data.tipo_dominio)   tabAtual.tipo_dominio  = data.tipo_dominio;
+            if (data.dominio_label)  tabAtual.dominio_label = data.dominio_label;
+            if (data.dominio_cor)    tabAtual.dominio_cor   = data.dominio_cor;
+            if (data.dominio_icone)  tabAtual.dominio_icone = data.dominio_icone;
+            if (data.tipo_fluxo)     tabAtual.tipo_fluxo    = data.tipo_fluxo;
             if (typeof renderizarAbasTabelas === 'function') renderizarAbasTabelas();
         }
 
@@ -2114,18 +2189,19 @@ async function salvarDados(silencioso = false) {
     } catch (e) {
         _animarBotao('error');
         if (silencioso) mostrarStatusAutomacao('✗ Erro ao salvar.', 'warning');
-        else mostrarToast('✗ Erro ao salvar!', 'error');
+        else            mostrarToast('✗ Erro ao salvar!', 'error');
     }
 }
 
-// ───────────────────────────────
-// EXCLUSÃO DE DADOS
-// ───────────────────────────────
+// ==============================================================================
+// 22. EXCLUSÃO DE DADOS
+// ==============================================================================
 async function solicitarExclusaoDados() {
     if (!confirm('Tem certeza que deseja APAGAR todos os seus dados? Você receberá um email de confirmação.')) return;
 
     const btn = estado.elementos.btnSolicitarExclusao || document.getElementById('btnSolicitarExclusao');
     let statusDiv = document.getElementById('statusExclusao');
+
     if (!statusDiv) {
         statusDiv = document.createElement('div');
         statusDiv.id = 'statusExclusao';
@@ -2135,18 +2211,21 @@ async function solicitarExclusaoDados() {
 
     try {
         if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando...'; }
+
         const r = await fetch('/solicitar-exclusao-dados', {
             method: 'POST', headers: { 'Content-Type': 'application/json' }
         });
-        const data = await r.json();
+        const data  = await r.json();
         const isErr = !r.ok;
         const color = isErr ? '#dc2626' : '#16a34a';
+
         statusDiv.style.display = 'block';
         statusDiv.innerHTML = `
             <div style="padding:12px; border-radius:6px; background:${isErr ? 'rgba(220,38,38,0.1)' : 'rgba(22,163,74,0.1)'}; border:1px solid ${color};">
                 <p style="color:${color}; margin:0;"><strong>${isErr ? '✗ Erro' : '✓ Sucesso'}:</strong> ${data.mensagem || ''}</p>
                 ${!isErr ? '<p style="color:#6b7280; margin:8px 0 0; font-size:14px;">Verifique seu email para confirmar.</p>' : ''}
             </div>`;
+
         if (!isErr) setTimeout(() => { statusDiv.style.display = 'none'; }, 5000);
     } catch (e) {
         mostrarToast('Erro ao processar solicitação.', 'error');
@@ -2155,9 +2234,9 @@ async function solicitarExclusaoDados() {
     }
 }
 
-// ───────────────────────────────
-// EXPORTAÇÃO EXCEL — SIMPLES
-// ───────────────────────────────
+// ==============================================================================
+// 23. EXPORTAÇÃO EXCEL
+// ==============================================================================
 function exportarExcelSimples() {
     const colunas = obterColunasValidas();
     if (!colunas.length || !estado.todosDados.length) {
@@ -2180,15 +2259,10 @@ function exportarExcelSimples() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Dados');
 
-    const nome = `DataInsight_${new Date().toISOString().slice(0,10)}.xlsx`;
+    const nome = `DataInsight_${new Date().toISOString().slice(0, 10)}.xlsx`;
     XLSX.writeFile(wb, nome);
     mostrarToast('Excel exportado com sucesso!', 'success');
 }
-
-// ───────────────────────────────
-// EXPORTAÇÃO EXCEL — MULTI-ABAS
-// ───────────────────────────────
-let _exportAbas = [];
 
 function abrirModalExportMultiAbas() {
     const colunas = obterColunasValidas();
@@ -2271,15 +2345,15 @@ function confirmarExportMulti() {
         XLSX.utils.book_append_sheet(wb, ws, nomeAba);
     });
 
-    const nome = `DataInsight_MultiAbas_${new Date().toISOString().slice(0,10)}.xlsx`;
+    const nome = `DataInsight_MultiAbas_${new Date().toISOString().slice(0, 10)}.xlsx`;
     XLSX.writeFile(wb, nome);
     document.getElementById('modalExportMulti').style.display = 'none';
     mostrarToast(`Excel exportado com ${_exportAbas.length} aba(s)!`, 'success');
 }
 
-// ───────────────────────────────
-// HISTÓRICO DE AUTOCOMPLETE
-// ───────────────────────────────
+// ==============================================================================
+// 24. HISTÓRICO DE AUTOCOMPLETE
+// ==============================================================================
 function _detectarColuna(colunas, padroes, excluir = []) {
     for (const col of colunas) {
         const cn = col.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -2290,19 +2364,23 @@ function _detectarColuna(colunas, padroes, excluir = []) {
 }
 
 async function _salvarProdutosNoHistorico(colunas, dados) {
-    const colProduto = _detectarColuna(colunas, ['produto','product','\\bitem\\b','\\bnome\\b','\\bname\\b','mercadoria','descri']);
+    const colProduto   = _detectarColuna(colunas, ['produto', 'product', '\\bitem\\b', '\\bnome\\b', '\\bname\\b', 'mercadoria', 'descri']);
     if (!colProduto) return;
-    const colPreco    = _detectarColuna(colunas, ['pre[cç]o','\\bpreco\\b','\\bvalor\\b','\\bprice\\b','unit'], ['total','faturamento','receita','custo','despesa','lucro']);
-    let colEstoque    = _detectarColuna(colunas, ['estoque','\\bstock\\b']);
-    if (!colEstoque && !colunas.some(c => /estoque|\bstock\b/i.test(c))) {
-        colEstoque = _detectarColuna(colunas, ['quantidade','\\bqtd\\b','\\bquant\\b','\\bamount\\b']);
-    }
-    const colDesconto  = _detectarColuna(colunas, ['desconto','discount','\\bdesc\\b']);
-    const colCategoria = _detectarColuna(colunas, ['categoria','category','\\btipo\\b','\\bgrupo\\b']);
-    const colSku       = _detectarColuna(colunas, ['\\bsku\\b','c[oó]digo','\\bcod\\b','\\bcode\\b','\\bref\\b']);
 
-    const parseN = v => { const n = parseFloat(String(v ?? '').replace(',','.')); return isNaN(n) ? null : n; };
-    let salvos = 0;
+    const colPreco     = _detectarColuna(colunas, ['pre[cç]o', '\\bpreco\\b', '\\bvalor\\b', '\\bprice\\b', 'unit'], ['total', 'faturamento', 'receita', 'custo', 'despesa', 'lucro']);
+    let   colEstoque   = _detectarColuna(colunas, ['estoque', '\\bstock\\b']);
+    if (!colEstoque && !colunas.some(c => /estoque|\bstock\b/i.test(c))) {
+        colEstoque = _detectarColuna(colunas, ['quantidade', '\\bqtd\\b', '\\bquant\\b', '\\bamount\\b']);
+    }
+    const colDesconto  = _detectarColuna(colunas, ['desconto', 'discount', '\\bdesc\\b']);
+    const colCategoria = _detectarColuna(colunas, ['categoria', 'category', '\\btipo\\b', '\\bgrupo\\b']);
+    const colSku       = _detectarColuna(colunas, ['\\bsku\\b', 'c[oó]digo', '\\bcod\\b', '\\bcode\\b', '\\bref\\b']);
+
+    const parseN = v => {
+        const n = parseFloat(String(v ?? '').replace(',', '.'));
+        return isNaN(n) ? null : n;
+    };
+
     for (const linha of dados) {
         const nome = String(linha[colProduto] ?? '').trim();
         if (!nome) continue;
@@ -2313,20 +2391,19 @@ async function _salvarProdutosNoHistorico(colunas, dados) {
                 body: JSON.stringify({
                     nome_produto: nome,
                     categoria:  colCategoria ? (String(linha[colCategoria] ?? '').trim() || null) : null,
-                    preco:      colPreco     ? parseN(linha[colPreco])    : null,
+                    preco:      colPreco     ? parseN(linha[colPreco])                                    : null,
                     estoque:    colEstoque   ? (r => r !== null ? Math.round(r) : null)(parseN(linha[colEstoque])) : null,
-                    sku:        colSku       ? (String(linha[colSku] ?? '').trim() || null) : null,
-                    descricao:  colDesconto  ? `Desconto: ${parseN(linha[colDesconto])}` : null
+                    sku:        colSku       ? (String(linha[colSku] ?? '').trim() || null)               : null,
+                    descricao:  colDesconto  ? `Desconto: ${parseN(linha[colDesconto])}`                  : null
                 })
             });
-            salvos++;
-        } catch (e) { }
+        } catch (e) { /* silencioso */ }
     }
 }
 
-// ───────────────────────────────
-// CARREGAR DADOS INICIAIS
-// ───────────────────────────────
+// ==============================================================================
+// 25. CARREGAMENTO INICIAL
+// ==============================================================================
 async function carregarDadosIniciais() {
     if (typeof carregarTodasTabelas === 'function') {
         const ok = await carregarTodasTabelas();
@@ -2349,8 +2426,9 @@ async function carregarDadosIniciais() {
 function inicializarTabelaPadrao() {
     const padrao = ['Faturamento', 'Despesas', 'Lucro', 'Período'];
     estado.colunasAtuais = [...padrao];
-    estado.todosDados = [criarLinhaVazia(padrao)];
-    estado.paginaAtual = 1;
+    estado.todosDados    = [criarLinhaVazia(padrao)];
+    estado.paginaAtual   = 1;
+
     renderizarColunas();
     atualizarTabela();
     exibirPagina();
@@ -2359,9 +2437,9 @@ function inicializarTabelaPadrao() {
     mostrarStatusAutomacao('Tabela pronta para inserção e edição de dados.', 'info');
 }
 
-// ───────────────────────────────
-// INIT
-// ───────────────────────────────
+// ==============================================================================
+// 26. INICIALIZAÇÃO E EXPOSIÇÃO GLOBAL
+// ==============================================================================
 function init() {
     inicializarElementos();
     configurarEventListeners();
@@ -2370,11 +2448,11 @@ function init() {
 }
 
 // Exposição Global de Funções
-window.analisarQualidade = analisarQualidade;
+window.analisarQualidade         = analisarQualidade;
 window.executarLimpezaCientifica = executarLimpezaCientifica;
-window.mostrarAnomalias = mostrarAnomalias;
-window.removerTodasAnomalias = removerTodasAnomalias;
-window.limparFiltroAnomalias = limparFiltroAnomalias;
+window.mostrarAnomalias          = mostrarAnomalias;
+window.removerTodasAnomalias     = removerTodasAnomalias;
+window.limparFiltroAnomalias     = limparFiltroAnomalias;
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);

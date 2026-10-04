@@ -1,15 +1,43 @@
 /**
- * DataInsight - Módulo de Controles Essenciais do MEI
- * Gerenciamento do Termômetro do Limite Anual, Equação de Caixa e Seletor de Tabelas
+ * controles_essenciais.js
+ * DataInsight — Módulo de Controles Essenciais do MEI
+ *
+ * Responsável por:
+ *   - Termômetro do Limite Anual do MEI
+ *   - Equação de Caixa (Saldo Anterior + Entradas - Saídas)
+ *   - Seletor de Planilhas (multi-tabelas) e de Anos
+ *   - Dashboard visual (gráficos de Recebimentos e Composição de Custos)
+ *   - Modal de Lançamento Rápido
+ *   - Coleta de contexto para a IA (Gemini)
+ *
+ * ------------------------------------------------------------------------------
+ * PROPRIEDADE INTELECTUAL
+ * ------------------------------------------------------------------------------
+ * Este código pertence à plataforma @DataInsight. Todos os arquivos da plataforma
+ * devem seguir esta mesma estrutura de organização: seções numeradas
+ * sequencialmente com cabeçalhos padronizados, separação clara de
+ * responsabilidades e agrupamento lógico de funções afins.
+ * ------------------------------------------------------------------------------
  */
 
-let dadosControlesAtuais = null;
-let tabelaAtualId = 'todas';
-let planilhasCarregadas = [];
-let chartRecebimentosInstancia = null;
-let chartCustosInstancia = null;
-let periodoDashboardAtual = 'mes'; // 'mes' ou 'ano'
+'use strict';
 
+// ==============================================================================
+// 1. ESTADO GLOBAL
+// ==============================================================================
+let dadosControlesAtuais        = null;
+let tabelaAtualId               = 'todas';
+let planilhasCarregadas         = [];
+let chartRecebimentosInstancia  = null;
+let chartCustosInstancia        = null;
+let periodoDashboardAtual       = 'mes'; // 'mes' ou 'ano'
+
+// Controla se já populou os anos para a tabela atual
+let _anosPopuladosParaTabela    = null;
+
+// ==============================================================================
+// 2. UTILITÁRIOS
+// ==============================================================================
 function isDarkMode() {
   return document.body.classList.contains('tema-escuro') || localStorage.getItem('tema') === 'escuro';
 }
@@ -19,11 +47,21 @@ function formatarBRL(val) {
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+// ==============================================================================
+// 3. INICIALIZAÇÃO (DOMContentLoaded)
+// ==============================================================================
 document.addEventListener('DOMContentLoaded', async () => {
   // Ajustar data inicial do modal para hoje
   const inputData = document.getElementById('lancData');
   if (inputData) {
     inputData.value = new Date().toISOString().split('T')[0];
+  }
+
+  // Pré-popular o select de ano com o ano atual enquanto os dados não chegam
+  const anoAtual = new Date().getFullYear();
+  const selAno = document.getElementById('selAno');
+  if (selAno) {
+    selAno.innerHTML = `<option value="${anoAtual}" selected>${anoAtual}</option>`;
   }
 
   // Ajustar mês selecionado para o mês atual
@@ -53,10 +91,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==============================================================================
-// SELETOR DE ORIGEM DOS DADOS (MULTI-TABELAS)
+// 4. SELETOR DE ORIGEM DOS DADOS (MULTI-TABELAS)
 // ==============================================================================
 async function configurarSeletorPlanilhaCE() {
-  const select = document.getElementById('seletorPlanilhaCE');
+  const select      = document.getElementById('seletorPlanilhaCE');
   const selectModal = document.getElementById('lancTabelaDestino');
   if (!select) return;
 
@@ -114,6 +152,8 @@ async function configurarSeletorPlanilhaCE() {
         selectModal.value = (tabelaAtualId !== 'todas') ? tabelaAtualId : 'padrao';
       }
 
+      // Ao trocar de tabela, recarrega com atualização do seletor de anos
+      _anosPopuladosParaTabela = null;
       atualizarBadgeStatusCE(planilhasCarregadas, tabelaAtualId);
       await carregarControlesEssenciais();
     });
@@ -148,23 +188,61 @@ function atualizarBadgeStatusCE(planilhas, idSelecionado) {
 }
 
 // ==============================================================================
-// CARREGAMENTO DOS DADOS (API)
+// 5. SELETOR DE ANOS DINÂMICO
+// ==============================================================================
+function atualizarSeletorAnos(anosDisponiveis) {
+  const selAno = document.getElementById('selAno');
+  if (!selAno || !Array.isArray(anosDisponiveis) || anosDisponiveis.length === 0) return;
+
+  const tabelaId = document.getElementById('seletorPlanilhaCE')?.value || tabelaAtualId || 'todas';
+
+  // Só re-popula se a tabela mudou ou ainda não populou
+  if (_anosPopuladosParaTabela === tabelaId) return;
+  _anosPopuladosParaTabela = tabelaId;
+
+  const anoSelecionadoAtual = selAno.value || String(new Date().getFullYear());
+
+  selAno.innerHTML = '';
+  anosDisponiveis.forEach(ano => {
+    const opt = document.createElement('option');
+    opt.value = String(ano);
+    opt.textContent = String(ano);
+    if (String(ano) === anoSelecionadoAtual) opt.selected = true;
+    selAno.appendChild(opt);
+  });
+
+  // Se o ano anteriormente selecionado não existe na lista, seleciona o primeiro
+  if (!anosDisponiveis.map(String).includes(anoSelecionadoAtual)) {
+    selAno.value = String(anosDisponiveis[0]);
+  }
+}
+
+// ==============================================================================
+// 6. CARREGAMENTO DOS DADOS (API)
 // ==============================================================================
 async function carregarControlesEssenciais() {
-  const ano = document.getElementById('selAno')?.value || new Date().getFullYear();
-  const mes = document.getElementById('selMes')?.value || (new Date().getMonth() + 1);
+  const ano      = document.getElementById('selAno')?.value           || new Date().getFullYear();
+  const mes      = document.getElementById('selMes')?.value           || (new Date().getMonth() + 1);
   const tabelaId = document.getElementById('seletorPlanilhaCE')?.value || tabelaAtualId || 'todas';
 
   try {
-    const res = await fetch(`/api/controles-essenciais?ano=${ano}&mes=${mes}&tabela_id=${encodeURIComponent(tabelaId)}`);
+    const res = await fetch(
+      `/api/controles-essenciais?ano=${ano}&mes=${mes}&tabela_id=${encodeURIComponent(tabelaId)}`
+    );
     const data = await res.json();
 
     if (!data.sucesso && data.erro) {
-      console.warn("Erro ao buscar dados dos controles essenciais:", data.erro);
+      console.warn('Erro ao buscar dados dos controles essenciais:', data.erro);
       return;
     }
 
     dadosControlesAtuais = data;
+
+    // Popular o seletor de anos com os anos reais da tabela
+    if (data.anos_disponiveis && data.anos_disponiveis.length > 0) {
+      atualizarSeletorAnos(data.anos_disponiveis);
+    }
+
     renderizarControles(data);
 
     // Se o backend retornou informações do contexto das fontes, atualizar badge
@@ -172,33 +250,36 @@ async function carregarControlesEssenciais() {
       atualizarBadgeStatusCE(planilhasCarregadas, tabelaId);
     }
   } catch (err) {
-    console.error("Falha na requisição de controles essenciais:", err);
+    console.error('Falha na requisição de controles essenciais:', err);
   }
 }
 
+// ==============================================================================
+// 7. RENDERIZAÇÃO DOS CONTROLES
+// ==============================================================================
 function renderizarControles(data) {
-  const teto = data.teto_mei || {};
-  const caixa = data.caixa || {};
-  const saidas = data.categorias_saida || {};
-  const meses = data.meses_resumo || [];
+  const teto        = data.teto_mei          || {};
+  const caixa       = data.caixa             || {};
+  const saidas      = data.categorias_saida  || {};
+  const meses       = data.meses_resumo      || [];
   const lancamentos = data.lancamentos_recentes || [];
 
-  // 1. Termômetro MEI
-  const kpiFaturado = document.getElementById('kpiFaturadoAno');
-  const kpiLimite = document.getElementById('kpiLimiteTeto');
+  // ---- 7.1. Termômetro MEI -------------------------------------------------
+  const kpiFaturado      = document.getElementById('kpiFaturadoAno');
+  const kpiLimite        = document.getElementById('kpiLimiteTeto');
   const kpiSaldoRestante = document.getElementById('kpiSaldoRestante');
-  const kpiPct = document.getElementById('kpiPctUsado');
-  const badgeTeto = document.getElementById('termometroBadge');
-  const barFill = document.getElementById('termometroFill');
-  const msgTeto = document.getElementById('termometroMensagem');
-  const alertBox = document.getElementById('termometroAlertBox');
-  const labelTetoFinal = document.getElementById('labelTetoFinal');
+  const kpiPct           = document.getElementById('kpiPctUsado');
+  const badgeTeto        = document.getElementById('termometroBadge');
+  const barFill          = document.getElementById('termometroFill');
+  const msgTeto          = document.getElementById('termometroMensagem');
+  const alertBox         = document.getElementById('termometroAlertBox');
+  const labelTetoFinal   = document.getElementById('labelTetoFinal');
 
-  if (kpiFaturado) kpiFaturado.textContent = formatarBRL(teto.faturado_ano);
-  if (kpiLimite) kpiLimite.textContent = formatarBRL(teto.limite_anual) + (teto.proporcional ? ' (Proporcional)' : '');
+  if (kpiFaturado)      kpiFaturado.textContent      = formatarBRL(teto.faturado_ano);
+  if (kpiLimite)        kpiLimite.textContent        = formatarBRL(teto.limite_anual) + (teto.proporcional ? ' (Proporcional)' : '');
   if (kpiSaldoRestante) kpiSaldoRestante.textContent = formatarBRL(teto.saldo_restante);
-  if (kpiPct) kpiPct.textContent = `${teto.percentual_usado}%`;
-  if (labelTetoFinal) labelTetoFinal.textContent = formatarBRL(teto.limite_anual);
+  if (kpiPct)           kpiPct.textContent           = `${teto.percentual_usado}%`;
+  if (labelTetoFinal)   labelTetoFinal.textContent   = formatarBRL(teto.limite_anual);
 
   // Barra de progresso com cap em 100% para visual
   if (barFill) {
@@ -208,29 +289,29 @@ function renderizarControles(data) {
 
   // Badge e Caixa de Alerta
   if (badgeTeto) {
-    badgeTeto.innerHTML = `<i class="fa-solid fa-circle"></i> <span>${teto.badge}</span>`;
-    badgeTeto.style.color = teto.cor;
+    badgeTeto.innerHTML         = `<i class="fa-solid fa-circle"></i> <span>${teto.badge}</span>`;
+    badgeTeto.style.color       = teto.cor;
     badgeTeto.style.borderColor = teto.cor;
-    badgeTeto.style.background = `${teto.cor}18`;
+    badgeTeto.style.background  = `${teto.cor}18`;
   }
 
   if (msgTeto) msgTeto.textContent = teto.mensagem;
   if (alertBox) {
-    alertBox.style.color = teto.cor;
+    alertBox.style.color       = teto.cor;
     alertBox.style.borderColor = `${teto.cor}40`;
-    alertBox.style.background = `${teto.cor}12`;
+    alertBox.style.background  = `${teto.cor}12`;
   }
 
-  // 2. Equação de Caixa
-  const cxSaldoAnt = document.getElementById('cxSaldoAnt');
-  const cxEntradas = document.getElementById('cxEntradas');
-  const cxSaidas = document.getElementById('cxSaidas');
+  // ---- 7.2. Equação de Caixa -----------------------------------------------
+  const cxSaldoAnt   = document.getElementById('cxSaldoAnt');
+  const cxEntradas   = document.getElementById('cxEntradas');
+  const cxSaidas     = document.getElementById('cxSaidas');
   const cxSaldoAtual = document.getElementById('cxSaldoAtual');
-  const cxLucroMes = document.getElementById('cxLucroMes');
+  const cxLucroMes   = document.getElementById('cxLucroMes');
 
   if (cxSaldoAnt) cxSaldoAnt.textContent = formatarBRL(caixa.saldo_anterior);
   if (cxEntradas) cxEntradas.textContent = formatarBRL(caixa.entradas);
-  if (cxSaidas) cxSaidas.textContent = formatarBRL(caixa.saidas);
+  if (cxSaidas)   cxSaidas.textContent   = formatarBRL(caixa.saidas);
   if (cxSaldoAtual) {
     cxSaldoAtual.textContent = formatarBRL(caixa.saldo_atual);
     cxSaldoAtual.style.color = caixa.saldo_atual >= 0 ? '#3b82f6' : '#ef4444';
@@ -241,18 +322,19 @@ function renderizarControles(data) {
     cxLucroMes.style.color = lucro >= 0 ? '#10b981' : '#ef4444';
   }
 
-  // 3. Categorias de Saídas
-  const valDasMei = document.getElementById('valDasMei');
-  const valFornecedores = document.getElementById('valFornecedores');
-  const valOperacionais = document.getElementById('valOperacionais');
-  const valProLabore = document.getElementById('valProLabore');
-  const valOutrasDesp = document.getElementById('valOutrasDesp');
+  // ---- 7.3. Categorias de Saídas -------------------------------------------
+  const valDasMei        = document.getElementById('valDasMei');
+  const valFornecedores  = document.getElementById('valFornecedores');
+  const valOperacionais  = document.getElementById('valOperacionais');
+  const valProLabore     = document.getElementById('valProLabore');
+  const valOutrasDesp    = document.getElementById('valOutrasDesp');
 
-  if (valDasMei) valDasMei.textContent = formatarBRL(saidas.das_mei);
+  if (valDasMei)       valDasMei.textContent       = formatarBRL(saidas.das_mei);
   if (valFornecedores) valFornecedores.textContent = formatarBRL(saidas.compras_mercadorias);
   if (valOperacionais) valOperacionais.textContent = formatarBRL(saidas.custos_operacionais);
-  if (valProLabore) valProLabore.textContent = formatarBRL(saidas.pro_labore);
-  if (valOutrasDesp) valOutrasDesp.textContent = formatarBRL(saidas.outros);
+  if (valProLabore)    valProLabore.textContent    = formatarBRL(saidas.pro_labore);
+  if (valOutrasDesp)   valOutrasDesp.textContent   = formatarBRL(saidas.outros);
+
   const valTotalDesp = document.getElementById('valTotalDespesasMes');
   if (valTotalDesp) valTotalDesp.textContent = formatarBRL(caixa.saidas || 0);
 
@@ -264,10 +346,15 @@ function renderizarControles(data) {
     novasDespesas.forEach(desp => {
       const item = document.createElement('div');
       item.className = 'saida-item saida-item-custom';
-      const cor = desp.cor || '#6366f1';
-      const icone = desp.icone || 'fa-tag';
+
+      const cor    = desp.cor    || '#6366f1';
+      const icone  = desp.icone  || 'fa-tag';
       const natText = desp.natureza === 'variavel' ? 'Custo variável' : 'Gasto fixo';
-      const nomeLimpo = String(desp.nome || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      const nomeLimpo = String(desp.nome || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
 
       item.innerHTML = `
         <div class="saida-item-left">
@@ -285,7 +372,7 @@ function renderizarControles(data) {
     });
   }
 
-  // 4. Tabela Mensal 12 Meses
+  // ---- 7.4. Tabela Mensal 12 Meses -----------------------------------------
   const tbodyMeses = document.getElementById('tbodyMeses');
   if (tbodyMeses) {
     tbodyMeses.innerHTML = '';
@@ -308,7 +395,7 @@ function renderizarControles(data) {
     });
   }
 
-  // 5. Últimas Movimentações
+  // ---- 7.5. Últimas Movimentações ------------------------------------------
   const tbodyLanc = document.getElementById('tbodyLancamentos');
   if (tbodyLanc) {
     tbodyLanc.innerHTML = '';
@@ -323,10 +410,10 @@ function renderizarControles(data) {
     } else {
       lancamentos.forEach(l => {
         const tr = document.createElement('tr');
-        const isEntrada = l.tipo === 'entrada';
-        const badgeClass = isEntrada ? 'lancamento-badge-entrada' : 'lancamento-badge-saida';
-        const corValor = isEntrada ? '#10b981' : '#ef4444';
-        const sinal = isEntrada ? '+ ' : '- ';
+        const isEntrada   = l.tipo === 'entrada';
+        const badgeClass  = isEntrada ? 'lancamento-badge-entrada' : 'lancamento-badge-saida';
+        const corValor    = isEntrada ? '#10b981' : '#ef4444';
+        const sinal       = isEntrada ? '+ ' : '- ';
 
         tr.innerHTML = `
           <td>${l.data}</td>
@@ -340,15 +427,16 @@ function renderizarControles(data) {
     }
   }
 
-  // 6. Dashboard Visual: Gráficos de Recebimentos e Composição de Custos
+  // ---- 7.6. Dashboard Visual: Gráficos -------------------------------------
   renderizarDashboardGraficos(data);
 }
 
 // ==============================================================================
-// DASHBOARD VISUAL: RECEBIMENTOS & COMPOSIÇÃO DE CUSTOS (MEI)
+// 8. DASHBOARD VISUAL: RECEBIMENTOS & COMPOSIÇÃO DE CUSTOS (MEI)
 // ==============================================================================
 function alternarPeriodoDashboard(periodo) {
   periodoDashboardAtual = periodo;
+
   const btnMes = document.getElementById('btnDashPeriodoMes');
   const btnAno = document.getElementById('btnDashPeriodoAno');
 
@@ -362,24 +450,25 @@ function alternarPeriodoDashboard(periodo) {
 
 function renderizarDashboardGraficos(data) {
   if (!data) return;
-  const dash = data.dashboard_graficos || {};
-  const mesNome = data.mes_nome || 'Mês';
-  const ano = data.ano || new Date().getFullYear();
 
-  renderizarGraficoRecebimentos(dash.recebimentos || {}, periodoDashboardAtual, mesNome, ano);
-  renderizarGraficoCustos(dash.composicao_custos || {}, periodoDashboardAtual, mesNome, ano);
+  const dash    = data.dashboard_graficos || {};
+  const mesNome = data.mes_nome           || 'Mês';
+  const ano     = data.ano                || new Date().getFullYear();
+
+  renderizarGraficoRecebimentos(dash.recebimentos      || {}, periodoDashboardAtual, mesNome, ano);
+  renderizarGraficoCustos(dash.composicao_custos        || {}, periodoDashboardAtual, mesNome, ano);
 }
 
 function renderizarGraficoRecebimentos(recDados, periodo, mesNome, ano) {
-  const container = document.getElementById('graficoRecebimentosPizza');
+  const container   = document.getElementById('graficoRecebimentosPizza');
   const breakdownEl = document.getElementById('breakdownRecebimentos');
-  const badgeTotal = document.getElementById('badgeTotalRecebido');
-  const subtitulo = document.getElementById('subtituloRecebimentos');
+  const badgeTotal  = document.getElementById('badgeTotalRecebido');
+  const subtitulo   = document.getElementById('subtituloRecebimentos');
 
   if (!container) return;
 
-  const isMes = periodo === 'mes';
-  const total = isMes ? (recDados.total_mes || 0) : (recDados.total_ano || 0);
+  const isMes  = periodo === 'mes';
+  const total  = isMes ? (recDados.total_mes || 0) : (recDados.total_ano || 0);
   const fatias = isMes ? (recDados.fatias_mes || []) : (recDados.fatias_ano || []);
 
   if (subtitulo) {
@@ -407,9 +496,9 @@ function renderizarGraficoRecebimentos(recDados, periodo, mesNome, ano) {
 
   container.innerHTML = '';
 
-  const cores = ['#10b981', '#3b82f6', '#8b5cf6', '#06b6d4', '#f59e0b', '#ec4899', '#64748b', '#14b8a6'];
-  const labels = fatias.map(f => f.nome);
-  const series = fatias.map(f => f.valor);
+  const cores       = ['#10b981', '#3b82f6', '#8b5cf6', '#06b6d4', '#f59e0b', '#ec4899', '#64748b', '#14b8a6'];
+  const labels      = fatias.map(f => f.nome);
+  const series      = fatias.map(f => f.valor);
   const fatiasCores = fatias.map((_, i) => cores[i % cores.length]);
 
   const options = {
@@ -427,12 +516,8 @@ function renderizarGraficoRecebimentos(recDados, periodo, mesNome, ano) {
       width: 2,
       colors: [isDarkMode() ? '#1e293b' : '#ffffff']
     },
-    dataLabels: {
-      enabled: false
-    },
-    legend: {
-      show: false
-    },
+    dataLabels: { enabled: false },
+    legend: { show: false },
     tooltip: {
       theme: isDarkMode() ? 'dark' : 'light',
       y: {
@@ -498,33 +583,33 @@ function renderizarGraficoRecebimentos(recDados, periodo, mesNome, ano) {
 }
 
 function renderizarGraficoCustos(custosDados, periodo, mesNome, ano) {
-  const container = document.getElementById('graficoCustosFixoVariavel');
+  const container  = document.getElementById('graficoCustosFixoVariavel');
   const badgeTotal = document.getElementById('badgeTotalCustos');
-  const subtitulo = document.getElementById('subtituloCustos');
+  const subtitulo  = document.getElementById('subtituloCustos');
 
   const valFixo = document.getElementById('valCustoFixoTotal');
-  const valVar = document.getElementById('valCustoVarTotal');
+  const valVar  = document.getElementById('valCustoVarTotal');
   const tagFixo = document.getElementById('tagPctFixo');
-  const tagVar = document.getElementById('tagPctVar');
+  const tagVar  = document.getElementById('tagPctVar');
 
-  const barFixo = document.getElementById('barRatioFixo');
-  const barVar = document.getElementById('barRatioVar');
+  const barFixo   = document.getElementById('barRatioFixo');
+  const barVar    = document.getElementById('barRatioVar');
   const labelFixo = document.getElementById('labelRatioFixo');
-  const labelVar = document.getElementById('labelRatioVar');
+  const labelVar  = document.getElementById('labelRatioVar');
 
   const itensFixoEl = document.getElementById('itensCustoFixo');
-  const itensVarEl = document.getElementById('itensCustoVar');
+  const itensVarEl  = document.getElementById('itensCustoVar');
 
   if (!container) return;
 
   const isMes = periodo === 'mes';
-  const cFixo = isMes ? (custosDados.custo_fixo_total || 0) : (custosDados.ano_custo_fixo || 0);
-  const cVar = isMes ? (custosDados.custo_variavel_total || 0) : (custosDados.ano_custo_variavel || 0);
-  const total = isMes ? (custosDados.custo_total || 0) : (custosDados.ano_custo_total || 0);
-  const pFixo = isMes ? (custosDados.pct_fixo || 0) : (custosDados.ano_pct_fixo || 0);
-  const pVar = isMes ? (custosDados.pct_variavel || 0) : (custosDados.ano_pct_variavel || 0);
-  const detFixo = isMes ? (custosDados.detalhes_fixo || []) : (custosDados.ano_detalhes_fixo || []);
-  const detVar = isMes ? (custosDados.detalhes_variavel || []) : (custosDados.ano_detalhes_variavel || []);
+  const cFixo   = isMes ? (custosDados.custo_fixo_total     || 0) : (custosDados.ano_custo_fixo       || 0);
+  const cVar    = isMes ? (custosDados.custo_variavel_total || 0) : (custosDados.ano_custo_variavel   || 0);
+  const total   = isMes ? (custosDados.custo_total          || 0) : (custosDados.ano_custo_total      || 0);
+  const pFixo   = isMes ? (custosDados.pct_fixo             || 0) : (custosDados.ano_pct_fixo         || 0);
+  const pVar    = isMes ? (custosDados.pct_variavel         || 0) : (custosDados.ano_pct_variavel     || 0);
+  const detFixo = isMes ? (custosDados.detalhes_fixo        || []) : (custosDados.ano_detalhes_fixo   || []);
+  const detVar  = isMes ? (custosDados.detalhes_variavel    || []) : (custosDados.ano_detalhes_variavel || []);
 
   if (subtitulo) {
     subtitulo.textContent = isMes
@@ -534,15 +619,15 @@ function renderizarGraficoCustos(custosDados, periodo, mesNome, ano) {
   if (badgeTotal) badgeTotal.textContent = formatarBRL(total);
 
   if (valFixo) valFixo.textContent = formatarBRL(cFixo);
-  if (valVar) valVar.textContent = formatarBRL(cVar);
+  if (valVar)  valVar.textContent  = formatarBRL(cVar);
   if (tagFixo) tagFixo.textContent = `${pFixo}%`;
-  if (tagVar) tagVar.textContent = `${pVar}%`;
+  if (tagVar)  tagVar.textContent  = `${pVar}%`;
 
   if (labelFixo) labelFixo.innerHTML = `Fixos: ${pFixo}% (${formatarBRL(cFixo)})`;
-  if (labelVar) labelVar.innerHTML = `Variáveis: ${pVar}% (${formatarBRL(cVar)})`;
+  if (labelVar)  labelVar.innerHTML  = `Variáveis: ${pVar}% (${formatarBRL(cVar)})`;
 
   if (barFixo) barFixo.style.width = total > 0 ? `${pFixo}%` : '50%';
-  if (barVar) barVar.style.width = total > 0 ? `${pVar}%` : '50%';
+  if (barVar)  barVar.style.width  = total > 0 ? `${pVar}%`  : '50%';
 
   // Preencher mini-itens
   if (itensFixoEl) {
@@ -597,12 +682,8 @@ function renderizarGraficoCustos(custosDados, periodo, mesNome, ano) {
       width: 2,
       colors: [isDarkMode() ? '#1e293b' : '#ffffff']
     },
-    dataLabels: {
-      enabled: false
-    },
-    legend: {
-      show: false
-    },
+    dataLabels: { enabled: false },
+    legend: { show: false },
     tooltip: {
       theme: isDarkMode() ? 'dark' : 'light',
       y: {
@@ -648,10 +729,13 @@ function renderizarGraficoCustos(custosDados, periodo, mesNome, ano) {
   chartCustosInstancia.render();
 }
 
-// =================== MODAL DE LANÇAMENTO RÁPIDO ===================
+// ==============================================================================
+// 9. MODAL DE LANÇAMENTO RÁPIDO
+// ==============================================================================
 function abrirModalLancamento() {
-  const modal = document.getElementById('modalLancamentoRapido');
+  const modal      = document.getElementById('modalLancamentoRapido');
   const selDestino = document.getElementById('lancTabelaDestino');
+
   if (selDestino && tabelaAtualId && tabelaAtualId !== 'todas') {
     selDestino.value = tabelaAtualId;
   }
@@ -665,28 +749,32 @@ function fecharModalLancamento() {
 
 function selecionarTipoLancamento(tipo) {
   const btnEntrada = document.getElementById('btnTipoEntrada');
-  const btnSaida = document.getElementById('btnTipoSaida');
-  const inputTipo = document.getElementById('lancTipo');
+  const btnSaida   = document.getElementById('btnTipoSaida');
+  const inputTipo  = document.getElementById('lancTipo');
   const selSubtipo = document.getElementById('lancSubtipo');
 
   if (tipo === 'entrada') {
-    inputTipo.value = 'entrada';
+    inputTipo.value     = 'entrada';
     btnEntrada.className = 'modal-tipo-btn active-entrada';
-    btnSaida.className = 'modal-tipo-btn';
+    btnSaida.className   = 'modal-tipo-btn';
 
     selSubtipo.innerHTML = `
       <option value="servico">Prestação de Serviços</option>
       <option value="comercio" selected>Venda de Mercadorias / Produtos</option>
     `;
   } else {
-    inputTipo.value = 'saida';
+    inputTipo.value     = 'saida';
     btnEntrada.className = 'modal-tipo-btn';
-    btnSaida.className = 'modal-tipo-btn active-saida';
+    btnSaida.className   = 'modal-tipo-btn active-saida';
 
     let customOptionsHtml = '';
     if (dadosControlesAtuais && Array.isArray(dadosControlesAtuais.novas_despesas)) {
       dadosControlesAtuais.novas_despesas.forEach(d => {
-        const nomeEsc = String(d.nome || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        const nomeEsc = String(d.nome || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
         customOptionsHtml += `<option value="${d.id}">${nomeEsc}</option>`;
       });
     }
@@ -704,19 +792,20 @@ function selecionarTipoLancamento(tipo) {
 
 async function salvarLancamentoRapido(e) {
   e.preventDefault();
-  const btn = document.getElementById('btnSalvarLanc');
-  const tipo = document.getElementById('lancTipo').value;
-  const subtipo = document.getElementById('lancSubtipo').value;
-  const descricao = document.getElementById('lancDescricao').value;
-  const valor = document.getElementById('lancValor').value;
-  const data = document.getElementById('lancData').value;
-  const tabelaDestino = document.getElementById('lancTabelaDestino')?.value;
+
+  const btn            = document.getElementById('btnSalvarLanc');
+  const tipo           = document.getElementById('lancTipo').value;
+  const subtipo        = document.getElementById('lancSubtipo').value;
+  const descricao      = document.getElementById('lancDescricao').value;
+  const valor          = document.getElementById('lancValor').value;
+  const data           = document.getElementById('lancData').value;
+  const tabelaDestino  = document.getElementById('lancTabelaDestino')?.value;
 
   const targetTabelaId = (tabelaDestino && tabelaDestino !== 'padrao')
     ? tabelaDestino
     : (tabelaAtualId !== 'todas' ? tabelaAtualId : null);
 
-  btn.disabled = true;
+  btn.disabled  = true;
   btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...';
 
   try {
@@ -724,12 +813,12 @@ async function salvarLancamentoRapido(e) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        tipo: tipo,
-        sub_tipo: subtipo,
-        descricao: descricao,
-        valor: valor,
-        data: data,
-        tabela_id: targetTabelaId
+        tipo:       tipo,
+        sub_tipo:   subtipo,
+        descricao:  descricao,
+        valor:      valor,
+        data:       data,
+        tabela_id:  targetTabelaId
       })
     });
 
@@ -738,22 +827,24 @@ async function salvarLancamentoRapido(e) {
       fecharModalLancamento();
       // Limpar formulário
       document.getElementById('lancDescricao').value = '';
-      document.getElementById('lancValor').value = '';
+      document.getElementById('lancValor').value     = '';
       // Recarregar dados da tela
       await carregarControlesEssenciais();
     } else {
-      alert(respData.mensagem || "Erro ao registrar lançamento.");
+      alert(respData.mensagem || 'Erro ao registrar lançamento.');
     }
   } catch (err) {
-    console.error("Erro ao salvar lançamento:", err);
-    alert("Falha de comunicação ao registrar movimentação.");
+    console.error('Erro ao salvar lançamento:', err);
+    alert('Falha de comunicação ao registrar movimentação.');
   } finally {
-    btn.disabled = false;
+    btn.disabled  = false;
     btn.innerHTML = '<i class="fa-solid fa-check"></i> Salvar Lançamento';
   }
 }
 
-// =================== CONTEXTO IA PARA O MEI ===================
+// ==============================================================================
+// 10. CONTEXTO IA PARA O MEI (GEMINI)
+// ==============================================================================
 function coletarContextoIaControlesEssenciais() {
   const seletor = document.getElementById('seletorPlanilhaCE');
   const nomeTabela = (seletor && seletor.options && seletor.selectedIndex >= 0)
@@ -762,35 +853,35 @@ function coletarContextoIaControlesEssenciais() {
 
   if (!dadosControlesAtuais) {
     return {
-      perfil: "MEI",
-      faturamento_ano: "R$ 0,00",
-      teto_mei: "R$ 81.000,00",
-      percentual_teto: "0.0%",
-      entradas_mes: "R$ 0,00",
-      saidas_mes: "R$ 0,00",
-      lucro_mes: "R$ 0,00",
-      saldo_atual: "R$ 0,00",
-      periodo: "Mês Selecionado",
-      origem_dados: nomeTabela,
-      tabela_id: tabelaAtualId
+      perfil:          'MEI',
+      faturamento_ano: 'R$ 0,00',
+      teto_mei:        'R$ 81.000,00',
+      percentual_teto: '0.0%',
+      entradas_mes:    'R$ 0,00',
+      saidas_mes:      'R$ 0,00',
+      lucro_mes:       'R$ 0,00',
+      saldo_atual:     'R$ 0,00',
+      periodo:         'Mês Selecionado',
+      origem_dados:    nomeTabela,
+      tabela_id:       tabelaAtualId
     };
   }
 
   const d = dadosControlesAtuais;
   return {
-    perfil: "MEI",
-    faturamento_ano: formatarBRL(d.teto_mei?.faturado_ano),
-    teto_mei: formatarBRL(d.teto_mei?.limite_anual),
-    percentual_teto: `${d.teto_mei?.percentual_usado}%`,
-    status_teto: d.teto_mei?.status,
-    entradas_mes: formatarBRL(d.caixa?.entradas),
-    saidas_mes: formatarBRL(d.caixa?.saidas),
-    lucro_mes: formatarBRL(d.caixa?.lucro_periodo),
-    saldo_atual: formatarBRL(d.caixa?.saldo_atual),
-    das_pago: formatarBRL(d.categorias_saida?.das_mei),
-    periodo: `${d.mes_nome} de ${d.ano}`,
-    origem_dados: nomeTabela,
-    tabela_id: tabelaAtualId
+    perfil:           'MEI',
+    faturamento_ano:  formatarBRL(d.teto_mei?.faturado_ano),
+    teto_mei:         formatarBRL(d.teto_mei?.limite_anual),
+    percentual_teto:  `${d.teto_mei?.percentual_usado}%`,
+    status_teto:      d.teto_mei?.status,
+    entradas_mes:     formatarBRL(d.caixa?.entradas),
+    saidas_mes:       formatarBRL(d.caixa?.saidas),
+    lucro_mes:        formatarBRL(d.caixa?.lucro_periodo),
+    saldo_atual:      formatarBRL(d.caixa?.saldo_atual),
+    das_pago:         formatarBRL(d.categorias_saida?.das_mei),
+    periodo:          `${d.mes_nome} de ${d.ano}`,
+    origem_dados:     nomeTabela,
+    tabela_id:        tabelaAtualId
   };
 }
 

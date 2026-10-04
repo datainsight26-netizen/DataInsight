@@ -1,17 +1,26 @@
-// =============================
-//     Dados de Métricas
-// =============================
+// ==============================================================================
+// script.js
+// ==============================================================================
+// Este código pertence à plataforma @DataInsight.
+// Todos os códigos da plataforma devem seguir a mesma estrutura de organização
+// em seções numeradas, conforme este arquivo.
+// ==============================================================================
+
+// ==============================================================================
+// 1. DADOS DE MÉTRICAS (BASE DE EXEMPLO)
+// ==============================================================================
+
 const dadosMetricas = {
-    meses: ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho'],
-    faturamento: [180000, 195000, 210000, 225000, 235000, 245680],
-    despesas: [125000, 132000, 140000, 148000, 155000, 160250],
-    lucro: [55000, 63000, 70000, 77000, 80000, 85430],
-    margem: [30.6, 32.3, 33.3, 34.2, 34.0, 34.8]
+  meses: ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho'],
+  faturamento: [180000, 195000, 210000, 225000, 235000, 245680],
+  despesas: [125000, 132000, 140000, 148000, 155000, 160250],
+  lucro: [55000, 63000, 70000, 77000, 80000, 85430],
+  margem: [30.6, 32.3, 33.3, 34.2, 34.0, 34.8]
 };
 
-// =============================
-//     Tema e persistência
-// =============================
+// ==============================================================================
+// 2. TEMA E PERSISTÊNCIA
+// ==============================================================================
 
 const setTema = () => {
   const temaSalvo = localStorage.getItem("tema")
@@ -27,13 +36,29 @@ const alternarTema = () => {
   localStorage.setItem("tema", ativo ? "escuro" : "claro")
 }
 
+// ==============================================================================
+// 3. ACESSIBILIDADE (DELEGAÇÃO PARA MÓDULO CENTRAL)
+// ==============================================================================
+
+// Acessibilidade é gerenciada de forma centralizada por static/acessibilidade/acessibilidade.js
+function setAcessibilidadeAtiva(active) {
+  if (window.Acessibilidade) {
+    if (active) window.Acessibilidade.ativar();
+    else window.Acessibilidade.desativar();
+  }
+}
+
+// ==============================================================================
+// 4. FORMULÁRIOS — ALTERNÂNCIA DE VISIBILIDADE DE SENHA
+// ==============================================================================
+
 // Função para alternar visibilidade da senha
 function togglePassword(inputId, iconEl) {
   const input = document.getElementById(inputId);
   if (!input) return;
 
   const icon = iconEl.querySelector('i');
-  
+
   if (input.type === 'password') {
     input.type = 'text';
     icon.classList.remove('fa-eye');
@@ -44,6 +69,10 @@ function togglePassword(inputId, iconEl) {
     icon.classList.add('fa-eye');
   }
 }
+
+// ==============================================================================
+// 5. GRÁFICOS — UTILITÁRIOS E SELEÇÃO DE VISIBILIDADE
+// ==============================================================================
 
 function initChart(canvasId, config, containerSelector, caption) {
   const canvas = document.getElementById(canvasId)
@@ -78,96 +107,10 @@ function initChartSelection() {
   })
 }
 
-// Acessibilidade é gerenciada de forma centralizada por static/acessibilidade/acessibilidade.js
-function setAcessibilidadeAtiva(active) {
-  if (window.Acessibilidade) {
-    if (active) window.Acessibilidade.ativar();
-    else window.Acessibilidade.desativar();
-  }
-}
+// ==============================================================================
+// 6. INICIALIZAÇÃO DA PÁGINA (APEXCHARTS E CHARTS DE DEMONSTRAÇÃO)
+// ==============================================================================
 
-// function initChatbot() {
-//   if (document.querySelector(".chatbot-flutuante")) return
-
-//   const button = document.createElement("button")
-//   button.className = "chatbot-flutuante"
-//   button.title = "Abrir assistente"
-//   button.innerHTML = "<i class='fa-solid fa-robot'></i>"
-//   button.type = "button"
-
-//   const modal = document.createElement("div")
-//   modal.className = "chatbot-modal"
-//   modal.setAttribute("role", "dialog")
-//   modal.setAttribute("aria-modal", "true")
-//   modal.innerHTML = `
-//       <div class="chatbot-modal__header">
-//       <div class="chatbot-modal__title">
-//         Assistente</div>
-//       <button type="button" class="chatbot-modal__close" aria-label="Fechar">&times;</button>
-//     </div>
-//     <div class="chatbot-modal__body">
-//       <div class="chatbot-conversation" aria-live="polite"></div>
-//       <div class="chatbot-input">
-//         <input type="text" placeholder="Pergunte algo..." aria-label="Digite sua pergunta" />
-//         <button type="button">Enviar</button>
-//       </div>
-//     </div>
-//   `
-
-//   document.body.appendChild(button)
-//   document.body.appendChild(modal)
-
-//   const conversation = modal.querySelector(".chatbot-conversation")
-//   const closeBtn = modal.querySelector(".chatbot-modal__close")
-//   const input = modal.querySelector(".chatbot-input input")
-//   const send = modal.querySelector(".chatbot-input button")
-
-//   const appendMessage = (text, from) => {
-//     const bubble = document.createElement("div")
-//     bubble.className = `chatbot-bubble ${from}`
-//     bubble.textContent = text
-//     conversation.appendChild(bubble)
-//     conversation.scrollTop = conversation.scrollHeight
-//   }
-
-//   const botReply = (message) => {
-//     const msg = message.toLowerCase().trim()
-//     if (msg.includes("acessibilidade")) {
-//       return "Ative ou desative a acessibilidade na página de configurações."
-//     }
-//     return "Ainda estou aprendendo. Pergunte sobre análise de dados ou acessibilidade."
-//   }
-
-//   const sendMessage = () => {
-//     const text = input.value.trim()
-//     if (!text) return
-//     appendMessage(text, "user")
-//     input.value = ""
-
-//     setTimeout(() => {
-//       const resposta = botReply(text)
-//       appendMessage(resposta, "bot")
-//     }, 300)
-//   }
-
-//   button.addEventListener("click", () => {
-//     const ativo = modal.classList.toggle("open")
-//     if (ativo) input.focus()
-//   })
-
-//   closeBtn.addEventListener("click", () => modal.classList.remove("open"))
-//   send.addEventListener("click", sendMessage)
-//   input.addEventListener("keydown", (evt) => {
-//     if (evt.key === "Enter") sendMessage()
-//   })
-
-//   // Garantir que o estado de acessibilidade definido seja aplicado ao chatbot recém-criado
-//   setAcessibilidadeAtiva(isAcessibilidadeAtiva())
-// }
-
-// =============================
-//     Inicialização da página
-// =============================
 window.addEventListener("load", () => {
   setTema()
   // initChatbot()
@@ -287,14 +230,14 @@ window.addEventListener("load", () => {
   })
 })
 
-// =============================
-//     Inicialização Geral
-// =============================
-document.addEventListener('DOMContentLoaded', function() {
+// ==============================================================================
+// 7. INICIALIZAÇÃO GERAL
+// ==============================================================================
+
+document.addEventListener('DOMContentLoaded', function () {
   setTema();
   initChartSelection();
   // if (typeof initChatbot === 'function') {
   //   initChatbot();
   // }
 });
-  

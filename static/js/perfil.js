@@ -1,6 +1,23 @@
+// ==============================================================================
+// perfil.js
+// ==============================================================================
+// Este código pertence à plataforma @DataInsight.
+// Todos os códigos da plataforma devem seguir a mesma estrutura de organização
+// em seções numeradas, conforme este arquivo.
+// ==============================================================================
+
 (function () {
   'use strict';
 
+  // ============================================================================
+  // 1. UTILITÁRIOS DE FORMATAÇÃO
+  // ============================================================================
+
+  /**
+   * Formata um valor numérico como moeda brasileira (R$ 1.234).
+   * @param {number|string} v
+   * @returns {string}
+   */
   function moeda(v) {
     return Number(v || 0).toLocaleString('pt-BR', {
       style: 'currency',
@@ -9,6 +26,12 @@
     });
   }
 
+  /**
+   * Formata um valor numérico como percentual com sinal (+/-).
+   * Retorna '—' quando o valor não é finito.
+   * @param {number|string} v
+   * @returns {string}
+   */
   function pct(v) {
     const n = Number(v);
     if (!Number.isFinite(n)) return '—';
@@ -16,6 +39,11 @@
     return sinal + n.toFixed(1) + '%';
   }
 
+  /**
+   * Aplica o texto e a classe de cor (up/down) em um elemento de variação.
+   * @param {HTMLElement|null} el
+   * @param {number|null|undefined} valor
+   */
   function aplicarVariacao(el, valor) {
     if (!el) return;
     if (valor === null || valor === undefined) {
@@ -34,10 +62,19 @@
     el.classList.toggle('kpi-card-premium__change--down', n < 0);
   }
 
+  /**
+   * Define o textContent de um elemento por id, se ele existir.
+   * @param {string} id
+   * @param {string} texto
+   */
   function setTexto(id, texto) {
     const el = document.getElementById(id);
     if (el) el.textContent = texto;
   }
+
+  // ============================================================================
+  // 2. PREENCHIMENTO DOS CARDS DE CONTRIBUIÇÃO (DESEMPENHO + STATUS)
+  // ============================================================================
 
   function preencherContribuicao(desempenho, status) {
     const fat = desempenho?.faturamento?.valor || 0;
@@ -57,6 +94,7 @@
     const narrativaEl = document.getElementById('pf-narrativa');
     const uso = window.__PERFIL_USO || {};
 
+    // --- Status do negócio ---
     if (statusEl) {
       if (status?.descricao) {
         statusEl.innerHTML =
@@ -67,6 +105,7 @@
       }
     }
 
+    // --- Narrativa contextual ---
     if (narrativaEl) {
       const partes = [];
       if (temDados) {
@@ -105,6 +144,10 @@
     }
   }
 
+  // ============================================================================
+  // 3. ANIMAÇÃO DA BARRA DE PROGRESSO
+  // ============================================================================
+
   function animarBarra() {
     const fill = document.getElementById('pf-progress-fill');
     if (!fill) return;
@@ -113,6 +156,10 @@
       fill.style.width = Math.max(0, Math.min(100, alvo)) + '%';
     });
   }
+
+  // ============================================================================
+  // 4. CARREGAMENTO DOS DADOS DE NEGÓCIO
+  // ============================================================================
 
   async function carregarNegocio() {
     const tabelaId = localStorage.getItem('DataInsight_DashboardPlanilha') || 'todas';
@@ -130,8 +177,67 @@
     }
   }
 
+  // ============================================================================
+  // 5. MODAL DE CANCELAMENTO DE ASSINATURA
+  // ============================================================================
+
+  function configurarModalCancelarAssinatura() {
+    const btnAbrir = document.getElementById('btnAbrirModalCancelarAssinatura');
+    const modal = document.getElementById('modalCancelarAssinatura');
+    const btnFechar = document.getElementById('btnFecharModalCancelar');
+    const btnConfirmar = document.getElementById('btnConfirmarCancelarAssinatura');
+
+    if (!btnAbrir || !modal) return;
+
+    btnAbrir.addEventListener('click', () => {
+      modal.style.display = 'flex';
+    });
+
+    if (btnFechar) {
+      btnFechar.addEventListener('click', () => {
+        modal.style.display = 'none';
+      });
+    }
+
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.style.display = 'none';
+    });
+
+    if (btnConfirmar) {
+      btnConfirmar.addEventListener('click', async () => {
+        btnConfirmar.disabled = true;
+        btnConfirmar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Cancelando...';
+
+        try {
+          const resp = await fetch('/cancelar-assinatura', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          const resData = await resp.json();
+
+          if (resp.ok && resData.sucesso) {
+            window.location.href = '/bloqueio-assinatura?motivo=cancelada';
+          } else {
+            alert(resData.erro || 'Falha ao cancelar assinatura.');
+            btnConfirmar.disabled = false;
+            btnConfirmar.innerHTML = '<i class="fa-solid fa-ban"></i> Confirmar Cancelamento';
+          }
+        } catch (err) {
+          alert('Erro na requisição. Tente novamente.');
+          btnConfirmar.disabled = false;
+          btnConfirmar.innerHTML = '<i class="fa-solid fa-ban"></i> Confirmar Cancelamento';
+        }
+      });
+    }
+  }
+
+  // ============================================================================
+  // 6. INICIALIZAÇÃO
+  // ============================================================================
+
   document.addEventListener('DOMContentLoaded', () => {
     animarBarra();
     carregarNegocio();
+    configurarModalCancelarAssinatura();
   });
 })();

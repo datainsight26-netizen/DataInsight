@@ -1,47 +1,77 @@
-// ═══════════════════════════════════════════════════════════════
-// ██████████ FERRAMENTAS EMPRESARIAIS — DADOS PAGE ████████████
-// ═══════════════════════════════════════════════════════════════
+/**
+ * dados-tools.js
+ * Ferramentas Empresariais — DataInsight (Página Dados)
+ *
+ * Módulo adicional que estende a página Dados com:
+ *   - Persistência automática de estado em localStorage
+ *   - Auditoria de alterações
+ *   - Metas financeiras corporativas
+ *   - Regras de validação de qualidade de dados
+ *   - Estatísticas com detecção de anomalias
+ *   - Linha de totais, barra de fórmulas
+ *   - Operações de linha (inserir, duplicar, mover)
+ *   - Gerenciamento de visibilidade de colunas
+ *   - Pivot / agrupamento, reajuste em massa
+ *   - Filtros avançados, formatação condicional
+ *   - Limpeza inteligente (duplicatas, vazios, normalização)
+ *   - Exportação CSV/JSON
+ *   - Multi-tabelas (abas) com domínio inteligente
+ *
+ * ------------------------------------------------------------------------------
+ * PROPRIEDADE INTELECTUAL
+ * ------------------------------------------------------------------------------
+ * Este código pertence à plataforma @DataInsight. Todos os arquivos da plataforma
+ * devem seguir esta mesma estrutura de organização: seções numeradas
+ * sequencialmente com cabeçalhos padronizados, separação clara de
+ * responsabilidades e agrupamento lógico de funções afins.
+ * ------------------------------------------------------------------------------
+ */
 
-// ───────────────────────────────
-// ESTADO INTERNO DO MÓDULO ADICIONAL
-// ───────────────────────────────
-let _mostrarTotais = false;
-let _colunasOcultas = new Set();
-let _filtrosAvancados = [];
-let _regrasFC = [];
+// ==============================================================================
+// 1. ESTADO INTERNO DO MÓDULO
+// ==============================================================================
+// Flags e estruturas de estado em memória
+let _mostrarTotais       = false;
+let _colunasOcultas      = new Set();
+let _filtrosAvancados    = [];
+let _regrasFC            = [];
 
 // Governança, Metas e IA
-let _validacoes = [];       // [{col, tipo, extra}]
-let _metas = {};            // {coluna: valorMeta}
-let _auditLogs = [];        // [{timestamp, acao}]
+let _validacoes          = [];   // [{col, tipo, extra}]
+let _metas               = {};   // {coluna: valorMeta}
+let _auditLogs           = [];   // [{timestamp, acao}]
+
+// Multi-tabelas (abas)
+let _tabelas             = [];
+let _tabelaAtualId       = null;
 
 // Inicializar estado.filtrosAvancados se não houver
 if (typeof estado !== 'undefined') {
     estado.filtrosAvancados = estado.filtrosAvancados || [];
 }
 
-// ───────────────────────────────
-// PERSISTÊNCIA AUTOMÁTICA (LOCALSTORAGE)
-// ───────────────────────────────
+// ==============================================================================
+// 2. PERSISTÊNCIA AUTOMÁTICA (LOCALSTORAGE)
+// ==============================================================================
 function persistirEstadoLocal() {
     if (typeof estado === 'undefined') return;
-    
+
     // Snapshot da tabela ativa antes de salvar
     sincronizarTabelaAtiva();
 
     const dadosParaSalvar = {
-        todosDados: clonarDadosTabela(estado.todosDados),
-        colunasAtuais: [...estado.colunasAtuais],
+        todosDados:       clonarDadosTabela(estado.todosDados),
+        colunasAtuais:    [...estado.colunasAtuais],
         // Múltiplas tabelas
-        tabelas: _tabelas.map(clonarTabela),
-        tabelaAtualId: _tabelaAtualId || (_tabelas[0] && _tabelas[0].id) || null,
-        validacoes: _validacoes,
-        metas: _metas,
+        tabelas:          _tabelas.map(clonarTabela),
+        tabelaAtualId:    _tabelaAtualId || (_tabelas[0] && _tabelas[0].id) || null,
+        validacoes:       _validacoes,
+        metas:            _metas,
         filtrosAvancados: _filtrosAvancados,
-        regrasFC: _regrasFC,
-        auditLogs: _auditLogs
+        regrasFC:         _regrasFC,
+        auditLogs:        _auditLogs
     };
-    
+
     try {
         localStorage.setItem('DataInsight_Estado', JSON.stringify(dadosParaSalvar));
         // Salvar também o ID ativo em chave dedicada para recuperação rápida
@@ -65,17 +95,19 @@ function clonarDadosTabela(dados) {
 }
 
 function clonarTabela(tabela) {
-    if (!tabela || typeof tabela !== 'object') return { id: tabela?.id || '', nome: tabela?.nome || '', dados: [], colunas: [] };
+    if (!tabela || typeof tabela !== 'object') {
+        return { id: tabela?.id || '', nome: tabela?.nome || '', dados: [], colunas: [] };
+    }
     return {
-        id: tabela.id,
-        nome: tabela.nome,
-        dados: clonarDadosTabela(tabela.dados),
-        colunas: Array.isArray(tabela.colunas) ? [...tabela.colunas] : [],
-        tipo_dominio: tabela.tipo_dominio || null,
+        id:            tabela.id,
+        nome:          tabela.nome,
+        dados:         clonarDadosTabela(tabela.dados),
+        colunas:       Array.isArray(tabela.colunas) ? [...tabela.colunas] : [],
+        tipo_dominio:  tabela.tipo_dominio  || null,
         dominio_label: tabela.dominio_label || null,
         dominio_icone: tabela.dominio_icone || null,
-        dominio_cor: tabela.dominio_cor || null,
-        tipo_fluxo: tabela.tipo_fluxo || null
+        dominio_cor:   tabela.dominio_cor   || null,
+        tipo_fluxo:    tabela.tipo_fluxo    || null
     };
 }
 
@@ -83,8 +115,8 @@ function sincronizarTabelaAtiva() {
     if (!_tabelaAtualId) return;
     const tabAtiva = _tabelas.find(t => t.id === _tabelaAtualId);
     if (!tabAtiva) return;
-    tabAtiva.dados = clonarDadosTabela(estado.todosDados);
-    tabAtiva.colunas = [...obterColunasValidas()];
+    tabAtiva.dados    = clonarDadosTabela(estado.todosDados);
+    tabAtiva.colunas  = [...obterColunasValidas()];
 }
 
 const persistirTabelaAtualDebounced = debounce(() => {
@@ -92,12 +124,15 @@ const persistirTabelaAtualDebounced = debounce(() => {
     persistirEstadoLocal();
 }, 800);
 
+// ==============================================================================
+// 3. CARREGAMENTO DE ESTADO LOCAL E INICIALIZAÇÃO
+// ==============================================================================
 function carregarEstadoLocal() {
     try {
         const salvo = localStorage.getItem('DataInsight_Estado');
         if (salvo) {
             const parseado = JSON.parse(salvo);
-            
+
             // Restaurar múltiplas tabelas (sistema de abas)
             if (parseado.tabelas && Array.isArray(parseado.tabelas) && parseado.tabelas.length > 0) {
                 _tabelas = parseado.tabelas.map(clonarTabela);
@@ -109,27 +144,27 @@ function carregarEstadoLocal() {
                     : _tabelas[0];
 
                 if (tabAtiva) {
-                    _tabelaAtualId = tabAtiva.id;
-                    estado.todosDados = clonarDadosTabela(tabAtiva.dados);
-                    estado.colunasAtuais = [...tabAtiva.colunas];
+                    _tabelaAtualId           = tabAtiva.id;
+                    estado.todosDados        = clonarDadosTabela(tabAtiva.dados);
+                    estado.colunasAtuais     = [...tabAtiva.colunas];
                 }
             } else {
                 // Compatibilidade: sem tabelas, só dados simples
                 if (parseado.todosDados && parseado.colunasAtuais) {
-                    estado.todosDados = parseado.todosDados;
+                    estado.todosDados    = parseado.todosDados;
                     estado.colunasAtuais = parseado.colunasAtuais;
                 }
             }
-            
-            if (parseado.validacoes) _validacoes = parseado.validacoes;
-            if (parseado.metas) _metas = parseado.metas;
+
+            if (parseado.validacoes)       _validacoes       = parseado.validacoes;
+            if (parseado.metas)            _metas            = parseado.metas;
             if (parseado.filtrosAvancados) _filtrosAvancados = parseado.filtrosAvancados;
-            if (parseado.regrasFC) _regrasFC = parseado.regrasFC;
-            if (parseado.auditLogs) _auditLogs = parseado.auditLogs;
-            
+            if (parseado.regrasFC)         _regrasFC         = parseado.regrasFC;
+            if (parseado.auditLogs)        _auditLogs        = parseado.auditLogs;
+
             return true;
         }
-    } catch(e) {
+    } catch (e) {
         console.error('Erro ao carregar estado do localStorage', e);
     }
     return false;
@@ -156,9 +191,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// ───────────────────────────────
-// LOG DE AUDITORIA
-// ───────────────────────────────
+// ==============================================================================
+// 4. AUDITORIA (LOGS DE ALTERAÇÕES)
+// ==============================================================================
 function registrarLog(acao) {
     const timestamp = new Date().toLocaleTimeString('pt-BR');
     _auditLogs.push({ timestamp, acao });
@@ -185,17 +220,19 @@ function limparAuditLog() {
     mostrarToast('Logs de auditoria limpos.', 'info');
 }
 
-// ───────────────────────────────
-// DEFINIÇÃO E CONTROLE DE METAS
-// ───────────────────────────────
+// ==============================================================================
+// 5. METAS CORPORATIVAS
+// ==============================================================================
 function abrirModalDefinirMetas() {
-    const colunas = obterColunasValidas();
+    const colunas   = obterColunasValidas();
     const container = document.getElementById('metasListaInputs');
     if (!container) return;
 
     // Encontrar colunas de aspecto financeiro ou numéricas
     const colunasFinanceiras = colunas.filter(col => {
-        const vals = (estado.todosDados || []).map(l => parseFloat(String(l[col] || '').replace(',', '.'))).filter(n => !isNaN(n));
+        const vals = (estado.todosDados || [])
+            .map(l => parseFloat(String(l[col] || '').replace(',', '.')))
+            .filter(n => !isNaN(n));
         return vals.length > 0;
     });
 
@@ -208,7 +245,7 @@ function abrirModalDefinirMetas() {
     container.innerHTML = colunasFinanceiras.map(col => `
         <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
           <label style="font-size:13px; font-weight:600; flex:1;">${escapeHtml(col)}:</label>
-          <input type="number" id="meta-val-${escapeHtml(col)}" class="entrada" 
+          <input type="number" id="meta-val-${escapeHtml(col)}" class="entrada"
                  value="${_metas[col] || ''}" placeholder="Sem meta" style="width:180px;">
         </div>
     `).join('');
@@ -234,7 +271,7 @@ function salvarMetasCorporativas() {
 }
 
 function atualizarMetasUI() {
-    const panel = document.getElementById('goalsSection');
+    const panel     = document.getElementById('goalsSection');
     const container = document.getElementById('goalsProgressContainer');
     if (!panel || !container) return;
 
@@ -249,12 +286,17 @@ function atualizarMetasUI() {
 
     container.innerHTML = metasAtivas.map(col => {
         const meta = _metas[col];
-        const vals = dados.map(l => parseFloat(String(l[col] || '').replace(',', '.'))).filter(n => !isNaN(n));
+        const vals = dados
+            .map(l => parseFloat(String(l[col] || '').replace(',', '.')))
+            .filter(n => !isNaN(n));
         const totalAtual = vals.reduce((a, b) => a + b, 0);
-        const percent = Math.min(100, Math.round((totalAtual / meta) * 100)) || 0;
+        const percent    = Math.min(100, Math.round((totalAtual / meta) * 100)) || 0;
 
         // Cor baseada em progresso
-        const barColor = percent >= 100 ? '#16a34a' : percent >= 75 ? '#2563eb' : percent >= 40 ? '#d97706' : '#ef4444';
+        const barColor = percent >= 100 ? '#16a34a'
+                       : percent >= 75  ? '#2563eb'
+                       : percent >= 40  ? '#d97706'
+                                        : '#ef4444';
 
         return `
             <div class="goal-row">
@@ -264,16 +306,16 @@ function atualizarMetasUI() {
               </div>
               <div class="goal-percent-badge" style="color: ${barColor};">${percent}%</div>
               <div style="font-size:11px; color:var(--suave); font-weight:500;">
-                R$ ${totalAtual.toLocaleString('pt-BR', {maximumFractionDigits:2})} / R$ ${meta.toLocaleString('pt-BR')}
+                R$ ${totalAtual.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} / R$ ${meta.toLocaleString('pt-BR')}
               </div>
             </div>
         `;
     }).join('');
 }
 
-// ───────────────────────────────
-// VALIDAÇÃO DE DADOS (DATA QUALITY)
-// ───────────────────────────────
+// ==============================================================================
+// 6. VALIDAÇÃO DE DADOS (DATA QUALITY)
+// ==============================================================================
 function abrirModalValidacao() {
     renderizarRegrasValidacao();
     document.getElementById('modalValidacao').style.display = 'flex';
@@ -287,7 +329,7 @@ function adicionarRegraValidacao() {
 
 function renderizarRegrasValidacao() {
     const colunas = obterColunasValidas();
-    const lista = document.getElementById('validacoesLista');
+    const lista   = document.getElementById('validacoesLista');
     if (!lista) return;
 
     lista.innerHTML = _validacoes.length === 0
@@ -298,16 +340,16 @@ function renderizarRegrasValidacao() {
                     ${colunas.map(c => `<option value="${escapeHtml(c)}" ${v.col === c ? 'selected' : ''}>${escapeHtml(c)}</option>`).join('')}
                 </select>
                 <select onchange="trocarTipoValidacao(${i}, this.value)">
-                    <option value="numero_positivo" ${v.tipo==='numero_positivo'?'selected':''}>🔢 Apenas Números Positivos</option>
-                    <option value="intervalo_numerico" ${v.tipo==='intervalo_numerico'?'selected':''}>📏 Intervalo Numérico</option>
-                    <option value="apenas_texto" ${v.tipo==='apenas_texto'?'selected':''}>📝 Apenas Texto</option>
-                    <option value="lista_opcoes" ${v.tipo==='lista_opcoes'?'selected':''}>🗂️ Lista de Opções (ex: Ativo, Inativo)</option>
-                    <option value="data_valida" ${v.tipo==='data_valida'?'selected':''}>📅 Data Válida</option>
+                    <option value="numero_positivo"    ${v.tipo === 'numero_positivo'    ? 'selected' : ''}>🔢 Apenas Números Positivos</option>
+                    <option value="intervalo_numerico" ${v.tipo === 'intervalo_numerico' ? 'selected' : ''}>📏 Intervalo Numérico</option>
+                    <option value="apenas_texto"       ${v.tipo === 'apenas_texto'       ? 'selected' : ''}>📝 Apenas Texto</option>
+                    <option value="lista_opcoes"       ${v.tipo === 'lista_opcoes'       ? 'selected' : ''}>🗂️ Lista de Opções (ex: Ativo, Inativo)</option>
+                    <option value="data_valida"        ${v.tipo === 'data_valida'        ? 'selected' : ''}>📅 Data Válida</option>
                 </select>
-                <input type="text" id="val-extra-${i}" value="${escapeHtml(v.extra || '')}" 
-                       placeholder="${v.tipo==='intervalo_numerico'?'ex: 10-500':v.tipo==='lista_opcoes'?'Opção1, Opção2':'Não requerido'}"
+                <input type="text" id="val-extra-${i}" value="${escapeHtml(v.extra || '')}"
+                       placeholder="${v.tipo === 'intervalo_numerico' ? 'ex: 10-500' : v.tipo === 'lista_opcoes' ? 'Opção1, Opção2' : 'Não requerido'}"
                        onchange="_validacoes[${i}].extra=this.value"
-                       style="flex:1; display: ${['intervalo_numerico','lista_opcoes'].includes(v.tipo)?'':'none'};">
+                       style="flex:1; display: ${['intervalo_numerico', 'lista_opcoes'].includes(v.tipo) ? '' : 'none'};">
                 <button class="botao botao--delet" style="padding:4px 8px;"
                     onclick="_validacoes.splice(${i},1); renderizarRegrasValidacao();">✕</button>
             </div>
@@ -315,7 +357,7 @@ function renderizarRegrasValidacao() {
 }
 
 function trocarTipoValidacao(i, value) {
-    _validacoes[i].tipo = value;
+    _validacoes[i].tipo  = value;
     _validacoes[i].extra = '';
     renderizarRegrasValidacao();
 }
@@ -340,9 +382,9 @@ function _executarValidacoesVisuais() {
     if (!_validacoes.length) return;
     const tbody = document.getElementById('dados-tbody');
     if (!tbody) return;
-    const colunas = obterColunasValidas();
+    const colunas       = obterColunasValidas();
     const dadosVisiveis = obterDadosVisiveis();
-    const inicio = (estado.paginaAtual - 1) * CONFIG.LINHAS_POR_PAGINA;
+    const inicio        = (estado.paginaAtual - 1) * CONFIG.LINHAS_POR_PAGINA;
 
     tbody.querySelectorAll('tr').forEach((tr, rowI) => {
         const linha = dadosVisiveis[inicio + rowI];
@@ -353,7 +395,7 @@ function _executarValidacoesVisuais() {
             const td = cells[colI + 1];
             if (!td) return;
             const input = td.querySelector('.entrada-linha');
-            const val = String(linha[col] || '').trim();
+            const val   = String(linha[col] || '').trim();
 
             td.classList.remove('celula-invalida');
             if (input) input.removeAttribute('title');
@@ -361,38 +403,43 @@ function _executarValidacoesVisuais() {
             for (const r of _validacoes) {
                 if (r.col !== col) continue;
                 let invalida = false;
-                let msgErro = '';
+                let msgErro  = '';
 
                 if (val !== '') {
                     switch (r.tipo) {
-                        case 'numero_positivo':
+                        case 'numero_positivo': {
                             const n = parseFloat(val.replace(',', '.'));
                             if (isNaN(n) || n < 0) { invalida = true; msgErro = 'Apenas números positivos.'; }
                             break;
-                        case 'intervalo_numerico':
+                        }
+                        case 'intervalo_numerico': {
                             const numVal = parseFloat(val.replace(',', '.'));
                             const partes = r.extra.split('-');
-                            const min = parseFloat(partes[0]);
-                            const max = parseFloat(partes[1]);
+                            const min    = parseFloat(partes[0]);
+                            const max    = parseFloat(partes[1]);
                             if (isNaN(numVal) || (!isNaN(min) && numVal < min) || (!isNaN(max) && numVal > max)) {
                                 invalida = true;
                                 msgErro = `Valor deve estar entre ${min || 0} e ${max || '∞'}.`;
                             }
                             break;
+                        }
                         case 'apenas_texto':
                             if (/[0-9]/.test(val)) { invalida = true; msgErro = 'Números não permitidos.'; }
                             break;
-                        case 'lista_opcoes':
+                        case 'lista_opcoes': {
                             const opcoes = r.extra.split(',').map(s => s.trim().toLowerCase());
                             if (!opcoes.includes(val.toLowerCase())) {
                                 invalida = true;
                                 msgErro = `Permitido apenas: ${r.extra}`;
                             }
                             break;
-                        case 'data_valida':
-                            const matches = val.match(/^(\d{2})[\/\-.](\d{2})[\/\-.](\d{4})$/) || val.match(/^(\d{4})[\/\-.](\d{2})[\/\-.](\d{2})$/);
+                        }
+                        case 'data_valida': {
+                            const matches = val.match(/^(\d{2})[\/\-.](\d{2})[\/\-.](\d{4})$/)
+                                         || val.match(/^(\d{4})[\/\-.](\d{2})[\/\-.](\d{2})$/);
                             if (!matches) { invalida = true; msgErro = 'Data inválida.'; }
                             break;
+                        }
                     }
                 }
 
@@ -406,55 +453,67 @@ function _executarValidacoesVisuais() {
     });
 }
 
-// ───────────────────────────────
-// PAINEL DE ESTATÍSTICAS (AMPLIADO COM ANOMALIAS)
-// ───────────────────────────────
+// ==============================================================================
+// 7. PAINEL DE ESTATÍSTICAS E QUALIDADE
+// ==============================================================================
 function atualizarEstatisticas() {
     if (typeof obterColunasValidas !== 'function') return;
-    const colunas = obterColunasValidas();
-    const dados = estado.todosDados || [];
-    const total = dados.length;
-    const nColunas = colunas.length;
-    let preenchidos = 0;
+    const colunas     = obterColunasValidas();
+    const dados       = estado.todosDados || [];
+    const total       = dados.length;
+    const nColunas    = colunas.length;
+    let   preenchidos = 0;
     const totalCelulas = total * nColunas;
+
     dados.forEach(linha => colunas.forEach(col => {
         if (linha[col] !== '' && linha[col] !== null && linha[col] !== undefined) preenchidos++;
     }));
     const completude = totalCelulas > 0 ? Math.round((preenchidos / totalCelulas) * 100) : 0;
 
-    let somaNum = null, mediaNum = null;
+    let somaNum   = null;
+    let mediaNum  = null;
     let anomaliasDetectadas = 0;
 
     for (const col of colunas) {
-        const vals = dados.map(l => parseFloat(String(l[col] || '').replace(',', '.'))).filter(n => !isNaN(n));
+        const vals = dados
+            .map(l => parseFloat(String(l[col] || '').replace(',', '.')))
+            .filter(n => !isNaN(n));
+
         if (vals.length > 0) {
-            somaNum = vals.reduce((a, b) => a + b, 0);
+            somaNum  = vals.reduce((a, b) => a + b, 0);
             mediaNum = somaNum / vals.length;
-            const desvioPadrao = Math.sqrt(vals.map(v => Math.pow(v - mediaNum, 2)).reduce((a, b) => a + b, 0) / vals.length) || 0;
+
+            const desvioPadrao = Math.sqrt(
+                vals.map(v => Math.pow(v - mediaNum, 2)).reduce((a, b) => a + b, 0) / vals.length
+            ) || 0;
+
             if (desvioPadrao > 0) {
                 // Detectar anomalias e marcar linhas correspondentes
                 const limite = 2.0 * desvioPadrao;
-                dados.forEach((l, idx) => {
+
+                dados.forEach((l) => {
                     const raw = String(l[col] || '').replace(',', '.');
-                    const v = parseFloat(raw);
+                    const v   = parseFloat(raw);
                     if (!isNaN(v) && Math.abs(v - mediaNum) > limite) {
                         anomaliasDetectadas++;
                     }
                 });
+
                 // Preencher estado.anomalias com detalhes
                 if (!window.estado) window.estado = {};
                 window.estado.anomalias = [];
                 window.estado.anomaliasIds = new Set();
+
                 const limiteVal = limite;
                 dados.forEach((l) => {
                     const raw = String(l[col] || '').replace(',', '.');
-                    const v = parseFloat(raw);
+                    const v   = parseFloat(raw);
                     if (!isNaN(v) && Math.abs(v - mediaNum) > limiteVal) {
-                            const diferenca = v - mediaNum;
-                            const desvio = desvioPadrao ? (Math.abs(diferenca) / desvioPadrao) : null;
-                            const perc = mediaNum ? ((diferenca / mediaNum) * 100) : null;
-                            const motivo = `Valor ${v} na coluna "${col}" ${perc !== null ? (perc > 0 ? 'acima' : 'abaixo') : ''} da média (${mediaNum.toFixed(2)}) — ${desvio ? desvio.toFixed(2) + 'σ' : ''}`;
-                            window.estado.anomalias.push({ _id: l._id, coluna: col, valor: l[col], motivo });
+                        const diferenca = v - mediaNum;
+                        const desvio    = desvioPadrao ? (Math.abs(diferenca) / desvioPadrao) : null;
+                        const perc      = mediaNum ? ((diferenca / mediaNum) * 100) : null;
+                        const motivo    = `Valor ${v} na coluna "${col}" ${perc !== null ? (perc > 0 ? 'acima' : 'abaixo') : ''} da média (${mediaNum.toFixed(2)}) — ${desvio ? desvio.toFixed(2) + 'σ' : ''}`;
+                        window.estado.anomalias.push({ _id: l._id, coluna: col, valor: l[col], motivo });
                         window.estado.anomaliasIds.add(l._id);
                     }
                 });
@@ -464,18 +523,18 @@ function atualizarEstatisticas() {
     }
 
     const serializado = dados.map(l => colunas.map(c => String(l[c] || '')).join('|'));
-    const unicos = new Set(serializado);
-    const duplicatas = total > 0 ? serializado.length - unicos.size : 0;
+    const unicos      = new Set(serializado);
+    const duplicatas  = total > 0 ? serializado.length - unicos.size : 0;
 
     const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    set('statTotalLinhas', total.toLocaleString('pt-BR'));
+    set('statTotalLinhas',  total.toLocaleString('pt-BR'));
     set('statTotalColunas', nColunas);
-    set('statCompletude', completude + '%');
-    set('statSomaNum', somaNum !== null ? somaNum.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : '—');
-    set('statMediaNum', mediaNum !== null ? mediaNum.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : '—');
+    set('statCompletude',   completude + '%');
+    set('statSomaNum',      somaNum  !== null ? somaNum.toLocaleString('pt-BR',  { maximumFractionDigits: 2 }) : '—');
+    set('statMediaNum',     mediaNum !== null ? mediaNum.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : '—');
 
     // Duplicatas ou Anomalias
-    const elDup = document.getElementById('statDuplicatas');
+    const elDup      = document.getElementById('statDuplicatas');
     const elDupLabel = elDup?.parentElement?.querySelector('.stat-card-label');
     if (elDup) {
         if (anomaliasDetectadas > 0) {
@@ -498,9 +557,10 @@ function atualizarEstatisticas() {
 
     // Atualizar metas automaticamente e formatar números
     if (typeof atualizarMetasUI === 'function') atualizarMetasUI();
+
     // Formatar valores visuais (stat cards) para melhor leitura
     const formatMaybe = (v) => (v === '—' ? '—' : String(v));
-    const el = document.getElementById('statSomaNum'); if (el) el.textContent = formatMaybe(el.textContent);
+    const el  = document.getElementById('statSomaNum');  if (el)  el.textContent  = formatMaybe(el.textContent);
     const el2 = document.getElementById('statMediaNum'); if (el2) el2.textContent = formatMaybe(el2.textContent);
 }
 
@@ -533,17 +593,15 @@ function _atualizarBannerAlertaQualidade({ completude, duplicatas, anomaliasDete
     }
 }
 
-
-
-// ───────────────────────────────
-// LINHA DE TOTAIS
-// ───────────────────────────────
+// ==============================================================================
+// 8. LINHA DE TOTAIS
+// ==============================================================================
 function toggleTotais() {
     _mostrarTotais = !_mostrarTotais;
     const tfoot = document.getElementById('dados-tfoot');
-    const btn = document.getElementById('btnToggleTotais');
+    const btn   = document.getElementById('btnToggleTotais');
     if (tfoot) tfoot.style.display = _mostrarTotais ? '' : 'none';
-    if (btn) btn.classList.toggle('active', _mostrarTotais);
+    if (btn)   btn.classList.toggle('active', _mostrarTotais);
     if (_mostrarTotais) _atualizarLinhaTotais();
 }
 
@@ -552,45 +610,62 @@ function _atualizarLinhaTotais() {
     const tfoot = document.getElementById('dados-tfoot');
     if (!tfoot) return;
     const colunas = obterColunasValidas();
-    const dados = estado.todosDados || [];
+    const dados   = estado.todosDados || [];
+
     const totalCelulas = colunas.map(col => {
-        const vals = dados.map(l => parseFloat(String(l[col] || '').replace(',', '.'))).filter(n => !isNaN(n));
+        const vals = dados
+            .map(l => parseFloat(String(l[col] || '').replace(',', '.')))
+            .filter(n => !isNaN(n));
+
         if (!vals.length) return `<td style="text-align:center;color:var(--suave);">—</td>`;
+
         const soma = vals.reduce((a, b) => a + b, 0);
-        return `<td><div style="padding:4px 10px;"><div style="font-size:12px;font-weight:700;color:var(--primaria);">${soma.toLocaleString('pt-BR',{maximumFractionDigits:2})}</div><div style="font-size:10px;color:var(--suave);">Σ ${vals.length}</div></div></td>`;
+        return `<td><div style="padding:4px 10px;"><div style="font-size:12px;font-weight:700;color:var(--primaria);">${soma.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</div><div style="font-size:10px;color:var(--suave);">Σ ${vals.length}</div></div></td>`;
     }).join('');
+
     tfoot.innerHTML = `<tr><td class="total-label" style="text-align:center;font-size:11px;">Σ</td>${totalCelulas}<td></td></tr>`;
 }
 
-// ───────────────────────────────
-// BARRA DE FÓRMULAS
-// ───────────────────────────────
+// ==============================================================================
+// 9. BARRA DE FÓRMULAS
+// ==============================================================================
 function aplicarFormula() {
     const fb = document.getElementById('formulaBarInput');
     if (!fb) return;
+
     const expr = fb.value.trim();
     const { row, col } = estado.celulaSelecionada || { row: -1, col: -1 };
     if (row < 0 || col < 0) { mostrarToast('Selecione uma célula primeiro.', 'warning'); return; }
-    const colunas = obterColunasValidas();
-    const colName = colunas[col - 1];
+
+    const colunas  = obterColunasValidas();
+    const colName  = colunas[col - 1];
     if (!colName) return;
+
     const matchPt = expr.match(/^=(SOMA|MÉDIA|MÁX|MÍN|CONT|MEDIA|MAX|MIN)\((.+)\)$/i);
+
     if (matchPt) {
         const func = matchPt[1].toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         const targetCol = matchPt[2].trim();
         const colIdx = colunas.findIndex(c => c.toLowerCase() === targetCol.toLowerCase());
         if (colIdx < 0) { mostrarToast(`Coluna "${targetCol}" não encontrada.`, 'error'); return; }
-        const vals = (estado.todosDados || []).map(l => parseFloat(String(l[colunas[colIdx]] || '').replace(',', '.'))).filter(n => !isNaN(n));
+
+        const vals = (estado.todosDados || [])
+            .map(l => parseFloat(String(l[colunas[colIdx]] || '').replace(',', '.')))
+            .filter(n => !isNaN(n));
+
         let resultado = 0;
-        if (/SOMA/.test(func)) resultado = vals.reduce((a, b) => a + b, 0);
-        else if (/MED|MEDIA/.test(func)) resultado = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
-        else if (/MAX/.test(func)) resultado = vals.length ? Math.max(...vals) : 0;
-        else if (/MIN/.test(func)) resultado = vals.length ? Math.min(...vals) : 0;
-        else if (/CONT/.test(func)) resultado = vals.length;
+        if      (/SOMA/.test(func))                 resultado = vals.reduce((a, b) => a + b, 0);
+        else if (/MED|MEDIA/.test(func))            resultado = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+        else if (/MAX/.test(func))                  resultado = vals.length ? Math.max(...vals) : 0;
+        else if (/MIN/.test(func))                  resultado = vals.length ? Math.min(...vals) : 0;
+        else if (/CONT/.test(func))                 resultado = vals.length;
+
         salvarEstadoHistorico();
+
         const dadosVisiveis = obterDadosVisiveis();
-        const inicio = (estado.paginaAtual - 1) * CONFIG.LINHAS_POR_PAGINA;
-        const linha = dadosVisiveis[inicio + row];
+        const inicio        = (estado.paginaAtual - 1) * CONFIG.LINHAS_POR_PAGINA;
+        const linha         = dadosVisiveis[inicio + row];
+
         if (linha) {
             const anterior = linha[colName];
             linha[colName] = parseFloat(resultado.toFixed(4));
@@ -600,9 +675,11 @@ function aplicarFormula() {
         mostrarToast(`Fórmula aplicada: ${resultado.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}`, 'success');
     } else if (!expr.startsWith('=')) {
         salvarEstadoHistorico();
+
         const dadosVisiveis = obterDadosVisiveis();
-        const inicio = (estado.paginaAtual - 1) * CONFIG.LINHAS_POR_PAGINA;
-        const linha = dadosVisiveis[inicio + row];
+        const inicio        = (estado.paginaAtual - 1) * CONFIG.LINHAS_POR_PAGINA;
+        const linha         = dadosVisiveis[inicio + row];
+
         if (linha) {
             const anterior = linha[colName];
             linha[colName] = expr;
@@ -619,15 +696,15 @@ function mostrarAjudaFormulas() {
     document.getElementById('modalAjudaFormulas').style.display = 'flex';
 }
 
-// ───────────────────────────────
-// OPERAÇÕES DE LINHA
-// ───────────────────────────────
+// ==============================================================================
+// 10. OPERAÇÕES DE LINHA
+// ==============================================================================
 function _getLinhaAtualSelecionada() {
     const { row } = estado.celulaSelecionada || { row: -1 };
     if (row < 0) return { idx: -1, linha: null };
     const dadosVisiveis = obterDadosVisiveis();
-    const inicio = (estado.paginaAtual - 1) * CONFIG.LINHAS_POR_PAGINA;
-    const linha = dadosVisiveis[inicio + row];
+    const inicio        = (estado.paginaAtual - 1) * CONFIG.LINHAS_POR_PAGINA;
+    const linha         = dadosVisiveis[inicio + row];
     if (!linha) return { idx: -1, linha: null };
     const idx = (estado.todosDados || []).findIndex(l => l._id === linha._id);
     return { idx, linha };
@@ -636,8 +713,10 @@ function _getLinhaAtualSelecionada() {
 function inserirLinhaAcima() {
     const colunas = obterColunasValidas();
     if (!colunas.length) { mostrarToast('Adicione colunas primeiro!', 'warning'); return; }
+
     let { idx } = _getLinhaAtualSelecionada();
     if (idx < 0) idx = 0;
+
     salvarEstadoHistorico();
     const novaLinha = { _id: gerarIdLinha() };
     colunas.forEach(col => novaLinha[col] = '');
@@ -678,13 +757,14 @@ function moverLinhaBaixo() {
     mostrarToast('Linha movida para baixo.', 'success');
 }
 
-// ───────────────────────────────
-// GERENCIAR COLUNAS (VISIBILIDADE)
-// ───────────────────────────────
+// ==============================================================================
+// 11. GERENCIAMENTO DE COLUNAS (VISIBILIDADE)
+// ==============================================================================
 function abrirModalColunas() {
     const colunas = obterColunasValidas();
-    const lista = document.getElementById('colunasVisibilidadeLista');
+    const lista   = document.getElementById('colunasVisibilidadeLista');
     if (!lista) return;
+
     lista.innerHTML = colunas.length === 0
         ? '<p style="color:var(--suave);text-align:center;">Nenhuma coluna disponível.</p>'
         : colunas.map(col => `
@@ -695,6 +775,7 @@ function abrirModalColunas() {
                 <label for="col-vis-${escapeHtml(col)}" style="flex:1;font-size:13px;cursor:pointer;">${escapeHtml(col)}</label>
                 <span style="font-size:11px;color:var(--suave);">${_colunasOcultas.has(col) ? '🙈 Oculta' : '👁 Visível'}</span>
             </div>`).join('');
+
     document.getElementById('modalColunas').style.display = 'flex';
 }
 
@@ -706,169 +787,24 @@ function toggleVisibilidadeColuna(col, visivel) {
 
 function atualizarValidacaoLinhaUI(indice, html) {
     const table = document.getElementById('dados-tbody');
-    if(!table) return;
+    if (!table) return;
     const tr = table.children[indice];
-    if(!tr) return;
+    if (!tr) return;
     const primeiraCelula = tr.querySelector('td:first-child');
-    if(primeiraCelula) primeiraCelula.innerHTML = html;
-}
-
-
-// ───────────────────────────────
-// PIVOT / AGRUPAMENTO RÁPIDO
-// ───────────────────────────────
-function abrirModalPivot() {
-    const colunas = obterColunasValidas();
-    const agruparSelect = document.getElementById('pivotAgrupar');
-    const valorSelect = document.getElementById('pivotValor');
-    
-    if (!agruparSelect || !valorSelect || colunas.length === 0) {
-        mostrarToast('Necessário ter dados na tabela.', 'warning');
-        return;
-    }
-    
-    const options = colunas.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-    agruparSelect.innerHTML = options;
-    valorSelect.innerHTML = options;
-    
-    // Tentar pré-selecionar colunas adequadas (categoria -> agrupamento, numérico -> valor)
-    const colCategoria = colunas.find(c => c.toLowerCase().includes('cat') || c.toLowerCase().includes('tipo') || c.toLowerCase().includes('produto') || c.toLowerCase().includes('mes') || c.toLowerCase().includes('data'));
-    const colNumerica = colunas.find(c => c.toLowerCase().includes('total') || c.toLowerCase().includes('valor') || c.toLowerCase().includes('faturamento') || c.toLowerCase().includes('preco'));
-    
-    if (colCategoria) agruparSelect.value = colCategoria;
-    if (colNumerica) valorSelect.value = colNumerica;
-    
-    document.getElementById('pivotResultadoContainer').innerHTML = '<div style="text-align:center; color:var(--suave); font-size:13px; padding:20px;">Configure e clique em "Atualizar Pivot"</div>';
-    document.getElementById('modalPivot').style.display = 'flex';
-}
-
-function gerarPivot() {
-    const colAgrupar = document.getElementById('pivotAgrupar').value;
-    const colValor = document.getElementById('pivotValor').value;
-    const operacao = document.getElementById('pivotOperacao').value;
-    
-    if (!colAgrupar || !colValor) return;
-    
-    const dados = estado.todosDados || [];
-    const grupos = {};
-    
-    dados.forEach(linha => {
-        const chave = String(linha[colAgrupar] || '(Vazio)').trim();
-        const valStr = String(linha[colValor] || '').replace(',', '.');
-        const num = parseFloat(valStr);
-        
-        if (!grupos[chave]) grupos[chave] = [];
-        if (!isNaN(num)) grupos[chave].push(num);
-    });
-    
-    let html = `<table style="width:100%; border-collapse:collapse; font-size:13px;">
-                  <tr style="background:var(--fundo); font-weight:600;">
-                    <td style="padding:6px 10px; border-bottom:1px solid var(--borda);">${escapeHtml(colAgrupar)}</td>
-                    <td style="padding:6px 10px; border-bottom:1px solid var(--borda); text-align:right;">${operacao} de ${escapeHtml(colValor)}</td>
-                  </tr>`;
-                  
-    const formatBRL = (v) => v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
-    
-    for (const chave in grupos) {
-        const valores = grupos[chave];
-        let resultado = 0;
-        
-        if (valores.length === 0) {
-            resultado = operacao === 'CONTAGEM' ? 0 : '—';
-        } else {
-            switch(operacao) {
-                case 'SOMA': resultado = formatBRL(valores.reduce((a,b)=>a+b, 0)); break;
-                case 'MEDIA': resultado = formatBRL(valores.reduce((a,b)=>a+b, 0) / valores.length); break;
-                case 'CONTAGEM': resultado = valores.length; break;
-                case 'MAX': resultado = formatBRL(Math.max(...valores)); break;
-                case 'MIN': resultado = formatBRL(Math.min(...valores)); break;
-            }
-        }
-        
-        html += `<tr>
-                    <td style="padding:6px 10px; border-bottom:1px solid var(--borda);">${escapeHtml(chave)}</td>
-                    <td style="padding:6px 10px; border-bottom:1px solid var(--borda); text-align:right; font-weight:600;">${resultado}</td>
-                 </tr>`;
-    }
-    html += `</table>`;
-    
-    document.getElementById('pivotResultadoContainer').innerHTML = html;
-}
-
-// ───────────────────────────────
-// CALCULADORA DE REAJUSTE EM MASSA
-// ───────────────────────────────
-function abrirModalReajusteMassa() {
-    const colunas = obterColunasValidas();
-    const sel = document.getElementById('reajusteColuna');
-    if (!sel || colunas.length === 0) {
-        mostrarToast('Necessário ter dados.', 'warning');
-        return;
-    }
-    sel.innerHTML = colunas.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-    
-    const colNumerica = colunas.find(c => c.toLowerCase().includes('preco') || c.toLowerCase().includes('valor') || c.toLowerCase().includes('custo'));
-    if (colNumerica) sel.value = colNumerica;
-    
-    document.getElementById('reajusteValor').value = '';
-    document.getElementById('modalReajusteMassa').style.display = 'flex';
-}
-
-function aplicarReajusteMassa() {
-    const col = document.getElementById('reajusteColuna').value;
-    const tipo = document.getElementById('reajusteTipo').value;
-    const valorRaw = document.getElementById('reajusteValor').value.replace(',', '.');
-    const valor = parseFloat(valorRaw);
-    
-    if (!col || isNaN(valor)) {
-        mostrarToast('Informe um valor numérico válido.', 'warning');
-        return;
-    }
-    
-    salvarEstadoHistorico();
-    
-    let qtdeAlterada = 0;
-    
-    estado.todosDados.forEach(linha => {
-        let num = parseFloat(String(linha[col] || '').replace(',', '.'));
-        if (!isNaN(num)) {
-            switch(tipo) {
-                case 'percentual_aumento': num = num + (num * (valor / 100)); break;
-                case 'percentual_desconto': num = num - (num * (valor / 100)); break;
-                case 'fixo_soma': num = num + valor; break;
-                case 'fixo_subtracao': num = num - valor; break;
-                case 'multiplicacao': num = num * valor; break;
-            }
-            
-            // Formatando de volta para string amigável (2 casas)
-            linha[col] = num.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
-            qtdeAlterada++;
-        }
-    });
-    
-    document.getElementById('modalReajusteMassa').style.display = 'none';
-    
-    if (qtdeAlterada > 0) {
-        registrarLog(`Reajuste em massa na coluna "${col}" (${tipo} : ${valor}) aplicados em ${qtdeAlterada} registros.`);
-        atualizarTabela();
-        exibirPagina();
-        atualizarEstatisticas();
-        mostrarToast(`${qtdeAlterada} registros atualizados!`, 'success');
-        persistirEstadoLocal();
-    } else {
-        mostrarToast('Nenhum valor numérico encontrado para reajustar.', 'info');
-    }
+    if (primeiraCelula) primeiraCelula.innerHTML = html;
 }
 
 function _aplicarVisibilidadeColunas() {
     const tabela = document.getElementById('tabelaDados');
     if (!tabela) return;
     const colunas = obterColunasValidas();
+
     const thCells = Array.from(tabela.querySelectorAll('thead tr th'));
     colunas.forEach((col, i) => {
         const oculta = _colunasOcultas.has(col);
         if (thCells[i + 1]) thCells[i + 1].style.display = oculta ? 'none' : '';
     });
+
     tabela.querySelectorAll('tbody tr, tfoot tr').forEach(tr => {
         const cells = Array.from(tr.querySelectorAll('td'));
         colunas.forEach((col, i) => {
@@ -884,9 +820,155 @@ function mostrarTodasColunas() {
     mostrarToast('Todas as colunas estão visíveis.', 'success');
 }
 
-// ───────────────────────────────
-// FILTROS AVANÇADOS
-// ───────────────────────────────
+// ==============================================================================
+// 12. PIVOT / AGRUPAMENTO RÁPIDO
+// ==============================================================================
+function abrirModalPivot() {
+    const colunas       = obterColunasValidas();
+    const agruparSelect = document.getElementById('pivotAgrupar');
+    const valorSelect   = document.getElementById('pivotValor');
+
+    if (!agruparSelect || !valorSelect || colunas.length === 0) {
+        mostrarToast('Necessário ter dados na tabela.', 'warning');
+        return;
+    }
+
+    const options = colunas.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    agruparSelect.innerHTML = options;
+    valorSelect.innerHTML   = options;
+
+    // Tentar pré-selecionar colunas adequadas (categoria -> agrupamento, numérico -> valor)
+    const colCategoria = colunas.find(c => c.toLowerCase().includes('cat') || c.toLowerCase().includes('tipo') || c.toLowerCase().includes('produto') || c.toLowerCase().includes('mes') || c.toLowerCase().includes('data'));
+    const colNumerica  = colunas.find(c => c.toLowerCase().includes('total') || c.toLowerCase().includes('valor') || c.toLowerCase().includes('faturamento') || c.toLowerCase().includes('preco'));
+
+    if (colCategoria) agruparSelect.value = colCategoria;
+    if (colNumerica)  valorSelect.value   = colNumerica;
+
+    document.getElementById('pivotResultadoContainer').innerHTML = '<div style="text-align:center; color:var(--suave); font-size:13px; padding:20px;">Configure e clique em "Atualizar Pivot"</div>';
+    document.getElementById('modalPivot').style.display = 'flex';
+}
+
+function gerarPivot() {
+    const colAgrupar = document.getElementById('pivotAgrupar').value;
+    const colValor   = document.getElementById('pivotValor').value;
+    const operacao   = document.getElementById('pivotOperacao').value;
+
+    if (!colAgrupar || !colValor) return;
+
+    const dados = estado.todosDados || [];
+    const grupos = {};
+
+    dados.forEach(linha => {
+        const chave  = String(linha[colAgrupar] || '(Vazio)').trim();
+        const valStr = String(linha[colValor] || '').replace(',', '.');
+        const num    = parseFloat(valStr);
+
+        if (!grupos[chave]) grupos[chave] = [];
+        if (!isNaN(num)) grupos[chave].push(num);
+    });
+
+    let html = `<table style="width:100%; border-collapse:collapse; font-size:13px;">
+                  <tr style="background:var(--fundo); font-weight:600;">
+                    <td style="padding:6px 10px; border-bottom:1px solid var(--borda);">${escapeHtml(colAgrupar)}</td>
+                    <td style="padding:6px 10px; border-bottom:1px solid var(--borda); text-align:right;">${operacao} de ${escapeHtml(colValor)}</td>
+                  </tr>`;
+
+    const formatBRL = (v) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    for (const chave in grupos) {
+        const valores = grupos[chave];
+        let resultado = 0;
+
+        if (valores.length === 0) {
+            resultado = operacao === 'CONTAGEM' ? 0 : '—';
+        } else {
+            switch (operacao) {
+                case 'SOMA':     resultado = formatBRL(valores.reduce((a, b) => a + b, 0)); break;
+                case 'MEDIA':    resultado = formatBRL(valores.reduce((a, b) => a + b, 0) / valores.length); break;
+                case 'CONTAGEM': resultado = valores.length; break;
+                case 'MAX':      resultado = formatBRL(Math.max(...valores)); break;
+                case 'MIN':      resultado = formatBRL(Math.min(...valores)); break;
+            }
+        }
+
+        html += `<tr>
+                    <td style="padding:6px 10px; border-bottom:1px solid var(--borda);">${escapeHtml(chave)}</td>
+                    <td style="padding:6px 10px; border-bottom:1px solid var(--borda); text-align:right; font-weight:600;">${resultado}</td>
+                 </tr>`;
+    }
+    html += `</table>`;
+
+    document.getElementById('pivotResultadoContainer').innerHTML = html;
+}
+
+// ==============================================================================
+// 13. REAJUSTE EM MASSA
+// ==============================================================================
+function abrirModalReajusteMassa() {
+    const colunas = obterColunasValidas();
+    const sel     = document.getElementById('reajusteColuna');
+    if (!sel || colunas.length === 0) {
+        mostrarToast('Necessário ter dados.', 'warning');
+        return;
+    }
+    sel.innerHTML = colunas.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+
+    const colNumerica = colunas.find(c => c.toLowerCase().includes('preco') || c.toLowerCase().includes('valor') || c.toLowerCase().includes('custo'));
+    if (colNumerica) sel.value = colNumerica;
+
+    document.getElementById('reajusteValor').value = '';
+    document.getElementById('modalReajusteMassa').style.display = 'flex';
+}
+
+function aplicarReajusteMassa() {
+    const col      = document.getElementById('reajusteColuna').value;
+    const tipo     = document.getElementById('reajusteTipo').value;
+    const valorRaw = document.getElementById('reajusteValor').value.replace(',', '.');
+    const valor    = parseFloat(valorRaw);
+
+    if (!col || isNaN(valor)) {
+        mostrarToast('Informe um valor numérico válido.', 'warning');
+        return;
+    }
+
+    salvarEstadoHistorico();
+
+    let qtdeAlterada = 0;
+
+    estado.todosDados.forEach(linha => {
+        let num = parseFloat(String(linha[col] || '').replace(',', '.'));
+        if (!isNaN(num)) {
+            switch (tipo) {
+                case 'percentual_aumento':  num = num + (num * (valor / 100)); break;
+                case 'percentual_desconto': num = num - (num * (valor / 100)); break;
+                case 'fixo_soma':           num = num + valor; break;
+                case 'fixo_subtracao':      num = num - valor; break;
+                case 'multiplicacao':       num = num * valor; break;
+            }
+
+            // Formatando de volta para string amigável (2 casas)
+            linha[col] = num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            qtdeAlterada++;
+        }
+    });
+
+    document.getElementById('modalReajusteMassa').style.display = 'none';
+
+    if (qtdeAlterada > 0) {
+        registrarLog(`Reajuste em massa na coluna "${col}" (${tipo} : ${valor}) aplicados em ${qtdeAlterada} registros.`);
+        atualizarTabela();
+        exibirPagina();
+        atualizarEstatisticas();
+        mostrarToast(`${qtdeAlterada} registros atualizados!`, 'success');
+        persistirEstadoLocal();
+    } else {
+        mostrarToast('Nenhum valor numérico encontrado para reajustar.', 'info');
+    }
+}
+
+// ==============================================================================
+// 14. FILTROS AVANÇADOS
+// ==============================================================================
 function abrirModalFiltroAvancado() {
     renderizarFiltrosAvancados();
     document.getElementById('modalFiltroAvancado').style.display = 'flex';
@@ -900,8 +982,9 @@ function adicionarFiltroAvancado() {
 
 function renderizarFiltrosAvancados() {
     const colunas = obterColunasValidas();
-    const lista = document.getElementById('filtroAvancadoLista');
+    const lista   = document.getElementById('filtroAvancadoLista');
     if (!lista) return;
+
     lista.innerHTML = _filtrosAvancados.length === 0
         ? '<p style="color:var(--suave);text-align:center;font-size:13px;">Nenhuma condição adicionada.</p>'
         : _filtrosAvancados.map((f, i) => `
@@ -910,14 +993,14 @@ function renderizarFiltrosAvancados() {
                     ${colunas.map(c => `<option value="${escapeHtml(c)}" ${f.col === c ? 'selected' : ''}>${escapeHtml(c)}</option>`).join('')}
                 </select>
                 <select onchange="_filtrosAvancados[${i}].op=this.value">
-                    <option value="contem" ${f.op === 'contem' ? 'selected' : ''}>Contém</option>
+                    <option value="contem"     ${f.op === 'contem'     ? 'selected' : ''}>Contém</option>
                     <option value="nao_contem" ${f.op === 'nao_contem' ? 'selected' : ''}>Não contém</option>
-                    <option value="igual" ${f.op === 'igual' ? 'selected' : ''}>Igual a</option>
-                    <option value="diferente" ${f.op === 'diferente' ? 'selected' : ''}>Diferente de</option>
-                    <option value="maior" ${f.op === 'maior' ? 'selected' : ''}>Maior que</option>
-                    <option value="menor" ${f.op === 'menor' ? 'selected' : ''}>Menor que</option>
-                    <option value="vazio" ${f.op === 'vazio' ? 'selected' : ''}>Está vazio</option>
-                    <option value="nao_vazio" ${f.op === 'nao_vazio' ? 'selected' : ''}>Não está vazio</option>
+                    <option value="igual"      ${f.op === 'igual'      ? 'selected' : ''}>Igual a</option>
+                    <option value="diferente"  ${f.op === 'diferente'  ? 'selected' : ''}>Diferente de</option>
+                    <option value="maior"      ${f.op === 'maior'      ? 'selected' : ''}>Maior que</option>
+                    <option value="menor"      ${f.op === 'menor'      ? 'selected' : ''}>Menor que</option>
+                    <option value="vazio"      ${f.op === 'vazio'      ? 'selected' : ''}>Está vazio</option>
+                    <option value="nao_vazio"  ${f.op === 'nao_vazio'  ? 'selected' : ''}>Não está vazio</option>
                 </select>
                 <input type="text" value="${escapeHtml(f.val)}" placeholder="Valor..."
                     onchange="_filtrosAvancados[${i}].val=this.value" style="flex:1;">
@@ -953,7 +1036,9 @@ function renderizarTagsFiltros() {
     const filtros = estado.filtrosAvancados || [];
     if (!filtros.length) { container.style.display = 'none'; container.innerHTML = ''; return; }
     container.style.display = 'flex';
+
     const opLabel = { contem: 'Contém', nao_contem: 'Não contém', igual: '=', diferente: '≠', maior: '>', menor: '<', vazio: 'Vazio', nao_vazio: 'Não vazio' };
+
     container.innerHTML = filtros.map((f, i) => `
         <span class="filtro-tag">
             <i class="fa-solid fa-filter" style="font-size:10px;"></i>
@@ -969,9 +1054,9 @@ function removerFiltro(i) {
     renderizarTagsFiltros();
 }
 
-// ───────────────────────────────
-// FORMATAÇÃO CONDICIONAL
-// ───────────────────────────────
+// ==============================================================================
+// 15. FORMATAÇÃO CONDICIONAL
+// ==============================================================================
 function abrirModalFormatacaoCondicional() {
     renderizarRegrasFC();
     document.getElementById('modalFormatacaoCondicional').style.display = 'flex';
@@ -985,9 +1070,11 @@ function adicionarRegraFC() {
 
 function renderizarRegrasFC() {
     const colunas = obterColunasValidas();
-    const lista = document.getElementById('fcRegraLista');
+    const lista   = document.getElementById('fcRegraLista');
     if (!lista) return;
+
     const cores = { verde: '🟢', vermelho: '🔴', amarelo: '🟡', azul: '🔵', roxo: '🟣', laranja: '🟠' };
+
     lista.innerHTML = _regrasFC.length === 0
         ? '<p style="color:var(--suave);text-align:center;font-size:13px;">Nenhuma regra criada.</p>'
         : _regrasFC.map((r, i) => `
@@ -996,11 +1083,11 @@ function renderizarRegrasFC() {
                     ${colunas.map(c => `<option value="${escapeHtml(c)}" ${r.col === c ? 'selected' : ''}>${escapeHtml(c)}</option>`).join('')}
                 </select>
                 <select onchange="_regrasFC[${i}].op=this.value">
-                    <option value="maior" ${r.op === 'maior' ? 'selected' : ''}>Maior que</option>
-                    <option value="menor" ${r.op === 'menor' ? 'selected' : ''}>Menor que</option>
-                    <option value="igual" ${r.op === 'igual' ? 'selected' : ''}>Igual a</option>
+                    <option value="maior"  ${r.op === 'maior'  ? 'selected' : ''}>Maior que</option>
+                    <option value="menor"  ${r.op === 'menor'  ? 'selected' : ''}>Menor que</option>
+                    <option value="igual"  ${r.op === 'igual'  ? 'selected' : ''}>Igual a</option>
                     <option value="contem" ${r.op === 'contem' ? 'selected' : ''}>Contém</option>
-                    <option value="vazio" ${r.op === 'vazio' ? 'selected' : ''}>Está vazio</option>
+                    <option value="vazio"  ${r.op === 'vazio'  ? 'selected' : ''}>Está vazio</option>
                 </select>
                 <input type="text" value="${escapeHtml(r.val)}"
                     onchange="_regrasFC[${i}].val=this.value" placeholder="Valor" style="width:80px;">
@@ -1023,31 +1110,39 @@ function _aplicarFC() {
     if (!_regrasFC.length) return;
     const tbody = document.getElementById('dados-tbody');
     if (!tbody) return;
-    const colunas = obterColunasValidas();
+
+    const colunas       = obterColunasValidas();
     const dadosVisiveis = obterDadosVisiveis();
-    const inicio = (estado.paginaAtual - 1) * CONFIG.LINHAS_POR_PAGINA;
+    const inicio        = (estado.paginaAtual - 1) * CONFIG.LINHAS_POR_PAGINA;
+
     tbody.querySelectorAll('tr').forEach((tr, rowI) => {
         const linha = dadosVisiveis[inicio + rowI];
         if (!linha) return;
+
         const cells = tr.querySelectorAll('td');
         colunas.forEach((col, colI) => {
             const td = cells[colI + 1];
             if (!td) return;
+
             const val = String(linha[col] || '').toLowerCase().trim();
             const num = parseFloat(val.replace(',', '.'));
+
             td.classList.remove('fc-verde', 'fc-vermelho', 'fc-amarelo', 'fc-azul', 'fc-roxo', 'fc-laranja');
+
             for (const regra of _regrasFC) {
                 if (regra.col !== col) continue;
                 const fval = String(regra.val || '').toLowerCase().trim();
                 const fnum = parseFloat(fval.replace(',', '.'));
                 let match = false;
+
                 switch (regra.op) {
-                    case 'maior': match = !isNaN(num) && !isNaN(fnum) && num > fnum; break;
-                    case 'menor': match = !isNaN(num) && !isNaN(fnum) && num < fnum; break;
-                    case 'igual': match = val === fval; break;
+                    case 'maior':  match = !isNaN(num) && !isNaN(fnum) && num > fnum; break;
+                    case 'menor':  match = !isNaN(num) && !isNaN(fnum) && num < fnum; break;
+                    case 'igual':  match = val === fval; break;
                     case 'contem': match = val.includes(fval); break;
-                    case 'vazio': match = val === ''; break;
+                    case 'vazio':  match = val === ''; break;
                 }
+
                 if (match) { td.classList.add(`fc-${regra.cor}`); break; }
             }
         });
@@ -1063,17 +1158,19 @@ function limparFormatacaoCondicional() {
     mostrarToast('Formatação condicional removida.', 'info');
 }
 
-// ───────────────────────────────
-// ───────────────────────────────
-// FERRAMENTAS DE LIMPEZA DE DADOS
-// ───────────────────────────────
+// ==============================================================================
+// 16. FERRAMENTAS DE LIMPEZA DE DADOS
+// ==============================================================================
 function _parsearNumeroLimpo(val) {
     if (val === null || val === undefined) return NaN;
     if (typeof val === 'number') return isNaN(val) ? NaN : val;
+
     let s = String(val).trim();
     if (!s || ['nan', 'none', 'null', 'n/a', 'na', '-', '--', 'nd', 'indefinido'].includes(s.toLowerCase())) return NaN;
+
     s = s.replace(/^[R$\s€£\s]+/g, '').replace(/[%]/g, '').trim();
     if (s.startsWith('(') && s.endsWith(')')) s = '-' + s.slice(1, -1).trim();
+
     if (s.includes('.') && s.includes(',')) {
         if (s.lastIndexOf('.') < s.lastIndexOf(',')) {
             s = s.replace(/\./g, '').replace(',', '.');
@@ -1093,6 +1190,7 @@ function _parsearNumeroLimpo(val) {
             s = s.replace(/\./g, '');
         }
     }
+
     const n = parseFloat(s);
     return isNaN(n) ? NaN : n;
 }
@@ -1116,13 +1214,15 @@ function abrirModalLimpeza() {
 
 function removerDuplicatas() {
     const colunas = obterColunasValidas();
-    const antes = (estado.todosDados || []).length;
+    const antes   = (estado.todosDados || []).length;
     if (antes === 0) {
         mostrarToast('Nenhum dado disponível para remover duplicatas.', 'warning');
         return;
     }
+
     const visto = new Set();
     salvarEstadoHistorico();
+
     const idsMantidos = new Set();
     estado.todosDados = (estado.todosDados || []).filter(linha => {
         const key = colunas.map(c => String(linha[c] ?? '').trim().toLowerCase()).join('|');
@@ -1134,11 +1234,11 @@ function removerDuplicatas() {
 
     // Limpar anomalias órfãs
     if (window.estado && window.estado.anomalias) {
-        window.estado.anomalias = window.estado.anomalias.filter(a => idsMantidos.has(a._id));
+        window.estado.anomalias    = window.estado.anomalias.filter(a => idsMantidos.has(a._id));
         window.estado.anomaliasIds = new Set(window.estado.anomalias.map(a => a._id));
     }
     if (estado.anomalias) {
-        estado.anomalias = estado.anomalias.filter(a => idsMantidos.has(a._id));
+        estado.anomalias    = estado.anomalias.filter(a => idsMantidos.has(a._id));
         estado.anomaliasIds = new Set(estado.anomalias.map(a => a._id));
     }
 
@@ -1155,24 +1255,28 @@ function removerDuplicatas() {
 
 function preencherVaziosComMedia() {
     const colunas = obterColunasValidas();
-    const dados = estado.todosDados || [];
+    const dados   = estado.todosDados || [];
     if (!colunas.length || !dados.length) {
         mostrarToast('Nenhum dado disponível para preenchimento.', 'warning');
         return;
     }
+
     salvarEstadoHistorico();
     let preenchidos = 0;
 
     colunas.forEach(col => {
         const ehNum = _ehColunaNumerica(col, dados);
+
         if (ehNum) {
             const vals = dados.map(l => _parsearNumeroLimpo(l[col])).filter(n => !isNaN(n));
             if (!vals.length) return;
             const media = vals.reduce((a, b) => a + b, 0) / vals.length;
             const mediaFormatada = Number.isInteger(media) ? media : parseFloat(media.toFixed(2));
+
             dados.forEach(linha => {
                 const val = linha[col];
-                const vazio = val === null || val === undefined || String(val).trim() === '' || ['nan', 'none', 'null', 'n/a', '-', '--'].includes(String(val).trim().toLowerCase());
+                const vazio = val === null || val === undefined || String(val).trim() === ''
+                           || ['nan', 'none', 'null', 'n/a', '-', '--'].includes(String(val).trim().toLowerCase());
                 if (vazio) {
                     linha[col] = mediaFormatada;
                     preenchidos++;
@@ -1191,10 +1295,12 @@ function preencherVaziosComMedia() {
             Object.entries(freq).forEach(([val, count]) => {
                 if (count > maxCount) { maxCount = count; moda = val; }
             });
+
             if (moda && maxCount >= 2) {
                 dados.forEach(linha => {
                     const val = linha[col];
-                    const vazio = val === null || val === undefined || String(val).trim() === '' || ['nan', 'none', 'null', 'n/a', '-', '--'].includes(String(val).trim().toLowerCase());
+                    const vazio = val === null || val === undefined || String(val).trim() === ''
+                               || ['nan', 'none', 'null', 'n/a', '-', '--'].includes(String(val).trim().toLowerCase());
                     if (vazio) {
                         linha[col] = moda;
                         preenchidos++;
@@ -1214,13 +1320,15 @@ function preencherVaziosComMedia() {
 
 function _normalizarTextos(fn, tipo) {
     const colunas = obterColunasValidas();
-    const dados = estado.todosDados || [];
+    const dados   = estado.todosDados || [];
     if (!colunas.length || !dados.length) {
         mostrarToast('Nenhum dado disponível para normalização.', 'warning');
         return;
     }
+
     salvarEstadoHistorico();
     let alterados = 0;
+
     dados.forEach(linha => colunas.forEach(col => {
         const val = linha[col];
         if (typeof val === 'string' && val.trim() !== '') {
@@ -1231,6 +1339,7 @@ function _normalizarTextos(fn, tipo) {
             }
         }
     }));
+
     sincronizarTabelaAtiva();
     exibirPagina();
     atualizarEstatisticas();
@@ -1249,13 +1358,15 @@ function normalizarTextoCapitalizado() {
 
 function trimEspacos() {
     const colunas = obterColunasValidas();
-    const dados = estado.todosDados || [];
+    const dados   = estado.todosDados || [];
     if (!colunas.length || !dados.length) {
         mostrarToast('Nenhum dado disponível para aplicar trim.', 'warning');
         return;
     }
+
     salvarEstadoHistorico();
     let trimados = 0;
+
     dados.forEach(linha => colunas.forEach(col => {
         if (typeof linha[col] === 'string') {
             const novo = linha[col].replace(/\s+/g, ' ').trim();
@@ -1265,6 +1376,7 @@ function trimEspacos() {
             }
         }
     }));
+
     sincronizarTabelaAtiva();
     exibirPagina();
     atualizarEstatisticas();
@@ -1275,13 +1387,15 @@ function trimEspacos() {
 
 function removerLinhasVazias() {
     const colunas = obterColunasValidas();
-    const antes = (estado.todosDados || []).length;
+    const antes   = (estado.todosDados || []).length;
     if (antes === 0) {
         mostrarToast('Nenhum dado disponível.', 'warning');
         return;
     }
+
     salvarEstadoHistorico();
     const idsMantidos = new Set();
+
     estado.todosDados = (estado.todosDados || []).filter(linha => {
         const temConteudo = colunas.some(col => {
             const v = linha[col];
@@ -1292,7 +1406,7 @@ function removerLinhasVazias() {
     });
 
     if (window.estado && window.estado.anomalias) {
-        window.estado.anomalias = window.estado.anomalias.filter(a => idsMantidos.has(a._id));
+        window.estado.anomalias    = window.estado.anomalias.filter(a => idsMantidos.has(a._id));
         window.estado.anomaliasIds = new Set(window.estado.anomalias.map(a => a._id));
     }
 
@@ -1324,17 +1438,21 @@ function mostrarSubstituicaoMassa() {
 }
 
 function executarSubstituicao() {
-    const colSel = document.getElementById('substituirColuna')?.value;
+    const colSel    = document.getElementById('substituirColuna')?.value;
     const encontrar = document.getElementById('substituirEncontrar')?.value;
-    const por = document.getElementById('substituirPor')?.value ?? '';
+    const por       = document.getElementById('substituirPor')?.value ?? '';
+
     if (encontrar === undefined || encontrar === null || encontrar === '') {
         mostrarToast('Digite o termo que deseja encontrar para substituir.', 'warning');
         return;
     }
-    const colunas = obterColunasValidas();
+
+    const colunas  = obterColunasValidas();
     const colsAlvo = colSel === '__todas__' ? colunas : [colSel];
+
     salvarEstadoHistorico();
     let count = 0;
+
     (estado.todosDados || []).forEach(linha => colsAlvo.forEach(col => {
         if (linha[col] !== null && linha[col] !== undefined) {
             const strVal = String(linha[col]);
@@ -1344,6 +1462,7 @@ function executarSubstituicao() {
             }
         }
     }));
+
     sincronizarTabelaAtiva();
     exibirPagina();
     atualizarEstatisticas();
@@ -1352,14 +1471,18 @@ function executarSubstituicao() {
     mostrarToast(count > 0 ? `✓ Substituição concluída! ${count} ocorrência(s) alterada(s).` : 'Nenhuma ocorrência encontrada com o termo buscado.', count > 0 ? 'success' : 'info');
 }
 
-// ───────────────────────────────
-// EXPORTAÇÃO CSV e JSON
-// ───────────────────────────────
+// ==============================================================================
+// 17. EXPORTAÇÃO CSV e JSON
+// ==============================================================================
 function exportarCSV() {
     const colunas = obterColunasValidas();
     if (!colunas.length || !(estado.todosDados || []).length) { mostrarToast('Adicione dados antes de exportar.', 'warning'); return; }
+
     const header = colunas.map(c => `"${c}"`).join(',');
-    const rows = (estado.todosDados || []).map(linha => colunas.map(col => `"${String(linha[col] ?? '').replace(/"/g, '""')}"`).join(','));
+    const rows   = (estado.todosDados || []).map(linha =>
+        colunas.map(col => `"${String(linha[col] ?? '').replace(/"/g, '""')}"`).join(',')
+    );
+
     const blob = new Blob(['\uFEFF' + [header, ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -1371,7 +1494,13 @@ function exportarCSV() {
 function exportarJSON() {
     const colunas = obterColunasValidas();
     if (!colunas.length || !(estado.todosDados || []).length) { mostrarToast('Adicione dados antes de exportar.', 'warning'); return; }
-    const dados = (estado.todosDados || []).map(linha => { const obj = {}; colunas.forEach(col => obj[col] = linha[col] ?? ''); return obj; });
+
+    const dados = (estado.todosDados || []).map(linha => {
+        const obj = {};
+        colunas.forEach(col => obj[col] = linha[col] ?? '');
+        return obj;
+    });
+
     const blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -1380,15 +1509,9 @@ function exportarJSON() {
     mostrarToast('JSON exportado com sucesso!', 'success');
 }
 
-// ───────────────────────────────
-// MULTI-TABELAS (ABAS)
-// ───────────────────────────────
-let _tabelas = [];
-let _tabelaAtualId = null;
-
-/* ================================================================
-   CARREGAR TODAS AS TABELAS DO USUÁRIO
-   ================================================================ */
+// ==============================================================================
+// 18. MULTI-TABELAS (ABAS)
+// ==============================================================================
 async function carregarTodasTabelas() {
     try {
         const resp = await fetch('/api/tabelas');
@@ -1440,6 +1563,7 @@ async function carregarTodasTabelas() {
     if (typeof inicializarTabelaPadrao === 'function') {
         inicializarTabelaPadrao();
     }
+
     const padraoCols = ['Faturamento', 'Despesas', 'Lucro', 'Período'];
     const tabPadrao = {
         id: `tab-${Date.now()}`,
@@ -1455,38 +1579,36 @@ async function carregarTodasTabelas() {
 }
 window.carregarTodasTabelas = carregarTodasTabelas;
 
-/* ================================================================
-   ATUALIZAR INDICADOR VISUAL DA TABELA ATIVA NO TOPO
-   ================================================================ */
 function atualizarIndicadorTabelaAtiva() {
     const tab = _tabelas.find(t => t.id === _tabelaAtualId) || _tabelas[0];
     if (!tab) return;
+
     const nameEl = document.getElementById('activeTableName');
     const rowsEl = document.getElementById('activeTableRowsCount');
     const totalLinhas = (estado.todosDados || []).length;
+
     if (nameEl) nameEl.textContent = tab.nome;
     if (rowsEl) rowsEl.textContent = `${totalLinhas} ${totalLinhas === 1 ? 'linha' : 'linhas'}${tab.dominio_label ? ' • ' + tab.dominio_label : ''}`;
 }
 window.atualizarIndicadorTabelaAtiva = atualizarIndicadorTabelaAtiva;
 
-/* ================================================================
-   RENDERIZAR ABAS DE TABELAS COM DOMÍNIO INTELIGENTE
-   ================================================================ */
 function renderizarAbasTabelas() {
     const container = document.getElementById('tableTabsContainer');
-    const bar = document.getElementById('tableTabsBar');
+    const bar       = document.getElementById('tableTabsBar');
     if (!bar || !container) return;
+
     if (_tabelas.length === 0) {
         container.style.display = 'none';
         return;
     }
     container.style.display = 'flex';
+
     bar.innerHTML = _tabelas.map(t => {
         const isActive = t.id === _tabelaAtualId;
-        const count = Array.isArray(t.dados) ? t.dados.length : 0;
-        
+        const count    = Array.isArray(t.dados) ? t.dados.length : 0;
+
         let domLabel = t.dominio_label || 'Geral';
-        let domCor = t.dominio_cor || '#0ea5e9';
+        let domCor   = t.dominio_cor   || '#0ea5e9';
 
         return `
         <div class="table-tab-pill ${isActive ? 'active' : ''}" onclick="ativarTabela('${t.id}')" title="Clique para ativar '${escapeHtml(t.nome)}' • Categoria: ${domLabel} (Duplo clique para renomear)" ondblclick="abrirModalRenomearTabela('${t.id}')">
@@ -1505,13 +1627,11 @@ function renderizarAbasTabelas() {
             </button>` : ''}
         </div>`;
     }).join('');
+
     atualizarIndicadorTabelaAtiva();
 }
 window.renderizarAbasTabelas = renderizarAbasTabelas;
 
-/* ================================================================
-   MODAL DE DOMÍNIO/CATEGORIA DE PLANILHA
-   ================================================================ */
 function abrirModalDominioTabela(tabelaId) {
     const tab = _tabelas.find(t => t.id === tabelaId);
     if (!tab) return;
@@ -1614,11 +1734,11 @@ async function salvarDominioTabelaSelecionada(tabelaId) {
                     _tabelaAtualId = res.id;
                 }
             }
-            tab.tipo_dominio = res.tipo_dominio || novoDominio;
+            tab.tipo_dominio  = res.tipo_dominio  || novoDominio;
             tab.dominio_label = res.dominio_label;
-            tab.dominio_cor = res.dominio_cor;
+            tab.dominio_cor   = res.dominio_cor;
             tab.dominio_icone = res.dominio_icone;
-            tab.tipo_fluxo = res.tipo_fluxo;
+            tab.tipo_fluxo    = res.tipo_fluxo;
             if (typeof mostrarToast === 'function') {
                 mostrarToast(`✓ Categoria da planilha alterada para '${res.dominio_label}'`, 'success');
             }
@@ -1633,18 +1753,16 @@ async function salvarDominioTabelaSelecionada(tabelaId) {
 }
 window.salvarDominioTabelaSelecionada = salvarDominioTabelaSelecionada;
 
-/* ================================================================
-   ATIVAR TABELA (MUDAR TABELA SELECIONADA)
-   ================================================================ */
 function ativarTabela(id, salvarAtual = true) {
     if (salvarAtual && _tabelaAtualId) {
         const anterior = _tabelas.find(t => t.id === _tabelaAtualId);
         if (anterior) {
-            anterior.dados = clonarDadosTabela(estado.todosDados);
+            anterior.dados   = clonarDadosTabela(estado.todosDados);
             anterior.colunas = [...obterColunasValidas()];
-            
+
             // Persistir alterações da tabela anterior no backend para salvar tudo no sistema
             const tabelaAntigaId = (anterior.id && !String(anterior.id).startsWith('tab-local-') && !String(anterior.id).startsWith('tab-')) ? anterior.id : null;
+
             if (anterior.colunas && anterior.colunas.length > 0 && anterior.dados && anterior.dados.length > 0) {
                 fetch('/api/tabelas', {
                     method: 'POST',
@@ -1679,7 +1797,7 @@ function ativarTabela(id, salvarAtual = true) {
             .then(r => r.json())
             .then(json => {
                 if (json && Array.isArray(json.dados) && json.dados.length > 0) {
-                    tab.dados = json.dados;
+                    tab.dados   = json.dados;
                     tab.colunas = json.colunas && json.colunas.length > 0 ? json.colunas : tab.colunas;
                 }
                 preencherTabela(tab.colunas, tab.dados || []);
@@ -1702,13 +1820,14 @@ function _finalizarAtivacaoTabela(tab) {
     registrarLog(`Trocou visualização para tabela "${tab.nome}".`);
 
     // Persistir imediatamente a tabela ativa em chave dedicada (rápida recuperação offline)
-    try { localStorage.setItem('DataInsight_TabelaAtiva', tab.id); } catch(_) {}
+    try { localStorage.setItem('DataInsight_TabelaAtiva', tab.id); } catch (_) {}
 
     persistirEstadoLocal();
 
     // Notificar o backend para marcar a tabela ativada como a tabela ativa do usuário no MongoDB
     if (tab.id && !String(tab.id).startsWith('tab-local-') && !String(tab.id).startsWith('tab-')) {
-        fetch(`/api/tabelas/${tab.id}/ativar`, { method: 'POST' }).catch(e => console.warn('Aviso ao ativar tabela no backend:', e));
+        fetch(`/api/tabelas/${tab.id}/ativar`, { method: 'POST' })
+            .catch(e => console.warn('Aviso ao ativar tabela no backend:', e));
     } else if (tab.colunas && tab.colunas.length > 0 && tab.dados && tab.dados.length > 0) {
         if (typeof salvarDados === 'function') {
             salvarDados(true);
@@ -1719,22 +1838,21 @@ function _finalizarAtivacaoTabela(tab) {
     if (typeof window.finSincronizarComTabela === 'function') {
         window.finSincronizarComTabela(tab);
     } else if (typeof FinState !== 'undefined') {
-        FinState.colunas = [...tab.colunas];
+        FinState.colunas      = [...tab.colunas];
         FinState.dadosAmostra = (tab.dados || []).slice(0, 20);
-        if (typeof renderizarCategorias === 'function') renderizarCategorias();
-        if (typeof atualizarStatusCompleto === 'function') atualizarStatusCompleto();
+        if (typeof renderizarCategorias === 'function')      renderizarCategorias();
+        if (typeof atualizarStatusCompleto === 'function')   atualizarStatusCompleto();
     }
 }
 window.ativarTabela = ativarTabela;
 
-/* ================================================================
-   MODAL CRIAR NOVA TABELA
-   ================================================================ */
 function abrirModalNovaTabela() {
     const modal = document.getElementById('modalNovaTabela');
     if (!modal) return;
+
     const nomeInput = document.getElementById('nomesNovaTabela');
     if (nomeInput) nomeInput.value = `Tabela ${_tabelas.length + 1}`;
+
     const container = document.getElementById('novasTabelaColunas');
     if (container) {
         container.innerHTML = '';
@@ -1780,6 +1898,7 @@ window.adicionarColunaNovaTabela = adicionarColunaNovaTabela;
 async function criarNovaTabela() {
     const nome = document.getElementById('nomesNovaTabela')?.value.trim();
     if (!nome) { mostrarToast('Digite um nome para a tabela.', 'warning'); return; }
+
     const rows = document.getElementById('novasTabelaColunas')?.querySelectorAll('.nova-col-row') || [];
     const novasColunas = [];
     rows.forEach(row => {
@@ -1833,20 +1952,20 @@ async function criarNovaTabela() {
 }
 window.criarNovaTabela = criarNovaTabela;
 
-/* ================================================================
-   RENOMEAR TABELA
-   ================================================================ */
 function abrirModalRenomearTabela(id) {
     const targetId = id || _tabelaAtualId;
     const tab = _tabelas.find(t => t.id === targetId);
     if (!tab) return;
-    const modal = document.getElementById('modalRenomearTabela');
-    const idInput = document.getElementById('inputRenomearTabelaId');
+
+    const modal    = document.getElementById('modalRenomearTabela');
+    const idInput  = document.getElementById('inputRenomearTabelaId');
     const nameInput = document.getElementById('inputRenomearTabelaNome');
     if (!modal || !nameInput) return;
+
     if (idInput) idInput.value = tab.id;
     nameInput.value = tab.nome;
     modal.style.display = 'flex';
+
     setTimeout(() => {
         nameInput.focus();
         nameInput.select();
@@ -1855,16 +1974,19 @@ function abrirModalRenomearTabela(id) {
 window.abrirModalRenomearTabela = abrirModalRenomearTabela;
 
 async function salvarRenomearTabela() {
-    const idInput = document.getElementById('inputRenomearTabelaId');
-    const nameInput = document.getElementById('inputRenomearTabelaNome');
-    const targetId = idInput?.value || _tabelaAtualId;
-    const novoNome = nameInput?.value.trim();
+    const idInput    = document.getElementById('inputRenomearTabelaId');
+    const nameInput  = document.getElementById('inputRenomearTabelaNome');
+    const targetId   = idInput?.value || _tabelaAtualId;
+    const novoNome   = nameInput?.value.trim();
+
     if (!novoNome) {
         mostrarToast('Digite um nome válido para a tabela.', 'warning');
         return;
     }
+
     const tab = _tabelas.find(t => t.id === targetId);
     if (!tab) return;
+
     const nomeAntigo = tab.nome;
     tab.nome = novoNome;
 
@@ -1890,9 +2012,6 @@ async function salvarRenomearTabela() {
 }
 window.salvarRenomearTabela = salvarRenomearTabela;
 
-/* ================================================================
-   DUPLICAR TABELA
-   ================================================================ */
 async function duplicarTabelaAtual() {
     return duplicarTabela(_tabelaAtualId);
 }
@@ -1907,8 +2026,8 @@ async function duplicarTabela(id) {
     sincronizarTabelaAtiva();
 
     let novoId = `tab-${Date.now()}`;
-    const novoNome = `${tab.nome} (Cópia)`;
-    const novosDados = clonarDadosTabela(tab.dados);
+    const novoNome    = `${tab.nome} (Cópia)`;
+    const novosDados  = clonarDadosTabela(tab.dados);
     const novasColunas = [...tab.colunas];
 
     try {
@@ -1935,16 +2054,15 @@ async function duplicarTabela(id) {
 }
 window.duplicarTabela = duplicarTabela;
 
-/* ================================================================
-   EXCLUIR / FECHAR TABELA
-   ================================================================ */
 async function fecharTabela(id) {
     if (_tabelas.length <= 1) {
         mostrarToast('Não é possível fechar a única tabela ativa.', 'warning');
         return;
     }
+
     const idx = _tabelas.findIndex(t => t.id === id);
     if (idx === -1) return;
+
     const tabNome = _tabelas[idx].nome;
 
     if (!confirm(`Deseja realmente excluir a tabela "${tabNome}"? Todos os dados desta planilha serão removidos.`)) {
@@ -1972,9 +2090,9 @@ async function fecharTabela(id) {
 }
 window.fecharTabela = fecharTabela;
 
-// ───────────────────────────────
-// HOOKS PÓS-RENDERIZAÇÃO — via MutationObserver e substituição dinâmica
-// ───────────────────────────────
+// ==============================================================================
+// 19. HOOKS PÓS-RENDERIZAÇÃO — via MutationObserver e monkey-patches
+// ==============================================================================
 (function instalarHooks() {
     function _runAfterRender() {
         atualizarEstatisticas();
@@ -2005,26 +2123,26 @@ window.fecharTabela = fecharTabela;
     }
 
     function instalarFormulaBarHook() {
-        document.addEventListener('focusin', function(e) {
+        document.addEventListener('focusin', function (e) {
             if (e.target && e.target.classList.contains('entrada-linha')) {
                 const fb = document.getElementById('formulaBarInput');
                 if (fb) { fb.value = e.target.value; fb.readOnly = false; }
             }
         });
-        document.addEventListener('input', function(e) {
+        document.addEventListener('input', function (e) {
             if (e.target && e.target.classList.contains('entrada-linha')) {
                 const fb = document.getElementById('formulaBarInput');
                 if (fb && document.activeElement === e.target) fb.value = e.target.value;
             }
         });
         // Escutar auditoria em inputs de dados
-        document.addEventListener('change', function(e) {
+        document.addEventListener('change', function (e) {
             if (e.target && e.target.classList.contains('entrada-linha')) {
                 const tr = e.target.closest('tr');
                 if (tr) {
                     const rowNum = tr.querySelector('.row-number')?.textContent || '?';
-                    const td = e.target.closest('td');
-                    const cells = Array.from(tr.querySelectorAll('td'));
+                    const td     = e.target.closest('td');
+                    const cells  = Array.from(tr.querySelectorAll('td'));
                     const colIdx = cells.indexOf(td);
                     const colunas = obterColunasValidas();
                     const colName = colunas[colIdx - 1] || '?';
@@ -2036,25 +2154,27 @@ window.fecharTabela = fecharTabela;
 
     if (typeof obterDadosVisiveis === 'function') {
         const _origObterDadosVisiveis = obterDadosVisiveis;
-        obterDadosVisiveis = function() {
+        obterDadosVisiveis = function () {
             let dados = _origObterDadosVisiveis();
             const filtros = estado.filtrosAvancados || [];
             if (!filtros.length) return dados;
+
             return dados.filter(linha => filtros.every(f => {
-                const val = String(linha[f.col] || '').toLowerCase().trim();
+                const val  = String(linha[f.col] || '').toLowerCase().trim();
                 const fval = String(f.val || '').toLowerCase().trim();
-                const num = parseFloat(val.replace(',', '.'));
+                const num  = parseFloat(val.replace(',', '.'));
                 const fnum = parseFloat(fval.replace(',', '.'));
-                switch(f.op) {
-                    case 'contem': return val.includes(fval);
+
+                switch (f.op) {
+                    case 'contem':     return val.includes(fval);
                     case 'nao_contem': return !val.includes(fval);
-                    case 'igual': return val === fval;
-                    case 'diferente': return val !== fval;
-                    case 'maior': return !isNaN(num) && !isNaN(fnum) && num > fnum;
-                    case 'menor': return !isNaN(num) && !isNaN(fnum) && num < fnum;
-                    case 'vazio': return val === '';
-                    case 'nao_vazio': return val !== '';
-                    default: return true;
+                    case 'igual':      return val === fval;
+                    case 'diferente':  return val !== fval;
+                    case 'maior':      return !isNaN(num) && !isNaN(fnum) && num > fnum;
+                    case 'menor':      return !isNaN(num) && !isNaN(fnum) && num < fnum;
+                    case 'vazio':      return val === '';
+                    case 'nao_vazio':  return val !== '';
+                    default:           return true;
                 }
             }));
         };
@@ -2068,15 +2188,16 @@ window.fecharTabela = fecharTabela;
     }
 })();
 
-// Exposição Global de Funções de Limpeza e Tratamento
-window.abrirModalLimpeza = abrirModalLimpeza;
-window.removerDuplicatas = removerDuplicatas;
-window.preencherVaziosComMedia = preencherVaziosComMedia;
-window.normalizarTextoMinusculas = normalizarTextoMinusculas;
-window.normalizarTextoMaiusculas = normalizarTextoMaiusculas;
+// ==============================================================================
+// 20. EXPOSIÇÃO GLOBAL (FUNÇÕES DE LIMPEZA E TRATAMENTO)
+// ==============================================================================
+window.abrirModalLimpeza          = abrirModalLimpeza;
+window.removerDuplicatas          = removerDuplicatas;
+window.preencherVaziosComMedia    = preencherVaziosComMedia;
+window.normalizarTextoMinusculas  = normalizarTextoMinusculas;
+window.normalizarTextoMaiusculas  = normalizarTextoMaiusculas;
 window.normalizarTextoCapitalizado = normalizarTextoCapitalizado;
-window.trimEspacos = trimEspacos;
-window.removerLinhasVazias = removerLinhasVazias;
-window.mostrarSubstituicaoMassa = mostrarSubstituicaoMassa;
-window.executarSubstituicao = executarSubstituicao;
-
+window.trimEspacos                = trimEspacos;
+window.removerLinhasVazias        = removerLinhasVazias;
+window.mostrarSubstituicaoMassa   = mostrarSubstituicaoMassa;
+window.executarSubstituicao       = executarSubstituicao;

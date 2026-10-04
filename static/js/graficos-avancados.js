@@ -1,10 +1,42 @@
-// ==========================================
-// GRÁFICOS APEXCHARTS - DASHBOARD EMPRESARIAL
-// ==========================================
+// ==============================================================================
+// graficos-avancados.js
+// ==============================================================================
+// Este código pertence à plataforma @DataInsight.
+// Todos os códigos da plataforma devem seguir a mesma estrutura de organização
+// em seções numeradas, conforme este arquivo.
+// ==============================================================================
 
-// ==========================================
-// UTILITÁRIOS E CONFIGURAÇÕES
-// ==========================================
+// ==============================================================================
+// 1. ESTADO GLOBAL
+// ==============================================================================
+
+/** Instâncias ativas dos gráficos ApexCharts, indexadas por chave. */
+const chartsInstances = {};
+
+/** Última projeção financeira recebida da API. */
+let _projecaoAtual = null;
+
+/** Modo atual do gráfico de projeção: 'cenarios' | 'provavel_detalhado'. */
+let _modoProjecao = 'cenarios';
+
+/** Lista de linhas DRE atual com metadados para detalhamento no modal. */
+let dreMeta = [];
+
+/** Snapshot atual das categorias de despesas exibidas no gráfico de barras. */
+let _categoriasDespesasAtual = { labels: [], valores: [] };
+
+/** Snapshot atual dos KPIs recebidos da API. */
+let _kpisAtual = null;
+
+/** Instância do gráfico donut exibido dentro do modal do DRE. */
+let modalDreDonutChart = null;
+
+/** Sumário das planilhas disponíveis para o seletor do dashboard. */
+let _planilhasSumario = [];
+
+// ==============================================================================
+// 2. UTILITÁRIOS E TEMA
+// ==============================================================================
 
 /**
  * Formata um número como moeda brasileira (R$ X.XXX,XX).
@@ -14,8 +46,6 @@ function formatarMoeda(valor) {
   const n = Number(valor) || 0;
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
-
-const chartsInstances = {};
 
 function isDarkMode() {
   return document.body.classList.contains('tema-escuro') || localStorage.getItem('tema') === 'escuro';
@@ -70,9 +100,9 @@ function getPeriodoTexto() {
   return periodoMap[periodo] || `Período ${periodo} dias`;
 }
 
-// ==========================================
-// CONFIGURAÇÕES DOS GRÁFICOS
-// ==========================================
+// ==============================================================================
+// 3. CONFIGURAÇÕES DOS GRÁFICOS
+// ==============================================================================
 
 function getChartLinhaOptions() {
   const colors = getThemeColors();
@@ -204,12 +234,9 @@ function getChartComparativoOptions() {
   };
 }
 
-// ==========================================
-// PROJEÇÃO FINANCEIRA PREDITIVA (6 MESES - REGRESSÃO LINEAR)
-// ==========================================
-
-let _projecaoAtual = null;
-let _modoProjecao = 'cenarios'; // 'cenarios' | 'provavel_detalhado'
+// ==============================================================================
+// 4. PROJEÇÃO FINANCEIRA PREDITIVA (6 MESES - REGRESSÃO LINEAR)
+// ==============================================================================
 
 function getChartProjecaoOptions() {
   const colors = getThemeColors();
@@ -256,7 +283,6 @@ function getChartProjecaoOptions() {
         style: { fontSize: '12px', fontWeight: '600' }
       },
       title: {
-     
         style: { fontSize: '11px', color: colors.suave }
       }
     },
@@ -306,8 +332,8 @@ function getChartProjecaoOptions() {
           if (val !== undefined && val !== null) {
             const cor = w.globals.colors[i];
             const isLucro = val >= 0;
-            const badgeLucro = isLucro 
-              ? `<span style="color:#10B981; font-weight:700; font-size:10.5px;">[Lucro 🟢]</span>` 
+            const badgeLucro = isLucro
+              ? `<span style="color:#10B981; font-weight:700; font-size:10.5px;">[Lucro 🟢]</span>`
               : `<span style="color:#EF4444; font-weight:700; font-size:10.5px;">[Prejuízo 🔴]</span>`;
             const sinal = val < 0 ? '-' : '';
             const valFmt = `${sinal}R$ ${Math.abs(val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -396,7 +422,7 @@ function atualizarGraficoProjecao(projecao) {
     otim: projecao.cenarios.otimista || {}
   };
 
-  const formatarMoeda = (num) => {
+  const formatarMoedaProjetada = (num) => {
     if (num === undefined || num === null) return '--';
     const sinal = num < 0 ? '-' : '';
     return `${sinal}R$ ${Math.abs(num).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -408,8 +434,8 @@ function atualizarGraficoProjecao(projecao) {
   const elPessMeses = document.getElementById('projPessimistaMeses');
   const elPessBadge = document.getElementById('projPessimistaBadge');
 
-  if (elPessTotal) elPessTotal.textContent = formatarMoeda(pess.lucro_total);
-  if (elPessMedia) elPessMedia.textContent = `${formatarMoeda(pess.media_mensal_lucro)}/mês`;
+  if (elPessTotal) elPessTotal.textContent = formatarMoedaProjetada(pess.lucro_total);
+  if (elPessMedia) elPessMedia.textContent = `${formatarMoedaProjetada(pess.media_mensal_lucro)}/mês`;
   if (elPessMeses) elPessMeses.textContent = pess.meses_prejuizo > 0 ? `${pess.meses_prejuizo} de 6 meses` : 'Nenhum (Lucro integral)';
   if (elPessBadge) {
     elPessBadge.textContent = pess.status_badge || 'Pessimista';
@@ -428,8 +454,8 @@ function atualizarGraficoProjecao(projecao) {
   const elProvR2 = document.getElementById('projProvavelR2');
   const elProvBadge = document.getElementById('projProvavelBadge');
 
-  if (elProvTotal) elProvTotal.textContent = formatarMoeda(prov.lucro_total);
-  if (elProvMedia) elProvMedia.textContent = `${formatarMoeda(prov.media_mensal_lucro)}/mês`;
+  if (elProvTotal) elProvTotal.textContent = formatarMoedaProjetada(prov.lucro_total);
+  if (elProvMedia) elProvMedia.textContent = `${formatarMoedaProjetada(prov.media_mensal_lucro)}/mês`;
   const r2 = projecao.regressao?.lucro?.r_quadrado !== undefined ? projecao.regressao.lucro.r_quadrado : 0.95;
   if (elProvR2) elProvR2.textContent = `${(r2 * 100).toFixed(1)}% (Alta confiança)`;
   if (elProvBadge) elProvBadge.textContent = prov.status_badge || 'Tendência Linear';
@@ -440,8 +466,8 @@ function atualizarGraficoProjecao(projecao) {
   const elOtimStatus = document.getElementById('projOtimistaStatus');
   const elOtimBadge = document.getElementById('projOtimistaBadge');
 
-  if (elOtimTotal) elOtimTotal.textContent = formatarMoeda(otim.lucro_total);
-  if (elOtimMedia) elOtimMedia.textContent = `${formatarMoeda(otim.media_mensal_lucro)}/mês`;
+  if (elOtimTotal) elOtimTotal.textContent = formatarMoedaProjetada(otim.lucro_total);
+  if (elOtimMedia) elOtimMedia.textContent = `${formatarMoedaProjetada(otim.media_mensal_lucro)}/mês`;
   if (elOtimStatus) elOtimStatus.textContent = otim.meses_prejuizo === 0 ? '100% Lucro Projetado' : `${otim.meses_lucrativos} meses positivos`;
   if (elOtimBadge) elOtimBadge.textContent = otim.status_badge || 'Otimista';
 
@@ -492,14 +518,9 @@ function configurarBotoesProjecao() {
   });
 }
 
-// ==========================================
-// DRE - DEMONSTRAÇÃO DO RESULTADO (7 LINHAS ESTRUTURADAS)
-// ==========================================
-
-let dreMeta = []; // Armazena a lista de linhas DRE atual com metadados para detalhamento no modal
-let _categoriasDespesasAtual = { labels: [], valores: [] };
-let _kpisAtual = null;
-let modalDreDonutChart = null;
+// ==============================================================================
+// 5. DRE - DEMONSTRAÇÃO DO RESULTADO (7 LINHAS ESTRUTURADAS)
+// ==============================================================================
 
 function getChartDREOptions() {
   const colors = getThemeColors();
@@ -694,9 +715,9 @@ function atualizarGraficoDRE(linhas) {
   chart.updateSeries([{ name: 'DRE', data: dadosBarras }]);
 }
 
-// ==========================================
-// MODAL DE DETALHAMENTO DO DRE
-// ==========================================
+// ==============================================================================
+// 6. MODAL DE DETALHAMENTO DO DRE
+// ==============================================================================
 
 function criarModalDRE() {
   if (document.getElementById('dreModalOverlay')) return;
@@ -792,8 +813,8 @@ function _montarDadosPizzaComparativa(meta, detalhes) {
   const paleta = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#EC4899'];
 
   // 1. Verificar se há subitens positivos decompostos no detalhes
-  const chavesValidas = Object.keys(detalhes).filter(k => 
-    !k.startsWith('(-)') && !k.startsWith('(=)') && !k.includes('Total') && !k.includes('Base') && 
+  const chavesValidas = Object.keys(detalhes).filter(k =>
+    !k.startsWith('(-)') && !k.startsWith('(=)') && !k.includes('Total') && !k.includes('Base') &&
     typeof detalhes[k] === 'number' && detalhes[k] > 0
   );
 
@@ -953,9 +974,9 @@ function abrirModalDetalhamentoDRE(index) {
   overlay.style.display = 'flex';
 }
 
-// ==========================================
-// ATUALIZAÇÃO DE KPIs
-// ==========================================
+// ==============================================================================
+// 7. ATUALIZAÇÃO DE KPIs
+// ==============================================================================
 
 function atualizarKPIs(dados) {
   if (!dados.kpis) return;
@@ -968,9 +989,9 @@ function atualizarKPIs(dados) {
   document.getElementById("kpiMargem").textContent = margem_lucro.toFixed(1).replace(".", ",") + "%";
 }
 
-// ==========================================
-// SELETOR DE PERÍODO RÁPIDO
-// ==========================================
+// ==============================================================================
+// 8. SELETOR DE PERÍODO RÁPIDO
+// ==============================================================================
 
 function criarSeletorPeriodoRapido(chartId, chartInstance) {
   const container = document.querySelector(`#${chartId}`)?.parentElement;
@@ -1026,9 +1047,9 @@ function criarSeletorPeriodoRapido(chartId, chartInstance) {
   container.insertBefore(selectorDiv, container.firstChild);
 }
 
-// ==========================================
-// RENDERIZAÇÃO DOS GRÁFICOS
-// ==========================================
+// ==============================================================================
+// 9. RENDERIZAÇÃO DOS GRÁFICOS
+// ==============================================================================
 
 function renderizarGraficos() {
   Object.values(chartsInstances).forEach(chart => chart?.destroy());
@@ -1076,11 +1097,9 @@ function atualizarSubtitulosGraficos() {
   }
 }
 
-// ==========================================
-// SELETOR E BADGES DE MULTI-PLANILHAS
-// ==========================================
-
-let _planilhasSumario = [];
+// ==============================================================================
+// 10. SELETOR E BADGES DE MULTI-PLANILHAS
+// ==============================================================================
 
 async function carregarOpcoesPlanilhas() {
   const select = document.getElementById('seletorPlanilhaDash');
@@ -1163,9 +1182,9 @@ function atualizarBadgesFontes(contexto) {
   container.innerHTML = badgesHtml;
 }
 
-// ==========================================
-// CARREGAMENTO DE DADOS
-// ==========================================
+// ==============================================================================
+// 11. CARREGAMENTO DE DADOS
+// ==============================================================================
 
 async function atualizarGraficosComDados() {
   try {
@@ -1246,9 +1265,9 @@ async function atualizarGraficosComDados() {
   }
 }
 
-// ==========================================
-// TEMA E RESPONSIVIDADE
-// ==========================================
+// ==============================================================================
+// 12. TEMA E RESPONSIVIDADE
+// ==============================================================================
 
 function sincronizarTemaUI() {
   const colors = getThemeColors();
@@ -1370,9 +1389,9 @@ window.addEventListener('resize', () => {
   resizeTimeout = setTimeout(() => window.redimensionarGraficos(), 250);
 });
 
-// ==========================================
-// EVENTOS E INICIALIZAÇÃO
-// ==========================================
+// ==============================================================================
+// 13. EVENTOS E INICIALIZAÇÃO
+// ==============================================================================
 
 document.getElementById('periodoDash')?.addEventListener('change', () => atualizarGraficosComDados());
 document.getElementById('seletorPlanilhaDash')?.addEventListener('change', () => atualizarGraficosComDados());

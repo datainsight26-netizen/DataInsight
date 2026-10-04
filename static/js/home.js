@@ -1,6 +1,15 @@
-// ======================
-// CONFIGURAÇÕES
-// ======================
+// ==============================================================================
+// home.js
+// ==============================================================================
+// Este código pertence à plataforma @DataInsight.
+// Todos os códigos da plataforma devem seguir a mesma estrutura de organização
+// em seções numeradas, conforme este arquivo.
+// ==============================================================================
+
+// ==============================================================================
+// 1. CONFIGURAÇÕES E ESTADO GLOBAL
+// ==============================================================================
+
 const PERIODOS = {
   '7_dias': 'Últimos 7 dias',
   '30_dias': 'Últimos 30 dias',
@@ -15,22 +24,28 @@ let chartBarras = null;
 let chartProdutosVendas = null;
 let chartProdutosLucro = null;
 
-// ======================
-// INIT
-// ======================
+let listaMensagensIa = [];
+let indiceMensagemIaAtual = 0;
+let chartInstanciasIa = [];
+
+// ==============================================================================
+// 2. INICIALIZAÇÃO
+// ==============================================================================
+
 document.addEventListener('DOMContentLoaded', async () => {
   configurarPeriodo();
   await configurarSeletorPlanilhaHome();
-  renderizarStatusVazio();
+  inicializarModaisKpi();
   atualizarTudo();
   carregarStatus();
   carregarInsight();
   carregarUltimaRespostaIA();
 });
 
-// ======================
-// CONTROLE DE PLANILHA / ORIGEM
-// ======================
+// ==============================================================================
+// 3. CONTROLE DE PLANILHA / ORIGEM
+// ==============================================================================
+
 async function configurarSeletorPlanilhaHome() {
   const select = document.getElementById('seletorPlanilhaHome');
   if (!select) return;
@@ -98,9 +113,10 @@ function atualizarBadgeStatusHome(planilhas, idSelecionado) {
   }
 }
 
-// ======================
-// CONTROLE DE PERÍODO
-// ======================
+// ==============================================================================
+// 4. CONTROLE DE PERÍODO
+// ==============================================================================
+
 function configurarPeriodo() {
   const select = document.getElementById('periodo');
   if (!select) return;
@@ -118,18 +134,16 @@ function configurarPeriodo() {
   });
 }
 
-// ======================
-// ATUALIZAÇÃO GERAL
-// ======================
+// ==============================================================================
+// 5. ATUALIZAÇÃO GERAL E FETCH GENÉRICO
+// ==============================================================================
+
 function atualizarTudo() {
   carregarDados('/api/desempenho', atualizarIndicadores);
   carregarDados('/api/graficos', atualizarGraficos);
   carregarOverviewProdutos();
 }
 
-// ======================
-// FETCH GENÉRICO
-// ======================
 function carregarDados(url, callback) {
   fetch(`${url}?periodo=${periodoAtual}&tabela_id=${tabelaAtualId}`)
     .then(r => {
@@ -142,9 +156,10 @@ function carregarDados(url, callback) {
     .catch(err => console.error(err));
 }
 
-// ======================
-// INDICADORES
-// ======================
+// ==============================================================================
+// 6. INDICADORES (CARDS DE KPI)
+// ==============================================================================
+
 function atualizarIndicadores(data) {
   atualizarCard('faturamento', data.faturamento);
   atualizarCard('lucro', data.lucro);
@@ -191,9 +206,16 @@ function exibirAlertaMapeamento() {
 }
 
 function atualizarCard(nome, dados, inverter = false) {
+  // Guarda de nulo antes de acessar propriedades.
+  if (!dados) {
+    setTexto(`${nome}-valor`, 'N/A', '#9ca3af');
+    setTexto(`${nome}-percent`, 'N/A', '#9ca3af');
+    return;
+  }
+
   setTexto(`${nome}-valor`, formatarMoeda(dados.valor));
 
-  if (!dados || dados.percentual === null || dados.percentual === undefined) {
+  if (dados.percentual === null || dados.percentual === undefined) {
     setTexto(`${nome}-percent`, 'N/A', '#9ca3af');
     return;
   }
@@ -215,9 +237,10 @@ function setTexto(dataId, texto, cor = null) {
   if (cor) el.style.color = cor;
 }
 
-// ======================
-// AGUARDAR APEXCHARTS
-// ======================
+// ==============================================================================
+// 7. AGUARDAR APEXCHARTS
+// ==============================================================================
+
 function aguardarApexCharts(callback, tentativas = 0) {
   if (typeof ApexCharts !== 'undefined') {
     callback();
@@ -228,9 +251,10 @@ function aguardarApexCharts(callback, tentativas = 0) {
   }
 }
 
-// ======================
-// GRÁFICOS
-// ======================
+// ==============================================================================
+// 8. GRÁFICOS PRINCIPAIS (LINHA E BARRAS)
+// ==============================================================================
+
 function atualizarGraficos(data) {
   aguardarApexCharts(() => {
     renderGraficoLinha(data.grafico_linha);
@@ -238,9 +262,124 @@ function atualizarGraficos(data) {
   });
 }
 
-// ======================
-// STATUS DO NEGÓCIO
-// ======================
+function renderGraficoLinha(dados) {
+  const container = document.getElementById('graficoLinhaFaturamento');
+  if (!container) return;
+
+  if (!dados?.labels?.length) return renderVazio(container, 350);
+
+  const corTexto = getCorTexto();
+
+  destruir(chartLinha);
+  container.innerHTML = '';
+
+  chartLinha = new ApexCharts(container, {
+    chart: { type: 'line', height: 350 },
+    series: dados.series,
+    xaxis: {
+      categories: dados.labels,
+      labels: {
+        style: { colors: corTexto },
+        formatter: function (value) {
+          // Exibir data em ISO (YYYY-MM-DD)
+          return value;
+        }
+      }
+    },
+    yaxis: {
+      labels: {
+        formatter: formatarMoeda,
+        style: { colors: corTexto }
+      }
+    },
+    tooltip: {
+      y: { formatter: formatarMoeda },
+      x: {
+        formatter: function (val) {
+          // Mostrar data ISO no tooltip
+          return `Data: ${val}`;
+        }
+      }
+    },
+    stroke: { curve: 'smooth' },
+    title: {
+      text: `Faturamento - ${PERIODOS[periodoAtual]}`,
+      align: 'center',
+      style: {
+        color: 'grey',
+        fontSize: '14px',
+        fontWeight: 'bold'
+      }
+    },
+    legend: {
+      labels: { colors: corTexto }
+    }
+  });
+
+  chartLinha.render();
+}
+
+function renderGraficoBarras(dados) {
+  const container = document.getElementById('graficoPizzaComparativa');
+  if (!container) return;
+
+  if (!dados?.labels?.length) return renderVazio(container, 400);
+
+  const corTexto = getCorTexto();
+
+  destruir(chartBarras);
+  container.innerHTML = '';
+
+  chartBarras = new ApexCharts(container, {
+    chart: {
+      type: 'bar',
+      height: 400
+    },
+    series: dados.series,
+    colors: ['#3b82f6', '#ef4444', '#10b981'],
+    xaxis: {
+      categories: dados.labels,
+      labels: { style: { colors: corTexto } }
+    },
+    yaxis: {
+      labels: {
+        formatter: formatarMoeda,
+        style: { colors: corTexto }
+      }
+    },
+    tooltip: {
+      y: { formatter: formatarMoeda }
+    },
+    dataLabels: {
+      enabled: false
+    },
+    plotOptions: {
+      bar: {
+        borderRadius: 5,
+        columnWidth: '60%'
+      }
+    },
+    title: {
+      text: `Comparativo - ${PERIODOS[periodoAtual]}`,
+      align: 'center',
+      style: {
+        color: 'grey',
+        fontSize: '14px',
+        fontWeight: 'bold'
+      }
+    },
+    legend: {
+      labels: { colors: corTexto }
+    }
+  });
+
+  chartBarras.render();
+}
+
+// ==============================================================================
+// 9. STATUS DO NEGÓCIO
+// ==============================================================================
+
 function carregarStatus() {
   fetch(`/api/status_negocio?periodo=${periodoAtual}&tabela_id=${tabelaAtualId}`)
     .then(r => {
@@ -263,7 +402,7 @@ function carregarStatus() {
 function renderizarStatus(data) {
   const container = document.getElementById('status-negocio-container');
   const section = document.getElementById('status-negocio-section');
-  
+
   if (!container || !section) return;
 
   // Definir cor da borda e fundo da seção
@@ -276,9 +415,11 @@ function renderizarStatus(data) {
   const html = `
     <p><strong>${data.emoji} ${data.status.charAt(0).toUpperCase() + data.status.slice(1).replace('_', ' ')}:</strong> ${data.descricao}</p>
     <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--borda); display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 13px;">
-     
+
     </div>
   `;
+
+  // Bloco original comentado — mantido integralmente para referência:
   // const html = `
   //   <p><strong>${data.emoji} ${data.status.charAt(0).toUpperCase() + data.status.slice(1).replace('_', ' ')}:</strong> ${data.descricao}</p>
   //   <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--borda); display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 13px;">
@@ -304,23 +445,23 @@ function renderizarStatus(data) {
   //   </div>
   // `;
 
-
   container.innerHTML = html;
 }
 
 function renderizarStatusVazio() {
   const container = document.getElementById('status-negocio-container');
   const section = document.getElementById('status-negocio-section');
-  
+
   if (!container || !section) return;
 
   section.style.borderLeftColor = '#9ca3af';
   container.innerHTML = '<p style="color: var(--texto-secundario);">⚪ Sem dados: Carregue seus dados para análise automática do status.</p>';
 }
 
-// ======================
-// INSIGHT DA IA
-// ======================
+// ==============================================================================
+// 10. INSIGHT DIÁRIO DA IA
+// ==============================================================================
+
 function carregarInsight() {
   const containerInsights = document.getElementById('container-insights-ia');
   if (!containerInsights) return;
@@ -335,7 +476,7 @@ function carregarInsight() {
   fetch(`/api/insight_diario?periodo=${periodoAtual}&tabela_id=${tabelaAtualId}`)
     .then(response => response.json())
     .then(data => {
-      if(data.html) {
+      if (data.html) {
         // Remove asteriscos (*) do conteúdo
         let htmlLimpo = data.html.replace(/\*/g, '');
         containerInsights.innerHTML = htmlLimpo;
@@ -348,6 +489,10 @@ function carregarInsight() {
       containerInsights.innerHTML = "<div class='p-3 rounded' style='background: var(--cartao);'><p class='p mb-0 text-danger'>Erro de conexão com a IA.</p></div>";
     });
 }
+
+// ==============================================================================
+// 11. CONVERSÃO MARKDOWN E RENDERIZAÇÃO SEGURA
+// ==============================================================================
 
 function _converterTabelaMarkdownParaHtml(texto) {
   const linhas = texto.replace(/\r\n/g, '\n').split('\n');
@@ -406,10 +551,10 @@ function _renderizarHtmlSeguro(container, html) {
   const marcador = document.createElement('div');
   marcador.innerHTML = html;
   const tagsPermitidas = [
-    'DIV','SPAN','P','H1','H2','H3','H4','H5','H6',
-    'TABLE','THEAD','TBODY','TR','TD','TH','UL','OL','LI',
-    'B','STRONG','I','EM','BR','HR','A','IMG','SECTION','ARTICLE',
-    'CODE','PRE','BLOCKQUOTE','SMALL','U','S'
+    'DIV', 'SPAN', 'P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6',
+    'TABLE', 'THEAD', 'TBODY', 'TR', 'TD', 'TH', 'UL', 'OL', 'LI',
+    'B', 'STRONG', 'I', 'EM', 'BR', 'HR', 'A', 'IMG', 'SECTION', 'ARTICLE',
+    'CODE', 'PRE', 'BLOCKQUOTE', 'SMALL', 'U', 'S'
   ];
   const scripts = marcador.querySelectorAll('script,iframe,object,embed');
   scripts.forEach(el => el.remove());
@@ -427,13 +572,9 @@ function _renderizarHtmlSeguro(container, html) {
   container.appendChild(marcador);
 }
 
-// ============================================================
-// BANCO DE MENSAGENS DA IA COM SUPORTE A GRÁFICOS APEXCHARTS
-// ============================================================
-
-let listaMensagensIa = [];
-let indiceMensagemIaAtual = 0;
-let chartInstanciasIa = [];
+// ==============================================================================
+// 12. BANCO DE MENSAGENS DA IA (HOME) COM SUPORTE A GRÁFICOS APEXCHARTS
+// ==============================================================================
 
 function escapeHtml(str) {
   if (!str) return '';
@@ -500,7 +641,7 @@ function renderizarGraficosMensagemIa(container) {
 
         if (tipoChart === 'pie') {
           const chartData = data.grafico_pizza;
-          if (!chartData || !chartData.labels || chartData.series.length === 0) {
+          if (!chartData || !chartData.labels || !chartData.series || chartData.series.length === 0) {
             chartEl.innerHTML = '<p style="color:var(--suave);text-align:center;padding:24px;font-size:0.85rem;"><i class="fa-solid fa-circle-info" style="margin-right:6px;"></i>Sem dados suficientes para o gráfico neste período.</p>';
             return;
           }
@@ -654,7 +795,7 @@ function exibirMensagemIaPorIndice(indice) {
       metricas = parsed.metrics || parsed.metricas || metricas;
       periodo = parsed.period || parsed.periodo || periodo;
       tit = parsed.title || parsed.titulo || tit;
-    } catch(e) {}
+    } catch (e) {}
     return `<div class="grafico-ia-render" data-periodo="${periodo}" data-tipo="${tipo}" data-metricas="${metricas}" data-titulo="${tit}"></div>`;
   });
 
@@ -717,7 +858,7 @@ function exibirMensagemIaPorIndice(indice) {
   // Rodapé da mensagem: data e ações
   const footerMsg = document.createElement('div');
   footerMsg.style.cssText = 'font-size:0.75rem; color:var(--suave); margin-top:14px; display:flex; align-items:center; justify-content:space-between; border-top:1px solid var(--borda); padding-top:8px;';
-  
+
   const sessaoLabel = msg.sessao_id ? `Sessão: ${msg.sessao_id.slice(0, 8)}...` : 'Chat IA';
   footerMsg.innerHTML = `
     <span><i class="fa-solid fa-layer-group" style="margin-right:4px;"></i>${sessaoLabel}</span>
@@ -738,7 +879,7 @@ function carregarUltimaRespostaIA() {
 
   fetch('/api/chatbot/ultima-resposta')
     .then(response => {
-      if (!response.ok) return response.text().then(t => { throw new Error(`HTTP ${response.status}: ${t.slice(0,200)}`); });
+      if (!response.ok) return response.text().then(t => { throw new Error(`HTTP ${response.status}: ${t.slice(0, 200)}`); });
       const ct = response.headers.get('content-type') || '';
       if (ct.includes('application/json')) return response.json();
       return response.text().then(t => ({ _rawText: t }));
@@ -798,6 +939,10 @@ window.carregarUltimaRespostaIA = carregarUltimaRespostaIA;
 window.addEventListener('chatbot:nova-resposta', () => {
   carregarUltimaRespostaIA();
 });
+
+// ==============================================================================
+// 13. OVERVIEW DE PRODUTOS
+// ==============================================================================
 
 function carregarOverviewProdutos() {
   const loading = document.getElementById('produtos-overview-loading');
@@ -927,7 +1072,15 @@ function renderGraficoProdutos(elementId, dados, titulo, cor) {
   });
 }
 
-function renderizarStatusVazio() {
+// ==============================================================================
+// 14. MODAIS DE DETALHE DE KPI
+// ==============================================================================
+
+// Inicializa os modais de KPI (cliques e teclado).
+// Originalmente esta função se chamava `renderizarStatusVazio`, o que causava
+// colisão de nome com a função de estado vazio acima; renomeada para refletir
+// sua responsabilidade real.
+function inicializarModaisKpi() {
   const cards = document.querySelectorAll('[data-kpi]');
   const modalBackdrop = document.getElementById('kpiDetalheModal');
 
@@ -1082,9 +1235,10 @@ function renderizarDetalhesKpi(dados, kpi) {
   `;
 }
 
-// ======================
-// COR DINÂMICA DO TEMA
-// ======================
+// ==============================================================================
+// 15. UTILIDADES DE TEMA E FORMATAÇÃO
+// ==============================================================================
+
 function getCorTexto() {
   const isDark = document.body.classList.contains('tema-escuro');
   if (isDark) return '#cbd5e1';
@@ -1092,150 +1246,11 @@ function getCorTexto() {
   return val || '#111827';
 }
 
-// ======================
-// GRÁFICO LINHA
-// ======================
-function renderGraficoLinha(dados) {
-  const container = document.getElementById('graficoLinhaFaturamento');
-  if (!container) return;
-
-  if (!dados?.labels?.length) return renderVazio(container, 350);
-
-  const corTexto = getCorTexto();
-
-  destruir(chartLinha);
-  container.innerHTML = '';
-
-  chartLinha = new ApexCharts(container, {
-    chart: { type: 'line', height: 350 },
-
-    series: dados.series,
-
-    xaxis: {
-      categories: dados.labels,
-      labels: { 
-        style: { colors: corTexto },
-        formatter: function(value) {
-          // Exibir data em ISO (YYYY-MM-DD)
-          return value;
-        }
-      }
-    },
-
-    yaxis: {
-      labels: {
-        formatter: formatarMoeda,
-        style: { colors: corTexto }
-      }
-    },
-
-    tooltip: { 
-      y: { formatter: formatarMoeda },
-      x: {
-        formatter: function(val) {
-          // Mostrar data ISO no tooltip
-          return `Data: ${val}`;
-        }
-      }
-    },
-
-    stroke: { curve: 'smooth' },
-
-    title: {
-      text: `Faturamento - ${PERIODOS[periodoAtual]}`,
-      align: 'center',
-      style: {
-        color: "grey",
-        fontSize: '14px',
-        fontWeight: 'bold'
-      }
-    },
-
-    legend: {
-      labels: { colors: corTexto }
-    }
-  });
-
-  chartLinha.render();
-}
-
-// ======================
-// GRÁFICO BARRAS
-// ======================
-function renderGraficoBarras(dados) {
-  const container = document.getElementById('graficoPizzaComparativa');
-  if (!container) return;
-
-  if (!dados?.labels?.length) return renderVazio(container, 400);
-
-  const corTexto = getCorTexto();
-
-  destruir(chartBarras);
-  container.innerHTML = '';
-
-  chartBarras = new ApexCharts(container, {
-    chart: {
-      type: 'bar',
-      height: 400
-    },
-
-    series: dados.series,
-
-    colors: ['#3b82f6', '#ef4444', '#10b981'],
-
-    xaxis: {
-      categories: dados.labels,
-      labels: { style: { colors: corTexto } }
-    },
-
-    yaxis: {
-      labels: {
-        formatter: formatarMoeda,
-        style: { colors: corTexto }
-      }
-    },
-
-    tooltip: {
-      y: { formatter: formatarMoeda }
-    },
-
-    dataLabels: {
-      enabled: false
-    },
-
-    plotOptions: {
-      bar: {
-        borderRadius: 5,
-        columnWidth: '60%'
-      }
-    },
-
-    title: {
-      text: `Comparativo - ${PERIODOS[periodoAtual]}`,
-      align: 'center',
-      style: {
-        color: "grey",
-        fontSize: '14px',
-        fontWeight: 'bold'
-      }
-    },
-
-    legend: {
-      labels: { colors: corTexto }
-    }
-  });
-
-  chartBarras.render();
-}
-
-// ======================
-// UTILIDADES
-// ======================
 function destruir(chart) {
   if (chart) chart.destroy();
 }
 
-function renderVazio(container, altura) {  
+function renderVazio(container, altura) {
   container.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:center;height:${altura}px;color:#9ca3af;">
       Sem dados para ${PERIODOS[periodoAtual]}
@@ -1263,9 +1278,10 @@ function formatarNumero(valor) {
   });
 }
 
-/* ================================================================
-   ENGINE DE ANÁLISE COMPLETA COM IA (DELEGADO AO IA_ANALISE_MODAL.JS)
-   ================================================================ */
+// ==============================================================================
+// 16. ENGINE DE ANÁLISE COMPLETA COM IA (DELEGADO AO IA_ANALISE_MODAL.JS)
+// ==============================================================================
+
 function abrirModalIaAnaliseHome() {
   if (window.IaAnaliseModal) {
     IaAnaliseModal.abrir('home', coletarContextoIaHome);

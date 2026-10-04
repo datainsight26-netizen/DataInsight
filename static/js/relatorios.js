@@ -1,12 +1,19 @@
+// ==============================================================================
+// relatorio.js
+// ==============================================================================
+// Este código pertence à plataforma @DataInsight.
+// Todos os códigos da plataforma devem seguir a mesma estrutura de organização
+// em seções numeradas, conforme este arquivo.
+// ==============================================================================
+
 /**
- * DataInsight — Relatórios Executivos Reais
- * Integração completa: Análises Salvas da IA, Fluxo de Caixa, Planejamento Financeiro,
- * Gráficos Avançados e Consolidação do Negócio com Insights 100% Reais.
+ * @ DataInsight — Relatórios Executivos Reais
  */
 
-// =============================
-// ESTADO GLOBAL
-// =============================
+// ==============================================================================
+// 1. ESTADO GLOBAL
+// ==============================================================================
+
 const estadoRelatorio = {
   tipo: 'consolidado',
   planilhaId: 'todas',
@@ -21,9 +28,10 @@ const estadoRelatorio = {
   relatorioAtual: null
 };
 
-// =============================
-// UTILITÁRIOS
-// =============================
+// ==============================================================================
+// 2. UTILITÁRIOS DE FORMATAÇÃO E SANITIZAÇÃO
+// ==============================================================================
+
 function numeroValido(valor) {
   if (valor === null || valor === undefined || valor === "") return 0;
   if (typeof valor === "number" && !Number.isNaN(valor)) return valor;
@@ -130,9 +138,13 @@ function renderizarConteudoInline(texto) {
   return escapeHtml(str);
 }
 
-/* =============================================
-   TOGGLE CHECK — Estado visual dos cards
-============================================= */
+// ==============================================================================
+// 3. COMPONENTES DE UI (TOGGLE E TOAST)
+// ==============================================================================
+
+/**
+ * Alterna o estado visual de um card com checkbox interno.
+ */
 function toggleCheck(id) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -141,9 +153,9 @@ function toggleCheck(id) {
   if (wrap) wrap.classList.toggle('selecionado', el.checked);
 }
 
-/* =============================================
-   TOAST NOTIFICATIONS
-============================================= */
+/**
+ * Exibe uma notificação toast no canto da tela.
+ */
 function showToast(msg, tipo = 'success') {
   const toast = document.getElementById('toast-rel');
   const msgEl = document.getElementById('toast-msg');
@@ -163,9 +175,10 @@ function showToast(msg, tipo = 'success') {
   setTimeout(() => toast.classList.remove('visivel'), 3500);
 }
 
-// =============================================
-// GERENCIAMENTO DE TIPOS DE RELATÓRIO
-// =============================================
+// ==============================================================================
+// 4. GERENCIAMENTO DE TIPOS DE RELATÓRIO
+// ==============================================================================
+
 function aoMudarTipoRelatorio() {
   const tipo = document.getElementById('tipoRelatorio')?.value || 'consolidado';
   estadoRelatorio.tipo = tipo;
@@ -250,9 +263,10 @@ function atualizarRotulosOpcoes(tipo) {
   }
 }
 
-// =============================================
-// CARREGAMENTO DE DADOS DAS APIS
-// =============================================
+// ==============================================================================
+// 5. CARREGAMENTO DE DADOS DAS APIs
+// ==============================================================================
+
 async function carregarSumarioPlanilhas() {
   const select = document.getElementById('seletorPlanilhaRel');
   if (!select) return;
@@ -352,9 +366,10 @@ function aoSelecionarAnaliseSalva() {
   }
 }
 
-// =============================================
-// COLETORES DE DADOS POR MODALIDADE
-// =============================================
+// ==============================================================================
+// 6. COLETORES DE DADOS POR MODALIDADE
+// ==============================================================================
+
 async function obterDadosConsolidados() {
   const tabelaId = estadoRelatorio.planilhaId || 'todas';
   const resp = await fetch(`/carregar-dados?tabela_id=${tabelaId}`);
@@ -419,9 +434,10 @@ async function obterDadosPlanejamento() {
   return json;
 }
 
-// =============================================
-// MOTOR DE INSIGHTS 100% REAIS (SEM PLACEHOLDERS)
-// =============================================
+// ==============================================================================
+// 7. MOTOR DE INSIGHTS 100% REAIS (SEM PLACEHOLDERS)
+// ==============================================================================
+
 function gerarInsightsReaisFluxoCaixa(dadosFc) {
   const kpis = dadosFc.kpis || {};
   const evolucao = dadosFc.evolucao || {};
@@ -610,9 +626,10 @@ function gerarInsightsReaisConsolidado(dados) {
   return { diagnostico, pontosFortes, alertasRiscos, recomendacoes, fatTotal, lucTotal, despTotal, cresc, mgMedia, mesMax, maxLucro };
 }
 
-// =============================================
-// GERAÇÃO E MONTAGEM DA PRÉ-VISUALIZAÇÃO
-// =============================================
+// ==============================================================================
+// 8. ORQUESTRADOR DE GERAÇÃO DA PRÉ-VISUALIZAÇÃO
+// ==============================================================================
+
 async function gerarPreview() {
   const preview = document.getElementById('preview');
   const emptyState = document.getElementById('preview-empty-state');
@@ -662,9 +679,14 @@ async function gerarPreview() {
   }
 }
 
-// =============================================
-// COMPILADORES ESPECÍFICOS DE PAYLOAD
-// =============================================
+function gerarPreviewMelhorado() {
+  gerarPreview();
+}
+
+// ==============================================================================
+// 9. COMPILADORES ESPECÍFICOS DE PAYLOAD
+// ==============================================================================
+
 async function compilarRelatorioMeiDasn(nomeRel, dataHoje) {
   let d = {};
   try {
@@ -742,6 +764,7 @@ async function compilarRelatorioMeiDasn(nomeRel, dataHoje) {
     }
   };
 }
+
 async function compilarRelatorioAnaliseSalva(nomeRel, dataHoje) {
   const analise = estadoRelatorio.analiseSelecionada;
   if (!analise) {
@@ -1018,9 +1041,10 @@ async function compilarRelatorioConsolidado(nomeRel, dataHoje, periodo, tipo) {
   };
 }
 
-// =============================================
-// RENDERIZADOR DA INTERFACE DE PREVIEW
-// =============================================
+// ==============================================================================
+// 10. RENDERIZADOR DA INTERFACE DE PREVIEW
+// ==============================================================================
+
 function renderizarPreviewHtml(p) {
   const preview = document.getElementById('preview');
   if (!preview) return;
@@ -1035,7 +1059,7 @@ function renderizarPreviewHtml(p) {
         <p>${escapeHtml(p.subtitulo)} • Gerado em ${escapeHtml(p.data)}</p>
       </div>
       <span class="preview-type-badge" style="background:${p.cor || '#3b82f6'}20;color:${p.cor || '#3b82f6'};border:1px solid ${p.cor || '#3b82f6'}40;">
-        <i class="fa-solid fa-file-lines"></i> ${escapeHtml(p.badge || 'Relatório')}
+         ${escapeHtml(p.badge || 'Relatório')}
       </span>
     </div>
   `;
@@ -1044,7 +1068,7 @@ function renderizarPreviewHtml(p) {
   if (getCheckbox('opt-kpi') && p.kpis_lista && p.kpis_lista.length > 0) {
     html += `
       <div class="preview-secao">
-        <div class="preview-titulo"><i class="fa-solid fa-chart-bar"></i> Indicadores Principais de Desempenho</div>
+        <div class="preview-titulo"> Indicadores Principais de Desempenho</div>
         <div class="kpi-grid-rich">
           ${p.kpis_lista.map(k => `
             <div class="kpi-card-rich">
@@ -1063,9 +1087,9 @@ function renderizarPreviewHtml(p) {
   if (getCheckbox('opt-diagnostico') && ie.diagnostico) {
     html += `
       <div class="preview-secao">
-        <div class="preview-titulo"><i class="fa-solid fa-microchip"></i> Diagnóstico Executivo &amp; Veredito</div>
+        <div class="preview-titulo"> Diagnóstico Executivo &amp; Veredito</div>
         <div class="preview-diagnostic-banner" style="border-left-color:${p.cor || '#3b82f6'};">
-          <h4><i class="fa-solid fa-magnifying-glass-chart"></i> Parecer Analítico Real</h4>
+          <h4> Parecer Analítico Real</h4>
           <div class="diagnostico-conteudo">${renderizarConteudoTexto(ie.diagnostico)}</div>
         </div>
       </div>
@@ -1078,11 +1102,11 @@ function renderizarPreviewHtml(p) {
   if (getCheckbox('opt-pontos-riscos') && (temPontos || temRiscos)) {
     html += `
       <div class="preview-secao">
-        <div class="preview-titulo"><i class="fa-solid fa-shield-halved"></i> Pontos Fortes &amp; Alertas de Riscos</div>
+        <div class="preview-titulo"> Pontos Fortes &amp; Alertas de Riscos</div>
         <div class="preview-insights-grid">
           ${temPontos ? `
             <div class="insight-card insight-card--fortes">
-              <div class="insight-card__title"><i class="fa-solid fa-circle-check"></i> Pontos Fortes &amp; Oportunidades</div>
+              <div class="insight-card__title"> Pontos Fortes &amp; Oportunidades</div>
               <ul class="insight-list">
                 ${ie.pontosFortes.map(pt => `<li>${renderizarConteudoInline(pt)}</li>`).join('')}
               </ul>
@@ -1090,7 +1114,7 @@ function renderizarPreviewHtml(p) {
           ` : ''}
           ${temRiscos ? `
             <div class="insight-card insight-card--riscos">
-              <div class="insight-card__title"><i class="fa-solid fa-triangle-exclamation"></i> Alertas &amp; Vulnerabilidades</div>
+              <div class="insight-card__title"> Alertas &amp; Vulnerabilidades</div>
               <ul class="insight-list">
                 ${ie.alertasRiscos.map(r => `<li>${renderizarConteudoInline(r)}</li>`).join('')}
               </ul>
@@ -1106,9 +1130,9 @@ function renderizarPreviewHtml(p) {
   if (getCheckbox('opt-recomendacoes') && temRecs) {
     html += `
       <div class="preview-secao">
-        <div class="preview-titulo"><i class="fa-solid fa-lightbulb"></i> Recomendações Estratégicas &amp; Plano de Ação</div>
+        <div class="preview-titulo">  Recomendações Estratégicas &amp; Plano de Ação</div>
         <div class="insight-card insight-card--recs" style="width:100%;">
-          <div class="insight-card__title"><i class="fa-solid fa-list-check"></i> Ações Práticas Orientadas por Dados</div>
+          <div class="insight-card__title">  Ações Práticas Orientadas por Dados</div>
           <ul class="insight-list">
             ${ie.recomendacoes.map(rec => `<li>${renderizarConteudoInline(rec)}</li>`).join('')}
           </ul>
@@ -1121,7 +1145,7 @@ function renderizarPreviewHtml(p) {
   if (getCheckbox('opt-grafico') && p.grafico_labels && p.grafico_labels.length > 0) {
     html += `
       <div class="preview-secao">
-        <div class="preview-titulo"><i class="fa-solid fa-chart-line"></i> Evolução Visual &amp; Séries Temporais</div>
+        <div class="preview-titulo">   Evolução Visual &amp; Séries Temporais</div>
         <div id="grafico-relatorio" style="max-width:100%; height:320px; background:var(--fundo); border:1px solid var(--borda); border-radius:12px; padding:10px;"></div>
       </div>
     `;
@@ -1131,7 +1155,7 @@ function renderizarPreviewHtml(p) {
   if (getCheckbox('opt-dados') && Array.isArray(p.tabela) && p.tabela.length > 0 && Array.isArray(p.tabela_colunas)) {
     html += `
       <div class="preview-secao">
-        <div class="preview-titulo"><i class="fa-solid fa-table"></i> Dados Detalhados</div>
+        <div class="preview-titulo">   Dados Detalhados</div>
         <div class="table-responsive-rel">
           <table>
             <thead>
@@ -1203,13 +1227,10 @@ function renderizarGraficoApex(p) {
   window.graficoRelatorioInstancia.render();
 }
 
-function gerarPreviewMelhorado() {
-  gerarPreview();
-}
+// ==============================================================================
+// 11. EXPORTAÇÃO PDF & PERSISTÊNCIA NO BANCO
+// ==============================================================================
 
-// =============================================
-// EXPORTAÇÃO PDF & PERSISTÊNCIA NO BANCO
-// =============================================
 async function exportarPDFMelhorado() {
   const btn = document.getElementById('btn-pdf');
   const loadingText = btn?.querySelector('.btn-loading-text');
@@ -1273,9 +1294,10 @@ async function exportarPDFMelhorado() {
   }
 }
 
-// =============================================
-// HISTÓRICO DE RELATÓRIOS (MongoDB)
-// =============================================
+// ==============================================================================
+// 12. HISTÓRICO DE RELATÓRIOS (MongoDB)
+// ==============================================================================
+
 let _historicoRelatorios = [];
 let filtroAtivo = 'todos';
 
@@ -1440,9 +1462,10 @@ function setPill(el, filtro) {
   renderHistorico(document.getElementById('search-historico')?.value || '');
 }
 
-// =============================================
-// INICIALIZAÇÃO
-// =============================================
+// ==============================================================================
+// 13. INICIALIZAÇÃO
+// ==============================================================================
+
 document.addEventListener('DOMContentLoaded', async () => {
   await carregarSumarioPlanilhas();
   await carregarAnalisesSalvas();
