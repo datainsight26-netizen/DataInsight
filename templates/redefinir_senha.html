@@ -10,6 +10,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   </head>
 
+    <!-- icon -->
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicons/apple-touch-icon.png') }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicons/favicon-32x32.png') }}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicons/favicon-16x16.png') }}">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicons/favicon.ico') }}">
+
   <body>
     <header class="barra-topo" role="banner">
           <a class="sidebar__logo" href="{{ url_for('pagina_landing') }}" aria-label="DataInsight - Início">
@@ -87,8 +93,6 @@
     <!-- u{2672} Painel Avan�ado de Acessibilidade -->
   {% include 'partials/painel_acessibilidade.html' %}
 
-  <!-- Chatbot Flutuante -->
-  {% include 'partials/chatbot.html' %}
 
     
 </div>

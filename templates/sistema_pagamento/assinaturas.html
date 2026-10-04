@@ -13,6 +13,12 @@
     rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  
+<!-- icon -->
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicons/apple-touch-icon.png') }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicons/favicon-32x32.png') }}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicons/favicon-16x16.png') }}">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicons/favicon.ico') }}">
 
   <!-- CSS DataInsight -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/design-system.css') }}" />
@@ -318,7 +324,7 @@
       <div class="card-plano p-8 shadow-xl">
         <h3
           class="text-xl font-bold texto-titulo mb-4 pb-3 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2">
-          <i class="fa-solid fa-receipt text-blue-500"></i> Resumo da Assinatura
+          Resumo da Assinatura
         </h3>
 
         <div class="space-y-4 mb-6 text-sm">
@@ -371,143 +377,192 @@
   <!-- Painel de Acessibilidade Padrão -->
   {% include 'partials/painel_acessibilidade.html' %}
 
-  <!-- VLibras Plugin -->
 </div>
 
   <!-- Scripts Globais e Acessibilidade -->
 <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
 
-  <!-- Script da Simulação de Pagamento & Tema -->
-  <script>
-    // Inicialização do Tema
-    if (typeof setTema === 'function') {
-      setTema();
+  <script >
+// =============================================================================
+// AVISO DE PROPRIEDADE
+// =============================================================================
+// Este código pertence à plataforma @DataInsight.
+// Todos os códigos da plataforma devem seguir a mesma estrutura de organização
+// em seções numeradas, exatamente como neste arquivo.
+// =============================================================================
+
+// =============================================================================
+// 1. INICIALIZAÇÃO E CONFIGURAÇÕES DE ESTADO
+// =============================================================================
+
+// Inicialização do Tema
+if (typeof setTema === 'function') {
+  setTema();
+}
+
+// Flag controlada pelo servidor: se true, bloqueia os planos em breve (Empresas)
+const LOCK_PLANS = {{ block_plans| tojson }};
+
+// Estado global do plano atualmente selecionado
+let planoAtual = {
+  nome: 'ME',
+  titulo: 'DataInsight ME',
+  preco: 300.00,
+  cardId: 'card-me'
+};
+
+
+// =============================================================================
+// 2. FUNÇÕES AUXILIARES / UTILITÁRIAS
+// =============================================================================
+
+function nomeLegivel(id) {
+  if (id === 'card-mei') return 'MEI';
+  if (id === 'card-me') return 'ME';
+  if (id === 'card-empresas') return 'Empresas';
+  return id.replace('card-', '').toUpperCase();
+}
+
+
+// =============================================================================
+// 3. GERENCIAMENTO DE PLANOS E INTERFACE (DOM)
+// =============================================================================
+
+/**
+ * Aplica bloqueio visual e interativo quando LOCK_PLANS === true.
+ */
+function applyPlanLocks() {
+  if (!LOCK_PLANS) return;
+
+  const toLock = ['card-empresas'];
+
+  toLock.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    // Adiciona lock visual
+    el.classList.add('locked');
+
+    // Desabilita onclick removendo o atributo
+    el.removeAttribute('onclick');
+
+    // Substitui o botão por um estado desabilitado de 'Em breve'
+    const btn = el.querySelector('button');
+    if (btn) {
+      btn.className = 'w-full py-2.5 px-4 rounded-lg bg-slate-400 text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2';
+      btn.innerHTML = '<span class="coming-soon-badge">Em breve</span>';
     }
 
-    // Flag controlada pelo servidor: se true, bloqueia os planos em breve (Empresas)
-    const LOCK_PLANS = {{ block_plans| tojson }};
+    // Adiciona o rótulo/overlay de 'Em breve'
+    const overlay = document.createElement('div');
+    overlay.className = 'coming-soon-overlay';
+    overlay.innerHTML = '<div class="coming-soon-badge">Em breve</div>';
+    el.appendChild(overlay);
+  });
+}
 
-    let planoAtual = {
-      nome: 'ME',
-      titulo: 'DataInsight ME',
-      preco: 350.00,
-      cardId: 'card-me'
-    };
+function selecionarPlano(nome, preco, cardId, titulo) {
+  // Se o cartão está bloqueado, ignore seleção
+  const targetEl = document.getElementById(cardId);
+  if (targetEl && targetEl.classList.contains('locked')) return;
 
-    // Retorna o nome legível do plano pelo ID do card
-    function nomeLegivel(id) {
-      if (id === 'card-mei') return 'MEI';
-      if (id === 'card-me') return 'ME';
-      if (id === 'card-empresas') return 'Empresas';
-      return id.replace('card-', '').toUpperCase();
-    }
+  // Atualiza o objeto do estado global
+  planoAtual = {
+    nome: nome,
+    titulo: titulo || ('DataInsight ' + nome),
+    preco: preco,
+    cardId: cardId
+  };
 
-    // Aplica bloqueio visual e interativo quando LOCK_PLANS === true
-    function applyPlanLocks() {
-      if (!LOCK_PLANS) return;
-      const toLock = ['card-empresas'];
-      toLock.forEach(id => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        // add lock visual
-        el.classList.add('locked');
-        // disable onclick by removing attribute
-        el.removeAttribute('onclick');
-        // replace button with disabled 'Em breve'
-        const btn = el.querySelector('button');
-        if (btn) {
-          btn.className = 'w-full py-2.5 px-4 rounded-lg bg-slate-400 text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2';
-          btn.innerHTML = '<span class="coming-soon-badge">Em breve</span>';
+  // Atualiza os estados visuais dos cards e botões
+  ['card-mei', 'card-me', 'card-empresas'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
 
-        }
-        // add overlay label
-        const overlay = document.createElement('div');
-        overlay.className = 'coming-soon-overlay';
-        overlay.innerHTML = '<div class="coming-soon-badge">Em breve</div>';
-        el.appendChild(overlay);
-      });
-    }
-    function selecionarPlano(nome, preco, cardId, titulo) {
-      // Se o cartão está bloqueado, ignore seleção
-      const targetEl = document.getElementById(cardId);
-      if (targetEl && targetEl.classList.contains('locked')) return;
-      planoAtual = {
-        nome: nome,
-        titulo: titulo || ('DataInsight ' + nome),
-        preco: preco,
-        cardId: cardId
-      };
+    const btn = el.querySelector('button');
 
-      ['card-mei', 'card-me', 'card-empresas'].forEach(id => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        const btn = el.querySelector('button');
-        if (id === cardId) {
-          el.classList.add('selected');
-          if (btn) {
-            btn.className = 'w-full py-2.5 px-4 rounded-lg bg-blue-600 text-white font-semibold text-sm transition-colors shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2';
-            btn.innerHTML = '<span>Selecionado</span> <i class="fa-solid fa-circle-check text-xs"></i>';
-          }
-        } else {
-          el.classList.remove('selected');
-          if (btn && !el.classList.contains('locked')) {
-            btn.className = 'w-full py-2.5 px-4 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 texto-titulo font-medium text-sm transition-colors flex items-center justify-center gap-2';
-            btn.innerHTML = '<span>Selecionar ' + nomeLegivel(id) + '</span>';
-          }
-        }
-      });
-
-      const precoFormatado = preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-      document.getElementById('resumo-plano-nome').innerText = 'DataInsight ' + nome;
-      document.getElementById('resumo-subtotal').innerText = precoFormatado;
-      document.getElementById('resumo-total').innerText = precoFormatado;
-    }
-    async function comprar() {
-      const btn = document.getElementById('btn-comprar');
-      const btnTexto = document.getElementById('btn-texto');
-      const erroMsg = document.getElementById('erro-msg');
-
-      erroMsg.classList.add('hidden');
-      btn.disabled = true;
-      btnTexto.innerText = 'Processando...';
-
-      try {
-        // Prevent buying a locked plan
-        if (document.getElementById(planoAtual.cardId).classList.contains('locked')) {
-          throw new Error('Plano indisponível no momento.');
-        }
-        const resposta = await fetch('/criar-assinatura', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            plano: planoAtual.nome,
-            titulo: planoAtual.titulo,
-            preco: planoAtual.preco
-          })
-        });
-
-        const dados = await resposta.json();
-
-        if (dados.init_point) {
-          window.location.href = dados.init_point;
-        } else if (dados.sandbox_init_point) {
-          window.location.href = dados.sandbox_init_point;
-        } else {
-          throw new Error(dados.erro || 'Não foi possível gerar o link da assinatura.');
-        }
-      } catch (err) {
-        console.error(err);
-        erroMsg.innerText = err.message || 'Erro ao conectar ao serviço de assinaturas do Stripe.';
-        erroMsg.classList.remove('hidden');
-        btn.disabled = false;
-        btnTexto.innerText = 'Assinar com Cartão / Stripe';
+    if (id === cardId) {
+      el.classList.add('selected');
+      if (btn) {
+        btn.className = 'w-full py-2.5 px-4 rounded-lg bg-blue-600 text-white font-semibold text-sm transition-colors shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2';
+        btn.innerHTML = '<span>Selecionado</span> <i class="fa-solid fa-circle-check text-xs"></i>';
+      }
+    } else {
+      el.classList.remove('selected');
+      if (btn && !el.classList.contains('locked')) {
+        btn.className = 'w-full py-2.5 px-4 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 texto-titulo font-medium text-sm transition-colors flex items-center justify-center gap-2';
+        btn.innerHTML = '<span>Selecionar ' + nomeLegivel(id) + '</span>';
       }
     }
-    // Aplicar locks assim que o DOM estiver pronto
-    document.addEventListener('DOMContentLoaded', function () {
-      applyPlanLocks();
+  });
+
+  // Atualiza o resumo do pedido na interface
+  const precoFormatado = preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  document.getElementById('resumo-plano-nome').innerText = 'DataInsight ' + nome;
+  document.getElementById('resumo-subtotal').innerText = precoFormatado;
+  document.getElementById('resumo-total').innerText = precoFormatado;
+}
+
+
+// =============================================================================
+// 4. INTEGRAÇÃO COM PAGAMENTO E ASSINATURA
+// =============================================================================
+
+/**
+ * Envia a requisição para criar a assinatura e redireciona para o gateway de pagamento.
+ */
+async function comprar() {
+  const btn = document.getElementById('btn-comprar');
+  const btnTexto = document.getElementById('btn-texto');
+  const erroMsg = document.getElementById('erro-msg');
+
+  erroMsg.classList.add('hidden');
+  btn.disabled = true;
+  btnTexto.innerText = 'Processando...';
+
+  try {
+    // Previne a compra de um plano bloqueado
+    if (document.getElementById(planoAtual.cardId).classList.contains('locked')) {
+      throw new Error('Plano indisponível no momento.');
+    }
+
+    const resposta = await fetch('/criar-assinatura', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        plano: planoAtual.nome,
+        titulo: planoAtual.titulo,
+        preco: planoAtual.preco
+      })
     });
+
+    const dados = await resposta.json();
+
+    if (dados.init_point) {
+      window.location.href = dados.init_point;
+    } else if (dados.sandbox_init_point) {
+      window.location.href = dados.sandbox_init_point;
+    } else {
+      throw new Error(dados.erro || 'Não foi possível gerar o link da assinatura.');
+    }
+  } catch (err) {
+    erroMsg.innerText = err.message || 'Erro ao conectar ao serviço de assinaturas do Stripe.';
+    erroMsg.classList.remove('hidden');
+    btn.disabled = false;
+    btnTexto.innerText = 'Assinar com Cartão / Stripe';
+  }
+}
+
+
+// =============================================================================
+// 5. EVENT LISTENERS / CICLO DE VIDA DO DOM
+// =============================================================================
+
+// Aplicar locks assim que o DOM estiver pronto
+document.addEventListener('DOMContentLoaded', function () {
+  applyPlanLocks();
+});
   </script>
 </body>
 

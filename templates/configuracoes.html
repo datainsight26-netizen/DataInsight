@@ -12,7 +12,11 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='acessibilidade/acessibilidade.css') }}" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
+      <!-- icon -->
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicons/apple-touch-icon.png') }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicons/favicon-32x32.png') }}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicons/favicon-16x16.png') }}">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicons/favicon.ico') }}">
   <style>
     /* ── Configurações: estilos da página ── */
     .cfg-page-header {
@@ -373,7 +377,7 @@
     }
 
     .cfg-action-btn.primario {
-      background: linear-gradient(135deg, #1e40af, #3b82f6);
+      background: var(--primaria);
       color: #fff;
       box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
     }
@@ -501,10 +505,10 @@
                     </div>
                     <select class="acc-opt-select" id="cfgVelocidadeVoz" aria-label="Velocidade da voz"
                       style="margin-top:10px;">
-                      <option value="0.7">🐢 Lenta (0.7x)</option>
-                      <option value="1.0" selected>▶ Normal (1.0x)</option>
-                      <option value="1.3">⚡ Rápida (1.3x)</option>
-                      <option value="1.6">🚀 Muito Rápida (1.6x)</option>
+                      <option value="0.7">Lenta (0.7x)</option>
+                      <option value="1.0" selected>Normal (1.0x)</option>
+                      <option value="1.3">Rápida (1.3x)</option>
+                      <option value="1.6">Muito Rápida (1.6x)</option>
                     </select>
                   </div>
                 </div>
@@ -646,7 +650,6 @@
 
   <!-- Partials universais -->
   {% include 'partials/painel_acessibilidade.html' %}
-  {% include 'partials/chatbot.html' %}
   {% include 'partials/navbar_mobile.html' %}
 
   <!-- VLibras (oculto por padrão, ativado via acc) -->
@@ -655,154 +658,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
   <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-
-  <script>
-    function sincronizarTema() {
-      const icone = document.getElementById('iconeTema');
-      const texto = document.getElementById('textoTema');
-      const isDark = document.body.classList.contains('tema-escuro');
-      if (icone) icone.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
-      if (texto) texto.textContent = isDark ? 'Alternar para Modo Claro' : 'Alternar para Modo Escuro';
-      const btnTema = document.getElementById('btnTema');
-      if (btnTema) {
-        btnTema.innerHTML = isDark ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
-      }
-    }
-
-    function atualizarMasterUI(ativo) {
-      const label = document.getElementById('cfgAccLabel');
-      const optsBlock = document.getElementById('cfgAccOpts');
-      if (label) {
-        label.textContent = ativo ? 'ATIVADO' : 'Desativado';
-        label.className = 'cfg-switch-label ' + (ativo ? 'on' : 'off');
-      }
-      if (optsBlock) {
-        optsBlock.style.display = ativo ? 'block' : 'none';
-      }
-    }
-
-    function sincronizarFormulario() {
-      const acc = window.Acessibilidade;
-      if (!acc) return;
-
-      const chaves = [
-        ['cfgAltoContraste', 'altoContraste'],
-        ['cfgDyslexia', 'dyslexia'],
-        ['cfgCursorGrande', 'cursorGrande'],
-        ['cfgFocoAlto', 'focoAlto'],
-        ['cfgSemAnimacoes', 'semAnimacoes'],
-        ['cfgVlibras', 'vlibras'],
-      ];
-      chaves.forEach(([id, pref]) => {
-        const el = document.getElementById(id);
-        if (el) el.checked = Boolean(acc.getPref(pref));
-      });
-
-      const selDal = document.getElementById('cfgDaltonismo');
-      if (selDal) selDal.value = acc.getPref('daltonismo') || 'nenhum';
-
-      const selVel = document.getElementById('cfgVelocidadeVoz');
-      if (selVel) selVel.value = String(acc.getPref('velocidadeVoz') || 1.0);
-    }
-
-    function vincularChkCfg(id, pref) {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.addEventListener('change', () => {
-        if (window.Acessibilidade) {
-          window.Acessibilidade.setPref(pref, el.checked);
-        }
-        const idMapa = {
-          altoContraste: 'toggleAltoContraste',
-          dyslexia: 'toggleDyslexia',
-          cursorGrande: 'toggleCursorGrande',
-          focoAlto: 'toggleFocoAlto',
-          semAnimacoes: 'toggleMovimento',
-          vlibras: 'toggleVlibras',
-        };
-        const painelToggle = document.getElementById(idMapa[pref]);
-        if (painelToggle) painelToggle.checked = el.checked;
-      });
-    }
-
-    function iniciarConfiguracoes() {
-      const acc = window.Acessibilidade;
-      if (!acc) return;
-
-      const toggle = document.getElementById('cfgToggleAcc');
-      const estaAtivado = acc.isAtivado();
-
-      if (toggle) {
-        toggle.checked = estaAtivado;
-        toggle.addEventListener('change', () => {
-          if (toggle.checked) {
-            acc.ativar();
-          } else {
-            acc.desativar();
-          }
-          atualizarMasterUI(toggle.checked);
-          sincronizarFormulario();
-        });
-      }
-
-      atualizarMasterUI(estaAtivado);
-      sincronizarFormulario();
-
-      // Botões de Voz
-      const btnLer = document.getElementById('cfgBtnLer');
-      const btnParar = document.getElementById('cfgBtnParar');
-      if (btnLer) btnLer.addEventListener('click', () => acc.iniciarLeitura());
-      if (btnParar) btnParar.addEventListener('click', () => acc.pararLeitura());
-
-      // Seletor de velocidade
-      const selVel = document.getElementById('cfgVelocidadeVoz');
-      if (selVel) {
-        selVel.addEventListener('change', () => {
-          acc.setPref('velocidadeVoz', parseFloat(selVel.value));
-          const sp = document.getElementById('selectorVelocidade');
-          if (sp) sp.value = selVel.value;
-        });
-      }
-
-      // Botões de Fonte
-      const btnAumentar = document.getElementById('cfgBtnAumentar');
-      const btnDiminuir = document.getElementById('cfgBtnDiminuir');
-      const btnResetar = document.getElementById('cfgBtnResetar');
-      if (btnAumentar) btnAumentar.addEventListener('click', () => acc.aumentarFonte());
-      if (btnDiminuir) btnDiminuir.addEventListener('click', () => acc.diminuirFonte());
-      if (btnResetar) btnResetar.addEventListener('click', () => acc.resetarFonte());
-
-      // Checkboxes
-      vincularChkCfg('cfgAltoContraste', 'altoContraste');
-      vincularChkCfg('cfgDyslexia', 'dyslexia');
-      vincularChkCfg('cfgCursorGrande', 'cursorGrande');
-      vincularChkCfg('cfgFocoAlto', 'focoAlto');
-      vincularChkCfg('cfgSemAnimacoes', 'semAnimacoes');
-      vincularChkCfg('cfgVlibras', 'vlibras');
-
-      // Seletor de daltonismo
-      const selDal = document.getElementById('cfgDaltonismo');
-      if (selDal) {
-        selDal.addEventListener('change', () => {
-          acc.setPref('daltonismo', selDal.value);
-          const sp = document.getElementById('selectorDaltonismo');
-          if (sp) sp.value = selDal.value;
-        });
-      }
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      sincronizarTema();
-      iniciarConfiguracoes();
-    });
-
-    function abrirSidebar() {
-      const sidebar = document.getElementById('sidebar');
-      const overlay = document.getElementById('sidebarOverlay');
-      if (sidebar) sidebar.classList.add('open');
-      if (overlay) overlay.classList.add('active');
-    }
-  </script>
+  <script src="{{ url_for('static', filename='js/configuracao.js') }}"></script>
 </body>
 
 </html>

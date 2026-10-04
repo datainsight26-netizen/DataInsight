@@ -13,6 +13,11 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@latest" defer></script>
+      <!-- icon -->
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicons/apple-touch-icon.png') }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicons/favicon-32x32.png') }}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicons/favicon-16x16.png') }}">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicons/favicon.ico') }}">
 
   <style>
     /* ============================================================
@@ -181,7 +186,7 @@
     }
 
     .step-item.ativo .step-badge {
-      background: linear-gradient(135deg, #3B82F6, #6366F1);
+      background: var(--primaria);
       color: #fff;
       box-shadow: 0 3px 10px rgba(99, 102, 241, 0.4);
     }
@@ -257,7 +262,7 @@
       width: 42px;
       height: 42px;
       border-radius: 12px;
-      background: linear-gradient(135deg, #3B82F6, #6366F1);
+      background: var(--primaria);
       color: #fff;
       display: flex;
       align-items: center;
@@ -549,7 +554,7 @@
     .card-opcao-icon {
       width: 40px;
       height: 40px;
-      background: linear-gradient(135deg, #3B82F6, #6366F1);
+      background: var(--primaria);
       color: #fff;
       border-radius: 10px;
       display: flex;
@@ -612,7 +617,7 @@
     }
 
     .btn-nav-rel--next {
-      background: linear-gradient(135deg, #3B82F6, #6366F1);
+      background: var(--primaria);
       color: #fff;
       box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
       margin-left: auto;
@@ -954,7 +959,7 @@
       width: 72px;
       height: 72px;
       border-radius: 20px;
-      background: linear-gradient(135deg, #3B82F6, #6366F1);
+      background: var(--primaria);
       color: #fff;
       display: flex;
       align-items: center;
@@ -1044,7 +1049,7 @@
     }
 
     .botao-primario-rel {
-      background: linear-gradient(135deg, #3B82F6, #6366F1);
+      background: var(--primaria);
       color: #fff;
       box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
     }
@@ -1650,7 +1655,7 @@
                   <div class="form-grid-2">
                     <!-- SELETOR DE ANÁLISE SALVA (quando tipo = analise_salva) -->
                     <div class="campo-rel" id="campoAnaliseSalva" style="display:none;">
-                      <label for="seletorAnaliseSalva"><i class="fa-solid fa-brain"></i> Selecionar Análise Salva da IA</label>
+                      <label for="seletorAnaliseSalva">  Selecionar Análise Salva da IA</label>
                       <select class="selecao" id="seletorAnaliseSalva" style="font-weight:600;" onchange="aoSelecionarAnaliseSalva()">
                         <option value="">Carregando análises salvas...</option>
                       </select>
@@ -1658,7 +1663,7 @@
 
                     <!-- SELETOR DE PLANILHA (quando tipo != analise_salva) -->
                     <div class="campo-rel" id="campoPlanilhaRel">
-                      <label for="seletorPlanilhaRel"><i class="fa-solid fa-table-list"></i> Planilha de Origem dos Dados</label>
+                      <label for="seletorPlanilhaRel">Planilha de Origem dos Dados</label>
                       <select class="selecao" id="seletorPlanilhaRel" style="font-weight:600;">
                         <option value="todas">🌐 Todas as Planilhas (Consolidado)</option>
                       </select>
@@ -1676,7 +1681,7 @@
 
                     <!-- PERÍODO DE ANÁLISE -->
                     <div class="campo-rel" id="campoPeriodoRel">
-                      <label for="perRel"><i class="fa-solid fa-calendar"></i> Período de Análise</label>
+                      <label for="perRel"> Período de Análise</label>
                       <select class="selecao" id="perRel">
                         <option>Últimos 7 dias</option>
                         <option>Últimos 30 dias</option>
@@ -1688,7 +1693,7 @@
 
                   <!-- NOME DO RELATÓRIO -->
                   <div class="campo-rel">
-                    <label for="nomeRel"><i class="fa-solid fa-file-lines"></i> Título Oficial do Relatório</label>
+                    <label for="nomeRel"> Título Oficial do Relatório</label>
                     <input type="text" class="entrada" id="nomeRel" placeholder="Ex: Relatório Executivo DataInsight"
                       value="Relatório Consolidado">
                   </div>
@@ -1848,7 +1853,7 @@
                   <div class="preview-wrap">
                     <div class="preview-wrap__header">
                       <div class="preview-wrap__title">
-                        <i class="fa-solid fa-file-waveform"></i> Estrutura do Documento
+                         Estrutura do Documento
                       </div>
                       <span id="preview-status" style="font-size:0.78rem;color:var(--suave);font-weight:600;">
                         Clique em "Atualizar Dados" para recarregar
@@ -1908,19 +1913,19 @@
                     <!-- RESUMO EXECUTIVO DAS CONFIGURAÇÕES -->
                     <div class="resumo-executivo-lista">
                       <div class="resumo-item">
-                        <span class="resumo-item__lbl"><i class="fa-solid fa-tag"></i> Título do Relatório</span>
+                        <span class="resumo-item__lbl"> Título do Relatório</span>
                         <span class="resumo-item__val" id="resumo-nome-rel">-</span>
                       </div>
                       <div class="resumo-item">
-                        <span class="resumo-item__lbl"><i class="fa-solid fa-layer-group"></i> Modelo Selecionado</span>
+                        <span class="resumo-item__lbl"> Modelo Selecionado</span>
                         <span class="resumo-item__val" id="resumo-tipo-rel">-</span>
                       </div>
                       <div class="resumo-item">
-                        <span class="resumo-item__lbl"><i class="fa-solid fa-calendar"></i> Período Avaliado</span>
+                        <span class="resumo-item__lbl"> Período Avaliado</span>
                         <span class="resumo-item__val" id="resumo-periodo-rel">-</span>
                       </div>
                       <div class="resumo-item">
-                        <span class="resumo-item__lbl"><i class="fa-solid fa-list-check"></i> Seções Ativas</span>
+                        <span class="resumo-item__lbl"> Seções Ativas</span>
                         <span class="resumo-item__val" id="resumo-secoes-rel">-</span>
                       </div>
                     </div>
@@ -1960,7 +1965,7 @@
             <div class="history-card">
               <div class="history-card__header">
                 <div class="history-card__title">
-                  <i class="fa-solid fa-clock-rotate-left"></i>
+                 
                   Histórico de Relatórios Salvos
                   <span class="history-count" id="history-count">0</span>
                 </div>
@@ -2024,7 +2029,7 @@
 
   {% include 'partials/navbar_mobile.html' %}
   {% include 'partials/painel_acessibilidade.html' %}
-  {% include 'partials/chatbot.html' %}
+
 
   <!-- TOAST NOTIFICATIONS -->
   <div id="toast-rel" role="status" aria-live="polite">

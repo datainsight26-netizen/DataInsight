@@ -13,7 +13,11 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='acessibilidade/acessibilidade.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/dados_guide.css') }}" />
-
+<!-- icon -->
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicons/apple-touch-icon.png') }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicons/favicon-32x32.png') }}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicons/favicon-16x16.png') }}">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicons/favicon.ico') }}">
   <!-- SheetJS para exportação e manipulação Excel -->
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 
@@ -2131,18 +2135,7 @@
                 schema em tempo real, monitoramento de metas e exportação flexível.
               </p>
             </div>
-<!--      
-            <div style="display: flex; align-items: center; gap: 12px; flex-shrink: 0;">
-              <button type="button" 
-                      id="btnIaAnaliseDados" 
-                      class="btn-ia-glow-blue" 
-                      onclick="IaAnaliseModal.abrir('dados', coletarContextoIaDados)" 
-                      title="Executar Análise Completa e Direta da Base de Dados com IA"
-                      aria-label="Executar Análise Completa com IA">
-                <span class="btn-ia-glow-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
-                <span class="btn-ia-glow-text">IA</span>
-              </button>
-            </div> -->
+
           </header>
 
           <!-- ===== PAINEL DE ESTATÍSTICAS / KPIS ===== -->
@@ -2178,25 +2171,6 @@
                 <div class="kpi-card-subtitle">Campos preenchidos</div>
               </div>
 
-              <!-- KPI 4: Soma -->
-              <!-- <div class="kpi-card" style="--kpi-accent: #8b5cf6; --kpi-icon-bg: rgba(139, 92, 246, 0.1);">
-                <div class="kpi-card-header">
-                  <span class="kpi-card-label">Soma (1ª Num.)</span>
-                  <div class="kpi-card-icon"><i class="fa-solid fa-calculator"></i></div>
-                </div>
-                <div class="kpi-card-value" id="statSomaNum" style="font-size: 1.35rem;">—</div>
-                <div class="kpi-card-subtitle">Total acumulado</div>
-              </div> -->
-
-              <!-- KPI 5: Média -->
-              <!-- <div class="kpi-card" style="--kpi-accent: #f59e0b; --kpi-icon-bg: rgba(245, 158, 11, 0.1);">
-                <div class="kpi-card-header">
-                  <span class="kpi-card-label">Média (1ª Num.)</span>
-                  <div class="kpi-card-icon"><i class="fa-solid fa-chart-simple"></i></div>
-                </div>
-                <div class="kpi-card-value" id="statMediaNum" style="font-size: 1.35rem;">—</div>
-                <div class="kpi-card-subtitle">Valor médio por linha</div>
-              </div> -->
 
               <!-- KPI 6: Anomalias / Duplicatas -->
               <div class="kpi-card" style="--kpi-accent: #ef4444; --kpi-icon-bg: rgba(239, 68, 68, 0.1);">
@@ -3537,7 +3511,7 @@
     <div class="modal-abas-box" style="max-width:560px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
         <div class="modal-abas-title" style="font-size: 1.15rem; gap: 10px; margin: 0; color:var(--texto);">
-          <i class="fa-solid fa-bolt" style="color:#f59e0b;"></i>
+         
           <span>Estruturar Tabela Financeira</span>
         </div>
         <button class="modal-close-btn" onclick="document.getElementById('modalCriarTodasFaltantes').style.display='none'">
@@ -3637,7 +3611,7 @@
 
   <!-- Partials Globais do Sistema -->
   {% include 'partials/painel_acessibilidade.html' %}
-  {% include 'partials/chatbot.html' %}
+
 
   <!-- VLibras Acessibilidade -->
 </div>

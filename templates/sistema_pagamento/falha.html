@@ -12,6 +12,12 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
+<!-- icon -->
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicons/apple-touch-icon.png') }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicons/favicon-32x32.png') }}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicons/favicon-16x16.png') }}">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicons/favicon.ico') }}">
+
   <!-- CSS DataInsight -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/design-system.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
@@ -100,18 +106,6 @@
         O pagamento da sua assinatura <strong class="texto-titulo">DataInsight</strong> foi cancelado ou não pôde ser autorizado. Nenhuma cobrança foi realizada no seu cartão.
       </p>
 
-      <!-- Recomendações -->
-      <div class="caixa-dicas rounded-xl p-4 text-left text-xs space-y-2.5 mb-8">
-        <p class="font-semibold texto-titulo flex items-center gap-1.5">
- Dicas para concluir sua assinatura:
-        </p>
-        <ul class="list-disc list-inside texto-sub space-y-1 pl-1">
-          <li>Verifique o limite de crédito ou saldo do seu cartão.</li>
-          <li>Confira se os dados digitados no checkout do Stripe estão corretos.</li>
-          <li>Tente outro método de pagamento (ex:Link de pagamento, Apple Pay..).</li>
-        </ul>
-      </div>
-
       <!-- Ações -->
       <div class="space-y-3">
         <a style="color:white;"href="{{ url_for('pagina_assinaturas') }}" class="w-full py-3.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2">
@@ -132,7 +126,6 @@
   <!-- Painel de Acessibilidade Padrão -->
   {% include 'partials/painel_acessibilidade.html' %}
 
-  <!-- VLibras Plugin -->
 </div>
 
 <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>

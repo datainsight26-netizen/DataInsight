@@ -9,7 +9,11 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='acessibilidade/acessibilidade.css') }}" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 </head>
-
+  <!-- icon -->
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicons/apple-touch-icon.png') }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicons/favicon-32x32.png') }}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicons/favicon-16x16.png') }}">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicons/favicon.ico') }}">
 <body>
     <header class="barra-topo" role="banner">
              <a class="sidebar__logo" href="{{ url_for('pagina_landing') }}" aria-label="DataInsight - Início">
@@ -75,18 +79,14 @@
     </main>
 
     <!-- Painel Acessibilidade -->
-    <!-- u{2672} Painel Avan�ado de Acessibilidade -->
   {% include 'partials/painel_acessibilidade.html' %}
 
 
-    <!-- VLibras -->
+
 </div>
 
 <script>
-        /**
-         * Script para gerenciar o formulário de recuperação de senha
-         * Inclui validação, feedback dinâmico e acessibilidade
-         */
+   
         document.addEventListener('DOMContentLoaded', function () {
             const formulario = document.getElementById('formulario-recuperacao');
             const inputEmail = document.getElementById('email');
@@ -95,21 +95,13 @@
             const spinnerBotao = document.getElementById('spinner-botao');
             const mensagemFeedback = document.getElementById('mensagem-feedback');
 
-            /**
-             * Valida o formato do email
-             * @param {string} email - Email a ser validado
-             * @returns {boolean} - true se válido, false caso contrário
-             */
+           
             function validarEmail(email) {
                 const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 return regex.test(email);
             }
 
-            /**
-             * Exibe mensagem de feedback dinâmica
-             * @param {string} mensagem - Texto da mensagem
-             * @param {string} tipo - 'sucesso' ou 'erro'
-             */
+         
             function exibirFeedback(mensagem, tipo) {
                 mensagemFeedback.textContent = mensagem;
                 mensagemFeedback.style.display = 'block';

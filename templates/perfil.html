@@ -9,6 +9,11 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='acessibilidade/acessibilidade.css') }}" />
+        <!-- icon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicons/apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicons/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicons/favicon-16x16.png') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicons/favicon.ico') }}">
   <style>
     .pf-page { display: flex; flex-direction: column; gap: 20px; }
     .pf-header { margin-bottom: 4px; }
@@ -194,6 +199,9 @@
                 <i class="fa-solid fa-arrows-rotate"></i>
                 Mudar de Plano
               </a>
+              <button type="button" class="botao botao--outline" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.4);" id="btnAbrirModalCancelarAssinatura">
+                <i class="fa-solid fa-ban"></i> Cancelar Assinatura
+              </button>
               <a href="{{ url_for('logout') }}" class="botao botao--suave">
                 <i class="fa-solid fa-right-from-bracket"></i> Trocar conta
               </a>
@@ -263,117 +271,34 @@
             {% endif %}
           </section>
 
-          <!-- <section class="pf-contrib-card" aria-labelledby="titulo-contribuicao" data-ia-help="perfil_contribuicao">
-            <div class="pf-card-head">
-              <div>
-                <h2 id="titulo-contribuicao">Como o DataInsight contribui com o negócio</h2>
-                <p>Números dos últimos 30 dias, a partir das planilhas que você já colocou na plataforma.</p>
-              </div>
-              <a class="botao botao--suave" href="{{ url_for('pagina_home') }}">Ver painel</a>
-            </div>
-
-            <div id="pf-status-negocio" class="pf-status">
-              <span class="pf-status-dot"></span>
-              <span>Carregando saúde do negócio…</span>
-            </div>
-
-            <div class="pf-kpis">
-              <article class="kpi-card-premium" style="--kpi-color:#3B82F6; --kpi-bg:rgba(59,130,246,0.08);">
-                <div class="kpi-card-premium__header">
-                  <span class="kpi-card-premium__label">Faturamento visível</span>
-                  <span class="kpi-card-premium__icon"><i class="fa-solid fa-arrow-trend-up"></i></span>
-                </div>
-                <div id="pf-fat-valor" class="kpi-card-premium__value">—</div>
-                <span id="pf-fat-pct" class="kpi-card-premium__change">—</span>
-              </article>
-              <article class="kpi-card-premium" style="--kpi-color:#16A34A; --kpi-bg:rgba(22,163,74,0.08);">
-                <div class="kpi-card-premium__header">
-                  <span class="kpi-card-premium__label">Resultado (lucro)</span>
-                  <span class="kpi-card-premium__icon"><i class="fa-solid fa-sack-dollar"></i></span>
-                </div>
-                <div id="pf-luc-valor" class="kpi-card-premium__value">—</div>
-                <span id="pf-luc-pct" class="kpi-card-premium__change">—</span>
-              </article>
-              <article class="kpi-card-premium" style="--kpi-color:#F59E0B; --kpi-bg:rgba(245,158,11,0.08);">
-                <div class="kpi-card-premium__header">
-                  <span class="kpi-card-premium__label">Despesas acompanhadas</span>
-                  <span class="kpi-card-premium__icon"><i class="fa-solid fa-receipt"></i></span>
-                </div>
-                <div id="pf-desp-valor" class="kpi-card-premium__value">—</div>
-                <span id="pf-desp-pct" class="kpi-card-premium__change">—</span>
-              </article>
-            </div>
-
-            <p id="pf-narrativa" class="pf-narrativa">Montando o resumo de contribuição…</p>
-          </section> -->
-
-          <!-- <div class="pf-grid-2">
-            <section class="pf-list-card" aria-labelledby="titulo-ultimas-analises" data-ia-help="perfil_ultimas_analises">
-              <h2 id="titulo-ultimas-analises">Últimas análises</h2>
-              <p class="cartao__subtitulo">Leituras recentes das suas métricas</p>
-              <ul class="lista" id="listaUltimasAnalises">
-                {% if ultimas_analises and ultimas_analises | length > 0 %}
-                {% for item in ultimas_analises %}
-                <li class="lista__item">
-                  <div class="lista__texto">
-                    <span class="lista__titulo">{{ item.período_display }}</span>
-                    <span class="lista__meta">{{ item.data }} às {{ item.hora }}</span>
-                  </div>
-                  <a class="botao botao--suave" href="{{ url_for('visualizar_analise_route', index=loop.index0) }}"
-                    aria-label="Abrir análise {{ item.período_display }}">
-                    <i class="fa-solid fa-eye"></i> Abrir
-                  </a>
-                </li>
-                {% endfor %}
-                {% else %}
-                <li class="lista__empty">Nenhuma análise ainda. Gere uma em Análises de Métricas para ela aparecer aqui.</li>
-                {% endif %}
-              </ul>
-              <div class="cartao__acoes">
-                <a class="botao botao--suave" href="{{ url_for('pagina_analise') }}">
-                  <i class="fa-solid fa-chart-line"></i> Nova análise
-                </a>
-              </div>
-            </section>
-
-            <section class="pf-list-card" aria-labelledby="titulo-ultimos-relatorios" data-ia-help="perfil_ultimos_relatorios">
-              <h2 id="titulo-ultimos-relatorios">Últimos relatórios</h2>
-              <p class="cartao__subtitulo">Documentos gerados recentemente</p>
-              <ul class="lista" id="listaUltimosRelatorios">
-                {% if ultimos_relatorios and ultimos_relatorios | length > 0 %}
-                {% for item in ultimos_relatorios %}
-                <li class="lista__item">
-                  <div class="lista__texto">
-                    <span class="lista__titulo">{{ item.nome }}</span>
-                    <span class="lista__meta">{{ item.periodo }} • {{ item.data }}</span>
-                  </div>
-                  <a class="botao botao--suave" href="{{ url_for('visualizar_relatorio', index=loop.index0) }}"
-                    aria-label="Abrir relatório {{ item.nome }}">
-                    <i class="fa-solid fa-eye"></i> Abrir
-                  </a>
-                </li>
-                {% endfor %}
-                {% else %}
-                <li class="lista__empty">Nenhum relatório ainda. Gere um na página Relatórios.</li>
-                {% endif %}
-              </ul>
-              <div class="cartao__acoes">
-                <a class="botao botao--suave" href="{{ url_for('pagina_relatorio') }}">
-                  <i class="fa-solid fa-file-pdf"></i> Novo relatório
-                </a>
-              </div>
-            </section>
-          </div> -->
-
           {% include 'partials/footer.html' %}
         </div>
       </main>
     </div>
   </div>
 
+  <!-- Modal Confirmar Cancelamento de Assinatura -->
+  <div id="modalCancelarAssinatura" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 9999; align-items: center; justify-content: center;">
+    <div class="modal-card" style="background: var(--bg-card, #1e293b); color: white; padding: 24px; border-radius: 12px; max-width: 480px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+        <i class="fa-solid fa-triangle-exclamation" style="color: #ef4444; font-size: 1.5rem;"></i>
+        <h3 style="margin: 0; font-size: 1.25rem;">Cancelar Assinatura?</h3>
+      </div>
+      <p style="color: var(--texto-secundario, #94a3b8); font-size: 0.95rem; line-height: 1.5; margin-bottom: 20px;">
+        Tem certeza que deseja cancelar sua assinatura do DataInsight? Ao confirmar, as cobranças recorrentes serão interrompidas no Stripe e seu acesso ao painel será suspenso.
+      </p>
+      <div style="display: flex; gap: 12px; justify-content: flex-end;">
+        <button type="button" class="botao botao--suave" id="btnFecharModalCancelar">Voltar</button>
+        <button type="button" class="botao" style="background: #ef4444; color: #fff; font-weight: 600;" id="btnConfirmarCancelarAssinatura">
+          <i class="fa-solid fa-ban"></i> Confirmar Cancelamento
+        </button>
+      </div>
+    </div>
+  </div>
+
   {% include 'partials/navbar_mobile.html' %}
   {% include 'partials/painel_acessibilidade.html' %}
-  {% include 'partials/chatbot.html' %}
+
 
   <script>window.__PERFIL_USO = {{ uso | tojson }};</script>
   <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>

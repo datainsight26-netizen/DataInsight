@@ -12,6 +12,12 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
+<!-- icon -->
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicons/apple-touch-icon.png') }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicons/favicon-32x32.png') }}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicons/favicon-16x16.png') }}">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicons/favicon.ico') }}">
+
   <!-- CSS DataInsight -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/design-system.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
@@ -161,7 +167,6 @@
   <!-- Painel de Acessibilidade Padrão -->
   {% include 'partials/painel_acessibilidade.html' %}
 
-  <!-- VLibras Plugin -->
 </div>
 
 <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>

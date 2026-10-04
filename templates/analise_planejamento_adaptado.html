@@ -12,6 +12,11 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='acessibilidade/acessibilidade.css') }}" />
     <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
+            <!-- icon -->
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicons/apple-touch-icon.png') }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicons/favicon-32x32.png') }}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicons/favicon-16x16.png') }}">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicons/favicon.ico') }}">
 
     <style>
         /* ============================================================
@@ -788,9 +793,7 @@
                             <div class="pf-pe-box" id="pf-pe-container">
                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; flex-wrap:wrap;">
                                     <div style="display:flex; align-items:center; gap:8px;">
-                                        <div style="width:26px; height:26px; border-radius:6px; background:rgba(245,158,11,0.18); color:#f59e0b; display:grid; place-items:center; font-size:0.82rem;">
-                                            <i class="fa-solid fa-scale-balanced"></i>
-                                        </div>
+    
                                         <div>
                                             <span style="font-size:0.86rem; font-weight:750; color:var(--texto);">Ponto de Equilíbrio</span>
                                         </div>
@@ -1294,12 +1297,6 @@
                         </div>
 
                     </section>
-
-                    <!-- =======================================================
-                         PONTE DE COMPATIBILIDADE COM O analise.js ATUAL
-                         Esses IDs continuam existindo para o JS legado preencher.
-                         Um observer abaixo sincroniza KPIs básicos com a nova tela.
-                         ======================================================= -->
                     <div class="pf-bridge" aria-hidden="true">
                         <span id="fat-valor">--</span><span id="fat-variacao">--</span>
                         <span id="desp-valor">--</span><span id="desp-variacao">--</span>
@@ -1316,28 +1313,7 @@
                         <div id="grafico-metricas"></div>
                         <div id="analiseStatusFontesContainer"></div>
                     </div>
-                    <!-- <div class="pf-annual-summary" style="margin-top:12px;">
-                        <article class="cartao">
-                            <h2 class="h2" style="margin-top:0;">Resumo do Ano</h2>
-                            <div class="pf-summary-list">
-                                <div class="pf-summary-row"><span>Melhor resultado mensal</span><strong
-                                        id="pf-best-month">--</strong></div>
-                                <div class="pf-summary-row"><span>Pior resultado mensal</span><strong
-                                        id="pf-worst-month">--</strong></div>
-                                <div class="pf-summary-row"><span>Meses positivos</span><strong
-                                        id="pf-positive-months">--</strong></div>
-                                <div class="pf-summary-row"><span>Ticket médio mensal de receita</span><strong
-                                        id="pf-average-revenue">--</strong></div>
-                            </div>
-                        </article>
-                        <article class="cartao">
-                            <h2 class="h2" style="margin-top:0;">Leitura Executiva</h2>
-                            <p class="p" id="pf-executive-reading" style="margin-bottom:0;">Aguardando dados para
-                                montar o resumo automático do ano. Esta leitura é determinística e não utiliza IA.
-                            </p>
-                        </article>
-                    </div>
- -->
+    
 
                     {% include 'partials/footer.html' %}
                 </div>
@@ -1350,31 +1326,13 @@
 
     {% include 'partials/navbar_mobile.html' %}
     {% include 'partials/painel_acessibilidade.html' %}
-    {% include 'partials/chatbot.html' %}
+
 
 </div>
 
 <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-
-    <!-- <script>
-        function abrirSidebar() {
-            document.getElementById('sidebar').classList.add('open');
-            const overlay = document.getElementById('sidebarOverlay');
-            if (overlay) overlay.classList.add('active');
-        }
-        function fecharSidebar() {
-            document.getElementById('sidebar').classList.remove('open');
-            const overlay = document.getElementById('sidebarOverlay');
-            if (overlay) overlay.classList.remove('active');
-        }
-        window.analise_selecionada = null;
-        {% if session.get('analise_selecionada') %}
-        window.analise_selecionada = {
-            periodo_inicio: '{{ session.analise_selecionada.periodo_inicio }}',
-            periodo_fim: '{{ session.analise_selecionada.periodo_fim }}'
-        };
-        {% endif %} -->
+    <script src="{{ url_for('static', filename='js/planejamento-financeiro.js') }}"></script>
 
     <script>
         function abrirSidebar() {
@@ -1394,7 +1352,6 @@
     </script>
 
     <script src="{{ url_for('static', filename='js/ia_analise_modal.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/planejamento_financeiro.js') }}?v=5.1"></script>
 
     <!-- MODAL DE ANÁLISE COMPLETA COM IA -->
     {% with page_id='planejamento' %}

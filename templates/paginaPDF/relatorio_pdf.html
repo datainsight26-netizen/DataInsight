@@ -8,7 +8,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/apexcharts@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
+      <!-- icon -->
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicons/apple-touch-icon.png') }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicons/favicon-32x32.png') }}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicons/favicon-16x16.png') }}">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicons/favicon.ico') }}">
     <style>
       :root {
         --cor-primaria: {{ dados.cor | default('#3b82f6') }};
@@ -359,7 +363,7 @@
       }
 
       .btn-acao-pdf {
-        background: linear-gradient(135deg, #3b82f6, #6366f1);
+        background: #3B82F6;
         color: #ffffff;
         box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
       }
@@ -420,7 +424,7 @@
           </a>
           <div>
             <span class="badge-tipo">
-              <i class="fa-solid fa-circle-check"></i> {{ dados.badge | default('Relatório Oficial') }}
+                 {{ dados.badge | default('Relatório Oficial') }}
             </span>
           </div>
         </div>
@@ -429,7 +433,7 @@
       <!-- SEÇÃO KPIS -->
       {% if dados.kpis_lista and dados.kpis_lista|length > 0 %}
         <div class="secao-rel">
-          <div class="titulo-secao"><i class="fa-solid fa-chart-bar"></i> Indicadores Principais de Desempenho</div>
+          <div class="titulo-secao">   Indicadores Principais de Desempenho</div>
           <div class="kpis-grid">
             {% for k in dados.kpis_lista %}
               <div class="kpi-card">
@@ -445,7 +449,7 @@
       {% elif dados.kpis and dados.kpis.faturamento %}
         <!-- Fallback compatível -->
         <div class="secao-rel">
-          <div class="titulo-secao"><i class="fa-solid fa-chart-bar"></i> Indicadores de Desempenho</div>
+          <div class="titulo-secao">   Indicadores de Desempenho</div>
           <div class="kpis-grid">
             <div class="kpi-card">
               <div class="lbl">Faturamento</div>
@@ -470,7 +474,7 @@
       <!-- SEÇÃO DIAGNÓSTICO -->
       {% if dados.insights_estruturados and dados.insights_estruturados.diagnostico %}
         <div class="secao-rel">
-          <div class="titulo-secao"><i class="fa-solid fa-microchip"></i> Diagnóstico Executivo</div>
+          <div class="titulo-secao"> Diagnóstico Executivo</div>
           <div class="diagnostico-banner">
             {{ dados.insights_estruturados.diagnostico | safe }}
           </div>
@@ -483,11 +487,11 @@
       {% set temRiscos = ie.alertasRiscos is defined and ie.alertasRiscos|length > 0 %}
       {% if temPontos or temRiscos %}
         <div class="secao-rel">
-          <div class="titulo-secao"><i class="fa-solid fa-shield-halved"></i> Pontos Fortes &amp; Alertas de Riscos</div>
+          <div class="titulo-secao">   Pontos Fortes &amp; Alertas de Riscos</div>
           <div class="insights-grid">
             {% if temPontos %}
               <div class="insight-box insight-box--fortes">
-                <h4><i class="fa-solid fa-circle-check"></i> Pontos Fortes Observados</h4>
+                <h4>   Pontos Fortes Observados</h4>
                 <ul>
                   {% for pt in ie.pontosFortes %}
                     <li>{{ pt | safe }}</li>
@@ -497,7 +501,7 @@
             {% endif %}
             {% if temRiscos %}
               <div class="insight-box insight-box--riscos">
-                <h4><i class="fa-solid fa-triangle-exclamation"></i> Alertas &amp; Vulnerabilidades</h4>
+                <h4>   Alertas &amp; Vulnerabilidades</h4>
                 <ul>
                   {% for r in ie.alertasRiscos %}
                     <li>{{ r | safe }}</li>
@@ -512,9 +516,9 @@
       <!-- SEÇÃO RECOMENDAÇÕES ESTRATÉGICAS -->
       {% if ie.recomendacoes is defined and ie.recomendacoes|length > 0 %}
         <div class="secao-rel">
-          <div class="titulo-secao"><i class="fa-solid fa-lightbulb"></i> Recomendações Estratégicas &amp; Plano de Ação</div>
+          <div class="titulo-secao">  Recomendações Estratégicas &amp; Plano de Ação</div>
           <div class="insight-box insight-box--recs">
-            <h4><i class="fa-solid fa-list-check"></i> Orientações Práticas</h4>
+            <h4>   Orientações Práticas</h4>
             <ul>
               {% for rec in ie.recomendacoes %}
                 <li>{{ rec | safe }}</li>
@@ -525,7 +529,7 @@
       {% elif dados.insights and dados.insights|length > 0 and not ie.diagnostico %}
         <!-- Fallback de insights lista simples -->
         <div class="secao-rel">
-          <div class="titulo-secao"><i class="fa-solid fa-lightbulb"></i> Insights &amp; Observações</div>
+          <div class="titulo-secao">   Insights &amp; Observações</div>
           <div class="insight-box insight-box--recs">
             <ul>
               {% for ins in dados.insights %}
@@ -539,7 +543,7 @@
       <!-- SEÇÃO GRÁFICO APEXCHARTS -->
       {% if dados.grafico and dados.grafico_labels and dados.grafico_labels|length > 0 %}
         <div class="secao-rel">
-          <div class="titulo-secao"><i class="fa-solid fa-chart-line"></i> Evolução Visual</div>
+          <div class="titulo-secao">   Evolução Visual</div>
           <div class="grafico-wrap">
             <div id="graficoPdfContainer" style="height: 300px; width: 100%;"></div>
           </div>
@@ -547,7 +551,7 @@
       {% elif dados.grafico and dados.tabela and dados.tabela|length > 0 %}
         <!-- Fallback de gráfico legado -->
         <div class="secao-rel">
-          <div class="titulo-secao"><i class="fa-solid fa-chart-line"></i> Gráfico de Desempenho</div>
+          <div class="titulo-secao">   Gráfico de Desempenho</div>
           <div class="grafico-wrap">
             <div id="graficoPdfContainer" style="height: 300px; width: 100%;"></div>
           </div>
@@ -557,7 +561,7 @@
       <!-- SEÇÃO TABELA DETALHADA -->
       {% if dados.tabela and dados.tabela|length > 0 %}
         <div class="secao-rel">
-          <div class="titulo-secao"><i class="fa-solid fa-table"></i> Dados Detalhados</div>
+          <div class="titulo-secao">   Dados Detalhados</div>
           <div class="tabela-wrap">
             <table>
               <thead>

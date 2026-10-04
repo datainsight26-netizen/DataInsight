@@ -11,6 +11,11 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='acessibilidade/acessibilidade.css') }}" />
     <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+          <!-- icon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicons/apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicons/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicons/favicon-16x16.png') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicons/favicon.ico') }}">
     <style>
         /* ===== MÓDULO FINANCEIRO ===== */
         @keyframes ia-fade-in { from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);} }
@@ -265,11 +270,11 @@
                     <!-- Gráficos -->
                     <div class="modulo-charts-grid">
                         <div class="modulo-chart-card">
-                            <div class="modulo-chart-title"><i class="fa-solid fa-chart-area"></i> Evolução Financeira</div>
+                            <div class="modulo-chart-title">     Evolução Financeira</div>
                             <div id="ia-chart-1"></div>
                         </div>
                         <div class="modulo-chart-card">
-                            <div class="modulo-chart-title"><i class="fa-solid fa-chart-pie"></i> Distribuição por Categoria</div>
+                            <div class="modulo-chart-title">     Distribuição por Categoria</div>
                             <div id="ia-chart-2"></div>
                         </div>
                     </div>
@@ -277,7 +282,7 @@
                     <!-- Prompt personalizado -->
                     <div class="cartao" style="border-radius:14px;padding:20px;margin-bottom:18px;">
                         <div style="font-size:0.88rem;font-weight:700;color:var(--texto);margin-bottom:12px;display:flex;align-items:center;gap:7px;">
-                            <i class="fa-solid fa-sliders" style="color:#10B981;"></i> Personalizar Análise
+                                 Personalizar Análise
                         </div>
                         <div class="ia-modulo-chips">
                             <button class="ia-modulo-chip" data-prompt="Analise o fluxo de caixa e identifique os 3 maiores gargalos financeiros com sugestões de solução.">Gargalos Financeiros</button>
@@ -316,7 +321,7 @@
 
                     <!-- Checklist de Ações -->
                     <div class="modulo-checklist-card">
-                        <div class="modulo-checklist-title"><i class="fa-solid fa-list-check"></i> Plano de Ação</div>
+                        <div class="modulo-checklist-title">     Plano de Ação</div>
                         <p style="font-size:0.83rem;color:var(--suave);margin-bottom:14px;">Marque as ações concluídas. A lista é gerada automaticamente após a análise.</p>
                         <ul id="ia-checklist">
                             <li class="ia-check-item"><label><input type="checkbox"><span>Gere uma análise para ver o plano de ação automático</span></label></li>
@@ -342,7 +347,7 @@
     <div id="ia-toast-container"></div>
     {% include 'partials/navbar_mobile.html' %}
     {% include 'partials/painel_acessibilidade.html' %}
-    {% include 'partials/chatbot.html' %}
+
 
     <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>

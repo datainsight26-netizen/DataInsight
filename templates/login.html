@@ -13,6 +13,13 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='acessibilidade/acessibilidade.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}" />
 
+  <!-- icon -->
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicons/apple-touch-icon.png') }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicons/favicon-32x32.png') }}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicons/favicon-16x16.png') }}">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicons/favicon.ico') }}">
+
+
   <style>
     /* LOGIN SPLIT LAYOUT */
     html, body { height: 100%; overflow: hidden; }
@@ -343,6 +350,7 @@
       from { opacity:0; transform:translateY(8px); }
       to   { opacity:1; transform:translateY(0); }
     }
+
   </style>
 </head>
 
@@ -388,7 +396,7 @@
 
         <!-- Logo mobile -->
         <a href="{{ url_for('pagina_landing') }}" class="auth-form-panel__logo-mobile">
-          <div class="icon"><i class="fa-solid fa-chart-column"></i></div>
+           <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo DataInsight" style="max-width: 65px; height: auto;">
           DataInsight
         </a>
 
@@ -470,27 +478,7 @@
 </div>
 
 <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-
-  <script>
-    function togglePassword(id, btn) {
-      const input = document.getElementById(id);
-      const icon = btn.querySelector('i');
-      if (input.type === 'password') {
-        input.type = 'text';
-        icon.classList.replace('fa-eye','fa-eye-slash');
-      } else {
-        input.type = 'password';
-        icon.classList.replace('fa-eye-slash','fa-eye');
-      }
-    }
-
-    // Loading state no submit
-    document.getElementById('formLogin').addEventListener('submit', () => {
-      const btn = document.getElementById('btnEntrar');
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Entrando...';
-      btn.disabled = true;
-    });
-  </script>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<script src="{{ url_for('static', filename='js/login.js') }}"></script>
 </body>
 </html>

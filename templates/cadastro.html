@@ -13,6 +13,12 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='acessibilidade/acessibilidade.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}" />
 
+  <!-- icon -->
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicons/apple-touch-icon.png') }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicons/favicon-32x32.png') }}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicons/favicon-16x16.png') }}">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicons/favicon.ico') }}">
+
   <style>
     html, body { height: 100%; overflow: auto; }
 
@@ -394,7 +400,7 @@
 
         <!-- Logo mobile -->
         <a href="{{ url_for('pagina_landing') }}" class="auth-form-panel__logo-mobile">
-          <div class="icon"><i class="fa-solid fa-chart-column"></i></div>
+               <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo DataInsight" style="max-width: 65px; height: auto;">
           DataInsight
         </a>
 
@@ -433,12 +439,12 @@
           </div>
 
           <div class="auth-field">
-            <label for="telefone">WhatsApp / Celular <span style="color:#DC2626">*</span></label>
+            <label for="telefone">WhatsApp / Celular <span style="font-size:0.75rem; color:var(--suave); font-weight:400;">(Opcional)</span></label>
             <div class="auth-input-wrap">
               <input type="tel" id="telefone" name="telefone"
                      class="auth-input"
                      placeholder="(11) 99999-9999"
-                     autocomplete="tel" required />
+                     autocomplete="tel" />
             </div>
           </div>
 
@@ -552,180 +558,7 @@
 </div>
 
 <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-
-  <script>
-    function togglePass(id, btn) {
-      const input = document.getElementById(id);
-      const icon = btn.querySelector('i');
-      if (input.type === 'password') {
-        input.type = 'text';
-        icon.classList.replace('fa-eye','fa-eye-slash');
-      } else {
-        input.type = 'password';
-        icon.classList.replace('fa-eye-slash','fa-eye');
-      }
-    }
-
-    const telInput      = document.getElementById('telefone');
-    const cnpjInput     = document.getElementById('cnpj');
-    const cnpjFeedback  = document.getElementById('cnpjFeedback');
-    const senhaInput    = document.getElementById('senha');
-    const confirmaInput = document.getElementById('confirmar');
-    const msgEl         = document.getElementById('mensagem');
-    const form          = document.getElementById('formularioCadastro');
-
-    // Seleção de Perfil Manual
-    function selecionarPerfilManual(tipo) {
-      const radioMEI = document.getElementById('radioMEI');
-      const radioME = document.getElementById('radioME');
-      const cardMEI = document.getElementById('cardPerfilMEI');
-      const cardME = document.getElementById('cardPerfilME');
-
-      if (tipo === 'MEI') {
-        if (radioMEI) radioMEI.checked = true;
-        if (cardMEI) cardMEI.classList.add('selected');
-        if (cardME) cardME.classList.remove('selected');
-      } else {
-        if (radioME) radioME.checked = true;
-        if (cardME) cardME.classList.add('selected');
-        if (cardMEI) cardMEI.classList.remove('selected');
-      }
-    }
-
-    // Máscara e Validação Inteligente de CNPJ com Consulta à BrasilAPI
-    let timerConsultaCnpj = null;
-    if (cnpjInput) {
-      cnpjInput.addEventListener('input', (e) => {
-        let v = e.target.value.replace(/\D/g, '');
-        if (v.length > 14) v = v.slice(0, 14);
-
-        // Formatação 00.000.000/0000-00
-        if (v.length > 12) {
-          e.target.value = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{1,2})$/, '$1.$2.$3/$4-$5');
-        } else if (v.length > 8) {
-          e.target.value = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{1,4})$/, '$1.$2.$3/$4');
-        } else if (v.length > 5) {
-          e.target.value = v.replace(/^(\d{2})(\d{3})(\d{1,3})$/, '$1.$2.$3');
-        } else if (v.length > 2) {
-          e.target.value = v.replace(/^(\d{2})(\d{1,3})$/, '$1.$2');
-        } else {
-          e.target.value = v;
-        }
-
-        clearTimeout(timerConsultaCnpj);
-        if (v.length === 14) {
-          cnpjFeedback.className = 'cnpj-status-box carregando';
-          cnpjFeedback.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Consultando CNPJ na Receita Federal...';
-          
-          timerConsultaCnpj = setTimeout(() => {
-            fetch(`/api/consultar-cnpj/${v}`)
-              .then(r => r.json())
-              .then(data => {
-                if (data.sucesso) {
-                  cnpjFeedback.className = 'cnpj-status-box sucesso';
-                  const badgeTexto = data.is_mei ? '✨ MEI Identificado' : '🏢 Microempresa (ME)';
-                  cnpjFeedback.innerHTML = `<i class="fa-solid fa-circle-check"></i> <strong>${data.razao_social}</strong> (${badgeTexto})`;
-                  
-                  // Preencher campos ocultos
-                  const rsEl = document.getElementById('razao_social');
-                  const daEl = document.getElementById('data_abertura');
-                  if (rsEl) rsEl.value = data.razao_social || '';
-                  if (daEl) daEl.value = data.data_abertura || '';
-
-                  // Selecionar perfil sugerido automaticamente
-                  if (data.tipo_perfil) {
-                    selecionarPerfilManual(data.tipo_perfil);
-                  }
-                } else {
-                  cnpjFeedback.className = 'cnpj-status-box erro';
-                  cnpjFeedback.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> ${data.mensagem || 'CNPJ não localizado na Receita.'}`;
-                }
-              })
-              .catch(err => {
-                console.error(err);
-                cnpjFeedback.className = 'cnpj-status-box';
-                cnpjFeedback.style.display = 'none';
-              });
-          }, 400);
-        } else if (v.length === 0) {
-          cnpjFeedback.className = 'cnpj-status-box';
-          cnpjFeedback.style.display = 'none';
-        } else {
-          cnpjFeedback.className = 'cnpj-status-box carregando';
-          cnpjFeedback.innerHTML = `<i class="fa-solid fa-pen"></i> Digite os 14 dígitos do CNPJ... (${v.length}/14)`;
-        }
-      });
-    }
-
-    // Máscara automática de telefone (BR: (XX) XXXXX-XXXX ou fixo (XX) XXXX-XXXX)
-    if (telInput) {
-      telInput.addEventListener('input', (e) => {
-        let v = e.target.value.replace(/\D/g, '');
-        if (v.length > 11) v = v.slice(0, 11);
-        if (v.length > 10) {
-          e.target.value = v.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
-        } else if (v.length > 6) {
-          e.target.value = v.replace(/^(\d{2})(\d{4})(\d{0,4})$/, '($1) $2-$3');
-        } else if (v.length > 2) {
-          e.target.value = v.replace(/^(\d{2})(\d{0,5})$/, '($1) $2');
-        } else if (v.length > 0) {
-          e.target.value = '(' + v;
-        } else {
-          e.target.value = '';
-        }
-      });
-    }
-
-    function validar() {
-      const s = senhaInput.value;
-      const c = confirmaInput.value;
-      const telDigitos = telInput ? telInput.value.replace(/\D/g, '') : '';
-
-      if (telInput && (telDigitos.length < 10 || telDigitos.length > 11)) {
-        msgEl.textContent = '✕ Informe um número de celular válido com DDD';
-        msgEl.className = 'auth-field-msg auth-field-msg--error';
-        telInput.classList.add('auth-input--error');
-        telInput.focus();
-        return false;
-      }
-      if (telInput) telInput.classList.remove('auth-input--error');
-
-      if (s.length > 0 && s.length < 8) {
-        msgEl.textContent = '✕ Senha deve ter no mínimo 8 caracteres';
-        msgEl.className = 'auth-field-msg auth-field-msg--error';
-        senhaInput.classList.add('auth-input--error');
-        return false;
-      }
-      if (c.length > 0 && s !== c) {
-        msgEl.textContent = '✕ As senhas não coincidem';
-        msgEl.className = 'auth-field-msg auth-field-msg--error';
-        confirmaInput.classList.add('auth-input--error');
-        return false;
-      }
-      if (s.length >= 8 && s === c) {
-        msgEl.textContent = '✓ Dados válidos';
-        msgEl.className = 'auth-field-msg auth-field-msg--success';
-        senhaInput.classList.remove('auth-input--error');
-        senhaInput.classList.add('auth-input--success');
-        confirmaInput.classList.remove('auth-input--error');
-        confirmaInput.classList.add('auth-input--success');
-        return true;
-      }
-      msgEl.textContent = '';
-      msgEl.className = 'auth-field-msg';
-      return true;
-    }
-
-    senhaInput.addEventListener('input', validar);
-    confirmaInput.addEventListener('input', validar);
-
-    form.addEventListener('submit', (e) => {
-      if (!validar()) { e.preventDefault(); return; }
-      const btn = document.getElementById('btnCadastrar');
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Criando conta...';
-      btn.disabled = true;
-    });
-  </script>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<script src="{{ url_for('static', filename='js/cadastro.js') }}"></script>
 </body>
 </html>

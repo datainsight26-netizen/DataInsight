@@ -10,6 +10,12 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='acessibilidade/acessibilidade.css') }}" />
+
+  <!-- icon -->
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicons/apple-touch-icon.png') }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicons/favicon-32x32.png') }}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicons/favicon-16x16.png') }}">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicons/favicon.ico') }}">
   <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
 
   <style>
@@ -200,7 +206,7 @@
             <!-- Linha Temporal - Full Width -->
             <article class="cartao" style="margin-bottom: 24px;">
               <h3 class="h2" style="font-size: 18px; margin-bottom: 20px;">
-                <i class="fa-solid fa-chart-line" style="color: var(--sucesso); margin-right: 8px;"></i>
+             
                 Evolução Financeira (Receita, Despesa e Lucro)
               </h3>
               <div id="graficoLinhaGaleria" style="min-height: 400px;"></div>
@@ -212,7 +218,7 @@
             {% else %}
             <article class="cartao" style="margin-bottom: 24px;">
               <h3 class="h2" style="font-size:18px; margin-bottom:20px;">
-                <i class="fa-solid fa-filter" style="color:var(--icon); margin-right:8px;"></i>
+               
                 DRE - Demonstração do Resultado do Exercício
               </h3>
               <div id="graficoDREGaleria" style="min-height: 400px;"></div>
@@ -224,7 +230,7 @@
               <!-- Barras -->
               <article class="cartao">
                 <h3 class="h2" style="font-size: 18px; margin-bottom: 20px;">
-                  <i class="fa-solid fa-bars" style="color: var(--primaria); margin-right: 8px;"></i>
+                
                   Despesas por Categoria
                 </h3>
                 <div id="graficoBarrasGaleria" style="min-height: 320px;"></div>
@@ -233,7 +239,7 @@
               <!-- Pizza -->
               <article class="cartao">
                 <h3 class="h2" style="font-size: 18px; margin-bottom: 20px;">
-                  <i class="fa-solid fa-chart-pie" style="color: var(--aviso); margin-right: 8px;"></i>
+                 
                   Margem de Lucro (%)
                 </h3>
                 <div id="graficoPizzaGaleria" style="min-height: 320px;"></div>
@@ -242,7 +248,7 @@
               <!-- Área -->
               <article class="cartao" style="grid-column: 1 / -1;">
                 <h3 class="h2" style="font-size: 18px; margin-bottom: 20px;">
-                  <i class="fa-solid fa-water" style="color: var(--info); margin-right: 8px;"></i>
+
                   Lucro ao Longo do Tempo
                 </h3>
                 <div id="graficoAreaGaleria" style="min-height: 350px;"></div>
@@ -351,7 +357,7 @@
             <article class="cartao" style="margin-bottom: 24px; padding: 22px;">
               <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 18px;">
                 <h3 class="h2" style="font-size: 17px; margin: 0; display: flex; align-items: center; gap: 8px;">
-                  <i class="fa-solid fa-chart-line" style="color: var(--primaria);"></i>
+                
                   Curva de Projeção de 6 Meses: Lucro vs Prejuízo por Cenário
                 </h3>
                 
@@ -381,29 +387,6 @@
             </article>
           </section>
 
-
-          <!-- Insights e Recomendações -->
-          <!-- <section class="cartao"
-            style="margin-top: 48px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05)); border-left: 4px solid var(--primaria);">
-            <h2 class="h2">Insights e Recomendações</h2>
-            <div style="margin-top: 16px;">
-              <div
-                style="background: var(--cartao); padding: 16px; border-radius: var(--raio); margin-bottom: 12px; border-left: 3px solid var(--sucesso);">
-                <p class="p"><strong>✓ Ponto Forte:</strong> Crescimento de 15% na receita total com redução de 8% nas
-                  despesas operacionais. Margem de lucro em expansão.</p>
-              </div>
-              <div
-                style="background: var(--cartao); padding: 16px; border-radius: var(--raio); margin-bottom: 12px; border-left: 3px solid var(--aviso);">
-                <p class="p"><strong>⚠ Atenção:</strong> A categoria B apresenta queda de 12% comparado com o período
-                  anterior. Recomenda-se revisar estratégia de marketing.</p>
-              </div>
-              <div style="background: var(--cartao); padding: 16px; border-radius: var(--raio);">
-                <p class="p"><strong>→ Recomendação:</strong> Aumentar investimento em Produto Premium que está gerando
-                  35% mais ROI. Reduzir custos de fornecedores secundários.</p>
-              </div>
-            </div>
-          </section> -->
-
         </div>
         {% include 'partials/footer.html' %}
       </main>
@@ -412,7 +395,7 @@
 
   {% include 'partials/navbar_mobile.html' %}
   {% include 'partials/painel_acessibilidade.html' %}
-  {% include 'partials/chatbot.html' %}
+  
 
 </div>
 
