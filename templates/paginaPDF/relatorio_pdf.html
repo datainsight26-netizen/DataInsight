@@ -472,28 +472,49 @@
       {% endif %}
 
       <!-- SEÇÃO DIAGNÓSTICO -->
-      {% if dados.insights_estruturados and dados.insights_estruturados.diagnostico %}
+      {% set ie = dados.insights_estruturados | default({}) %}
+      {% set diagTexto = ie.diagnostico or ie.diagnostico_geral %}
+      {% if diagTexto %}
         <div class="secao-rel">
-          <div class="titulo-secao"> Diagnóstico Executivo</div>
+          <div class="titulo-secao">
+            {% if dados.tipo_relatorio == 'mei_dasn' %}
+              <i class="fa-solid fa-file-shield"></i> Diagnóstico Fiscal Oficial (SIMEI / LC 123/2006)
+            {% else %}
+               Diagnóstico Executivo
+            {% endif %}
+          </div>
           <div class="diagnostico-banner">
-            {{ dados.insights_estruturados.diagnostico | safe }}
+            {{ diagTexto | safe }}
           </div>
         </div>
       {% endif %}
 
       <!-- SEÇÃO PONTOS FORTES E RISCOS -->
-      {% set ie = dados.insights_estruturados | default({}) %}
-      {% set temPontos = ie.pontosFortes is defined and ie.pontosFortes|length > 0 %}
-      {% set temRiscos = ie.alertasRiscos is defined and ie.alertasRiscos|length > 0 %}
+      {% set pts = ie.pontosFortes | default(ie.pontos_fortes | default([])) %}
+      {% set riscos = ie.alertasRiscos | default(ie.alertas_riscos | default([])) %}
+      {% set temPontos = pts is defined and pts|length > 0 %}
+      {% set temRiscos = riscos is defined and riscos|length > 0 %}
       {% if temPontos or temRiscos %}
         <div class="secao-rel">
-          <div class="titulo-secao">   Pontos Fortes &amp; Alertas de Riscos</div>
+          <div class="titulo-secao">
+            {% if dados.tipo_relatorio == 'mei_dasn' %}
+              <i class="fa-solid fa-scale-balanced"></i> Apuração de Receitas, Teto &amp; Conformidade Fiscal
+            {% else %}
+                 Pontos Fortes &amp; Alertas de Riscos
+            {% endif %}
+          </div>
           <div class="insights-grid">
             {% if temPontos %}
               <div class="insight-box insight-box--fortes">
-                <h4>   Pontos Fortes Observados</h4>
+                <h4>
+                  {% if dados.tipo_relatorio == 'mei_dasn' %}
+                    <i class="fa-solid fa-check-circle"></i> Apuração das Receitas Brutas (DASN-SIMEI)
+                  {% else %}
+                       Pontos Fortes Observados
+                  {% endif %}
+                </h4>
                 <ul>
-                  {% for pt in ie.pontosFortes %}
+                  {% for pt in pts %}
                     <li>{{ pt | safe }}</li>
                   {% endfor %}
                 </ul>
@@ -501,9 +522,15 @@
             {% endif %}
             {% if temRiscos %}
               <div class="insight-box insight-box--riscos">
-                <h4>   Alertas &amp; Vulnerabilidades</h4>
+                <h4>
+                  {% if dados.tipo_relatorio == 'mei_dasn' %}
+                    <i class="fa-solid fa-triangle-exclamation"></i> Limites Legais &amp; Obrigações Tributárias
+                  {% else %}
+                       Alertas &amp; Vulnerabilidades
+                  {% endif %}
+                </h4>
                 <ul>
-                  {% for r in ie.alertasRiscos %}
+                  {% for r in riscos %}
                     <li>{{ r | safe }}</li>
                   {% endfor %}
                 </ul>
@@ -514,19 +541,32 @@
       {% endif %}
 
       <!-- SEÇÃO RECOMENDAÇÕES ESTRATÉGICAS -->
-      {% if ie.recomendacoes is defined and ie.recomendacoes|length > 0 %}
+      {% set recs = ie.recomendacoes | default([]) %}
+      {% if recs is defined and recs|length > 0 %}
         <div class="secao-rel">
-          <div class="titulo-secao">  Recomendações Estratégicas &amp; Plano de Ação</div>
+          <div class="titulo-secao">
+            {% if dados.tipo_relatorio == 'mei_dasn' %}
+              <i class="fa-solid fa-clipboard-check"></i> Instruções Oficiais: DASN-SIMEI, DAS-MEI &amp; IRPF
+            {% else %}
+                 Recomendações Estratégicas &amp; Plano de Ação
+            {% endif %}
+          </div>
           <div class="insight-box insight-box--recs">
-            <h4>   Orientações Práticas</h4>
+            <h4>
+              {% if dados.tipo_relatorio == 'mei_dasn' %}
+                <i class="fa-solid fa-lightbulb"></i> Passo a Passo para Transmissão e Isenção Fiscal
+              {% else %}
+                   Orientações Práticas
+              {% endif %}
+            </h4>
             <ul>
-              {% for rec in ie.recomendacoes %}
+              {% for rec in recs %}
                 <li>{{ rec | safe }}</li>
               {% endfor %}
             </ul>
           </div>
         </div>
-      {% elif dados.insights and dados.insights|length > 0 and not ie.diagnostico %}
+      {% elif dados.insights and dados.insights|length > 0 and not diagTexto %}
         <!-- Fallback de insights lista simples -->
         <div class="secao-rel">
           <div class="titulo-secao">   Insights &amp; Observações</div>
@@ -543,7 +583,13 @@
       <!-- SEÇÃO GRÁFICO APEXCHARTS -->
       {% if dados.grafico and dados.grafico_labels and dados.grafico_labels|length > 0 %}
         <div class="secao-rel">
-          <div class="titulo-secao">   Evolução Visual</div>
+          <div class="titulo-secao">
+            {% if dados.tipo_relatorio == 'mei_dasn' %}
+              <i class="fa-solid fa-chart-simple"></i> Evolução Mensal: Receitas x Despesas / Compras
+            {% else %}
+                 Evolução Visual
+            {% endif %}
+          </div>
           <div class="grafico-wrap">
             <div id="graficoPdfContainer" style="height: 300px; width: 100%;"></div>
           </div>
@@ -561,14 +607,20 @@
       <!-- SEÇÃO TABELA DETALHADA -->
       {% if dados.tabela and dados.tabela|length > 0 %}
         <div class="secao-rel">
-          <div class="titulo-secao">   Dados Detalhados</div>
+          <div class="titulo-secao">
+            {% if dados.tipo_relatorio == 'mei_dasn' %}
+              <i class="fa-solid fa-table-list"></i> Relatório Mensal das Receitas Brutas (Anexo X CGSN nº 140/2018)
+            {% else %}
+                 Dados Detalhados
+            {% endif %}
+          </div>
           <div class="tabela-wrap">
             <table>
               <thead>
                 <tr>
                   {% if dados.tabela_colunas and dados.tabela_colunas|length > 0 %}
                     {% for col in dados.tabela_colunas %}
-                      <th>{{ col.label }}</th>
+                      <th>{{ col.label if col.label is defined else col }}</th>
                     {% endfor %}
                   {% else %}
                     <th>Período</th>
@@ -584,7 +636,8 @@
                   {% for linha in dados.tabela %}
                     <tr>
                       {% for col in dados.tabela_colunas %}
-                        <td>{{ linha[col.chave] | default('-') }}</td>
+                        {% set chave = col.chave if col.chave is defined else col %}
+                        <td>{{ linha[chave] | default('-') }}</td>
                       {% endfor %}
                     </tr>
                   {% endfor %}

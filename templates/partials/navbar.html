@@ -14,19 +14,22 @@
   <span class="nav-section-label">Principal</span>
 
   <a href="{{ url_for('pagina_home') }}"
-     {% if request.endpoint=='pagina_home' %}aria-current="page"{% endif %}>
+     class="{% if rota_ativa('pagina_home') %}active{% endif %}"
+     {% if rota_ativa('pagina_home') %}aria-current="page"{% endif %}>
     <i class="fa-solid fa-house"></i>
     Início
   </a>
 
   <a href="{{ url_for('pagina_dados') }}"
-     {% if request.endpoint=='pagina_dados' %}aria-current="page"{% endif %}>
+     class="{% if rota_ativa('pagina_dados') %}active{% endif %}"
+     {% if rota_ativa('pagina_dados') %}aria-current="page"{% endif %}>
     <i class="fa-solid fa-table-list"></i>
     Dados
   </a>
 
   <a href="{{ url_for('pagina_graficoAvancado') }}"
-     {% if request.endpoint=='pagina_graficoAvancado' %}aria-current="page"{% endif %}>
+     class="{% if rota_ativa('pagina_graficoAvancado', 'pagina_dashboard') %}active{% endif %}"
+     {% if rota_ativa('pagina_graficoAvancado', 'pagina_dashboard') %}aria-current="page"{% endif %}>
     <i class="fa-solid fa-layer-group"></i>
     Dashboard
   </a>
@@ -34,45 +37,52 @@
   <span class="nav-section-label">Análise</span>
 
   <a href="{{ url_for('pagina_analise') }}"
-     {% if request.endpoint=='pagina_analise' %}aria-current="page"{% endif %}>
+     class="{% if rota_ativa('pagina_analise') %}active{% endif %}"
+     {% if rota_ativa('pagina_analise') %}aria-current="page"{% endif %}>
     <i class="fa-solid fa-chart-line"></i>
     Análises
   </a>
 
   <a href="{{ url_for('pagina_fluxo_caixa') }}"
-   {% if request.endpoint=='pagina_fluxo_caixa' %}aria-current="page"{% endif %}>
+     class="{% if rota_ativa('pagina_fluxo_caixa') %}active{% endif %}"
+     {% if rota_ativa('pagina_fluxo_caixa') %}aria-current="page"{% endif %}>
     <i class="fa-solid fa-right-left"></i>
     Fluxo de Caixa
   </a>
 
   {% if is_mei %}
   <a href="{{ url_for('pagina_controles_essenciais') }}"
-   {% if request.endpoint=='pagina_controles_essenciais' %}aria-current="page"{% endif %}>
+     class="{% if rota_ativa('pagina_controles_essenciais') %}active{% endif %}"
+     {% if rota_ativa('pagina_controles_essenciais') %}aria-current="page"{% endif %}>
     <i class="fa-solid fa-sliders"></i>
     Controles Essenciais
   </a>
   {% else %}
   <a href="{{ url_for('pagina_planejamento_financeiro') }}"
-   {% if request.endpoint=='pagina_planejamento_financeiro' %}aria-current="page"{% endif %}>
+     class="{% if rota_ativa('pagina_planejamento_financeiro') %}active{% endif %}"
+     {% if rota_ativa('pagina_planejamento_financeiro') %}aria-current="page"{% endif %}>
     <i class="fa-solid fa-chart-pie"></i>
     Planejamento
   </a>
   {% endif %}
 
   <a href="{{ url_for('pagina_relatorio') }}"
-     {% if request.endpoint=='pagina_relatorio' %}aria-current="page"{% endif %}>
+     class="{% if rota_ativa('pagina_relatorio', 'pagina_relatorio_pdf') %}active{% endif %}"
+     {% if rota_ativa('pagina_relatorio', 'pagina_relatorio_pdf') %}aria-current="page"{% endif %}>
     <i class="fa-solid fa-file-pdf"></i>
     Relatórios
   </a>
 
   <a href="{{ url_for('pagina_ia') }}"
-     {% if request.endpoint=='pagina_ia' %}aria-current="page"{% endif %}>
+     class="{% if rota_ativa('pagina_ia', 'pagina_ia_financeiro', 'pagina_ia_decisoes', 'pagina_ia_operacional', 'pagina_assistente_virtual', 'pagina_assistente') %}active{% endif %}"
+     {% if rota_ativa('pagina_ia', 'pagina_ia_financeiro', 'pagina_ia_decisoes', 'pagina_ia_operacional', 'pagina_assistente_virtual', 'pagina_assistente') %}aria-current="page"{% endif %}>
     <i class="fa-solid fa-brain"></i>
     Centro de Inteligência
   </a>
 
   <a href="{{ url_for('pagina_analises_salvas') }}"
-     {% if request.endpoint=='pagina_analises_salvas' %}aria-current="page"{% endif %}>
+     class="{% if rota_ativa('pagina_analises_salvas') %}active{% endif %}"
+     {% if rota_ativa('pagina_analises_salvas') %}aria-current="page"{% endif %}>
     <i class="fa-solid fa-bookmark"></i>
     Análises Salvas
   </a>
@@ -80,13 +90,15 @@
   <span class="nav-section-label">Conta</span>
 
   <a href="{{ url_for('pagina_perfil') }}"
-     {% if request.endpoint=='pagina_perfil' %}aria-current="page"{% endif %}>
+     class="{% if rota_ativa('pagina_perfil') %}active{% endif %}"
+     {% if rota_ativa('pagina_perfil') %}aria-current="page"{% endif %}>
     <i class="fa-solid fa-user"></i>
     Perfil
   </a>
 
   <a href="{{ url_for('pagina_configuracoes') }}"
-     {% if request.endpoint=='pagina_configuracoes' %}aria-current="page"{% endif %}>
+     class="{% if rota_ativa('pagina_configuracoes') %}active{% endif %}"
+     {% if rota_ativa('pagina_configuracoes') %}aria-current="page"{% endif %}>
     <i class="fa-solid fa-gear"></i>
     Configurações
   </a>

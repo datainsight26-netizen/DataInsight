@@ -1561,7 +1561,7 @@
 
                   <div class="tipo-cards-grid">
                     <!-- Consolidado -->
-                    <div class="tipo-card selecionado" data-tipo="consolidado" onclick="selecionarCardTipo('consolidado')">
+                    <div class="tipo-card {% if not is_mei %}selecionado{% endif %}" data-tipo="consolidado" onclick="selecionarCardTipo('consolidado')">
                       <div class="tipo-card__top">
                         <div class="tipo-card__icon" style="background:linear-gradient(135deg,#3B82F6,#2563EB);">
                           <i class="fa-solid fa-globe"></i>
@@ -1574,7 +1574,7 @@
 
                     {% if is_mei %}
                     <!-- Relatório Especial MEI: Declaração Anual (DASN-SIMEI) -->
-                    <div class="tipo-card active" data-tipo="mei_dasn" onclick="selecionarCardTipo('mei_dasn')">
+                    <div class="tipo-card {% if is_mei %}selecionado{% endif %}" data-tipo="mei_dasn" onclick="selecionarCardTipo('mei_dasn')">
                       <div class="tipo-card__top">
                         <div class="tipo-card__icon" style="background:linear-gradient(135deg,#10B981,#047857);">
                           <i class="fa-solid fa-file-shield"></i>
@@ -1582,12 +1582,12 @@
                         <div class="tipo-card__radio"></div>
                       </div>
                       <div class="tipo-card__title">Declaração Anual MEI (DASN-SIMEI)</div>
-                      <div class="tipo-card__desc">Receitas brutas de Comércio e Serviços mês a mês, teto de R$ 81k e total de compras.</div>
+                      <div class="tipo-card__desc">Receitas brutas de Comércio e Serviços mês a mês, teto de R$ 81k, total de compras e guia DAS-MEI.</div>
                     </div>
                     {% endif %}
 
                     <!-- Fluxo de Caixa -->
-                    <div class="tipo-card {% if not is_mei %}active{% endif %}" data-tipo="fluxo_caixa" onclick="selecionarCardTipo('fluxo_caixa')">
+                    <div class="tipo-card" data-tipo="fluxo_caixa" onclick="selecionarCardTipo('fluxo_caixa')">
                       <div class="tipo-card__top">
                         <div class="tipo-card__icon" style="background:linear-gradient(135deg,#10B981,#059669);">
                           <i class="fa-solid fa-money-bill-transfer"></i>
@@ -1642,13 +1642,13 @@
                     <label for="tipoRelatorio"><i class="fa-solid fa-layer-group"></i> Tipo de Relatório Técnico</label>
                     <select class="selecao" id="tipoRelatorio" onchange="aoMudarTipoRelatorio()">
                       {% if is_mei %}
-                      <option value="mei_dasn" selected>📋 Declaração Anual MEI (Espelho DASN-SIMEI)</option>
+                      <option value="mei_dasn" selected>📋 Declaração Anual MEI (DASN-SIMEI &amp; Guia DAS)</option>
                       {% endif %}
                       <option value="analise_salva">🌟 Análise Salva da IA (Diagnóstico Completo)</option>
-                      <option value="fluxo_caixa" {% if not is_mei %}selected{% endif %}>💼 Fluxo de Caixa & Tesouraria (Liquidez e Saldo)</option>
+                      <option value="fluxo_caixa">💼 Fluxo de Caixa & Tesouraria (Liquidez e Saldo)</option>
                       <option value="planejamento">🎯 Planejamento Financeiro & Metas (12 Meses)</option>
                       <option value="graficos_avancados">📊 Gráficos Avançados & Métricas Globais</option>
-                      <option value="consolidado">🌐 Relatório Consolidado do Negócio</option>
+                      <option value="consolidado" {% if not is_mei %}selected{% endif %}>🌐 Relatório Consolidado do Negócio</option>
                     </select>
                   </div>
 
@@ -1664,7 +1664,7 @@
                     <!-- SELETOR DE PLANILHA (quando tipo != analise_salva) -->
                     <div class="campo-rel" id="campoPlanilhaRel">
                       <label for="seletorPlanilhaRel">Planilha de Origem dos Dados</label>
-                      <select class="selecao" id="seletorPlanilhaRel" style="font-weight:600;">
+                      <select class="selecao" id="seletorPlanilhaRel" style="font-weight:600;" onchange="aoMudarPlanilhaRel()">
                         <option value="todas">🌐 Todas as Planilhas (Consolidado)</option>
                       </select>
                     </div>
@@ -1681,12 +1681,19 @@
 
                     <!-- PERÍODO DE ANÁLISE -->
                     <div class="campo-rel" id="campoPeriodoRel">
-                      <label for="perRel"> Período de Análise</label>
-                      <select class="selecao" id="perRel">
+                      <label for="perRel" id="lblPeriodoRel">{% if is_mei %}Exercício Fiscal / Ano-Calendário{% else %}Período de Análise{% endif %}</label>
+                      <select class="selecao" id="perRel" onchange="aoMudarPeriodoRel()">
+                        {% if is_mei %}
+                        <option value="2026" selected>Ano-Calendário 2026 (Exercício 2027)</option>
+                        <option value="2025">Ano-Calendário 2025 (Exercício 2026)</option>
+                        <option value="2024">Ano-Calendário 2024 (Exercício 2025)</option>
+                        {% else %}
                         <option>Últimos 7 dias</option>
                         <option>Últimos 30 dias</option>
+                        <option>Últimos 90 dias</option>
                         <option selected>Últimos 6 meses</option>
                         <option>Este ano</option>
+                        {% endif %}
                       </select>
                     </div>
                   </div>
@@ -1695,7 +1702,7 @@
                   <div class="campo-rel">
                     <label for="nomeRel"> Título Oficial do Relatório</label>
                     <input type="text" class="entrada" id="nomeRel" placeholder="Ex: Relatório Executivo DataInsight"
-                      value="Relatório Consolidado">
+                      value="{% if is_mei %}Declaração Anual MEI (DASN-SIMEI &amp; Guia DAS){% else %}Relatório Consolidado{% endif %}">
                   </div>
 
                   <!-- RODAPÉ DE NAVEGAÇÃO DA ETAPA 1 -->
@@ -2037,6 +2044,10 @@
     <span id="toast-msg"></span>
   </div>
 
+  <script>
+    window.IS_MEI = {{ is_mei | tojson }};
+    window.USUARIO_PERFIL = {{ usuario_perfil | default('ME') | tojson }};
+  </script>
   <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
   <script src="{{ url_for('static', filename='js/relatorios.js') }}"></script>
