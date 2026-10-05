@@ -61,7 +61,6 @@ Se voce nao realizou esta solicitacao, nenhuma acao e necessaria. Sua conta cont
 
 Atenciosamente,
 Equipe DataInsight
-https://datainsight.com.br
 """
 
         # ----------------------------------------------------------------------
@@ -102,8 +101,11 @@ https://datainsight.com.br
           </tr>
           <tr>
             <td style="padding: 20px 36px 30px; border-top: 1px solid #f3f4f6; text-align: center; background-color: #fafafa;">
-              <p style="margin: 0 0 6px; font-size: 12px; color: #9ca3af;">DataInsight © 2026 - Gestão e Inteligência para Empresas</p>
-              <p style="margin: 0; font-size: 11px; color: #9ca3af;">Este é um e-mail transacional automático.</p>
+              <p style="margin: 0 0 6px; font-size: 12px; color: #9ca3af;">DataInsight - Gestão e Inteligência para Empresas</p>
+    
+              <p style="margin:0;font-size:11px;color:#d1d5db;">
+                &copy; 2026 DataInsight. Todos os direitos reservados.
+            </p>
             </td>
           </tr>
         </table>
