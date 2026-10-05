@@ -101,9 +101,12 @@ def obter_dados_controles_essenciais():
     ano_atual = datetime.now().year
     mes_atual = datetime.now().month
 
-    ano_filtro = int(request.args.get("ano", ano_atual))
-    mes_filtro = int(request.args.get("mes", mes_atual))
+    ano_param = request.args.get("ano")
+    mes_param = request.args.get("mes")
     tabela_id = request.args.get("tabela_id", "todas")
+
+    ano_filtro = int(ano_param) if ano_param and str(ano_param).isdigit() else None
+    mes_filtro = int(mes_param) if mes_param and str(mes_param).isdigit() else None
 
     # --------------------------------------------------------------------------
     # 4.2 Carregamento do usuário (teto, abertura, mapeamentos)
@@ -169,12 +172,31 @@ def obter_dados_controles_essenciais():
     # 4.4 Resposta vazia (sem dados carregados)
     # --------------------------------------------------------------------------
     if not dados_raw:
+        ano_ret = ano_filtro if ano_filtro else ano_atual
+        mes_ret = mes_filtro if mes_filtro else mes_atual
+        tipo_ativ_user = (
+            (user_doc.get("cnae_tipo") if user_doc else None)
+            or (user_doc.get("tipo_atividade") if user_doc else None)
+            or (user_doc.get("natureza_operacao") if user_doc else None)
+            or mapeamento_fin.get("tipo_atividade")
+            or mapeamento_fin.get("cnae_tipo")
+            or session.get("cnae_tipo")
+            or "servicos"
+        )
+        sm_custom = _converter_numero(mapeamento_fin.get("salario_minimo_custom", 0))
+        info_das_apuracao = calcular_das_mei(
+            ano=ano_ret,
+            tipo_atividade=tipo_ativ_user,
+            salario_minimo_custom=sm_custom if sm_custom > 0 else None,
+        )
         return jsonify({
             "sucesso": True,
-            "ano": ano_filtro,
-            "mes": mes_filtro,
-            "mes_nome": MESES_NOMES[mes_filtro - 1],
+            "ano": ano_ret,
+            "mes": mes_ret,
+            "mes_nome": MESES_NOMES[mes_ret - 1],
+            "anos_disponiveis": [ano_atual, ano_atual - 1],
             "contexto": info_contexto,
+            "das_apuracao": info_das_apuracao,
             "teto_mei": {
                 "limite_anual": teto_anual,
                 "proporcional": is_proporcional,
@@ -211,6 +233,7 @@ def obter_dados_controles_essenciais():
                     "saidas": 0.0,
                     "lucro": 0.0,
                     "acumulado_ano": 0.0,
+                    "das_valor": round(info_das_apuracao["total_das"], 2),
                 }
                 for i in range(12)
             ],
@@ -684,8 +707,31 @@ def obter_dados_controles_essenciais():
     # --------------------------------------------------------------------------
     # 4.9 Apuração oficial do DAS-MEI (5% SM + ICMS/ISS conforme atividade)
     # --------------------------------------------------------------------------
+    anos_com_dados = sorted(
+        list({t["ano"] for t in transacoes if t.get("ano")}),
+        reverse=True,
+    )
+    if not anos_com_dados:
+        anos_com_dados = [ano_atual]
+
+    if not ano_filtro:
+        if ano_atual in anos_com_dados:
+            ano_filtro = ano_atual
+        else:
+            ano_filtro = anos_com_dados[0]
+
+    if not mes_filtro:
+        if ano_filtro == ano_atual:
+            mes_filtro = mes_atual
+        else:
+            meses_com_dados = [t["mes"] for t in transacoes if t.get("ano") == ano_filtro]
+            mes_filtro = max(meses_com_dados) if meses_com_dados else 12
+
     tipo_ativ_user = (
-        mapeamento_fin.get("tipo_atividade")
+        (user_doc.get("cnae_tipo") if user_doc else None)
+        or (user_doc.get("tipo_atividade") if user_doc else None)
+        or (user_doc.get("natureza_operacao") if user_doc else None)
+        or mapeamento_fin.get("tipo_atividade")
         or mapeamento_fin.get("cnae_tipo")
         or session.get("cnae_tipo")
         or "servicos"
@@ -881,6 +927,7 @@ def obter_dados_controles_essenciais():
             "saidas": round(sai_tot, 2),
             "lucro": round(lucro_m, 2),
             "acumulado_ano": round(acumulado_acum, 2),
+            "das_valor": round(info_das_apuracao.get("total_das", 0.0), 2),
         })
 
     # --------------------------------------------------------------------------
