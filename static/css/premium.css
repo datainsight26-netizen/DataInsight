@@ -146,18 +146,21 @@ html, body {
   color: var(--primaria);
 }
 
-.sidebar a[aria-current="page"] {
+.sidebar a[aria-current="page"],
+.sidebar a.active {
   background: rgba(59,130,246,0.1);
   color: var(--primaria);
   border-color: rgba(59,130,246,0.25);
   font-weight: 600;
 }
 
-.sidebar a[aria-current="page"] i {
+.sidebar a[aria-current="page"] i,
+.sidebar a.active i {
   color: var(--primaria);
 }
 
-.sidebar a[aria-current="page"]::before {
+.sidebar a[aria-current="page"]::before,
+.sidebar a.active::before {
   content: '';
   position: absolute;
   left: -14px; /* alinhado com o padding do nav (14px) */

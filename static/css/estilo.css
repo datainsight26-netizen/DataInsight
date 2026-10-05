@@ -1280,10 +1280,18 @@ body {
   outline: none;
 }
 
-.sidebar a[aria-current="page"] {
-  background: rgba(59, 130, 246, 0.18);
-  border-color: rgba(59, 130, 246, 0.4);
-  color: var(--primaria);
+.sidebar a[aria-current="page"],
+.sidebar a.active {
+  background: rgba(59, 130, 246, 0.16) !important;
+  border-color: rgba(59, 130, 246, 0.45) !important;
+  color: var(--primaria) !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.12);
+}
+
+.sidebar a[aria-current="page"] i,
+.sidebar a.active i {
+  color: var(--primaria) !important;
 }
 
 .topbar {
