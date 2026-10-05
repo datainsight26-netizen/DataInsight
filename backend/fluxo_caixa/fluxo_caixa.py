@@ -350,7 +350,7 @@ def preparar_dataframe_financeiro(df, mapeamento):
 
 def segmentar_periodos_fluxo(df_calc, periodo_str="30"):
     """
-    Gera colunas de sub-períodos conforme o filtro selecionado (7d, 30d, 90d, 180d, 365d).
+    Gera colunas de sub-períodos conforme o filtro selecionado (7d, 30d, 90d, 180d, 365d, ano específico).
     Retorna a lista de nomes das colunas e os sub-dataframes correspondentes.
     """
     try:
@@ -435,7 +435,7 @@ def segmentar_periodos_fluxo(df_calc, periodo_str="30"):
                 dfs_periodos.append(sub_df)
 
         elif periodo_int == 365:
-            # 12 meses do ano
+            # 12 meses do ano da data máxima
             ano_alvo = data_maxima.year
             for m in range(1, 13):
                 label = MESES_NOMES[m - 1]
@@ -445,10 +445,71 @@ def segmentar_periodos_fluxo(df_calc, periodo_str="30"):
                 ]
                 colunas_periodos.append(label)
                 dfs_periodos.append(sub_df)
+
+        elif 2000 <= periodo_int <= 2100:
+            # Ano-calendário específico (comum em MEI / períodos anuais)
+            ano_alvo = periodo_int
+            for m in range(1, 13):
+                label = f"{MESES_NOMES[m - 1]}/{str(ano_alvo)[2:]}"
+                sub_df = df_calc_ordenado[
+                    (df_calc_ordenado["_data"].dt.month == m)
+                    & (df_calc_ordenado["_data"].dt.year == ano_alvo)
+                ]
+                colunas_periodos.append(label)
+                dfs_periodos.append(sub_df)
+
+        else:
+            # Fallback para qualquer outro período não mapeado: 6 meses
+            ano_atual = data_maxima.year
+            mes_atual = data_maxima.month
+            for i in range(5, -1, -1):
+                m = mes_atual - i
+                y = ano_atual
+                while m <= 0:
+                    m += 12
+                    y -= 1
+                label = f"{MESES_NOMES[m - 1]}/{str(y)[2:]}"
+                sub_df = df_calc_ordenado[
+                    (df_calc_ordenado["_data"].dt.month == m)
+                    & (df_calc_ordenado["_data"].dt.year == y)
+                ]
+                colunas_periodos.append(label)
+                dfs_periodos.append(sub_df)
+
+        # Fallback de segurança: se nenhuma linha do período teve dados, mas a planilha tem dados
+        sub_validos = [d for d in dfs_periodos if not d.empty]
+        if not sub_validos and not df_calc_ordenado.empty:
+            if 2000 <= periodo_int <= 2100:
+                anos_disp = df_calc_ordenado["_data"].dt.year.value_counts()
+                if not anos_disp.empty:
+                    ano_fallback = int(anos_disp.index[0])
+                    colunas_periodos = []
+                    dfs_periodos = []
+                    for m in range(1, 13):
+                        label = f"{MESES_NOMES[m - 1]}/{str(ano_fallback)[2:]}"
+                        sub_df = df_calc_ordenado[
+                            (df_calc_ordenado["_data"].dt.month == m)
+                            & (df_calc_ordenado["_data"].dt.year == ano_fallback)
+                        ]
+                        colunas_periodos.append(label)
+                        dfs_periodos.append(sub_df)
+                    sub_validos = [d for d in dfs_periodos if not d.empty]
+
+            if not sub_validos:
+                colunas_periodos = []
+                dfs_periodos = []
+                n = len(df_calc_ordenado)
+                qtd_colunas = 3 if periodo_int == 90 else (6 if periodo_int == 180 else 4)
+                tamanho_bloco = max(1, math.ceil(n / qtd_colunas))
+                for i in range(qtd_colunas):
+                    label = f"Período {i + 1}"
+                    sub_df = df_calc_ordenado.iloc[i * tamanho_bloco:(i + 1) * tamanho_bloco]
+                    colunas_periodos.append(label)
+                    dfs_periodos.append(sub_df)
     else:
         # Sem datas na planilha: divide o DataFrame igualmente em colunas padrão
         n = len(df_calc)
-        qtd_colunas = 3 if periodo_int == 90 else 4
+        qtd_colunas = 3 if periodo_int == 90 else (6 if periodo_int == 180 else 4)
         tamanho_bloco = max(1, math.ceil(n / qtd_colunas))
         for i in range(qtd_colunas):
             label = f"Período {i + 1}"
@@ -846,7 +907,7 @@ def obter_dados_fluxo_caixa():
         if sub_dfs_validos:
             df_periodo = pd.concat(sub_dfs_validos, ignore_index=True)
         else:
-            df_periodo = pd.DataFrame()
+            df_periodo = df_calc if not df_calc.empty else pd.DataFrame()
 
         if not df_periodo.empty:
             receita_total = float(df_periodo["_receita"].sum())
@@ -881,6 +942,11 @@ def obter_dados_fluxo_caixa():
             "despesa_total": round(despesa_total, 2),
             "lucro_liquido": round(lucro_liquido, 2),
             "margem_lucro": margem,
+            # Aliases diretos para compatibilidade com o relatório e IA
+            "entradas": round(receita_total, 2),
+            "saidas": round(despesa_total, 2),
+            "saldo": round(lucro_liquido, 2),
+            "margem": margem,
         }
 
         # ----------------------------------------------------------------------
