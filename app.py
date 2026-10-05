@@ -14,7 +14,7 @@ import os
 from datetime import timedelta
 
 from dotenv import load_dotenv
-from flask import Flask, session
+from flask import Flask, session, request
 from flask_mail import Mail
 
 
@@ -39,13 +39,28 @@ app.secret_key = os.getenv("SECRET_KEY", "datainsight_default_secret_key_2026")
 
 @app.context_processor
 def inject_user_perfil():
-    """Injeta dados do perfil do usuário em todos os templates Jinja."""
-    perfil = session.get("usuario_perfil", "ME")
+    """Injeta dados do perfil do usuário e helpers de rotas em todos os templates Jinja."""
+    perfil = session.get("usuario_perfil") or session.get("plano") or "ME"
+
+    endpoint_atual = getattr(request, "endpoint", "") or ""
+    endpoint_base = endpoint_atual.split(".")[-1] if "." in endpoint_atual else endpoint_atual
+
+    def rota_ativa(*nomes):
+        """Retorna True se o endpoint atual corresponder a qualquer um dos nomes (com ou sem prefixo de blueprint)."""
+        if not endpoint_atual:
+            return False
+        for nome in nomes:
+            if endpoint_atual == nome or endpoint_base == nome:
+                return True
+        return False
+
     return {
         "usuario_perfil": perfil,
-        "is_mei": perfil == "MEI",
+        "is_mei": str(perfil).strip().upper() == "MEI",
         "usuario_cnpj": session.get("usuario_cnpj", ""),
         "usuario_razao_social": session.get("usuario_razao_social", ""),
+        "endpoint_base": endpoint_base,
+        "rota_ativa": rota_ativa,
     }
 
 
@@ -157,7 +172,7 @@ _registrar_aliases_blueprints(app)
 
 
 # ==============================================================================
-# 11. INICIALIZAÇÃO DO SERVIDOR
+# 10. INICIALIZAÇÃO
 # ==============================================================================
 
 if __name__ == "__main__":
