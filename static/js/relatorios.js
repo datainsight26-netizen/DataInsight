@@ -15,7 +15,7 @@
 // ==============================================================================
 
 const estadoRelatorio = {
-  tipo: 'consolidado',
+  tipo: (typeof window !== 'undefined' && window.IS_MEI) ? 'mei_dasn' : 'consolidado',
   planilhaId: 'todas',
   analiseId: null,
   cenarioPlanejamento: 'provavel',
@@ -187,6 +187,7 @@ function aoMudarTipoRelatorio() {
   const campoPlanilha = document.getElementById('campoPlanilhaRel');
   const campoCenario = document.getElementById('campoCenarioPlan');
   const campoPeriodo = document.getElementById('campoPeriodoRel');
+  const perRel = document.getElementById('perRel');
   const nomeRelInput = document.getElementById('nomeRel');
 
   // Ajusta visibilidade dos campos específicos
@@ -195,10 +196,40 @@ function aoMudarTipoRelatorio() {
   if (campoCenario) campoCenario.style.display = tipo === 'planejamento' ? 'block' : 'none';
   if (campoPeriodo) campoPeriodo.style.display = tipo === 'analise_salva' ? 'none' : 'block';
 
+  // Atualizar rótulo do campo de período
+  const lblPeriodo = document.getElementById('lblPeriodoRel');
+  if (lblPeriodo) {
+    lblPeriodo.textContent = tipo === 'mei_dasn' ? 'Exercício Fiscal / Ano-Calendário' : 'Período de Análise';
+  }
+
+  // Atualizar opções do seletor de período conforme o tipo
+  if (perRel) {
+    const isMeiDasn = tipo === 'mei_dasn';
+    const anoAtual = new Date().getFullYear();
+    const optionsAtuais = Array.from(perRel.options).map(o => o.value);
+    const temAnos = optionsAtuais.some(v => /^\d{4}$/.test(v) || /ano/i.test(v));
+
+    if (isMeiDasn && !temAnos) {
+      // Mudar para opções anuais (MEI DASN)
+      perRel.innerHTML = [anoAtual, anoAtual - 1, anoAtual - 2].map((ano, i) =>
+        `<option value="${ano}"${i === 0 ? ' selected' : ''}>Ano-Calendário ${ano} (Exercício ${ano + 1})</option>`
+      ).join('');
+    } else if (!isMeiDasn && temAnos) {
+      // Mudar para opções de período em dias/meses (Fluxo de Caixa, Consolidado, etc.)
+      perRel.innerHTML = `
+        <option value="Últimos 7 dias">Últimos 7 dias</option>
+        <option value="Últimos 30 dias">Últimos 30 dias</option>
+        <option value="Últimos 90 dias">Últimos 90 dias</option>
+        <option value="Últimos 6 meses" selected>Últimos 6 meses</option>
+        <option value="Este ano">Este ano</option>
+      `;
+    }
+  }
+
   // Sugestões de nomes amigáveis para cada tipo
   if (nomeRelInput) {
     const nomesPadrao = {
-      mei_dasn: 'Declaração Anual MEI (DASN-SIMEI)',
+      mei_dasn: 'Declaração Anual MEI (DASN-SIMEI & Guia DAS)',
       analise_salva: 'Relatório de Diagnóstico IA',
       fluxo_caixa: 'Relatório de Fluxo de Caixa & Tesouraria',
       planejamento: 'Relatório de Planejamento Financeiro & Metas',
@@ -211,10 +242,28 @@ function aoMudarTipoRelatorio() {
   // Atualizar rótulos das seções incluídas para refletir o tipo
   atualizarRotulosOpcoes(tipo);
 
+  // Sincronizar os cards visuais caso ainda não estejam
+  if (typeof sincronizarCardsTipoComSelect === 'function') {
+    sincronizarCardsTipoComSelect();
+  }
+
   // Se for análise salva e já tiver selecionada, atualiza dados
   if (tipo === 'analise_salva') {
     aoSelecionarAnaliseSalva();
   }
+}
+
+function aoMudarPlanilhaRel() {
+  const sel = document.getElementById('seletorPlanilhaRel');
+  if (sel) {
+    estadoRelatorio.planilhaId = sel.value;
+    localStorage.setItem('DataInsight_DashboardPlanilha', sel.value);
+    gerarPreviewMelhorado();
+  }
+}
+
+function aoMudarPeriodoRel() {
+  gerarPreviewMelhorado();
 }
 
 function atualizarRotulosOpcoes(tipo) {
@@ -224,14 +273,19 @@ function atualizarRotulosOpcoes(tipo) {
   const lblRecs = document.getElementById('lbl-opt-recomendacoes');
   const lblGraf = document.getElementById('lbl-opt-grafico');
   const lblDados = document.getElementById('lbl-opt-dados');
+  const lblPeriodo = document.getElementById('lblPeriodoRel');
+
+  if (lblPeriodo) {
+    lblPeriodo.textContent = tipo === 'mei_dasn' ? 'Exercício Fiscal / Ano-Calendário' : 'Período de Análise';
+  }
 
   if (tipo === 'mei_dasn') {
-    if (lblKpi) lblKpi.textContent = 'Faturamento Bruto, Teto R$ 81k, Compras e Lucro do MEI';
-    if (lblDiag) lblDiag.textContent = 'Diagnóstico fiscal de permanência no SIMEI e limite anual';
-    if (lblPontos) lblPontos.textContent = 'Apuração de Receitas com Serviços vs Venda de Mercadorias';
-    if (lblRecs) lblRecs.textContent = 'Instruções para preenchimento da Declaração Anual (DASN-SIMEI)';
-    if (lblGraf) lblGraf.textContent = 'Gráfico de Entradas (Receitas) x Saídas (Despesas)';
-    if (lblDados) lblDados.textContent = 'Espelho mensal com valores detalhados para o fisco';
+    if (lblKpi) lblKpi.textContent = 'Faturamento Bruto, Teto Legal R$ 81k, Guia DAS-MEI e Lucro';
+    if (lblDiag) lblDiag.textContent = 'Diagnóstico fiscal de enquadramento SIMEI, limite anual e compras';
+    if (lblPontos) lblPontos.textContent = 'Apuração de Serviços (ISS) vs Mercadorias (ICMS) e Alertas de Teto';
+    if (lblRecs) lblRecs.textContent = 'Instruções oficiais para Declaração Anual (DASN-SIMEI) e IRPF do Titular';
+    if (lblGraf) lblGraf.textContent = 'Gráfico de Entradas (Serviços e Vendas) x Despesas/Compras';
+    if (lblDados) lblDados.textContent = 'Relatório Mensal das Receitas Brutas (Anexo X CGSN nº 140/2018)';
   } else if (tipo === 'fluxo_caixa') {
     if (lblKpi) lblKpi.textContent = 'Entradas, Saídas, Saldo Líquido e Margem de Caixa';
     if (lblDiag) lblDiag.textContent = 'Diagnóstico de liquidez, solvência e queima de caixa';
@@ -372,6 +426,7 @@ function aoSelecionarAnaliseSalva() {
 
 async function obterDadosConsolidados() {
   const tabelaId = estadoRelatorio.planilhaId || 'todas';
+  const periodo = document.getElementById('perRel')?.value || 'Últimos 6 meses';
   const resp = await fetch(`/carregar-dados?tabela_id=${tabelaId}`);
   if (!resp.ok) throw new Error('Falha ao carregar dados consolidados');
   const json = await resp.json();
@@ -386,15 +441,28 @@ async function obterDadosConsolidados() {
   const campoDesp = Object.keys(linhas[0] || {}).find(k => /despesa|custo|cost|expenses/i.test(k));
   const campoLuc = Object.keys(linhas[0] || {}).find(k => /lucro|profit/i.test(k));
 
+  // Mapear período em quantidade máxima de linhas (últimas N linhas do dataset)
+  const total = linhas.length;
+  let qtdMax = total;
+  if (periodo.includes('7') && !periodo.includes('30') && !periodo.includes('90')) qtdMax = Math.min(7, total);
+  else if (periodo.includes('90')) qtdMax = Math.min(90, total);
+  else if (periodo.includes('30') && !periodo.includes('90')) qtdMax = Math.min(30, total);
+  else if (periodo.includes('6') && !periodo.includes('60') && !periodo.includes('90')) qtdMax = Math.min(6, total);
+  // "Este ano" e outros → todas as linhas disponíveis
+
+  // Pegar as últimas qtdMax linhas (registros mais recentes estão no final)
+  const inicio = Math.max(0, total - qtdMax);
+  const linhasFiltradas = linhas.slice(inicio);
+
   const meses = [];
   const faturamento = [];
   const despesas = [];
   const lucro = [];
   const margem = [];
 
-  linhas.forEach((linha, i) => {
+  linhasFiltradas.forEach((linha, i) => {
     const mes = campoPeriodo ? String(linha[campoPeriodo] || '').trim() : `Mês ${i + 1}`;
-    const fat = numeroValido(campoFat ? linha[campoFat] : (linha.Total || linha.Receita));
+    const fat = numeroValido(campoFat ? linha[campoFat] : (linha.Total || linha.Receita || 0));
     let desp = numeroValido(campoDesp ? linha[campoDesp] : (linha.Custo || linha.Despesa || 0));
     let luc = numeroValido(campoLuc ? linha[campoLuc] : (linha.Lucro || 0));
 
@@ -416,11 +484,22 @@ async function obterDadosFluxoCaixa() {
   const tabelaId = estadoRelatorio.planilhaId || 'todas';
   const periodo = document.getElementById('perRel')?.value || 'Últimos 6 meses';
   let dias = '180';
-  if (periodo.includes('7')) dias = '7';
-  else if (periodo.includes('30')) dias = '30';
-  else if (periodo.includes('ano')) dias = '365';
+  const matchAno = periodo.match(/\b(20\d\d)\b/);
+  if (matchAno) {
+    dias = matchAno[1];
+  } else if (periodo.includes('7') && !periodo.includes('30') && !periodo.includes('90') && !periodo.includes('180')) {
+    dias = '7';
+  } else if (periodo.includes('90')) {
+    dias = '90';
+  } else if (periodo.includes('30') && !periodo.includes('90')) {
+    dias = '30';
+  } else if (/ano/i.test(periodo)) {
+    dias = '365';
+  } else if (periodo.includes('6')) {
+    dias = '180';
+  }
 
-  const resp = await fetch(`/api/fluxo-caixa?periodo=${dias}&tabela_id=${tabelaId}`);
+  const resp = await fetch(`/api/fluxo-caixa?periodo=${encodeURIComponent(dias)}&tabela_id=${encodeURIComponent(tabelaId)}`);
   if (!resp.ok) throw new Error('Falha ao carregar fluxo de caixa');
   const json = await resp.json();
   return json;
@@ -444,9 +523,9 @@ function gerarInsightsReaisFluxoCaixa(dadosFc) {
   const categorias = dadosFc.categorias || { labels: [], valores: [] };
   const maioresLucros = dadosFc.maiores_lucros || { labels: [], valores: [] };
 
-  const entradas = numeroValido(kpis.entradas);
-  const saidas = numeroValido(kpis.saidas);
-  const saldo = numeroValido(kpis.saldo);
+  const entradas = numeroValido(kpis.entradas ?? kpis.receita_total);
+  const saidas = numeroValido(kpis.saidas ?? kpis.despesa_total);
+  const saldo = numeroValido(kpis.saldo ?? kpis.lucro_liquido);
   const margem = entradas > 0 ? (saldo / entradas) * 100 : 0;
 
   const diagnostico = saldo >= 0
@@ -688,80 +767,179 @@ function gerarPreviewMelhorado() {
 // ==============================================================================
 
 async function compilarRelatorioMeiDasn(nomeRel, dataHoje) {
+  const tabelaId = estadoRelatorio.planilhaId || 'todas';
+  const perEl = document.getElementById('perRel');
+  let anoFiltro = '';
+  if (perEl && perEl.value) {
+    const matchAno = perEl.value.match(/\b(20\d\d)\b/);
+    if (matchAno) {
+      anoFiltro = matchAno[1];
+    }
+  }
+
   let d = {};
   try {
-    const res = await fetch('/api/controles-essenciais');
-    d = await res.json();
+    let url = `/api/controles-essenciais?tabela_id=${encodeURIComponent(tabelaId)}`;
+    if (anoFiltro) {
+      url += `&ano=${anoFiltro}`;
+    }
+    const res = await fetch(url);
+    if (res.ok) {
+      d = await res.json();
+    } else {
+      console.warn("Resposta não-OK ao buscar controles essenciais:", res.status);
+    }
   } catch (e) {
     console.warn("Falha ao buscar controles essenciais:", e);
   }
 
   const teto = d.teto_mei || {};
   const meses = d.meses_resumo || [];
+  const das = d.das_apuracao || {};
+  const anoExercicio = d.ano || (anoFiltro ? Number(anoFiltro) : new Date().getFullYear());
 
-  const totalServicos = meses.reduce((acc, m) => acc + (m.servicos || 0), 0);
-  const totalComercio = meses.reduce((acc, m) => acc + (m.comercio || 0), 0);
-  const totalReceitas = totalServicos + totalComercio;
-  const totalSaidas = meses.reduce((acc, m) => acc + (m.saidas || 0), 0);
+  // Atualizar opções do seletor de período com anos disponíveis
+  if (Array.isArray(d.anos_disponiveis) && d.anos_disponiveis.length > 0 && perEl && estadoRelatorio.tipo === 'mei_dasn') {
+    const anoAtualSel = String(anoExercicio);
+    const optionsAtuais = Array.from(perEl.options).map(o => o.value);
+    const precisaAtualizar = d.anos_disponiveis.some(ano => !optionsAtuais.includes(String(ano)));
+    if (precisaAtualizar) {
+      perEl.innerHTML = d.anos_disponiveis.map(ano => {
+        const sel = String(ano) === anoAtualSel ? 'selected' : '';
+        return `<option value="${ano}" ${sel}>Ano-Calendário ${ano} (Exercício ${ano + 1})</option>`;
+      }).join('');
+    }
+  }
+
+  const totalServicos = meses.reduce((acc, m) => acc + (Number(m.servicos) || 0), 0);
+  const totalComercio = meses.reduce((acc, m) => acc + (Number(m.comercio) || 0), 0);
+  const totalReceitas = (totalServicos + totalComercio > 0)
+    ? (totalServicos + totalComercio)
+    : (Number(teto.faturado_ano) || 0);
+  const totalSaidas = meses.reduce((acc, m) => acc + (Number(m.saidas) || 0), 0);
   const lucroReal = totalReceitas - totalSaidas;
+  const limiteAnual = Number(teto.limite_anual) || 81000;
+  const saldoRestante = Math.max(0, limiteAnual - totalReceitas);
+  const pctUsado = limiteAnual > 0 ? (totalReceitas / limiteAnual) * 100 : 0;
+  const pctCompras = totalReceitas > 0 ? (totalSaidas / totalReceitas) * 100 : 0;
+  const valorDasMensal = Number(das.total_das) || 0;
+  const totalDasAno = valorDasMensal * 12;
+
+  // Parcelas isentas de presunção no IRPF (art. 14 da LC 123/2006)
+  const isencaoServicos = totalServicos * 0.32;
+  const isencaoComercio = totalComercio * 0.08;
+  const totalIsentoPresuncao = isencaoServicos + isencaoComercio;
+
+  const statusTetoTexto = pctUsado > 120
+    ? 'Teto Ultrapassado (>20%)'
+    : pctUsado > 100
+      ? 'Excesso de até 20%'
+      : pctUsado >= 80
+        ? 'Alerta Limite (80%)'
+        : 'Faixa Segura';
+
+  const badgeTetoCor = pctUsado > 100 ? '#ef4444' : (pctUsado >= 80 ? '#f59e0b' : '#10B981');
 
   return {
     tipo_relatorio: 'mei_dasn',
-    nome: nomeRel || 'Declaração Anual MEI (DASN-SIMEI)',
-    subtitulo: `Exercício ${d.ano || new Date().getFullYear()} • Apuração de Receitas Brutas`,
-    origem_nome: 'Controles Essenciais MEI',
-    badge: teto.badge || 'MEI Regular',
-    cor: teto.cor || '#10B981',
-    periodo: `Ano Calendário ${d.ano || new Date().getFullYear()}`,
+    nome: nomeRel || 'Declaração Anual MEI (DASN-SIMEI & Guia DAS)',
+    subtitulo: `Exercício ${anoExercicio} • Apuração Oficial SIMEI & Receitas Brutas`,
+    origem_nome: d.contexto?.nome_contexto || 'Controles Essenciais MEI',
+    badge: teto.badge || statusTetoTexto,
+    cor: teto.cor || badgeTetoCor,
+    periodo: `Ano-Calendário ${anoExercicio} (Exercício ${anoExercicio + 1})`,
     data: dataHoje,
     kpis: {
       faturamento: formatarMoeda(totalReceitas),
-      teto_mei: formatarMoeda(teto.limite_anual || 81000),
+      teto_mei: formatarMoeda(limiteAnual),
       saidas_compras: formatarMoeda(totalSaidas),
-      lucro_liquido: formatarMoeda(lucroReal)
+      lucro_liquido: formatarMoeda(lucroReal),
+      das_mensal: formatarMoeda(valorDasMensal)
     },
     kpis_lista: [
-      { label: 'Receita Serviços', valor: formatarMoeda(totalServicos), destaque: false },
-      { label: 'Receita Comércio', valor: formatarMoeda(totalComercio), destaque: false },
-      { label: 'Faturamento Total Bruto', valor: formatarMoeda(totalReceitas), destaque: true },
-      { label: 'Limite Anual MEI', valor: formatarMoeda(teto.limite_anual || 81000), destaque: false },
-      { label: 'Saldo Restante Teto', valor: formatarMoeda(teto.saldo_restante || 0), destaque: false },
-      { label: 'Total Saídas / Compras', valor: formatarMoeda(totalSaidas), destaque: false },
-      { label: 'Lucro Real no Bolso', valor: formatarMoeda(lucroReal), destaque: true }
+      { label: 'Faturamento Bruto Total', valor: formatarMoeda(totalReceitas), sub: `${pctUsado.toFixed(1)}% do teto legal`, destaque: true },
+      { label: 'Teto Legal MEI', valor: formatarMoeda(limiteAnual), sub: teto.proporcional ? `Proporcional (${teto.meses_ativos} meses)` : 'Limite Anual Integral' },
+      { label: 'Saldo Disponível Teto', valor: formatarMoeda(saldoRestante), sub: `Restam ${formatarMoeda(saldoRestante)}` },
+      { label: 'Receita Serviços (ISS)', valor: formatarMoeda(totalServicos), sub: 'Declaração DASN-SIMEI' },
+      { label: 'Receita Comércio (ICMS)', valor: formatarMoeda(totalComercio), sub: 'Declaração DASN-SIMEI' },
+      { label: 'Guia Mensal DAS-MEI', valor: formatarMoeda(valorDasMensal), sub: das.categoria_descricao || 'INSS 5% + Impostos' },
+      { label: 'Compras & Custos Totais', valor: formatarMoeda(totalSaidas), sub: `${pctCompras.toFixed(1)}% da Receita (Teto: 80%)` },
+      { label: 'Lucro Líquido Real', valor: formatarMoeda(lucroReal), sub: 'Receita Bruta - Custos', destaque: true }
     ],
-    grafico: true,
+    grafico: getCheckbox('opt-grafico'),
     grafico_tipo: 'barra',
     grafico_labels: meses.map(m => m.mes_nome),
     grafico_series: [
-      { name: 'Receita Bruta (R$)', data: meses.map(m => m.entradas) },
-      { name: 'Saídas / Despesas (R$)', data: meses.map(m => m.saidas) }
+      { name: 'Receita de Serviços (R$)', data: meses.map(m => Number(m.servicos) || 0) },
+      { name: 'Receita de Comércio (R$)', data: meses.map(m => Number(m.comercio) || 0) },
+      { name: 'Total Receita Bruta (R$)', data: meses.map(m => Number(m.entradas) || 0) },
+      { name: 'Compras & Custos (R$)', data: meses.map(m => Number(m.saidas) || 0) }
+    ],
+    tabela_colunas: [
+      { chave: 'mes', label: 'Mês (Exercício)' },
+      { chave: 'comercio', label: 'Revenda / Comércio (ICMS)' },
+      { chave: 'servicos', label: 'Prestação Serviços (ISS)' },
+      { chave: 'receita_bruta', label: 'Receita Bruta Total' },
+      { chave: 'compras_despesas', label: 'Compras & Custos' },
+      { chave: 'das_mei', label: 'Guia DAS-MEI' },
+      { chave: 'lucro_liquido', label: 'Lucro Líquido' },
+      { chave: 'acumulado_ano', label: 'Receita Acumulada' }
     ],
     tabela: meses.map(m => ({
-      'Mês': m.mes_nome,
-      'Serviços': formatarMoeda(m.servicos),
-      'Comércio': formatarMoeda(m.comercio),
-      'Receita Bruta': formatarMoeda(m.entradas),
-      'Total Despesas': formatarMoeda(m.saidas),
-      'Lucro Líquido': formatarMoeda(m.lucro),
-      'Acumulado': formatarMoeda(m.acumulado_ano)
+      mes: m.mes_nome,
+      comercio: formatarMoeda(m.comercio),
+      servicos: formatarMoeda(m.servicos),
+      receita_bruta: formatarMoeda(m.entradas),
+      compras_despesas: formatarMoeda(m.saidas),
+      das_mei: formatarMoeda(m.das_valor || valorDasMensal),
+      lucro_liquido: formatarMoeda(m.lucro),
+      acumulado_ano: formatarMoeda(m.acumulado_ano)
     })),
-    tabela_colunas: ['Mês', 'Serviços', 'Comércio', 'Receita Bruta', 'Total Despesas', 'Lucro Líquido', 'Acumulado'],
     insights_estruturados: {
-      diagnostico_geral: `O microempreendedor acumulou um faturamento bruto de ${formatarMoeda(totalReceitas)} no ano, utilizando ${teto.percentual_usado || 0}% do teto oficial de ${formatarMoeda(teto.limite_anual || 81000)}. ${teto.mensagem || ''}`,
+      diagnostico: `<strong>Parecer Fiscal e Operacional — Ano-Calendário ${anoExercicio}:</strong><br>` +
+        `O microempreendedor individual apurou um Faturamento Bruto total de <strong>${formatarMoeda(totalReceitas)}</strong> no exercício de ${anoExercicio}, ` +
+        `utilizando <strong>${pctUsado.toFixed(1)}%</strong> do limite legal de <strong>${formatarMoeda(limiteAnual)}</strong> (${teto.proporcional ? 'limite proporcional para ' + teto.meses_ativos + ' meses de atividade' : 'limite anual padrão'}). ` +
+        (pctUsado > 120
+          ? `<strong>ALERTA CRÍTICO:</strong> O faturamento superou o teto em mais de 20% (limite com tolerância: ${formatarMoeda(limiteAnual * 1.2)}). O enquadramento no SIMEI foi desenquadrado retroativamente conforme o art. 115 da Resolução CGSN nº 140/2018, exigindo migração para Microempresa (ME) e apuração no Simples Nacional.`
+          : pctUsado > 100
+            ? `<strong>ALERTA DE DESENQUADRAMENTO:</strong> O faturamento superou o teto de ${formatarMoeda(limiteAnual)}, porém permaneceu dentro da faixa de tolerância de até 20% (${formatarMoeda(limiteAnual * 1.2)}). O MEI permanecerá no SIMEI até 31 de dezembro de ${anoExercicio}, devendo recolher DAS complementar sobre o excesso na entrega da DASN-SIMEI e migrar para ME a partir de 1º de janeiro do ano seguinte.`
+            : `A empresa está em <strong>situação regular</strong> perante o SIMEI, restando uma margem de <strong>${formatarMoeda(saldoRestante)}</strong> para faturamento no exercício sem risco fiscal.`),
+      diagnostico_geral: `O microempreendedor acumulou um faturamento bruto de ${formatarMoeda(totalReceitas)} no ano, utilizando ${pctUsado.toFixed(1)}% do teto oficial de ${formatarMoeda(limiteAnual)}.`,
+      pontosFortes: [
+        `<strong>Segregação Fiscal para a DASN-SIMEI:</strong> Receita Bruta de Serviços apurada em <strong>${formatarMoeda(totalServicos)}</strong> (sujeita ao ISS) e Venda de Mercadorias em <strong>${formatarMoeda(totalComercio)}</strong> (sujeita ao ICMS).`,
+        `<strong>Resultado Operacional no Bolso:</strong> As receitas superaram as despesas/compras operacionais (${formatarMoeda(totalSaidas)}), gerando um Lucro Líquido evidenciado de <strong>${formatarMoeda(lucroReal)}</strong>.`,
+        `<strong>Conformidade das Compras (Art. 29, X, LC 123/06):</strong> As compras e despesas representaram <strong>${pctCompras.toFixed(1)}%</strong> do faturamento bruto ${pctCompras <= 80 ? '(dentro do limite fiscal seguro de 80%)' : '(atenção: ultrapassou a referência de 80%)'}.`
+      ],
       pontos_fortes: [
         `Receitas de Serviços somaram ${formatarMoeda(totalServicos)} e Comércio ${formatarMoeda(totalComercio)}.`,
-        `O negócio gerou um lucro líquido acumulado de ${formatarMoeda(lucroReal)} no período apurado.`
+        `Lucro líquido apurado no período de ${formatarMoeda(lucroReal)}.`
+      ],
+      alertasRiscos: [
+        pctUsado > 100
+          ? `Limite de faturamento do MEI excedido (${pctUsado.toFixed(1)}% do teto). Consulte seu contador para providenciar a migração de porte para Microempresa (ME).`
+          : pctUsado >= 80
+            ? `Atenção: O faturamento atingiu ${pctUsado.toFixed(1)}% do teto. Restam apenas ${formatarMoeda(saldoRestante)} para o restante do ano.`
+            : `Teto do MEI sob controle: Restam ${formatarMoeda(saldoRestante)} de margem segura para faturar no exercício.`,
+        `<strong>Guia DAS-MEI Obrigatória:</strong> O valor mensal apurado é de <strong>${formatarMoeda(valorDasMensal)}</strong> (${das.categoria_descricao || 'INSS 5% + Impostos'}), devendo ser pago impreterivelmente até o <strong>dia 20 de cada mês</strong> para manter a cobertura previdenciária (INSS: aposentadoria, auxílio-doença, salário-maternidade). Estimativa anual: ${formatarMoeda(totalDasAno)}.`,
+        `<strong>Obrigações Acessórias e Prazos:</strong> A Declaração Anual (DASN-SIMEI) referente ao ano-calendário ${anoExercicio} deve ser transmitida até <strong>31 de maio</strong>. Mantenha as notas fiscais de compras e vendas arquivadas pelo prazo decadencial de <strong>5 anos</strong>.`
       ],
       alertas_riscos: [
-        teto.status === 'excedido' ? 'Limite do MEI estourado. Obrigatório procurar contador para migrar para ME.' : 'Mantenha a guarda das notas fiscais de compras e vendas por 5 anos.',
+        pctUsado > 100 ? 'Limite do MEI estourado. Obrigatório procurar contador para migrar para ME.' : 'Mantenha a guarda das notas fiscais de compras e vendas por 5 anos.',
         'Lembre-se de pagar o DAS-MEI pontualmente todo dia 20 para garantir direitos previdenciários (INSS).'
       ],
       recomendacoes: [
-        'Copie os totais de Serviços e Comércio deste relatório para preencher a Declaração Anual DASN-SIMEI no Portal do Empreendedor.',
-        'Mantenha uma reserva de emergência equivalente a pelo menos 3 meses dos seus custos operacionais.',
-        'Não misture despesas pessoais com as contas do negócio; defina um valor fixo de pró-labore.'
+        `<strong>Transmissão da DASN-SIMEI:</strong> Acesse o Portal do Empreendedor (Gov.br) e informe os valores oficiais: Campo 1 (Revenda/Comércio): <strong>${formatarMoeda(totalComercio)}</strong> | Campo 2 (Serviços): <strong>${formatarMoeda(totalServicos)}</strong> | Receita Total: <strong>${formatarMoeda(totalReceitas)}</strong>.`,
+        `<strong>Relatório Mensal de Receitas:</strong> Preencha e assine mensalmente o <em>Relatório Mensal das Receitas Brutas</em> (Anexo X da Resolução CGSN nº 140/2018) até o dia 20 do mês seguinte, anexando os comprovantes de compras e vendas.`,
+        `<strong>Isenção no IRPF do Titular (Pessoa Física):</strong> Pela regra de presunção legal (art. 14 da LC 123/06), a parcela isenta de Imposto de Renda do titular é de 32% sobre Serviços (<strong>${formatarMoeda(isencaoServicos)}</strong>) e 8% sobre Comércio (<strong>${formatarMoeda(isencaoComercio)}</strong>), totalizando <strong>${formatarMoeda(totalIsentoPresuncao)}</strong>. Para isentar 100% do lucro líquido (${formatarMoeda(lucroReal)}), mantenha contabilidade regular assinada por contador.`
       ]
-    }
+    },
+    insights: [
+      `Faturamento Bruto Total do Exercício: ${formatarMoeda(totalReceitas)} (${pctUsado.toFixed(1)}% do teto legal de ${formatarMoeda(limiteAnual)}).`,
+      `Receita Bruta com Serviços (ISS): ${formatarMoeda(totalServicos)} | Venda de Mercadorias (ICMS): ${formatarMoeda(totalComercio)}.`,
+      `Total de Despesas e Compras de Mercadorias: ${formatarMoeda(totalSaidas)} (${pctCompras.toFixed(1)}% das receitas).`,
+      `Lucro Líquido Real Apurado no Exercício: ${formatarMoeda(lucroReal)}.`,
+      `Guia Mensal DAS-MEI Oficial: ${formatarMoeda(valorDasMensal)}/mês (${das.categoria_descricao || 'INSS 5% + ICMS/ISS'}). Total Anual: ${formatarMoeda(totalDasAno)}.`
+    ]
   };
 }
 
@@ -819,21 +997,72 @@ async function compilarRelatorioFluxoCaixa(nomeRel, dataHoje, periodo) {
   }
 
   const kpis = fc.kpis || {};
-  const evolucao = fc.evolucao || { labels: [], series: [], lucro: [] };
+  let valEntradas = numeroValido(kpis.entradas ?? kpis.receita_total);
+  let valSaidas = numeroValido(kpis.saidas ?? kpis.despesa_total);
+  let valSaldo = numeroValido(kpis.saldo ?? kpis.lucro_liquido);
+  let valMargem = (kpis.margem ?? kpis.margem_lucro) !== undefined
+    ? Number(kpis.margem ?? kpis.margem_lucro)
+    : (valEntradas > 0 ? (valSaldo / valEntradas) * 100 : 0);
+
+  let evolucao = fc.evolucao || { labels: [], series: [], lucro: [] };
+  let labels = evolucao.labels || [];
+  let sEntradas = evolucao.series?.[0]?.data || [];
+  let sSaidas = evolucao.series?.[1]?.data || [];
+  let sSaldo = evolucao.lucro || [];
+
+  // Se o endpoint de fluxo de caixa não localizou dados para o filtro de datas,
+  // mas o usuário tem registros no sistema, acionamos fallback dos dados consolidados
+  if (valEntradas === 0 && valSaidas === 0 && labels.length === 0) {
+    try {
+      const dadosCons = await obterDadosConsolidados();
+      if (dadosCons && dadosCons.meses && dadosCons.meses.length > 0) {
+        valEntradas = dadosCons.faturamento.reduce((a, b) => a + (Number(b) || 0), 0);
+        valSaidas = dadosCons.despesas.reduce((a, b) => a + (Number(b) || 0), 0);
+        valSaldo = dadosCons.lucro.reduce((a, b) => a + (Number(b) || 0), 0);
+        valMargem = valEntradas > 0 ? (valSaldo / valEntradas) * 100 : 0;
+
+        labels = dadosCons.meses;
+        sEntradas = dadosCons.faturamento;
+        sSaidas = dadosCons.despesas;
+        sSaldo = dadosCons.lucro;
+
+        fc.evolucao = {
+          labels: labels,
+          series: [
+            { name: 'Entradas', data: sEntradas },
+            { name: 'Saídas', data: sSaidas }
+          ],
+          lucro: sSaldo
+        };
+      }
+    } catch (_) {}
+  }
+
+  // Normaliza o objeto kpis com todos os aliases para as funções de insights
+  fc.kpis = {
+    ...kpis,
+    entradas: valEntradas,
+    saidas: valSaidas,
+    saldo: valSaldo,
+    margem: valMargem,
+    receita_total: valEntradas,
+    despesa_total: valSaidas,
+    lucro_liquido: valSaldo,
+    margem_lucro: valMargem
+  };
+
+  if (valEntradas === 0 && valSaidas === 0 && labels.length === 0) {
+    throw new Error('Nenhum dado financeiro encontrado para o período selecionado. Carregue uma planilha na tela "Dados" ou ajuste o período de análise.');
+  }
+
   const insights = gerarInsightsReaisFluxoCaixa(fc);
 
   const kpisLista = [
-    { label: 'Entradas Totais', valor: formatarMoeda(kpis.entradas), sub: 'Recebimentos no período' },
-    { label: 'Saídas Totais', valor: formatarMoeda(kpis.saidas), sub: 'Desembolsos operacionais' },
-    { label: 'Saldo Líquido', valor: formatarMoeda(kpis.saldo), sub: (kpis.saldo >= 0 ? '✓ Superávit de caixa' : '⚠ Déficit de caixa') },
-    { label: 'Taxa de Retenção', valor: formatarPercentual(kpis.entradas > 0 ? (kpis.saldo / kpis.entradas) * 100 : 0), sub: 'Margem líquida de caixa' }
+    { label: 'Entradas Totais', valor: formatarMoeda(valEntradas), sub: 'Recebimentos no período' },
+    { label: 'Saídas Totais', valor: formatarMoeda(valSaidas), sub: 'Desembolsos operacionais' },
+    { label: 'Saldo Líquido', valor: formatarMoeda(valSaldo), sub: (valSaldo >= 0 ? '✓ Superávit de caixa' : '⚠ Déficit de caixa') },
+    { label: 'Taxa de Retenção', valor: formatarPercentual(valMargem), sub: 'Margem líquida de caixa' }
   ];
-
-  // Séries do gráfico
-  const labels = evolucao.labels || [];
-  const sEntradas = evolucao.series?.[0]?.data || [];
-  const sSaidas = evolucao.series?.[1]?.data || [];
-  const sSaldo = evolucao.lucro || [];
 
   const graficoSeries = [
     { name: 'Entradas', data: sEntradas },
@@ -841,14 +1070,21 @@ async function compilarRelatorioFluxoCaixa(nomeRel, dataHoje, periodo) {
     { name: 'Saldo de Caixa', data: sSaldo }
   ];
 
-  // Tabela mês a mês
-  const tabela = labels.map((mes, i) => ({
-    periodo: mes,
-    entradas: formatarMoeda(sEntradas[i] || 0),
-    saidas: formatarMoeda(sSaidas[i] || 0),
-    saldo: formatarMoeda(sSaldo[i] || 0),
-    status: (sSaldo[i] || 0) >= 0 ? 'Positivo' : 'Negativo'
-  }));
+  // Tabela mês a mês / período a período
+  const tabela = labels.map((mes, i) => {
+    const e = sEntradas[i] || 0;
+    const s = sSaidas[i] || 0;
+    const res = sSaldo[i] !== undefined ? sSaldo[i] : (e - s);
+    const mg = e > 0 ? ((res / e) * 100).toFixed(1) + '%' : '0,0%';
+    return {
+      periodo: mes,
+      entradas: formatarMoeda(e),
+      saidas: formatarMoeda(s),
+      saldo: formatarMoeda(res),
+      margem: mg,
+      status: res >= 0 ? '✓ Superávit' : '⚠ Déficit'
+    };
+  });
 
   return {
     tipo_relatorio: 'fluxo_caixa',
@@ -861,10 +1097,13 @@ async function compilarRelatorioFluxoCaixa(nomeRel, dataHoje, periodo) {
     data: dataHoje,
     kpis_lista: kpisLista,
     kpis: {
-      entradas: formatarMoeda(kpis.entradas),
-      saidas: formatarMoeda(kpis.saidas),
-      saldo: formatarMoeda(kpis.saldo),
-      margem: formatarPercentual(kpis.entradas > 0 ? (kpis.saldo / kpis.entradas) * 100 : 0)
+      entradas: formatarMoeda(valEntradas),
+      saidas: formatarMoeda(valSaidas),
+      saldo: formatarMoeda(valSaldo),
+      margem: formatarPercentual(valMargem),
+      faturamento: formatarMoeda(valEntradas),
+      despesas: formatarMoeda(valSaidas),
+      lucro: formatarMoeda(valSaldo)
     },
     grafico: getCheckbox('opt-grafico'),
     grafico_tipo: 'linha',
@@ -875,10 +1114,11 @@ async function compilarRelatorioFluxoCaixa(nomeRel, dataHoje, periodo) {
     tabela: tabela,
     tabela_colunas: [
       { chave: 'periodo', label: 'Período' },
-      { chave: 'entradas', label: 'Entradas' },
-      { chave: 'saidas', label: 'Saídas' },
-      { chave: 'saldo', label: 'Saldo de Caixa' },
-      { chave: 'status', label: 'Resultado' }
+      { chave: 'entradas', label: 'Entradas (R$)' },
+      { chave: 'saidas', label: 'Saídas (R$)' },
+      { chave: 'saldo', label: 'Saldo de Caixa (R$)' },
+      { chave: 'margem', label: 'Margem Líquida' },
+      { chave: 'status', label: 'Situação' }
     ]
   };
 }
@@ -962,26 +1202,11 @@ async function compilarRelatorioPlanejamento(nomeRel, dataHoje) {
 }
 
 async function compilarRelatorioConsolidado(nomeRel, dataHoje, periodo, tipo) {
-  const dados = await obterDadosConsolidados();
-  if (!dados.meses || dados.meses.length === 0) {
-    throw new Error('Nenhum dado encontrado nas planilhas. Carregue dados na tela "Dados" para gerar relatórios.');
+  // obterDadosConsolidados já faz filtragem por data baseada no período selecionado
+  const dadosPeriodo = await obterDadosConsolidados();
+  if (!dadosPeriodo.meses || dadosPeriodo.meses.length === 0) {
+    throw new Error('Nenhum dado encontrado para o período selecionado. Carregue dados na tela "Dados" ou ajuste o período de análise.');
   }
-
-  // Filtrar período se necessário
-  const total = dados.meses.length;
-  let qtd = total;
-  if (periodo.includes('7')) qtd = Math.min(7, total);
-  else if (periodo.includes('30')) qtd = Math.min(30, total);
-  else if (periodo.includes('6')) qtd = Math.min(6, total);
-
-  const start = Math.max(0, total - qtd);
-  const dadosPeriodo = {
-    meses: dados.meses.slice(start),
-    faturamento: dados.faturamento.slice(start),
-    despesas: dados.despesas.slice(start),
-    lucro: dados.lucro.slice(start),
-    margem: dados.margem.slice(start)
-  };
 
   const insights = gerarInsightsReaisConsolidado(dadosPeriodo);
 
@@ -1084,39 +1309,44 @@ function renderizarPreviewHtml(p) {
 
   // 3. Diagnóstico Executivo
   const ie = p.insights_estruturados || {};
-  if (getCheckbox('opt-diagnostico') && ie.diagnostico) {
+  const diagTexto = ie.diagnostico || ie.diagnostico_geral;
+  if (getCheckbox('opt-diagnostico') && diagTexto) {
+    const isMei = p.tipo_relatorio === 'mei_dasn';
     html += `
       <div class="preview-secao">
-        <div class="preview-titulo"> Diagnóstico Executivo &amp; Veredito</div>
+        <div class="preview-titulo">  ${isMei ? 'Diagnóstico Fiscal Oficial do MEI (SIMEI / LC 123/2006)' : 'Diagnóstico Executivo &amp; Veredito'}</div>
         <div class="preview-diagnostic-banner" style="border-left-color:${p.cor || '#3b82f6'};">
-          <h4> Parecer Analítico Real</h4>
-          <div class="diagnostico-conteudo">${renderizarConteudoTexto(ie.diagnostico)}</div>
+          <h4>  ${isMei ? 'Parecer Fiscal &amp; Limite de Faturamento' : 'Parecer Analítico Real'}</h4>
+          <div class="diagnostico-conteudo">${renderizarConteudoTexto(diagTexto)}</div>
         </div>
       </div>
     `;
   }
 
   // 4. Pontos Fortes e Riscos
-  const temPontos = Array.isArray(ie.pontosFortes) && ie.pontosFortes.length > 0;
-  const temRiscos = Array.isArray(ie.alertasRiscos) && ie.alertasRiscos.length > 0;
+  const pts = Array.isArray(ie.pontosFortes) ? ie.pontosFortes : (Array.isArray(ie.pontos_fortes) ? ie.pontos_fortes : []);
+  const riscos = Array.isArray(ie.alertasRiscos) ? ie.alertasRiscos : (Array.isArray(ie.alertas_riscos) ? ie.alertas_riscos : []);
+  const temPontos = pts.length > 0;
+  const temRiscos = riscos.length > 0;
   if (getCheckbox('opt-pontos-riscos') && (temPontos || temRiscos)) {
+    const isMei = p.tipo_relatorio === 'mei_dasn';
     html += `
       <div class="preview-secao">
-        <div class="preview-titulo"> Pontos Fortes &amp; Alertas de Riscos</div>
+        <div class="preview-titulo">  ${isMei ? 'Apuração das Receitas Brutas, Teto &amp; Riscos Fiscais' : 'Pontos Fortes &amp; Alertas de Riscos'}</div>
         <div class="preview-insights-grid">
           ${temPontos ? `
             <div class="insight-card insight-card--fortes">
-              <div class="insight-card__title"> Pontos Fortes &amp; Oportunidades</div>
+              <div class="insight-card__title">  ${isMei ? 'Apuração de Receitas (DASN-SIMEI)' : 'Pontos Fortes &amp; Oportunidades'}</div>
               <ul class="insight-list">
-                ${ie.pontosFortes.map(pt => `<li>${renderizarConteudoInline(pt)}</li>`).join('')}
+                ${pts.map(pt => `<li>${renderizarConteudoInline(pt)}</li>`).join('')}
               </ul>
             </div>
           ` : ''}
           ${temRiscos ? `
             <div class="insight-card insight-card--riscos">
-              <div class="insight-card__title"> Alertas &amp; Vulnerabilidades</div>
+              <div class="insight-card__title">  ${isMei ? 'Limites Legais &amp; Guia DAS-MEI' : 'Alertas &amp; Vulnerabilidades'}</div>
               <ul class="insight-list">
-                ${ie.alertasRiscos.map(r => `<li>${renderizarConteudoInline(r)}</li>`).join('')}
+                ${riscos.map(r => `<li>${renderizarConteudoInline(r)}</li>`).join('')}
               </ul>
             </div>
           ` : ''}
@@ -1126,15 +1356,17 @@ function renderizarPreviewHtml(p) {
   }
 
   // 5. Recomendações Estratégicas
-  const temRecs = Array.isArray(ie.recomendacoes) && ie.recomendacoes.length > 0;
+  const recs = Array.isArray(ie.recomendacoes) ? ie.recomendacoes : [];
+  const temRecs = recs.length > 0;
   if (getCheckbox('opt-recomendacoes') && temRecs) {
+    const isMei = p.tipo_relatorio === 'mei_dasn';
     html += `
       <div class="preview-secao">
-        <div class="preview-titulo">  Recomendações Estratégicas &amp; Plano de Ação</div>
+        <div class="preview-titulo">  ${isMei ? 'Instruções Oficiais: DASN-SIMEI, DAS-MEI &amp; IRPF' : 'Recomendações Estratégicas &amp; Plano de Ação'}</div>
         <div class="insight-card insight-card--recs" style="width:100%;">
-          <div class="insight-card__title">  Ações Práticas Orientadas por Dados</div>
+          <div class="insight-card__title">  ${isMei ? 'Orientações Práticas para o Microempreendedor' : 'Ações Práticas Orientadas por Dados'}</div>
           <ul class="insight-list">
-            ${ie.recomendacoes.map(rec => `<li>${renderizarConteudoInline(rec)}</li>`).join('')}
+            ${recs.map(rec => `<li>${renderizarConteudoInline(rec)}</li>`).join('')}
           </ul>
         </div>
       </div>
@@ -1143,9 +1375,10 @@ function renderizarPreviewHtml(p) {
 
   // 6. Gráfico Visual
   if (getCheckbox('opt-grafico') && p.grafico_labels && p.grafico_labels.length > 0) {
+    const isMei = p.tipo_relatorio === 'mei_dasn';
     html += `
       <div class="preview-secao">
-        <div class="preview-titulo">   Evolução Visual &amp; Séries Temporais</div>
+        <div class="preview-titulo">  ${isMei ? 'Evolução Mensal: Receitas x Despesas / Compras' : 'Evolução Visual &amp; Séries Temporais'}</div>
         <div id="grafico-relatorio" style="max-width:100%; height:320px; background:var(--fundo); border:1px solid var(--borda); border-radius:12px; padding:10px;"></div>
       </div>
     `;
@@ -1153,20 +1386,27 @@ function renderizarPreviewHtml(p) {
 
   // 7. Tabela Detalhada
   if (getCheckbox('opt-dados') && Array.isArray(p.tabela) && p.tabela.length > 0 && Array.isArray(p.tabela_colunas)) {
+    const isMei = p.tipo_relatorio === 'mei_dasn';
     html += `
       <div class="preview-secao">
-        <div class="preview-titulo">   Dados Detalhados</div>
+        <div class="preview-titulo">  ${isMei ? 'Relatório Mensal das Receitas Brutas (Anexo X CGSN nº 140/2018)' : 'Dados Detalhados'}</div>
         <div class="table-responsive-rel">
           <table>
             <thead>
               <tr>
-                ${p.tabela_colunas.map(col => `<th>${escapeHtml(col.label)}</th>`).join('')}
+                ${p.tabela_colunas.map(col => {
+                  const lbl = (typeof col === 'object' && col !== null) ? (col.label || col.chave || '') : String(col);
+                  return `<th>${escapeHtml(lbl)}</th>`;
+                }).join('')}
               </tr>
             </thead>
             <tbody>
               ${p.tabela.map(linha => `
                 <tr>
-                  ${p.tabela_colunas.map(col => `<td>${escapeHtml(linha[col.chave] ?? '-')}</td>`).join('')}
+                  ${p.tabela_colunas.map(col => {
+                    const chave = (typeof col === 'object' && col !== null) ? col.chave : String(col);
+                    return `<td>${escapeHtml(linha[chave] ?? '-')}</td>`;
+                  }).join('')}
                 </tr>
               `).join('')}
             </tbody>
@@ -1192,9 +1432,10 @@ function renderizarGraficoApex(p) {
     window.graficoRelatorioInstancia.destroy();
   }
 
+  const isBar = p.grafico_tipo === 'barra';
   const options = {
     chart: {
-      type: 'line',
+      type: isBar ? 'bar' : 'line',
       height: 300,
       toolbar: { show: false },
       zoom: { enabled: false },
@@ -1205,6 +1446,12 @@ function renderizarGraficoApex(p) {
     xaxis: {
       categories: p.grafico_labels || []
     },
+    plotOptions: isBar ? {
+      bar: {
+        columnWidth: '55%',
+        borderRadius: 4
+      }
+    } : {},
     yaxis: {
       labels: {
         formatter: val => {
@@ -1213,8 +1460,8 @@ function renderizarGraficoApex(p) {
         }
       }
     },
-    stroke: { curve: 'smooth', width: 2.5 },
-    markers: { size: 4 },
+    stroke: isBar ? { width: 0 } : { curve: 'smooth', width: 2.5 },
+    markers: isBar ? { size: 0 } : { size: 4 },
     tooltip: {
       y: {
         formatter: v => 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
@@ -1395,6 +1642,7 @@ function renderHistorico(busca = '') {
   }
 
   const iconesTipo = {
+    mei_dasn: 'fa-file-shield',
     analise_salva: 'fa-brain',
     fluxo_caixa: 'fa-money-bill-transfer',
     planejamento: 'fa-bullseye',
@@ -1476,18 +1724,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   const analiseIdParam = params.get('analise_id');
   const tipoParam = params.get('tipo');
 
+  const selTipo = document.getElementById('tipoRelatorio');
   if (analiseIdParam) {
-    const selTipo = document.getElementById('tipoRelatorio');
     if (selTipo) {
       selTipo.value = 'analise_salva';
       aoMudarTipoRelatorio();
     }
   } else if (tipoParam) {
-    const selTipo = document.getElementById('tipoRelatorio');
-    if (selTipo && ['analise_salva', 'fluxo_caixa', 'planejamento', 'graficos_avancados', 'consolidado'].includes(tipoParam)) {
+    if (selTipo && ['mei_dasn', 'analise_salva', 'fluxo_caixa', 'planejamento', 'graficos_avancados', 'consolidado'].includes(tipoParam)) {
       selTipo.value = tipoParam;
       aoMudarTipoRelatorio();
     }
+  } else if (selTipo) {
+    // Sincroniza tipo inicial com o select (ex: MEI pré-selecionado)
+    estadoRelatorio.tipo = selTipo.value || (window.IS_MEI ? 'mei_dasn' : 'consolidado');
+    aoMudarTipoRelatorio();
+  }
+
+  if (typeof sincronizarCardsTipoComSelect === 'function') {
+    sincronizarCardsTipoComSelect();
   }
 
   // Gera pré-visualização inicial automática

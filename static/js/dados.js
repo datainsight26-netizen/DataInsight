@@ -134,9 +134,9 @@ function salvarEstadoHistorico() {
     estado.historicoFuturo = []; // limpa redo ao fazer nova ação
     atualizarBotoesUndoRedo();
 
-    // Auto-save to LocalStorage
-    if (typeof persistirEstadoLocal === 'function') {
-        persistirEstadoLocal();
+    // Sincroniza tabela ativa em memória
+    if (typeof sincronizarTabelaAtiva === 'function') {
+        sincronizarTabelaAtiva();
     }
 }
 

@@ -51,36 +51,19 @@ if (typeof estado !== 'undefined') {
 }
 
 // ==============================================================================
-// 2. PERSISTÊNCIA AUTOMÁTICA (LOCALSTORAGE)
+// 2. SINCRONIZAÇÃO EM MEMÓRIA E PERSISTÊNCIA NO BANCO
 // ==============================================================================
 function persistirEstadoLocal() {
     if (typeof estado === 'undefined') return;
 
-    // Snapshot da tabela ativa antes de salvar
+    // Snapshot da tabela ativa em memória (RAM)
     sincronizarTabelaAtiva();
 
-    const dadosParaSalvar = {
-        todosDados:       clonarDadosTabela(estado.todosDados),
-        colunasAtuais:    [...estado.colunasAtuais],
-        // Múltiplas tabelas
-        tabelas:          _tabelas.map(clonarTabela),
-        tabelaAtualId:    _tabelaAtualId || (_tabelas[0] && _tabelas[0].id) || null,
-        validacoes:       _validacoes,
-        metas:            _metas,
-        filtrosAvancados: _filtrosAvancados,
-        regrasFC:         _regrasFC,
-        auditLogs:        _auditLogs
-    };
-
+    // Expurgar qualquer resíduo legado do localStorage para garantir privacidade e conformidade com MongoDB
     try {
-        localStorage.setItem('DataInsight_Estado', JSON.stringify(dadosParaSalvar));
-        // Salvar também o ID ativo em chave dedicada para recuperação rápida
-        if (_tabelaAtualId) {
-            localStorage.setItem('DataInsight_TabelaAtiva', _tabelaAtualId);
-        }
-    } catch (e) {
-        console.warn('Não foi possível salvar no localStorage (limite excedido?)', e);
-    }
+        localStorage.removeItem('DataInsight_Estado');
+        localStorage.removeItem('DataInsight_TabelaAtiva');
+    } catch (_) {}
 }
 
 function clonarDadosTabela(dados) {
@@ -121,74 +104,31 @@ function sincronizarTabelaAtiva() {
 
 const persistirTabelaAtualDebounced = debounce(() => {
     sincronizarTabelaAtiva();
-    persistirEstadoLocal();
+    // Se o auto-salvar estiver habilitado, sincroniza com o MongoDB via backend
+    const checkAuto = document.getElementById('checkSalvarAutomatico');
+    if (checkAuto && checkAuto.checked && typeof debounceAutoSalvar === 'function') {
+        debounceAutoSalvar();
+    }
 }, 800);
 
 // ==============================================================================
-// 3. CARREGAMENTO DE ESTADO LOCAL E INICIALIZAÇÃO
+// 3. INICIALIZAÇÃO E LIMPEZA
 // ==============================================================================
 function carregarEstadoLocal() {
+    // Depreciado: dados devem ser carregados exclusivamente do MongoDB via backend
     try {
-        const salvo = localStorage.getItem('DataInsight_Estado');
-        if (salvo) {
-            const parseado = JSON.parse(salvo);
-
-            // Restaurar múltiplas tabelas (sistema de abas)
-            if (parseado.tabelas && Array.isArray(parseado.tabelas) && parseado.tabelas.length > 0) {
-                _tabelas = parseado.tabelas.map(clonarTabela);
-                _tabelaAtualId = parseado.tabelaAtualId || null;
-
-                // Carregar a tabela ativa no estado principal
-                const tabAtiva = _tabelaAtualId
-                    ? _tabelas.find(t => t.id === _tabelaAtualId)
-                    : _tabelas[0];
-
-                if (tabAtiva) {
-                    _tabelaAtualId           = tabAtiva.id;
-                    estado.todosDados        = clonarDadosTabela(tabAtiva.dados);
-                    estado.colunasAtuais     = [...tabAtiva.colunas];
-                }
-            } else {
-                // Compatibilidade: sem tabelas, só dados simples
-                if (parseado.todosDados && parseado.colunasAtuais) {
-                    estado.todosDados    = parseado.todosDados;
-                    estado.colunasAtuais = parseado.colunasAtuais;
-                }
-            }
-
-            if (parseado.validacoes)       _validacoes       = parseado.validacoes;
-            if (parseado.metas)            _metas            = parseado.metas;
-            if (parseado.filtrosAvancados) _filtrosAvancados = parseado.filtrosAvancados;
-            if (parseado.regrasFC)         _regrasFC         = parseado.regrasFC;
-            if (parseado.auditLogs)        _auditLogs        = parseado.auditLogs;
-
-            return true;
-        }
-    } catch (e) {
-        console.error('Erro ao carregar estado do localStorage', e);
-    }
+        localStorage.removeItem('DataInsight_Estado');
+        localStorage.removeItem('DataInsight_TabelaAtiva');
+    } catch (_) {}
     return false;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Tenta carregar do LocalStorage antes de inicializar o fetch
-    const carregouLocal = carregarEstadoLocal();
-    if (carregouLocal) {
-        setTimeout(() => {
-            if (typeof renderizarColunas === 'function') {
-                renderizarColunas();
-                atualizarTabela();
-                exibirPagina();
-                atualizarPaginacao();
-                atualizarEstatisticas();
-                atualizarMetasUI();
-            }
-            // Restaurar as abas de tabelas na UI
-            if (_tabelas.length > 0) {
-                renderizarAbasTabelas();
-            }
-        }, 300);
-    }
+    // Garante remoção de resíduos legados de dados locais ao iniciar a página
+    try {
+        localStorage.removeItem('DataInsight_Estado');
+        localStorage.removeItem('DataInsight_TabelaAtiva');
+    } catch (_) {}
 });
 
 // ==============================================================================
@@ -1519,47 +1459,23 @@ async function carregarTodasTabelas() {
         if (resp.ok && json.tabelas && Array.isArray(json.tabelas) && json.tabelas.length > 0) {
             _tabelas = json.tabelas.map(clonarTabela);
 
-            // Prioridade: tabela ativa retornada pelo backend (persistência real no banco)
+            // Prioridade: tabela ativa retornada pelo backend MongoDB
             let tabelaAtivaId = json.tabela_ativa_id || null;
-
-            // Se backend não devolveu, checar chave dedicada no localStorage
-            if (!tabelaAtivaId) {
-                const tabelaAtivaSalva = localStorage.getItem('DataInsight_TabelaAtiva');
-                if (tabelaAtivaSalva && _tabelas.some(t => t.id === tabelaAtivaSalva)) {
-                    tabelaAtivaId = tabelaAtivaSalva;
-                }
-            }
 
             // Fallback: primeiro item
             if (!tabelaAtivaId || !_tabelas.some(t => t.id === tabelaAtivaId)) {
                 tabelaAtivaId = _tabelas[0].id;
             }
 
-            // Salvar preferência no localStorage para uso offline
-            localStorage.setItem('DataInsight_TabelaAtiva', tabelaAtivaId);
-
             ativarTabela(tabelaAtivaId, false);
             renderizarAbasTabelas();
             return true;
         }
     } catch (e) {
-        console.warn('Não foi possível carregar tabelas do backend:', e);
+        console.warn('Não foi possível carregar tabelas do backend MongoDB:', e);
     }
 
-    // Fallback para LocalStorage
-    const carregouLocal = carregarEstadoLocal();
-    if (carregouLocal && _tabelas.length > 0) {
-        // Restaurar a tabela ativa pelo ID dedicado se disponível
-        const tabelaAtivaSalva = localStorage.getItem('DataInsight_TabelaAtiva');
-        const idParaAtivar = (tabelaAtivaSalva && _tabelas.some(t => t.id === tabelaAtivaSalva))
-            ? tabelaAtivaSalva
-            : (_tabelaAtualId || _tabelas[0].id);
-        ativarTabela(idParaAtivar, false);
-        renderizarAbasTabelas();
-        return true;
-    }
-
-    // Fallback para tabela padrão
+    // Fallback: inicializar tabela padrão vazia limpa se nenhuma tabela for encontrada no banco
     if (typeof inicializarTabelaPadrao === 'function') {
         inicializarTabelaPadrao();
     }
@@ -1818,9 +1734,6 @@ function _finalizarAtivacaoTabela(tab) {
     renderizarAbasTabelas();
     atualizarIndicadorTabelaAtiva();
     registrarLog(`Trocou visualização para tabela "${tab.nome}".`);
-
-    // Persistir imediatamente a tabela ativa em chave dedicada (rápida recuperação offline)
-    try { localStorage.setItem('DataInsight_TabelaAtiva', tab.id); } catch (_) {}
 
     persistirEstadoLocal();
 
