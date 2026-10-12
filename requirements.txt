@@ -19,3 +19,6 @@ openai
 mercadopago
 stripe
 scipy
+reportlab
+python-docx
+beautifulsoup4
