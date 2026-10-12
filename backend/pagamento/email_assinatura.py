@@ -25,7 +25,7 @@ from datetime import datetime
 from flask import current_app
 
 from backend.db import usuario
-from backend.email_helper import criar_mensagem
+from backend.email_helper import criar_mensagem, enviar_email_async
 
 
 # ==============================================================================
@@ -501,7 +501,7 @@ def enviar_email_confirmacao_assinatura(
             html=html_body,
         )
 
-        mail.send(msg)
+        enviar_email_async(msg)
 
         # ----------------------------------------------------------------------
         # 6.6 Registro para deduplicação futura
