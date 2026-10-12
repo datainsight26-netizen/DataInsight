@@ -77,6 +77,7 @@ _email_user = os.getenv("EMAIL_USER", "")
 app.config["MAIL_DEFAULT_SENDER"] = ("DataInsight", _email_user)
 app.config["MAIL_MAX_EMAILS"] = 5
 app.config["MAIL_SUPPRESS_SEND"] = False
+app.config["MAIL_TIMEOUT"] = int(os.getenv("MAIL_TIMEOUT", 5))
 app.config["TESTING"] = False
 
 try:
@@ -176,4 +177,4 @@ _registrar_aliases_blueprints(app)
 # ==============================================================================
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=False)
