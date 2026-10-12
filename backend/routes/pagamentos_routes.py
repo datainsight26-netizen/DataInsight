@@ -113,140 +113,181 @@ def sucesso_pagamento():
     # --------------------------------------------------------------------------
     # 5.1. Coleta de parâmetros
     # --------------------------------------------------------------------------
-    session_id = request.args.get("session_id")
-    status = request.args.get("status") or "Aprovado"
-    plano = (
-        request.args.get("plano")
-        or session.get("plano_escolhido")
-        or session.get("usuario_perfil")
-        or "ME"
-    )
-    periodicidade = (
-        request.args.get("periodicidade")
-        or session.get("periodicidade_escolhida")
-        or "mensal"
-    )
-    metodo = (
-        request.args.get("metodo")
-        or session.get("metodo_pagamento")
-        or "card"
-    )
-    email = ""
-    customer_id = None
-    subscription_id = None
-    payment_intent_id = None
+    try:
+        session_id = request.args.get("session_id")
+        status = request.args.get("status") or "Aprovado"
+        plano = (
+            request.args.get("plano")
+            or session.get("plano_escolhido")
+            or session.get("usuario_perfil")
+            or "ME"
+        )
+        periodicidade = (
+            request.args.get("periodicidade")
+            or session.get("periodicidade_escolhida")
+            or "mensal"
+        )
+        metodo = (
+            request.args.get("metodo")
+            or session.get("metodo_pagamento")
+            or "card"
+        )
+        email = ""
+        customer_id = None
+        subscription_id = None
+        payment_intent_id = None
 
-    print(
-        f"[sucesso_pagamento] Iniciando. session_id={session_id} | plano={plano} | periodicidade={periodicidade} | metodo={metodo} | session={dict(session)}"
-    )
+        print(
+            f"[sucesso_pagamento] Iniciando. session_id={session_id} | plano={plano} | periodicidade={periodicidade} | metodo={metodo} | session={dict(session)}"
+        )
 
-    # --------------------------------------------------------------------------
-    # 5.2. Busca inicial do usuário (por sessão: ID e e-mail)
-    # --------------------------------------------------------------------------
-    usuario_existente = None
-    user_id_sess = session.get("usuario_id")
-    user_email_sess = session.get("usuario_email")
+        # --------------------------------------------------------------------------
+        # 5.2. Busca inicial do usuário (por sessão: ID e e-mail)
+        # --------------------------------------------------------------------------
+        usuario_existente = None
+        user_id_sess = session.get("usuario_id")
+        user_email_sess = session.get("usuario_email")
 
-    if user_id_sess:
-        try:
-            ids_busca = [str(user_id_sess)]
-            if ObjectId.is_valid(str(user_id_sess)):
-                ids_busca.append(ObjectId(str(user_id_sess)))
-            usuario_existente = usuario.find_one({"_id": {"$in": ids_busca}})
-        except Exception as ex:
-            print(f"[sucesso_pagamento] Erro ao buscar por ID de sessão: {ex}")
-
-    if not usuario_existente and user_email_sess:
-        usuario_existente = usuario.find_one({"email": user_email_sess.lower()})
-
-    # --------------------------------------------------------------------------
-    # 5.3. Enriquecimento a partir da Checkout Session do Stripe
-    # --------------------------------------------------------------------------
-    if session_id:
-        try:
-            stripe.api_key = os.getenv("STRIPE_API_KEY")
-            if stripe.api_key:
-                checkout_session = stripe.checkout.Session.retrieve(session_id)
-                customer_details = checkout_session.get("customer_details") or {}
-                email = (
-                    customer_details.get("email")
-                    or checkout_session.get("customer_email")
-                    or email
-                )
-                metadata = checkout_session.get("metadata") or {}
-                plano = metadata.get("plano") or plano
-                periodicidade = metadata.get("periodicidade") or periodicidade
-                metodo = metadata.get("metodo") or metodo
-                user_id_meta = metadata.get("usuario_id")
-                subscription_id = checkout_session.get("subscription")
-                customer_id = checkout_session.get("customer")
-                payment_intent_id = checkout_session.get("payment_intent")
-
-                if not usuario_existente and user_id_meta:
-                    try:
-                        ids_busca = [str(user_id_meta)]
-                        if ObjectId.is_valid(str(user_id_meta)):
-                            ids_busca.append(ObjectId(str(user_id_meta)))
-                        usuario_existente = usuario.find_one({"_id": {"$in": ids_busca}})
-                    except Exception as ex:
-                        print(f"[sucesso_pagamento] Erro ao buscar por metadata ID: {ex}")
-
-                if not usuario_existente and email:
-                    usuario_existente = usuario.find_one({"email": email.lower()})
-        except Exception as e:
-            print(f"[sucesso_pagamento] Erro ao consultar sessão Stripe ({session_id}): {e}")
-
-    # --------------------------------------------------------------------------
-    # 5.4. Usuário localizado → sincroniza banco + sessão e dispara e-mail
-    # --------------------------------------------------------------------------
-    if usuario_existente:
-        update_fields = {
-            "status_assinatura": "ativa",
-            "tipo_perfil": plano,
-            "periodicidade_escolhida": periodicidade,
-            "metodo_pagamento": metodo,
-            "atualizado_em": datetime.now()
-        }
-        if customer_id:
-            update_fields["stripe_customer_id"] = customer_id
-        if subscription_id:
-            update_fields["stripe_subscription_id"] = subscription_id
-        if payment_intent_id:
-            update_fields["stripe_payment_intent_id"] = payment_intent_id
-
-        try:
-            usuario.update_one(
-                {"_id": usuario_existente["_id"]},
-                {"$set": update_fields}
-            )
-        except Exception as ex:
-            print(f"[sucesso_pagamento] ERRO ao atualizar MongoDB: {ex}")
-
-        session["usuario_id"] = str(usuario_existente["_id"])
-        session["usuario_nome"] = usuario_existente.get("nome", "")
-        session["usuario_email"] = usuario_existente.get("email", "")
-        session["usuario_perfil"] = plano
-        session["plano_escolhido"] = plano
-        session["periodicidade_escolhida"] = periodicidade
-        session["metodo_pagamento"] = metodo
-        session["status_assinatura"] = "ativa"
-        session.modified = True
-
-        email_dest = usuario_existente.get("email", email)
-        nome_dest = usuario_existente.get("nome", "")
-        if email_dest:
+        if user_id_sess:
             try:
-                enviar_email_confirmacao_assinatura(
-                    email_usuario=email_dest,
-                    nome_usuario=nome_dest,
-                    plano=plano,
-                    subscription_id=subscription_id or "",
-                    session_id=session_id or "",
-                    periodicidade=periodicidade,
-                    metodo=metodo,
+                ids_busca = [str(user_id_sess)]
+                if ObjectId.is_valid(str(user_id_sess)):
+                    ids_busca.append(ObjectId(str(user_id_sess)))
+                usuario_existente = usuario.find_one({"_id": {"$in": ids_busca}})
+            except Exception as ex:
+                print(f"[sucesso_pagamento] Erro ao buscar por ID de sessão: {ex}")
+
+        if not usuario_existente and user_email_sess:
+            usuario_existente = usuario.find_one({"email": user_email_sess.lower()})
+
+        # --------------------------------------------------------------------------
+        # 5.3. Enriquecimento a partir da Checkout Session do Stripe
+        # --------------------------------------------------------------------------
+        if session_id:
+            try:
+                stripe.api_key = os.getenv("STRIPE_API_KEY")
+                if stripe.api_key:
+                    checkout_session = stripe.checkout.Session.retrieve(session_id)
+                    customer_details = checkout_session.get("customer_details") or {}
+                    email = (
+                        customer_details.get("email")
+                        or checkout_session.get("customer_email")
+                        or email
+                    )
+                    metadata = checkout_session.get("metadata") or {}
+                    plano = metadata.get("plano") or plano
+                    periodicidade = metadata.get("periodicidade") or periodicidade
+                    metodo = metadata.get("metodo") or metodo
+                    user_id_meta = metadata.get("usuario_id")
+                    subscription_id = checkout_session.get("subscription")
+                    customer_id = checkout_session.get("customer")
+                    payment_intent_id = checkout_session.get("payment_intent")
+
+                    if not usuario_existente and user_id_meta:
+                        try:
+                            ids_busca = [str(user_id_meta)]
+                            if ObjectId.is_valid(str(user_id_meta)):
+                                ids_busca.append(ObjectId(str(user_id_meta)))
+                            usuario_existente = usuario.find_one({"_id": {"$in": ids_busca}})
+                        except Exception as ex:
+                            print(f"[sucesso_pagamento] Erro ao buscar por metadata ID: {ex}")
+
+                    if not usuario_existente and email:
+                        usuario_existente = usuario.find_one({"email": email.lower()})
+            except Exception as e:
+                print(f"[sucesso_pagamento] Erro ao consultar sessão Stripe ({session_id}): {e}")
+
+        # --------------------------------------------------------------------------
+        # 5.4. Usuário localizado → sincroniza banco + sessão e dispara e-mail
+        # --------------------------------------------------------------------------
+        if usuario_existente:
+            update_fields = {
+                "status_assinatura": "ativa",
+                "tipo_perfil": plano,
+                "periodicidade_escolhida": periodicidade,
+                "metodo_pagamento": metodo,
+                "atualizado_em": datetime.now()
+            }
+            if customer_id:
+                update_fields["stripe_customer_id"] = customer_id
+            if subscription_id:
+                update_fields["stripe_subscription_id"] = subscription_id
+            if payment_intent_id:
+                update_fields["stripe_payment_intent_id"] = payment_intent_id
+
+            try:
+                usuario.update_one(
+                    {"_id": usuario_existente["_id"]},
+                    {"$set": update_fields}
                 )
-            except Exception as ex_mail:
-                print(f"[sucesso_pagamento] Erro ao disparar e-mail: {ex_mail}")
+            except Exception as ex:
+                print(f"[sucesso_pagamento] ERRO ao atualizar MongoDB: {ex}")
+
+            session["usuario_id"] = str(usuario_existente["_id"])
+            session["usuario_nome"] = usuario_existente.get("nome", "")
+            session["usuario_email"] = usuario_existente.get("email", "")
+            session["usuario_perfil"] = plano
+            session["plano_escolhido"] = plano
+            session["periodicidade_escolhida"] = periodicidade
+            session["metodo_pagamento"] = metodo
+            session["status_assinatura"] = "ativa"
+            session.modified = True
+
+            email_dest = usuario_existente.get("email", email)
+            nome_dest = usuario_existente.get("nome", "")
+            if email_dest:
+                try:
+                    enviar_email_confirmacao_assinatura(
+                        email_usuario=email_dest,
+                        nome_usuario=nome_dest,
+                        plano=plano,
+                        subscription_id=subscription_id or "",
+                        session_id=session_id or "",
+                        periodicidade=periodicidade,
+                        metodo=metodo,
+                    )
+                except Exception as ex_mail:
+                    print(f"[sucesso_pagamento] Erro ao disparar e-mail: {ex_mail}")
+
+            return render_template(
+                "sistema_pagamento/sucesso.html",
+                status=status,
+                plano=plano,
+                periodicidade=periodicidade,
+                metodo=metodo,
+                email=usuario_existente.get("email", email),
+                payment_id=subscription_id or payment_intent_id or session_id or "SUB-ATIVADA"
+            )
+
+        # --------------------------------------------------------------------------
+        # 5.5. Sem usuário no banco, mas com `session_id` → cadastro
+        # --------------------------------------------------------------------------
+        if session_id:
+            try:
+                return redirect(
+                    url_for(
+                        "auth.pagina_cadastro",
+                        session_id=session_id,
+                        plano=plano,
+                        periodicidade=periodicidade,
+                        metodo=metodo,
+                    )
+                )
+            except Exception:
+                return redirect(
+                    f"/cadastro?session_id={session_id}&plano={plano}&periodicidade={periodicidade}&metodo={metodo}"
+                )
+
+        # --------------------------------------------------------------------------
+        # 5.6. Apenas sincroniza a sessão (usuário logado sem doc no banco)
+        # --------------------------------------------------------------------------
+        if user_id_sess or user_email_sess:
+            session["status_assinatura"] = "ativa"
+            session["usuario_perfil"] = plano
+            session["plano_escolhido"] = plano
+            session["periodicidade_escolhida"] = periodicidade
+            session["metodo_pagamento"] = metodo
+            session.modified = True
 
         return render_template(
             "sistema_pagamento/sucesso.html",
@@ -254,44 +295,28 @@ def sucesso_pagamento():
             plano=plano,
             periodicidade=periodicidade,
             metodo=metodo,
-            email=usuario_existente.get("email", email),
-            payment_id=subscription_id or payment_intent_id or session_id or "SUB-ATIVADA"
+            email=email,
+            payment_id=payment_intent_id or session_id
         )
 
-    # --------------------------------------------------------------------------
-    # 5.5. Sem usuário no banco, mas com `session_id` → cadastro
-    # --------------------------------------------------------------------------
-    if session_id:
-        return redirect(
-            url_for(
-                "auth.pagina_cadastro",
-                session_id=session_id,
-                plano=plano,
-                periodicidade=periodicidade,
-                metodo=metodo,
-            )
-        )
+    except Exception as err_geral:
+        print(f"[sucesso_pagamento] Erro crítico recuperado com sucesso: {err_geral}")
+        import traceback
+        traceback.print_exc()
 
-    # --------------------------------------------------------------------------
-    # 5.6. Apenas sincroniza a sessão (usuário logado sem doc no banco)
-    # --------------------------------------------------------------------------
-    if user_id_sess or user_email_sess:
         session["status_assinatura"] = "ativa"
-        session["usuario_perfil"] = plano
-        session["plano_escolhido"] = plano
-        session["periodicidade_escolhida"] = periodicidade
-        session["metodo_pagamento"] = metodo
+        session["usuario_perfil"] = request.args.get("plano", "ME")
         session.modified = True
 
-    return render_template(
-        "sistema_pagamento/sucesso.html",
-        status=status,
-        plano=plano,
-        periodicidade=periodicidade,
-        metodo=metodo,
-        email=email,
-        payment_id=payment_intent_id or session_id
-    )
+        return render_template(
+            "sistema_pagamento/sucesso.html",
+            status="Aprovado",
+            plano=request.args.get("plano", "ME"),
+            periodicidade=request.args.get("periodicidade", "mensal"),
+            metodo=request.args.get("metodo", "card"),
+            email=session.get("usuario_email", ""),
+            payment_id=request.args.get("session_id", "SUB-ATIVADA"),
+        )
 
 
 @pagamentos_bp.route("/falha-pagamento", endpoint="falha_pagamento")
