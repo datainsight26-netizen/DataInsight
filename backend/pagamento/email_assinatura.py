@@ -12,7 +12,7 @@
 
 """
 Módulo de envio de e-mail de confirmação de assinatura DataInsight.
-Disparado automaticamente quando o Stripe confirma o pagamento.
+Disparado automaticamente quando o Stripe confirma o pagamento (Mensal ou Anual / Cartão ou Pix).
 """
 
 # ==============================================================================
@@ -42,21 +42,27 @@ logger = logging.getLogger(__name__)
 PLANOS = {
     "MEI": {
         "nome": "DataInsight MEI",
-        "valor": "R$ 250,00",
+        "valor_mensal": "R$ 250,00",
+        "valor_anual": "R$ 2.400,00",
+        "valor_anual_mensalizado": "R$ 200,00",
+        "economia_anual": "R$ 600,00",
         "descricao": "Ideal para Microempreendedores Individuais",
         "cor": "#6366f1",
         "cor_clara": "#e0e7ff",
         "recursos": [
             "Dashboard financeiro completo",
             "Analise de IA com Gemini",
-            "Relatorios mensais em PDF",
+            "Relatórios mensais em PDF",
             "Controles essenciais MEI",
             "Suporte prioritario",
         ],
     },
     "ME": {
         "nome": "DataInsight ME",
-        "valor": "R$ 300,00",
+        "valor_mensal": "R$ 350,00",
+        "valor_anual": "R$ 3.360,00",
+        "valor_anual_mensalizado": "R$ 280,00",
+        "economia_anual": "R$ 840,00",
         "descricao": "Para Microempresas em crescimento",
         "cor": "#0ea5e9",
         "cor_clara": "#e0f2fe",
@@ -72,12 +78,15 @@ PLANOS = {
 }
 
 _PLANO_DEFAULT = {
-    "nome": "DataInsight",
-    "valor": "Consulte o site",
+    "nome": "DataInsight ME",
+    "valor_mensal": "R$ 350,00",
+    "valor_anual": "R$ 3.360,00",
+    "valor_anual_mensalizado": "R$ 280,00",
+    "economia_anual": "R$ 840,00",
     "descricao": "Plano DataInsight",
     "cor": "#2563eb",
     "cor_clara": "#dbeafe",
-    "recursos": ["Acesso a plataforma DataInsight"],
+    "recursos": ["Acesso a plataforma DataInsight BI & IA"],
 }
 
 
@@ -101,15 +110,61 @@ def _gerar_html_confirmacao(
     session_id: str,
     data_pagamento: datetime,
     is_renovacao: bool = False,
+    periodicidade: str = "mensal",
+    metodo: str = "card",
 ) -> str:
-    """Retorna o HTML completo do e-mail de confirmação ou renovação de assinatura."""
+    """Retorna o HTML completo do e-mail de confirmação ou renovação de assinatura com suporte aos planos Mensal e Anual."""
 
     info = _info_plano(plano)
     cor = info["cor"]
     cor_clara = info["cor_clara"]
     nome_plano = info["nome"]
-    valor = info["valor"]
     descricao = info["descricao"]
+
+    is_anual = str(periodicidade).strip().lower() == "anual"
+    is_pix = str(metodo).strip().lower() == "pix"
+
+    if is_anual:
+        valor_principal = info["valor_anual"]
+        sufixo_ciclo = "/ano"
+        rotulo_valor = "Valor Anual"
+        nota_economia = (
+            f'<div style="font-size:11px;color:#16a34a;font-weight:600;margin-top:2px;">'
+            f'Equivale a {info["valor_anual_mensalizado"]}/mês • Economia de 20% ({info["economia_anual"]})'
+            f'</div>'
+        )
+        if is_pix:
+            forma_pagto = "PIX À Vista (20% OFF)"
+            tipo_recorrencia = "Pagamento Único (12 Meses de Acesso)"
+            aviso_rodape = (
+                "Sua assinatura anual foi confirmada com sucesso via <strong>Pix à vista</strong>. "
+                "Você possui <strong>12 meses de acesso completo garantido</strong>. "
+                "Como foi realizado à vista, não há cobrança automática em cartão no término do ciclo."
+            )
+            badge_texto = "Plano Anual Ativado • Pix"
+        else:
+            forma_pagto = "Cartão (Crédito ou Débito)"
+            tipo_recorrencia = "Anual (Recorrente a cada 12 meses)"
+            aviso_rodape = (
+                "Sua assinatura anual está ativa com <strong>12 meses de acesso completo</strong> "
+                "e economia de 20%. A cobrança é renovada anualmente no cartão. "
+                "Para gerenciar sua assinatura, acesse as <strong>configurações do perfil</strong> na plataforma."
+            )
+            badge_texto = "Plano Anual Renovado" if is_renovacao else "Plano Anual Ativado (20% OFF)"
+    else:
+        valor_principal = info["valor_mensal"]
+        sufixo_ciclo = "/mês"
+        rotulo_valor = "Valor Mensal"
+        nota_economia = ""
+        forma_pagto = "Cartão (Crédito ou Débito)"
+        tipo_recorrencia = "Mensal (Automática todo mês)"
+        aviso_rodape = (
+            "Sua assinatura é renovada automaticamente a cada mês no Cartão. "
+            "Você receberá um e-mail de confirmação a cada ciclo. "
+            "Para cancelar ou alterar seu plano a qualquer momento, acesse as "
+            "<strong>configurações do perfil</strong> na plataforma."
+        )
+        badge_texto = "Plano Mensal Renovado" if is_renovacao else "Plano Mensal Ativado"
 
     recursos_itens = ""
     for r in info["recursos"]:
@@ -120,18 +175,22 @@ def _gerar_html_confirmacao(
             + r + "</li>"
         )
 
+    if not data_pagamento:
+        data_pagamento = datetime.now()
+
     data_str = data_pagamento.strftime("%d/%m/%Y %H:%M")
     comprovante_id = subscription_id or session_id or "N/A"
     nome_exibir = nome_usuario or "Cliente"
-    ano = data_pagamento.year
 
-    titulo_principal = "Renovação Confirmada!" if is_renovacao else "Assinatura Confirmada!"
-    subtitulo = (
-        f"Parabens, <strong>{nome_exibir}</strong>! Sua mensalidade foi renovada com sucesso."
-        if is_renovacao else
-        f"Parabens, <strong>{nome_exibir}</strong>! Seu pagamento foi aprovado."
-    )
-    badge_texto = "Plano Renovado" if is_renovacao else "Plano Ativado"
+    if is_renovacao:
+        titulo_principal = "Renovação Confirmada!"
+        subtitulo = f"Parabéns, <strong>{nome_exibir}</strong>! Sua assinatura foi renovada com sucesso."
+    elif is_anual and is_pix:
+        titulo_principal = "Pagamento Pix Aprovado!"
+        subtitulo = f"Parabéns, <strong>{nome_exibir}</strong>! Seu plano anual via Pix foi aprovado e seu acesso de 12 meses está liberado."
+    else:
+        titulo_principal = "Assinatura Confirmada!"
+        subtitulo = f"Parabéns, <strong>{nome_exibir}</strong>! Seu pagamento foi aprovado com sucesso."
 
     html = f"""<!DOCTYPE html>
 <html lang="pt-BR">
@@ -179,7 +238,7 @@ def _gerar_html_confirmacao(
             <p style="margin:0 0 4px;font-size:12px;color:{cor};font-weight:700;
                       text-transform:uppercase;letter-spacing:1.5px;">{badge_texto}</p>
             <h2 style="margin:0 0 4px;font-size:28px;font-weight:800;color:{cor};">
-              {nome_plano}
+              {nome_plano} {f"• Anual (12 meses)" if is_anual else "• Mensal"}
             </h2>
             <p style="margin:0;font-size:13px;color:#6b7280;">{descricao}</p>
           </div>
@@ -204,40 +263,47 @@ def _gerar_html_confirmacao(
             </tr>
             <tr><td colspan="2" style="border-bottom:1px solid #f3f4f6;"></td></tr>
             <tr>
-              <td style="font-size:13px;color:#6b7280;padding:10px 0;">Plano</td>
+              <td style="font-size:13px;color:#6b7280;padding:10px 0;">Plano Contratado</td>
               <td style="text-align:right;font-size:13px;font-weight:600;
-                         color:#111827;padding:10px 0;">{nome_plano}</td>
+                         color:#111827;padding:10px 0;">{nome_plano} ({ "Anual (12 meses)" if is_anual else "Mensal" })</td>
             </tr>
             <tr><td colspan="2" style="border-bottom:1px solid #f3f4f6;"></td></tr>
             <tr>
-              <td style="font-size:13px;color:#6b7280;padding:10px 0;">Valor Mensal</td>
+              <td style="font-size:13px;color:#6b7280;padding:10px 0;">Forma de Pagamento</td>
+              <td style="text-align:right;font-size:13px;font-weight:600;
+                         color:#111827;padding:10px 0;">{forma_pagto}</td>
+            </tr>
+            <tr><td colspan="2" style="border-bottom:1px solid #f3f4f6;"></td></tr>
+            <tr>
+              <td style="font-size:13px;color:#6b7280;padding:10px 0;">{rotulo_valor}</td>
               <td style="text-align:right;padding:10px 0;">
-                <span style="font-size:22px;font-weight:800;color:{cor};">{valor}</span>
-                <span style="font-size:11px;color:#9ca3af;">/mes</span>
+                <span style="font-size:22px;font-weight:800;color:{cor};">{valor_principal}</span>
+                <span style="font-size:11px;color:#9ca3af;">{sufixo_ciclo}</span>
+                {nota_economia}
               </td>
             </tr>
             <tr><td colspan="2" style="border-bottom:1px solid #f3f4f6;"></td></tr>
             <tr>
-              <td style="font-size:13px;color:#6b7280;padding:10px 0;">Recorrencia</td>
+              <td style="font-size:13px;color:#6b7280;padding:10px 0;">Ciclo de Cobrança</td>
               <td style="text-align:right;font-size:13px;color:#111827;
-                         padding:10px 0;">Mensal (automatica)</td>
+                         padding:10px 0;">{tipo_recorrencia}</td>
             </tr>
             <tr><td colspan="2" style="border-bottom:1px solid #f3f4f6;"></td></tr>
             <tr>
-              <td style="font-size:13px;color:#6b7280;padding:10px 0;">Data</td>
+              <td style="font-size:13px;color:#6b7280;padding:10px 0;">Data da Aprovação</td>
               <td style="text-align:right;font-size:13px;color:#111827;
                          padding:10px 0;">{data_str}</td>
             </tr>
             <tr><td colspan="2" style="border-bottom:1px solid #f3f4f6;"></td></tr>
             <tr>
-              <td style="font-size:13px;color:#6b7280;padding:10px 0;">ID Comprovante</td>
+              <td style="font-size:13px;color:#6b7280;padding:10px 0;">ID do Comprovante</td>
               <td style="text-align:right;font-size:11px;color:#6b7280;
                          font-family:monospace;padding:10px 0;
                          word-break:break-all;">{comprovante_id}</td>
             </tr>
             <tr><td colspan="2" style="border-bottom:1px solid #f3f4f6;"></td></tr>
             <tr>
-              <td style="font-size:13px;color:#6b7280;padding:10px 0;">E-mail</td>
+              <td style="font-size:13px;color:#6b7280;padding:10px 0;">E-mail do Cliente</td>
               <td style="text-align:right;font-size:13px;color:#111827;
                          padding:10px 0;">{email_usuario}</td>
             </tr>
@@ -249,7 +315,7 @@ def _gerar_html_confirmacao(
       <tr>
         <td style="padding:24px 40px 0;">
           <h3 style="margin:0 0 14px;font-size:15px;font-weight:700;color:#111827;">
-            O que esta incluido no seu plano
+            O que esta incluído no seu plano
           </h3>
           <ul style="margin:0;padding-left:0;list-style:none;">
             {recursos_itens}
@@ -263,10 +329,7 @@ def _gerar_html_confirmacao(
           <div style="background:#fefce8;border:1px solid #fde68a;border-radius:10px;
                       padding:16px 20px;">
             <p style="margin:0;font-size:13px;color:#92400e;line-height:1.7;">
-              <strong>Informacao importante:</strong> Sua assinatura e renovada
-              automaticamente todo mes. Voce recebera um e-mail de confirmacao
-              a cada renovacao. Para cancelar ou gerenciar, acesse as
-              <strong>configuracoes do perfil</strong> na plataforma.
+              <strong>Informação importante:</strong> {aviso_rodape}
             </p>
           </div>
         </td>
@@ -276,14 +339,10 @@ def _gerar_html_confirmacao(
       <tr>
         <td style="background:#f9fafb;border-top:1px solid #f3f4f6;
                    padding:24px 40px;text-align:center;">
-          <p style="margin:0 0 4px;font-size:13px;font-weight:700;color:#374151;">
-            DataInsight - BI &amp; IA para pequenas empresas
-          </p>
-          <p style="margin:0 0 10px;font-size:12px;color:#9ca3af;">
-            E-mail automatico - Para suporte, acesse datainsight.com.br/contato
-          </p>
+          <p style="margin: 0 0 6px; font-size: 12px; color: #9ca3af;">DataInsight - Gestão e Inteligência para Empresas</p>
+    
           <p style="margin:0;font-size:11px;color:#d1d5db;">
-            &copy; {ano} DataInsight. Todos os direitos reservados.
+            &copy; 2026 DataInsight. Todos os direitos reservados.
           </p>
         </td>
       </tr>
@@ -308,18 +367,23 @@ def enviar_email_confirmacao_assinatura(
     subscription_id: str = "",
     session_id: str = "",
     is_renovacao: bool = False,
+    periodicidade: str = "mensal",
+    metodo: str = "card",
 ) -> bool:
     """
-    Envia o e-mail de confirmação ou renovação de assinatura para o cliente.
+    Envia o e-mail de confirmação ou renovação de assinatura para o cliente,
+    com suporte completo aos planos Mensal e Anual, e métodos Cartão ou Pix.
 
     Parâmetros
     ----------
     email_usuario   : e-mail do assinante
     nome_usuario    : nome do assinante (pode ser vazio)
     plano           : código do plano — "MEI" ou "ME"
-    subscription_id : ID da assinatura no Stripe (sub_xxx)
+    subscription_id : ID da assinatura no Stripe (sub_xxx) ou intent (pi_xxx)
     session_id      : ID da sessão de checkout (cs_xxx) — fallback
     is_renovacao    : indica se é renovação periódica da assinatura
+    periodicidade   : "mensal" ou "anual"
+    metodo          : "card" ou "pix"
 
     Retorna True se enviado com sucesso, False caso contrário.
     """
@@ -348,9 +412,14 @@ def enviar_email_confirmacao_assinatura(
             return False
 
         # ----------------------------------------------------------------------
-        # 6.3 Deduplicação (mesma sessão/assinatura em curto período)
+        # 6.3 Deduplicação (evita reenvio do mesmo webhook/sessão em curto período)
         # ----------------------------------------------------------------------
-        evento_chave = subscription_id or session_id
+        # Para renovações, a chave é o ID da fatura (invoice_id) para não conflitar com a assinatura inicial.
+        if is_renovacao:
+            evento_chave = f"renovacao_{session_id}" if session_id else f"renovacao_{subscription_id}_{datetime.now().strftime('%Y_%m')}"
+        else:
+            evento_chave = session_id or subscription_id
+
         if evento_chave:
             try:
                 u_check = usuario.find_one({
@@ -382,6 +451,9 @@ def enviar_email_confirmacao_assinatura(
         # 6.4 Preparação do conteúdo
         # ----------------------------------------------------------------------
         data_pagamento = datetime.now()
+        is_anual = str(periodicidade).strip().lower() == "anual"
+        is_pix = str(metodo).strip().lower() == "pix"
+        info = _info_plano(plano)
 
         html_body = _gerar_html_confirmacao(
             nome_usuario=nome_usuario,
@@ -391,21 +463,29 @@ def enviar_email_confirmacao_assinatura(
             session_id=session_id,
             data_pagamento=data_pagamento,
             is_renovacao=is_renovacao,
+            periodicidade=periodicidade,
+            metodo=metodo,
         )
 
-        info = _info_plano(plano)
+        ciclo_nome = "Plano Anual" if is_anual else "Plano Mensal"
+        valor_str = info["valor_anual"] if is_anual else info["valor_mensal"]
+
         if is_renovacao:
-            assunto = f"Renovação de assinatura {info['nome']} confirmada - DataInsight"
+            assunto = f"Renovação de {info['nome']} ({ciclo_nome}) confirmada - DataInsight"
             texto_acao = "foi renovada com sucesso"
+        elif is_anual and is_pix:
+            assunto = f"Pagamento Pix {info['nome']} ({ciclo_nome}) confirmado - DataInsight"
+            texto_acao = "foi aprovado via Pix com 20% de desconto"
         else:
-            assunto = f"Assinatura {info['nome']} confirmada - DataInsight"
+            assunto = f"Assinatura {info['nome']} ({ciclo_nome}) confirmada - DataInsight"
             texto_acao = "foi confirmada com sucesso"
 
         texto_plano = (
-            f"Ola {nome_usuario or 'Cliente'}!\n\n"
-            f"Sua assinatura do plano {info['nome']} ({info['valor']}/mes) "
+            f"Olá {nome_usuario or 'Cliente'}!\n\n"
+            f"Sua assinatura do plano {info['nome']} ({ciclo_nome} - {valor_str}) "
             f"{texto_acao} em "
-            f"{data_pagamento.strftime('%d/%m/%Y as %H:%M')}.\n\n"
+            f"{data_pagamento.strftime('%d/%m/%Y às %H:%M')}.\n\n"
+            f"Forma de Pagamento: {'PIX À Vista' if is_pix else 'Cartão (Crédito/Débito)'}\n"
             f"ID do comprovante: {subscription_id or session_id or 'N/A'}\n\n"
             "Acesse sua plataforma em: https://datainsight.com.br/home\n\n"
             "Equipe DataInsight"
@@ -438,9 +518,11 @@ def enviar_email_confirmacao_assinatura(
                 )
 
         logger.info(
-            "[email_assinatura] Confirmacao enviada para %s (plano=%s).",
+            "[email_assinatura] Confirmação enviada para %s (plano=%s, periodicidade=%s, metodo=%s).",
             email_usuario,
             plano,
+            periodicidade,
+            metodo,
         )
         return True
 

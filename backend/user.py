@@ -186,8 +186,27 @@ def tela_cadastro():
     if plano_contratado not in ["MEI", "ME"]:
         plano_contratado = "ME"
 
+    periodicidade_contratada = (
+        request.args.get("periodicidade")
+        or request.form.get("periodicidade")
+        or session.get("periodicidade_escolhida")
+        or "mensal"
+    ).strip().lower()
+    if periodicidade_contratada not in ["mensal", "anual"]:
+        periodicidade_contratada = "mensal"
+
+    metodo_pagamento = (
+        request.args.get("metodo")
+        or request.form.get("metodo")
+        or session.get("metodo_pagamento")
+        or "card"
+    ).strip().lower()
+    if metodo_pagamento not in ["card", "pix"]:
+        metodo_pagamento = "card"
+
     customer_id = None
     subscription_id = None
+    payment_intent_id = None
 
     # --------------------------------------------------------------------------
     # 4.2. Validação da sessão do Stripe Checkout
@@ -204,9 +223,14 @@ def tela_cadastro():
                 or ""
             )
             metadata = checkout_session.get("metadata") or {}
-            plano_contratado = metadata.get("plano") or plano_contratado
+            plano_contratado = (metadata.get("plano") or plano_contratado).strip().upper()
+            if plano_contratado not in ["MEI", "ME"]:
+                plano_contratado = "ME"
+            periodicidade_contratada = (metadata.get("periodicidade") or periodicidade_contratada).strip().lower()
+            metodo_pagamento = (metadata.get("metodo") or metodo_pagamento).strip().lower()
             customer_id = checkout_session.get("customer")
             subscription_id = checkout_session.get("subscription")
+            payment_intent_id = checkout_session.get("payment_intent")
     except Exception as e:
         print(f"Aviso ao consultar Stripe session_id ({session_id}): {e}")
 
@@ -239,6 +263,8 @@ def tela_cadastro():
                 session_id=session_id,
                 email_preenchido=email_preenchido,
                 plano_contratado=plano_contratado,
+                periodicidade_contratada=periodicidade_contratada,
+                metodo_pagamento=metodo_pagamento,
             )
 
         if not validar_email(email):
@@ -249,6 +275,8 @@ def tela_cadastro():
                 session_id=session_id,
                 email_preenchido=email_preenchido,
                 plano_contratado=plano_contratado,
+                periodicidade_contratada=periodicidade_contratada,
+                metodo_pagamento=metodo_pagamento,
             )
 
         # Telefone (opcional ou validado se preenchido)
@@ -263,6 +291,8 @@ def tela_cadastro():
                     session_id=session_id,
                     email_preenchido=email_preenchido,
                     plano_contratado=plano_contratado,
+                    periodicidade_contratada=periodicidade_contratada,
+                    metodo_pagamento=metodo_pagamento,
                 )
 
         valido, msg = validar_senha(senha)
@@ -274,6 +304,8 @@ def tela_cadastro():
                 session_id=session_id,
                 email_preenchido=email_preenchido,
                 plano_contratado=plano_contratado,
+                periodicidade_contratada=periodicidade_contratada,
+                metodo_pagamento=metodo_pagamento,
             )
 
         if senha != confirmar:
@@ -284,6 +316,8 @@ def tela_cadastro():
                 session_id=session_id,
                 email_preenchido=email_preenchido,
                 plano_contratado=plano_contratado,
+                periodicidade_contratada=periodicidade_contratada,
+                metodo_pagamento=metodo_pagamento,
             )
 
         if usuario.find_one({"email": email}):
@@ -294,6 +328,8 @@ def tela_cadastro():
                 session_id=session_id,
                 email_preenchido=email_preenchido,
                 plano_contratado=plano_contratado,
+                periodicidade_contratada=periodicidade_contratada,
+                metodo_pagamento=metodo_pagamento,
             )
 
         # Tratamento do CNPJ
@@ -320,8 +356,11 @@ def tela_cadastro():
             "cnpj_formatado": cnpj_formatado,
             "tipo_perfil": tipo_perfil,
             "status_assinatura": "ativa",
+            "periodicidade_escolhida": periodicidade_contratada,
+            "metodo_pagamento": metodo_pagamento,
             "stripe_customer_id": customer_id,
             "stripe_subscription_id": subscription_id,
+            "stripe_payment_intent_id": payment_intent_id,
             "razao_social": razao_social or nome,
             "data_abertura": data_abertura,
             "limite_anual_mei": limite_anual_mei,
@@ -340,6 +379,9 @@ def tela_cadastro():
         session["usuario_email"] = email
         session["usuario_telefone"] = telefone
         session["usuario_perfil"] = tipo_perfil
+        session["plano_escolhido"] = tipo_perfil
+        session["periodicidade_escolhida"] = periodicidade_contratada
+        session["metodo_pagamento"] = metodo_pagamento
         session["status_assinatura"] = "ativa"
         session["usuario_cnpj"] = cnpj_formatado
         session["usuario_razao_social"] = razao_social or nome
@@ -356,8 +398,10 @@ def tela_cadastro():
                     email_usuario=email,
                     nome_usuario=nome,
                     plano=tipo_perfil,
-                    subscription_id=subscription_id or "",
+                    subscription_id=subscription_id or payment_intent_id or "",
                     session_id=session_id or "",
+                    periodicidade=periodicidade_contratada,
+                    metodo=metodo_pagamento,
                 )
             except Exception as ex_mail:
                 print(f"[tela_cadastro] Aviso ao enviar e-mail de confirmação: {ex_mail}")
@@ -371,7 +415,9 @@ def tela_cadastro():
         "cadastro.html",
         session_id=session_id,
         email_preenchido=email_preenchido,
-        plano_contratado=plano_contratado
+        plano_contratado=plano_contratado,
+        periodicidade_contratada=periodicidade_contratada,
+        metodo_pagamento=metodo_pagamento,
     )
 
 

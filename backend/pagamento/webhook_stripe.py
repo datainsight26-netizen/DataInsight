@@ -77,15 +77,18 @@ def processar_webhook_stripe():
     print(f" [Stripe Webhook] Evento recebido: {event_type}")
 
     # --------------------------------------------------------------------------
-    # 3.3. Evento: Checkout inicial concluído com sucesso
+    # 3.3. Evento: Checkout inicial concluído com sucesso (Cartão ou Pix)
     # --------------------------------------------------------------------------
     if event_type == "checkout.session.completed":
         session = data_object
         customer_email = session.get("customer_details", {}).get("email") or session.get("customer_email")
         customer_id = session.get("customer")
         subscription_id = session.get("subscription")
+        payment_intent_id = session.get("payment_intent")
         metadata = session.get("metadata") or {}
         plano = metadata.get("plano", "ME")
+        periodicidade = metadata.get("periodicidade", "mensal")
+        metodo = metadata.get("metodo", "card")
         usuario_id = metadata.get("usuario_id")
 
         # Monta o filtro de busca do usuário (por _id ou por e-mail)
@@ -99,17 +102,25 @@ def processar_webhook_stripe():
             query = {"email": customer_email}
 
         if query:
-            usuario.update_one(
-                query,
-                {"$set": {
-                    "status_assinatura": "ativa",
-                    "tipo_perfil": plano,
-                    "stripe_customer_id": customer_id,
-                    "stripe_subscription_id": subscription_id,
-                    "atualizado_em": datetime.now()
-                }}
+            set_data = {
+                "status_assinatura": "ativa",
+                "tipo_perfil": plano,
+                "periodicidade_escolhida": periodicidade,
+                "metodo_pagamento": metodo,
+                "atualizado_em": datetime.now()
+            }
+            if customer_id:
+                set_data["stripe_customer_id"] = customer_id
+            if subscription_id:
+                set_data["stripe_subscription_id"] = subscription_id
+            if payment_intent_id:
+                set_data["stripe_payment_intent_id"] = payment_intent_id
+
+            usuario.update_one(query, {"$set": set_data})
+            print(
+                f"✓ Assinatura ativada para usuário ({query}) com plano {plano} "
+                f"({periodicidade} via {metodo})"
             )
-            print(f"✓ Assinatura ativada para usuário ({query}) com plano {plano}")
 
             # ── Enviar e-mail de confirmação de assinatura ──
             if customer_email:
@@ -118,8 +129,10 @@ def processar_webhook_stripe():
                     email_usuario=customer_email,
                     nome_usuario=nome,
                     plano=plano,
-                    subscription_id=subscription_id or "",
+                    subscription_id=subscription_id or payment_intent_id or "",
                     session_id=session.get("id", ""),
+                    periodicidade=periodicidade,
+                    metodo=metodo,
                 )
                 if enviado:
                     print(f"✉ E-mail de confirmação enviado para {customer_email}")
@@ -127,7 +140,43 @@ def processar_webhook_stripe():
                     print(f"⚠ Falha ao enviar e-mail de confirmação para {customer_email}")
 
     # --------------------------------------------------------------------------
-    # 3.4. Evento: Pagamento de mensalidade recorrente aprovado
+    # 3.4. Evento: Pagamento avulso / Pix confirmado diretamente
+    # --------------------------------------------------------------------------
+    elif event_type == "payment_intent.succeeded":
+        payment_intent = data_object
+        payment_intent_id = payment_intent.get("id")
+        customer_id = payment_intent.get("customer")
+        metadata = payment_intent.get("metadata") or {}
+        usuario_id = metadata.get("usuario_id")
+        plano = metadata.get("plano", "ME")
+        periodicidade = metadata.get("periodicidade", "mensal")
+        metodo = metadata.get("metodo", "pix")
+
+        query = {}
+        if usuario_id:
+            try:
+                query = {"_id": ObjectId(usuario_id)}
+            except Exception:
+                pass
+        if not query and customer_id:
+            query = {"stripe_customer_id": customer_id}
+
+        if query:
+            set_data = {
+                "status_assinatura": "ativa",
+                "tipo_perfil": plano,
+                "periodicidade_escolhida": periodicidade,
+                "metodo_pagamento": metodo,
+                "stripe_payment_intent_id": payment_intent_id,
+                "atualizado_em": datetime.now()
+            }
+            if customer_id:
+                set_data["stripe_customer_id"] = customer_id
+            usuario.update_one(query, {"$set": set_data})
+            print(f"✓ Pagamento Pix aprovado via payment_intent.succeeded ({query}) plano {plano}")
+
+    # --------------------------------------------------------------------------
+    # 3.5. Evento: Pagamento de mensalidade recorrente aprovado (Cartão)
     # --------------------------------------------------------------------------
     elif event_type == "invoice.payment_succeeded":
         invoice = data_object
@@ -145,10 +194,15 @@ def processar_webhook_stripe():
             filtro = {"email": customer_email}
 
         if filtro:
-            # Busca plano atual do usuário no banco
-            doc = usuario.find_one(filtro, {"tipo_perfil": 1, "nome": 1})
+            # Busca plano atual, periodicidade e método do usuário no banco
+            doc = usuario.find_one(
+                filtro,
+                {"tipo_perfil": 1, "nome": 1, "periodicidade_escolhida": 1, "metodo_pagamento": 1}
+            )
             plano_atual = doc.get("tipo_perfil", "ME") if doc else "ME"
             nome_usuario = doc.get("nome", "") if doc else ""
+            periodicidade_usuario = doc.get("periodicidade_escolhida", "mensal") if doc else "mensal"
+            metodo_usuario = doc.get("metodo_pagamento", "card") if doc else "card"
 
             usuario.update_one(
                 filtro,
@@ -157,7 +211,7 @@ def processar_webhook_stripe():
                     "atualizado_em": datetime.now()
                 }}
             )
-            print(f"✓ Mensalidade renovada com sucesso: {filtro}")
+            print(f"✓ Assinatura renovada com sucesso: {filtro}")
 
             # ── Enviar e-mail de confirmação de renovação ──
             # Apenas para renovações reais (não o primeiro pagamento, que já tem o
@@ -170,6 +224,8 @@ def processar_webhook_stripe():
                     subscription_id=subscription_id or "",
                     session_id=invoice.get("id", ""),
                     is_renovacao=True,
+                    periodicidade=periodicidade_usuario,
+                    metodo=metodo_usuario,
                 )
                 if enviado:
                     print(f"✉ E-mail de renovação enviado para {customer_email}")

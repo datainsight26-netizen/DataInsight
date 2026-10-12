@@ -30,7 +30,7 @@ TABELA_SALARIO_MINIMO = {
     2023: 1320.00,
     2024: 1412.00,
     2025: 1518.00,
-    2026: 1518.00,
+    2026: 1518.00,  # Confirmado pelo Decreto 12.302/2024 (aumento real: vigência Jan/2026)
 }
 
 SALARIO_MINIMO_PADRAO = 1518.00

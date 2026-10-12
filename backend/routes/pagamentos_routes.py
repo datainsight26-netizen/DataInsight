@@ -121,12 +121,23 @@ def sucesso_pagamento():
         or session.get("usuario_perfil")
         or "ME"
     )
+    periodicidade = (
+        request.args.get("periodicidade")
+        or session.get("periodicidade_escolhida")
+        or "mensal"
+    )
+    metodo = (
+        request.args.get("metodo")
+        or session.get("metodo_pagamento")
+        or "card"
+    )
     email = ""
     customer_id = None
     subscription_id = None
+    payment_intent_id = None
 
     print(
-        f"[sucesso_pagamento] Iniciando. session_id={session_id} | plano={plano} | session={dict(session)}"
+        f"[sucesso_pagamento] Iniciando. session_id={session_id} | plano={plano} | periodicidade={periodicidade} | metodo={metodo} | session={dict(session)}"
     )
 
     # --------------------------------------------------------------------------
@@ -164,9 +175,12 @@ def sucesso_pagamento():
                 )
                 metadata = checkout_session.get("metadata") or {}
                 plano = metadata.get("plano") or plano
+                periodicidade = metadata.get("periodicidade") or periodicidade
+                metodo = metadata.get("metodo") or metodo
                 user_id_meta = metadata.get("usuario_id")
                 subscription_id = checkout_session.get("subscription")
                 customer_id = checkout_session.get("customer")
+                payment_intent_id = checkout_session.get("payment_intent")
 
                 if not usuario_existente and user_id_meta:
                     try:
@@ -189,12 +203,16 @@ def sucesso_pagamento():
         update_fields = {
             "status_assinatura": "ativa",
             "tipo_perfil": plano,
+            "periodicidade_escolhida": periodicidade,
+            "metodo_pagamento": metodo,
             "atualizado_em": datetime.now()
         }
         if customer_id:
             update_fields["stripe_customer_id"] = customer_id
         if subscription_id:
             update_fields["stripe_subscription_id"] = subscription_id
+        if payment_intent_id:
+            update_fields["stripe_payment_intent_id"] = payment_intent_id
 
         try:
             usuario.update_one(
@@ -209,6 +227,8 @@ def sucesso_pagamento():
         session["usuario_email"] = usuario_existente.get("email", "")
         session["usuario_perfil"] = plano
         session["plano_escolhido"] = plano
+        session["periodicidade_escolhida"] = periodicidade
+        session["metodo_pagamento"] = metodo
         session["status_assinatura"] = "ativa"
         session.modified = True
 
@@ -222,6 +242,8 @@ def sucesso_pagamento():
                     plano=plano,
                     subscription_id=subscription_id or "",
                     session_id=session_id or "",
+                    periodicidade=periodicidade,
+                    metodo=metodo,
                 )
             except Exception as ex_mail:
                 print(f"[sucesso_pagamento] Erro ao disparar e-mail: {ex_mail}")
@@ -230,15 +252,25 @@ def sucesso_pagamento():
             "sistema_pagamento/sucesso.html",
             status=status,
             plano=plano,
+            periodicidade=periodicidade,
+            metodo=metodo,
             email=usuario_existente.get("email", email),
-            payment_id=subscription_id or session_id or "SUB-ATIVADA"
+            payment_id=subscription_id or payment_intent_id or session_id or "SUB-ATIVADA"
         )
 
     # --------------------------------------------------------------------------
     # 5.5. Sem usuário no banco, mas com `session_id` → cadastro
     # --------------------------------------------------------------------------
     if session_id:
-        return redirect(url_for("auth.pagina_cadastro", session_id=session_id, plano=plano))
+        return redirect(
+            url_for(
+                "auth.pagina_cadastro",
+                session_id=session_id,
+                plano=plano,
+                periodicidade=periodicidade,
+                metodo=metodo,
+            )
+        )
 
     # --------------------------------------------------------------------------
     # 5.6. Apenas sincroniza a sessão (usuário logado sem doc no banco)
@@ -247,14 +279,18 @@ def sucesso_pagamento():
         session["status_assinatura"] = "ativa"
         session["usuario_perfil"] = plano
         session["plano_escolhido"] = plano
+        session["periodicidade_escolhida"] = periodicidade
+        session["metodo_pagamento"] = metodo
         session.modified = True
 
     return render_template(
         "sistema_pagamento/sucesso.html",
         status=status,
         plano=plano,
+        periodicidade=periodicidade,
+        metodo=metodo,
         email=email,
-        payment_id=session_id
+        payment_id=payment_intent_id or session_id
     )
 
 
@@ -321,6 +357,7 @@ def ativar_acesso():
     # --------------------------------------------------------------------------
     subscription_id = user.get("stripe_subscription_id")
     customer_id = user.get("stripe_customer_id")
+    payment_intent_id = user.get("stripe_payment_intent_id")
     STRIPE_SECRET_KEY = os.getenv("STRIPE_API_KEY")
 
     assinatura_confirmada = False
@@ -333,6 +370,15 @@ def ativar_acesso():
                 assinatura_confirmada = True
         except Exception as e:
             print(f"[ativar_acesso] Erro ao consultar Stripe ({subscription_id}): {e}")
+
+    if not assinatura_confirmada and STRIPE_SECRET_KEY and payment_intent_id:
+        try:
+            stripe.api_key = STRIPE_SECRET_KEY
+            pi = stripe.PaymentIntent.retrieve(payment_intent_id)
+            if pi and pi.get("status") == "succeeded":
+                assinatura_confirmada = True
+        except Exception as e:
+            print(f"[ativar_acesso] Erro ao consultar PaymentIntent ({payment_intent_id}): {e}")
 
     if not assinatura_confirmada and STRIPE_SECRET_KEY and customer_id:
         try:
