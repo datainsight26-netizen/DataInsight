@@ -178,7 +178,6 @@ def criar_assinatura_stripe():
                     "DataInsight BI & IA"
                 )
                 session_kwargs = {
-                    "payment_method_types": ["pix"],
                     "payment_method_options": {
                         "pix": {
                             "expires_after_seconds": 3600,  # QR Code válido por 1 hora
@@ -210,7 +209,6 @@ def criar_assinatura_stripe():
                     "DataInsight BI & IA"
                 )
                 session_kwargs = {
-                    "payment_method_types": ["card"],
                     "line_items": [
                         {
                             "price_data": {
