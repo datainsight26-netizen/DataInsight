@@ -77,3 +77,47 @@ def criar_mensagem(subject, recipients, body=None, html=None, reply_to=None):
     }
 
     return msg
+
+
+# ==============================================================================
+# 4. ENVIO ASSÍNCRONO NÃO-BLOQUEANTE
+# ==============================================================================
+
+def enviar_email_async(msg, app=None):
+    """
+    Envia a mensagem em uma thread em background (daemon).
+    Evita travamentos e timeouts no worker do Gunicorn/Flask,
+    garantindo que respostas de requisições (como sucesso de pagamento)
+    retornem instantaneamente ao usuário sem esperar o servidor SMTP.
+    """
+    import threading
+
+    app_obj = app
+    if not app_obj:
+        try:
+            from flask import current_app
+            app_obj = current_app._get_current_object()
+        except Exception:
+            app_obj = None
+
+    def _worker(alvo_app, alvo_msg):
+        try:
+            if alvo_app:
+                with alvo_app.app_context():
+                    m = getattr(alvo_app, "mail", None) or alvo_app.extensions.get("mail")
+                    if m:
+                        m.send(alvo_msg)
+                        print(f"✓ [Email Async] Enviado com sucesso para {alvo_msg.recipients}")
+                    else:
+                        print("⚠ [Email Async] Flask-Mail não configurado no app.")
+            else:
+                from app import mail
+                if mail:
+                    mail.send(alvo_msg)
+                    print(f"✓ [Email Async] Enviado com sucesso para {alvo_msg.recipients}")
+        except Exception as exc:
+            print(f"✗ [Email Async] Aviso ao enviar para {getattr(alvo_msg, 'recipients', '?')}: {exc}")
+
+    thread = threading.Thread(target=_worker, args=(app_obj, msg), daemon=True)
+    thread.start()
+    return True
