@@ -16,7 +16,11 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
-from bs4 import BeautifulSoup
+
+try:
+    from bs4 import BeautifulSoup
+except ImportError:
+    BeautifulSoup = None
 
 
 # ==============================================================================
@@ -42,44 +46,51 @@ def extrair_tabelas_html(html_content: str) -> List[pd.DataFrame]:
     if not html_content or "<table" not in html_content.lower():
         return dataframes
 
-    try:
-        soup = BeautifulSoup(html_content, "html.parser")
-        tables = soup.find_all("table")
-        for tbl in tables:
-            rows = []
-            headers = []
-            # Cabeçalhos
-            thead = tbl.find("thead")
-            if thead:
-                th_elements = thead.find_all(["th", "td"])
-                headers = [th.get_text().strip() for th in th_elements]
+    if BeautifulSoup:
+        try:
+            soup = BeautifulSoup(html_content, "html.parser")
+            tables = soup.find_all("table")
+            for tbl in tables:
+                rows = []
+                headers = []
+                # Cabeçalhos
+                thead = tbl.find("thead")
+                if thead:
+                    th_elements = thead.find_all(["th", "td"])
+                    headers = [th.get_text().strip() for th in th_elements]
 
-            # Linhas do corpo
-            tbody = tbl.find("tbody") or tbl
-            for tr in tbody.find_all("tr"):
-                cells = [td.get_text().strip() for td in tr.find_all(["td", "th"])]
-                if cells:
-                    # Se não tinha thead e headers está vazio, usa primeira linha
-                    if not headers and len(rows) == 0:
-                        headers = cells
-                    else:
-                        rows.append(cells)
+                # Linhas do corpo
+                tbody = tbl.find("tbody") or tbl
+                for tr in tbody.find_all("tr"):
+                    cells = [td.get_text().strip() for td in tr.find_all(["td", "th"])]
+                    if cells:
+                        # Se não tinha thead e headers está vazio, usa primeira linha
+                        if not headers and len(rows) == 0:
+                            headers = cells
+                        else:
+                            rows.append(cells)
 
-            if rows and headers:
-                # Normaliza tamanho das colunas
-                max_cols = max(len(headers), max(len(r) for r in rows))
-                if len(headers) < max_cols:
-                    headers += [f"Coluna_{i+1}" for i in range(len(headers), max_cols)]
-                norm_rows = []
-                for r in rows:
-                    if len(r) < max_cols:
-                        r = r + [""] * (max_cols - len(r))
-                    norm_rows.append(r[:max_cols])
+                if rows and headers:
+                    # Normaliza tamanho das colunas
+                    max_cols = max(len(headers), max(len(r) for r in rows))
+                    if len(headers) < max_cols:
+                        headers += [f"Coluna_{i+1}" for i in range(len(headers), max_cols)]
+                    norm_rows = []
+                    for r in rows:
+                        if len(r) < max_cols:
+                            r = r + [""] * (max_cols - len(r))
+                        norm_rows.append(r[:max_cols])
 
-                df = pd.DataFrame(norm_rows, columns=headers[:max_cols])
-                dataframes.append(df)
-    except Exception as err:
-        print(f"[document_generator] Erro ao extrair tabelas HTML: {err}")
+                    df = pd.DataFrame(norm_rows, columns=headers[:max_cols])
+                    dataframes.append(df)
+        except Exception as err:
+            print(f"[document_generator] Erro ao extrair tabelas HTML: {err}")
+    else:
+        try:
+            dfs = pd.read_html(html_content)
+            dataframes.extend(dfs)
+        except Exception as err:
+            print(f"[document_generator] Erro ao extrair tabelas com pandas: {err}")
 
     return dataframes
 
@@ -175,8 +186,14 @@ def gerar_documento_docx(
     p_div._p.get_or_add_pPr().append(p_div_border)
 
     # Processamento de Conteúdo (HTML -> Parágrafos / Listas / Tabelas Word)
-    soup = BeautifulSoup(conteudo_html_ou_texto, "html.parser")
-    elementos = soup.find_all(["h1", "h2", "h3", "h4", "p", "ul", "ol", "table", "blockquote"])
+    elementos = []
+    if BeautifulSoup:
+        try:
+            soup = BeautifulSoup(conteudo_html_ou_texto, "html.parser")
+            elementos = soup.find_all(["h1", "h2", "h3", "h4", "p", "ul", "ol", "table", "blockquote"])
+        except Exception as err:
+            print(f"[document_generator] Erro BeautifulSoup docx: {err}")
+            elementos = []
 
     if not elementos:
         # Se for texto puro sem tags estruturadas
@@ -526,8 +543,14 @@ def gerar_documento_pdf(
     story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor("#2563eb"), spaceAfter=10))
 
     # Processamento dos Elementos HTML
-    soup = BeautifulSoup(conteudo_html_ou_texto, "html.parser")
-    elementos = soup.find_all(["h1", "h2", "h3", "h4", "p", "ul", "ol", "table", "blockquote"])
+    elementos = []
+    if BeautifulSoup:
+        try:
+            soup = BeautifulSoup(conteudo_html_ou_texto, "html.parser")
+            elementos = soup.find_all(["h1", "h2", "h3", "h4", "p", "ul", "ol", "table", "blockquote"])
+        except Exception as err:
+            print(f"[document_generator] Erro BeautifulSoup pdf: {err}")
+            elementos = []
 
     if not elementos:
         for linha in _limpar_tags_html(conteudo_html_ou_texto).split("\n"):
