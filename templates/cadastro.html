@@ -465,27 +465,52 @@
           <input type="hidden" id="data_abertura" name="data_abertura" value="" />
 
           <!-- Plano Contratado Confirmado pelo Stripe -->
-          <div class="auth-field" style="margin-bottom: 16px;">
-            <label>Plano Contratado (Stripe):</label>
-            <div style="background: rgba(59, 130, 246, 0.08); border: 1.5px solid rgba(59, 130, 246, 0.3); border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between;">
+          <div class="auth-field" style="margin-bottom: 20px;">
+            <label style="font-size: 0.8rem; font-weight: 700; color: var(--texto); display: flex; align-items: center; justify-content: space-between;">
+              <span>Plano Contratado (Stripe):</span>
+              <span style="font-size: 0.72rem; padding: 2px 8px; border-radius: 999px; background: rgba(37, 99, 235, 0.1); color: #2563eb; font-weight: 700;">
+                {{ 'Plano Anual • 12 meses' if periodicidade_contratada == 'anual' else 'Plano Mensal' }}
+              </span>
+            </label>
+            <div style="background: rgba(59, 130, 246, 0.08); border: 1.5px solid rgba(59, 130, 246, 0.35); border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 4px;">
               <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="width: 38px; height: 38px; border-radius: 10px; background: #2563eb; display: flex; align-items: center; justify-content: center; color: white;">
-                  <i class="fa-solid fa-crown"></i>
+                <div style="width: 42px; height: 42px; border-radius: 10px; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);">
+                  <i class="fa-solid fa-crown text-base"></i>
                 </div>
                 <div>
-                  <div style="font-weight: 700; font-size: 0.95rem; color: var(--texto, #111827);">
+                  <div style="font-weight: 800; font-size: 0.95rem; color: var(--texto, #111827); line-height: 1.2;">
                     DataInsight {{ plano_contratado|default('ME') }}
                   </div>
-                  <div style="font-size: 0.78rem; color: #16a34a; font-weight: 600;">
-                    <i class="fa-solid fa-circle-check"></i> Pagamento Confirmado no Stripe
+                  <div style="font-size: 0.75rem; color: #16a34a; font-weight: 600; margin-top: 3px; display: flex; align-items: center; gap: 5px;">
+                    {% if metodo_pagamento == 'pix' %}
+                      <i class="fa-solid fa-bolt text-emerald-500"></i> Aprovado via Pix (20% OFF)
+                    {% elif periodicidade_contratada == 'anual' %}
+                      <i class="fa-solid fa-circle-check text-emerald-500"></i> Confirmado no Cartão (20% OFF)
+                    {% else %}
+                      <i class="fa-solid fa-circle-check text-emerald-500"></i> Pagamento Confirmado no Stripe
+                    {% endif %}
                   </div>
                 </div>
               </div>
-              <span style="font-size: 0.85rem; font-weight: 700; color: #2563eb;">
-                {% if plano_contratado == 'MEI' %}R$ 250,00/mês{% else %}R$ 350,00/mês{% endif %}
-              </span>
+
+              <div style="text-align: right; flex-shrink: 0;">
+                <div style="font-size: 0.95rem; font-weight: 800; color: #2563eb;">
+                  {% if periodicidade_contratada == 'anual' %}
+                    {% if plano_contratado == 'MEI' %}R$ 2.400,00<span style="font-size:0.75rem; font-weight:600; color:var(--suave);">/ano</span>{% else %}R$ 3.360,00<span style="font-size:0.75rem; font-weight:600; color:var(--suave);">/ano</span>{% endif %}
+                  {% else %}
+                    {% if plano_contratado == 'MEI' %}R$ 250,00<span style="font-size:0.75rem; font-weight:600; color:var(--suave);">/mês</span>{% else %}R$ 350,00<span style="font-size:0.75rem; font-weight:600; color:var(--suave);">/mês</span>{% endif %}
+                  {% endif %}
+                </div>
+                {% if periodicidade_contratada == 'anual' %}
+                  <div style="font-size: 0.68rem; color: #059669; font-weight: 700; margin-top: 1px;">
+                    {% if plano_contratado == 'MEI' %}Equivale a R$ 200/mês{% else %}Equivale a R$ 280/mês{% endif %}
+                  </div>
+                {% endif %}
+              </div>
             </div>
             <input type="hidden" name="tipo_perfil" value="{{ plano_contratado|default('ME') }}" />
+            <input type="hidden" name="periodicidade" value="{{ periodicidade_contratada|default('mensal') }}" />
+            <input type="hidden" name="metodo" value="{{ metodo_pagamento|default('card') }}" />
             <input type="hidden" name="session_id" value="{{ session_id|default('') }}" />
           </div>
 

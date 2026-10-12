@@ -137,13 +137,29 @@
         </div>
 
         <div class="flex justify-between items-center">
+          <span class="texto-sub">Periodicidade:</span>
+          <span class="texto-titulo font-semibold">{{ 'Anual (12 meses)' if periodicidade == 'anual' else 'Mensal' }}</span>
+        </div>
+
+        <div class="flex justify-between items-center">
+          <span class="texto-sub">Forma de Pagamento:</span>
+          <span class="texto-titulo font-medium">
+            {% if metodo == 'pix' %}
+              <span class="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1"><i class="fa-solid fa-bolt"></i> Pix</span>
+            {% else %}
+              <span class="text-blue-600 dark:text-blue-400 font-semibold flex items-center gap-1"><i class="fa-solid fa-credit-card"></i> Cartão</span>
+            {% endif %}
+          </span>
+        </div>
+
+        <div class="flex justify-between items-center">
           <span class="texto-sub">Plataforma:</span>
           <span class="texto-titulo font-medium">DataInsight BI & IA</span>
         </div>
 
         <div class="flex justify-between items-center">
           <span class="texto-sub">Acesso:</span>
-          <span class="text-blue-600 dark:text-blue-400 font-semibold">Liberado Imediatamente</span>
+          <span class="text-emerald-600 dark:text-emerald-400 font-semibold">Liberado Imediatamente</span>
         </div>
       </div>
 

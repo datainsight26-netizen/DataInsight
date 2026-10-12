@@ -149,6 +149,44 @@
       border-radius: 999px;
       border: 1px solid rgba(255, 255, 255, 0.12);
     }
+
+    /* Toggle Periodicidade */
+    .toggle-periodo-btn {
+      color: var(--suave, #6B7280);
+      cursor: pointer;
+    }
+    .toggle-periodo-btn.active {
+      background-color: var(--cartao, #FFFFFF);
+      color: #2563EB !important;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+    }
+    .tema-escuro .toggle-periodo-btn.active {
+      background-color: #1E293B;
+      color: #60A5FA !important;
+    }
+
+    /* Métodos de Pagamento */
+    .metodo-btn {
+      border: 2px solid var(--borda, #E5E7EB);
+      background-color: var(--cartao, #FFFFFF);
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .metodo-btn:hover {
+      border-color: #93C5FD;
+    }
+    .metodo-btn.active {
+      border-color: #3B82F6 !important;
+      background-color: rgba(59, 130, 246, 0.07);
+    }
+    .tema-escuro .metodo-btn {
+      background-color: #1E293B;
+      border-color: #334155;
+    }
+    .tema-escuro .metodo-btn.active {
+      border-color: #60A5FA !important;
+      background-color: rgba(96, 165, 250, 0.12);
+    }
   </style>
 </head>
 
@@ -186,28 +224,54 @@
   <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
 
     <!-- Hero / Headline -->
-    <div class="text-center max-w-3xl mx-auto mb-12">
-      <h1 class="text-3xl sm:text-4xl font-extrabold texto-titulo tracking-tight mb-4">
+    <div class="text-center max-w-3xl mx-auto mb-8">
+      <h1 class="text-3xl sm:text-4xl font-extrabold texto-titulo tracking-tight mb-3">
         Escolha o plano ideal para alavancar suas análises
       </h1>
-    
+      <p class="texto-sub text-sm">
+        Tenha relatórios inteligentes, inteligência artificial e controle financeiro completo na ponta dos dedos.
+      </p>
+    </div>
+
+    <!-- Toggle Periodicidade (Mensal / Anual) -->
+    <div class="flex items-center justify-center mb-10">
+      <div class="inline-flex items-center p-1.5 rounded-2xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 shadow-inner">
+        <button id="toggle-mensal" type="button" onclick="alternarPeriodicidade('mensal')"
+          class="toggle-periodo-btn active px-6 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2">
+          <i class="fa-solid fa-calendar"></i>
+          <span>Mensal</span>
+        </button>
+        <button id="toggle-anual" type="button" onclick="alternarPeriodicidade('anual')"
+          class="toggle-periodo-btn px-6 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+          <i class="fa-solid fa-calendar-check"></i>
+          <span>Anual</span>
+          <span class="px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-500 text-white shadow-sm">
+            20% OFF
+          </span>
+        </button>
+      </div>
     </div>
 
     <!-- Grid de Planos -->
     <div class="grid lg:grid-cols-3 gap-8 mb-12">
 
       <!-- Plano MEI -->
-      <div id="card-mei" onclick="selecionarPlano('MEI', 250.00, 'card-mei', 'DataInsight MEI')"
+      <div id="card-mei" onclick="selecionarPlano('MEI')"
         class="plan-card card-plano p-6 flex flex-col justify-between cursor-pointer">
         <div>
           <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-bold texto-titulo">DataInsight MEI</h3>
             <span class="p-2 rounded-lg icone-caixa text-sm"><i class="fa-solid fa-user"></i></span>
           </div>
-          <p class="texto-sub text-xs mb-6">Ideal para Microempreendedores Individuais (MEI).</p>
-          <div class="flex items-baseline gap-1 mb-6">
-            <span class="text-3xl font-extrabold texto-titulo">R$ 250,00</span>
-            <span class="texto-sub text-sm">/mês</span>
+          <p class="texto-sub text-xs mb-5">Ideal para Microempreendedores Individuais (MEI).</p>
+          <div class="mb-6">
+            <div class="flex items-baseline gap-1">
+              <span id="preco-mei" class="text-3xl font-extrabold texto-titulo">R$ 250,00</span>
+              <span id="periodo-mei" class="texto-sub text-sm">/mês</span>
+            </div>
+            <div id="subinfo-mei" class="hidden text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
+              Equivale a R$ 200,00/mês • Economize R$ 600
+            </div>
           </div>
           <ul class="space-y-3 text-sm texto-sub mb-6">
             <li class="flex items-center gap-2.5">
@@ -222,10 +286,10 @@
             <li class="flex items-center gap-2.5">
               <i class="fa-solid fa-check text-blue-500 text-xs"></i> IA Assistent DataInsight
             </li>
-             <li class="flex items-center gap-2.5">
+            <li class="flex items-center gap-2.5">
               <i class="fa-solid fa-check text-blue-500 text-xs"></i> Análises Financeiras Avançadas
             </li>
-             <li class="flex items-center gap-2.5">
+            <li class="flex items-center gap-2.5">
               <i class="fa-solid fa-check text-blue-500 text-xs"></i> Automação de Dados
             </li>
             <li class="flex items-center gap-2.5">
@@ -233,14 +297,14 @@
             </li>
           </ul>
         </div>
-        <button type="button" onclick="event.stopPropagation(); selecionarPlano('MEI', 250.00, 'card-mei', 'DataInsight MEI')"
+        <button id="btn-card-mei" type="button" onclick="event.stopPropagation(); selecionarPlano('MEI')"
           class="w-full py-2.5 px-4 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 texto-titulo font-medium text-sm transition-colors flex items-center justify-center gap-2">
           <span>Selecionar MEI</span>
         </button>
       </div>
 
       <!-- Plano ME (Recomendado) -->
-      <div id="card-me" onclick="selecionarPlano('ME', 350.00, 'card-me', 'DataInsight ME')"
+      <div id="card-me" onclick="selecionarPlano('ME')"
         class="plan-card card-plano p-6 flex flex-col justify-between selected popular-glow relative cursor-pointer">
         <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider text-white plan-badge shadow-md">
           <i class="fa-solid fa-crown text-amber-300 mr-1"></i> Mais Escolhido
@@ -253,12 +317,17 @@
             <span class="p-2 rounded-lg bg-blue-500/20 text-blue-500 text-sm"><i
                 class="fa-solid fa-wand-magic-sparkles"></i></span>
           </div>
-          <p class="texto-sub text-xs mb-6">Para Microempresas (ME) em crescimento com IA e análises avançadas.</p>
-          <div class="flex items-baseline gap-1 mb-6">
-            <span class="text-4xl font-extrabold texto-titulo">R$ 350,00</span>
-            <span class="texto-sub text-sm">/mês</span>
+          <p class="texto-sub text-xs mb-5">Para Microempresas (ME) em crescimento com IA e análises avançadas.</p>
+          <div class="mb-6">
+            <div class="flex items-baseline gap-1">
+              <span id="preco-me" class="text-4xl font-extrabold texto-titulo">R$ 350,00</span>
+              <span id="periodo-me" class="texto-sub text-sm">/mês</span>
+            </div>
+            <div id="subinfo-me" class="hidden text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
+              Equivale a R$ 280,00/mês • Economize R$ 840
+            </div>
           </div>
-            <ul class="space-y-3 text-sm texto-sub mb-6">
+          <ul class="space-y-3 text-sm texto-sub mb-6">
             <li class="flex items-center gap-2.5">
               <i class="fa-solid fa-check text-blue-500 text-xs"></i> Dashboards Ativos
             </li>
@@ -271,10 +340,10 @@
             <li class="flex items-center gap-2.5">
               <i class="fa-solid fa-check text-blue-500 text-xs"></i> IA Assistent DataInsight
             </li>
-             <li class="flex items-center gap-2.5">
+            <li class="flex items-center gap-2.5">
               <i class="fa-solid fa-check text-blue-500 text-xs"></i> Análises Financeiras Avançadas
             </li>
-             <li class="flex items-center gap-2.5">
+            <li class="flex items-center gap-2.5">
               <i class="fa-solid fa-check text-blue-500 text-xs"></i> Automação de Dados
             </li>
             <li class="flex items-center gap-2.5">
@@ -285,14 +354,14 @@
             </li>
           </ul>
         </div>
-        <button type="button" onclick="event.stopPropagation(); selecionarPlano('ME', 350.00, 'card-me', 'DataInsight ME')"
+        <button id="btn-card-me" type="button" onclick="event.stopPropagation(); selecionarPlano('ME')"
           class="w-full py-2.5 px-4 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-colors shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2">
           <span>Selecionado</span> <i class="fa-solid fa-circle-check text-xs"></i>
         </button>
       </div>
 
       <!-- Plano Empresas -->
-      <div id="card-empresas" onclick="selecionarPlano('Empresas', 0, 'card-empresas')"
+      <div id="card-empresas" onclick="selecionarPlano('Empresas')"
         class="plan-card card-plano p-6 flex flex-col justify-between">
         <div>
           <div class="flex justify-between items-center mb-4">
@@ -305,10 +374,9 @@
             <span class="texto-sub text-sm">/mês</span>
           </div>
           <ul class="space-y-3 text-sm texto-sub mb-6">
-              <li class="flex items-center gap-2.5">
+            <li class="flex items-center gap-2.5">
               <i class="fa-solid fa-check text-blue-500 text-xs"></i> <strong>Em breve....</strong>
             </li>
-           
           </ul>
         </div>
         <button type="button"
@@ -323,23 +391,73 @@
     <div class="max-w-2xl mx-auto">
       <div class="card-plano p-8 shadow-xl">
         <h3
-          class="text-xl font-bold texto-titulo mb-4 pb-3 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2">
-          Resumo da Assinatura
+          class="text-xl font-bold texto-titulo mb-5 pb-3 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2">
+          <span>Resumo da Assinatura</span>
         </h3>
 
-        <div class="space-y-4 mb-6 text-sm">
+        <!-- Seleção de Forma de Pagamento (Cartão no Mensal / Cartão ou Pix no Anual) -->
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-2.5">
+            <span class="block text-xs font-bold uppercase tracking-wider texto-sub">
+              Forma de Pagamento
+            </span>
+           
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <!-- Opção Cartão -->
+            <button id="metodo-card" type="button" onclick="selecionarMetodo('card')"
+              class="metodo-btn active p-3.5 rounded-xl flex flex-col items-center justify-center gap-1">
+              <div class="flex items-center gap-2 font-bold text-sm text-blue-600 dark:text-blue-400">
+                <i class="fa-solid fa-credit-card"></i>
+                <span>Cartão (Crédito/Débito)</span>
+              </div>
+              <span id="sub-card-desc" class="text-[11px] texto-sub">
+                Recorrente automático
+              </span>
+            </button>
+
+            <!-- Opção Pix -->
+            <button id="metodo-pix" type="button" onclick="selecionarMetodo('pix')"
+              class="metodo-btn p-3.5 rounded-xl flex flex-col items-center justify-center gap-1">
+              <div class="flex items-center gap-2 font-bold text-sm texto-titulo">
+                <i class="fa-solid fa-bolt text-emerald-500"></i>
+                <span>PIX À Vista</span>
+              </div>
+              <span id="sub-pix-desc" class="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                Exclusivo Plano Anual
+              </span>
+            </button>
+          </div>
+
+      
+        </div>
+
+        <!-- Detalhes do Pedido -->
+        <div class="space-y-3.5 mb-6 text-sm">
           <div class="flex justify-between items-center">
             <span class="texto-sub">Plano Selecionado:</span>
             <span id="resumo-plano-nome" class="font-semibold texto-titulo">DataInsight ME</span>
           </div>
           <div class="flex justify-between items-center">
-            <span class="texto-sub">Frequência de Cobrança:</span>
-            <span class="font-medium texto-sub">Mensal</span>
+            <span class="texto-sub">Periodicidade:</span>
+            <span id="resumo-frequencia" class="font-medium texto-titulo">Mensal</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="texto-sub">Forma de Pagamento:</span>
+            <span id="resumo-metodo" class="font-medium text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-credit-card"></i> Cartão de Crédito
+            </span>
+          </div>
+          <div id="linha-economia" class="hidden flex justify-between items-center text-emerald-600 dark:text-emerald-400 font-semibold">
+            <span>Desconto Anual:</span>
+            <span id="resumo-economia">- R$ 840,00 (20% OFF)</span>
           </div>
           <div class="flex justify-between items-center">
             <span class="texto-sub">Acesso IA DataInsight:</span>
-            <span class="text-emerald-600 dark:text-emerald-400 font-medium"><i class="fa-solid fa-circle-check"></i>
-              Incluído</span>
+            <span class="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+              <i class="fa-solid fa-circle-check"></i> Incluído
+            </span>
           </div>
           <div class="flex justify-between items-center pt-3 border-t border-slate-200 dark:border-slate-800">
             <span class="texto-sub">Subtotal:</span>
@@ -352,14 +470,16 @@
             <span class="text-base font-semibold texto-sub">Total a pagar:</span>
             <span id="resumo-total" class="text-3xl font-black text-blue-600 dark:text-blue-400">R$ 350,00</span>
           </div>
-          <span class="text-xs texto-sub mt-1 block">Cobrado mensalmente via Mercado Pago. Cancele quando quiser.</span>
+          <span id="resumo-nota" class="text-xs texto-sub mt-1.5 block">
+            Cobrado mensalmente via Stripe de forma segura. Cancele quando quiser.
+          </span>
         </div>
 
         <div>
           <button id="btn-comprar" onclick="comprar()"
             class="w-full py-4 px-6 rounded-xl btn-checkout text-white font-bold text-base shadow-lg shadow-blue-600/30 flex items-center justify-center gap-3">
-            <i class="fa-solid fa-lock"></i>
-            <span id="btn-texto">Assinar</span>
+            <i id="btn-icone" class="fa-solid fa-lock"></i>
+            <span id="btn-texto">Assinar com Cartão</span>
           </button>
 
           <div id="erro-msg"
@@ -383,7 +503,7 @@
 <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
 <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 
-  <script >
+  <script>
 // =============================================================================
 // AVISO DE PROPRIEDADE
 // =============================================================================
@@ -396,7 +516,6 @@
 // 1. INICIALIZAÇÃO E CONFIGURAÇÕES DE ESTADO
 // =============================================================================
 
-// Inicialização do Tema
 if (typeof setTema === 'function') {
   setTema();
 }
@@ -404,13 +523,29 @@ if (typeof setTema === 'function') {
 // Flag controlada pelo servidor: se true, bloqueia os planos em breve (Empresas)
 const LOCK_PLANS = {{ block_plans| tojson }};
 
-// Estado global do plano atualmente selecionado
-let planoAtual = {
-  nome: 'ME',
-  titulo: 'DataInsight ME',
-  preco: 300.00,
-  cardId: 'card-me'
+// Catálogo com preços mensais e anuais
+const CATALOGO = {
+  MEI: {
+    nome: 'MEI',
+    titulo: 'DataInsight MEI',
+    cardId: 'card-mei',
+    btnId: 'btn-card-mei',
+    mensal: { preco: 250.00, texto: 'R$ 250,00', periodo: '/mês', subinfo: '', economia: 0 },
+    anual: { preco: 2400.00, texto: 'R$ 2.400,00', periodo: '/ano', subinfo: 'Equivale a R$ 200,00/mês • Economize R$ 600', economia: 600.00 }
+  },
+  ME: {
+    nome: 'ME',
+    titulo: 'DataInsight ME',
+    cardId: 'card-me',
+    btnId: 'btn-card-me',
+    mensal: { preco: 350.00, texto: 'R$ 350,00', periodo: '/mês', subinfo: '', economia: 0 },
+    anual: { preco: 3360.00, texto: 'R$ 3.360,00', periodo: '/ano', subinfo: 'Equivale a R$ 280,00/mês • Economize R$ 840', economia: 840.00 }
+  }
 };
+
+let periodicidadeAtual = 'mensal';
+let metodoAtual = 'card';
+let planoAtualNome = 'ME';
 
 
 // =============================================================================
@@ -441,20 +576,15 @@ function applyPlanLocks() {
     const el = document.getElementById(id);
     if (!el) return;
 
-    // Adiciona lock visual
     el.classList.add('locked');
-
-    // Desabilita onclick removendo o atributo
     el.removeAttribute('onclick');
 
-    // Substitui o botão por um estado desabilitado de 'Em breve'
     const btn = el.querySelector('button');
     if (btn) {
       btn.className = 'w-full py-2.5 px-4 rounded-lg bg-slate-400 text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2';
       btn.innerHTML = '<span class="coming-soon-badge">Em breve</span>';
     }
 
-    // Adiciona o rótulo/overlay de 'Em breve'
     const overlay = document.createElement('div');
     overlay.className = 'coming-soon-overlay';
     overlay.innerHTML = '<div class="coming-soon-badge">Em breve</div>';
@@ -462,46 +592,168 @@ function applyPlanLocks() {
   });
 }
 
-function selecionarPlano(nome, preco, cardId, titulo) {
-  // Se o cartão está bloqueado, ignore seleção
-  const targetEl = document.getElementById(cardId);
-  if (targetEl && targetEl.classList.contains('locked')) return;
+function alternarPeriodicidade(tipo) {
+  periodicidadeAtual = tipo;
 
-  // Atualiza o objeto do estado global
-  planoAtual = {
-    nome: nome,
-    titulo: titulo || ('DataInsight ' + nome),
-    preco: preco,
-    cardId: cardId
-  };
+  const btnMensal = document.getElementById('toggle-mensal');
+  const btnAnual = document.getElementById('toggle-anual');
+  const avisoMensal = document.getElementById('aviso-mensal-cartao');
+  const dicaPix = document.getElementById('dica-pix-anual');
+  const btnCard = document.getElementById('metodo-card');
+  const btnPix = document.getElementById('metodo-pix');
+  const subPixDesc = document.getElementById('sub-pix-desc');
 
-  // Atualiza os estados visuais dos cards e botões
-  ['card-mei', 'card-me', 'card-empresas'].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
+  if (tipo === 'anual') {
+    btnAnual.classList.add('active');
+    btnMensal.classList.remove('active');
+    if (avisoMensal) avisoMensal.classList.add('hidden');
+    if (dicaPix) dicaPix.classList.add('hidden');
+    if (subPixDesc) subPixDesc.innerText = 'Liberação imediata';
+  } else {
+    btnMensal.classList.add('active');
+    btnAnual.classList.remove('active');
+    // No plano mensal, o pagamento é fixado exclusivamente em Cartão (crédito/débito)
+    metodoAtual = 'card';
+    if (avisoMensal) avisoMensal.classList.remove('hidden');
+    if (dicaPix) dicaPix.classList.remove('hidden');
+    if (subPixDesc) subPixDesc.innerText = 'Exclusivo Plano Anual';
+    if (btnCard) btnCard.classList.add('active');
+    if (btnPix) btnPix.classList.remove('active');
+  }
 
-    const btn = el.querySelector('button');
+  // Atualiza valores visuais nos cards
+  ['MEI', 'ME'].forEach(p => {
+    const info = CATALOGO[p][periodicidadeAtual];
+    const elPreco = document.getElementById(`preco-${p.toLowerCase()}`);
+    const elPeriodo = document.getElementById(`periodo-${p.toLowerCase()}`);
+    const elSubinfo = document.getElementById(`subinfo-${p.toLowerCase()}`);
 
-    if (id === cardId) {
-      el.classList.add('selected');
-      if (btn) {
-        btn.className = 'w-full py-2.5 px-4 rounded-lg bg-blue-600 text-white font-semibold text-sm transition-colors shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2';
-        btn.innerHTML = '<span>Selecionado</span> <i class="fa-solid fa-circle-check text-xs"></i>';
-      }
-    } else {
-      el.classList.remove('selected');
-      if (btn && !el.classList.contains('locked')) {
-        btn.className = 'w-full py-2.5 px-4 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 texto-titulo font-medium text-sm transition-colors flex items-center justify-center gap-2';
-        btn.innerHTML = '<span>Selecionar ' + nomeLegivel(id) + '</span>';
+    if (elPreco) elPreco.innerText = info.texto;
+    if (elPeriodo) elPeriodo.innerText = info.periodo;
+    if (elSubinfo) {
+      if (periodicidadeAtual === 'anual' && info.subinfo) {
+        elSubinfo.innerText = info.subinfo;
+        elSubinfo.classList.remove('hidden');
+      } else {
+        elSubinfo.classList.add('hidden');
       }
     }
   });
 
-  // Atualiza o resumo do pedido na interface
-  const precoFormatado = preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  document.getElementById('resumo-plano-nome').innerText = 'DataInsight ' + nome;
+  atualizarResumo();
+}
+
+function selecionarMetodo(metodo) {
+  // Se o usuário clicar em Pix estando no Mensal, ativa automaticamente o Plano Anual com desconto
+  if (periodicidadeAtual === 'mensal' && metodo === 'pix') {
+    alternarPeriodicidade('anual');
+    metodo = 'pix';
+  }
+
+  metodoAtual = metodo;
+
+  const btnCard = document.getElementById('metodo-card');
+  const btnPix = document.getElementById('metodo-pix');
+
+  if (metodo === 'pix') {
+    if (btnPix) btnPix.classList.add('active');
+    if (btnCard) btnCard.classList.remove('active');
+  } else {
+    if (btnCard) btnCard.classList.add('active');
+    if (btnPix) btnPix.classList.remove('active');
+  }
+
+  atualizarResumo();
+}
+
+function selecionarPlano(nome) {
+  if (nome === 'Empresas') return;
+
+  planoAtualNome = nome;
+
+  // Atualiza os estados visuais dos cards e botões
+  ['MEI', 'ME'].forEach(p => {
+    const cardEl = document.getElementById(CATALOGO[p].cardId);
+    const btnEl = document.getElementById(CATALOGO[p].btnId);
+
+    if (p === nome) {
+      if (cardEl) cardEl.classList.add('selected');
+      if (btnEl) {
+        btnEl.className = 'w-full py-2.5 px-4 rounded-lg bg-blue-600 text-white font-semibold text-sm transition-colors shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2';
+        btnEl.innerHTML = '<span>Selecionado</span> <i class="fa-solid fa-circle-check text-xs"></i>';
+      }
+    } else {
+      if (cardEl) cardEl.classList.remove('selected');
+      if (btnEl) {
+        btnEl.className = 'w-full py-2.5 px-4 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 texto-titulo font-medium text-sm transition-colors flex items-center justify-center gap-2';
+        btnEl.innerHTML = `<span>Selecionar ${p}</span>`;
+      }
+    }
+  });
+
+  atualizarResumo();
+}
+
+function atualizarResumo() {
+  const plano = CATALOGO[planoAtualNome] || CATALOGO['ME'];
+  const info = plano[periodicidadeAtual];
+
+  // Nome do plano
+  document.getElementById('resumo-plano-nome').innerText = plano.titulo;
+
+  // Frequência
+  const frequenciaTexto = periodicidadeAtual === 'anual' ? 'Anual (12 meses)' : 'Mensal';
+  document.getElementById('resumo-frequencia').innerText = frequenciaTexto;
+
+  // Método
+  const metodoEl = document.getElementById('resumo-metodo');
+  if (periodicidadeAtual === 'anual' && metodoAtual === 'pix') {
+    metodoEl.innerHTML = '<i class="fa-solid fa-bolt text-emerald-500"></i> <span class="text-emerald-600 dark:text-emerald-400 font-semibold">PIX À Vista (20% OFF)</span>';
+  } else {
+    metodoEl.innerHTML = '<i class="fa-solid fa-credit-card"></i> <span>Cartão (Crédito ou Débito)</span>';
+  }
+
+  // Linha de economia
+  const linhaEconomia = document.getElementById('linha-economia');
+  const resumoEconomia = document.getElementById('resumo-economia');
+  if (periodicidadeAtual === 'anual' && info.economia > 0) {
+    const economizadoStr = info.economia.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    resumoEconomia.innerText = `- ${economizadoStr} (20% OFF)`;
+    linhaEconomia.classList.remove('hidden');
+  } else {
+    linhaEconomia.classList.add('hidden');
+  }
+
+  // Subtotal e Total
+  const precoFormatado = info.preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   document.getElementById('resumo-subtotal').innerText = precoFormatado;
   document.getElementById('resumo-total').innerText = precoFormatado;
+
+  // Nota explicativa
+  const notaEl = document.getElementById('resumo-nota');
+  if (periodicidadeAtual === 'anual') {
+    if (metodoAtual === 'pix') {
+      notaEl.innerText = 'Gera QR Code Pix à vista com 20% de desconto. Liberação imediata por 12 meses.';
+    } else {
+      notaEl.innerText = 'Cobrança anual segura no cartão com 20% de economia via Stripe. Acesso garantido por 12 meses.';
+    }
+  } else {
+    notaEl.innerText = 'Cobrança mensal automática no Cartão (Crédito ou Débito) via Stripe. Cancele quando quiser.';
+  }
+
+  // Botão de compra
+  const btnTexto = document.getElementById('btn-texto');
+  const btnIcone = document.getElementById('btn-icone');
+  if (periodicidadeAtual === 'anual' && metodoAtual === 'pix') {
+    btnTexto.innerText = `Pagar ${precoFormatado} via Pix`;
+    btnIcone.className = 'fa-solid fa-bolt';
+  } else if (periodicidadeAtual === 'anual') {
+    btnTexto.innerText = 'Assinar Anual com Cartão';
+    btnIcone.className = 'fa-solid fa-lock';
+  } else {
+    btnTexto.innerText = 'Assinar Mensal com Cartão';
+    btnIcone.className = 'fa-solid fa-lock';
+  }
 }
 
 
@@ -509,9 +761,6 @@ function selecionarPlano(nome, preco, cardId, titulo) {
 // 4. INTEGRAÇÃO COM PAGAMENTO E ASSINATURA
 // =============================================================================
 
-/**
- * Envia a requisição para criar a assinatura e redireciona para o gateway de pagamento.
- */
 async function comprar() {
   const btn = document.getElementById('btn-comprar');
   const btnTexto = document.getElementById('btn-texto');
@@ -522,18 +771,22 @@ async function comprar() {
   btnTexto.innerText = 'Processando...';
 
   try {
-    // Previne a compra de um plano bloqueado
-    if (document.getElementById(planoAtual.cardId).classList.contains('locked')) {
-      throw new Error('Plano indisponível no momento.');
+    const plano = CATALOGO[planoAtualNome];
+    if (!plano) {
+      throw new Error('Plano inválido.');
     }
+
+    const info = plano[periodicidadeAtual];
 
     const resposta = await fetch('/criar-assinatura', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        plano: planoAtual.nome,
-        titulo: planoAtual.titulo,
-        preco: planoAtual.preco
+        plano: plano.nome,
+        titulo: plano.titulo,
+        periodicidade: periodicidadeAtual,
+        metodo: metodoAtual,
+        preco: info.preco
       })
     });
 
@@ -541,16 +794,14 @@ async function comprar() {
 
     if (dados.init_point) {
       window.location.href = dados.init_point;
-    } else if (dados.sandbox_init_point) {
-      window.location.href = dados.sandbox_init_point;
     } else {
-      throw new Error(dados.erro || 'Não foi possível gerar o link da assinatura.');
+      throw new Error(dados.detalhes || dados.erro || 'Não foi possível gerar o link de pagamento.');
     }
   } catch (err) {
-    erroMsg.innerText = err.message || 'Erro ao conectar ao serviço de assinaturas do Stripe.';
+    erroMsg.innerText = err.message || 'Erro ao conectar ao serviço de pagamentos.';
     erroMsg.classList.remove('hidden');
     btn.disabled = false;
-    btnTexto.innerText = 'Assinar com Cartão / Stripe';
+    atualizarResumo();
   }
 }
 
@@ -559,9 +810,9 @@ async function comprar() {
 // 5. EVENT LISTENERS / CICLO DE VIDA DO DOM
 // =============================================================================
 
-// Aplicar locks assim que o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', function () {
   applyPlanLocks();
+  atualizarResumo();
 });
   </script>
 </body>

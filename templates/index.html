@@ -5,6 +5,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>DataInsight • Transforme seus dados em resultados</title>
+  <script>
+    tailwind = { config: { darkMode: 'class' } };
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
   <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicons/apple-touch-icon.png') }}">
@@ -437,15 +440,19 @@
 
 </div>
 
-<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
-      setTema();
-      AOS.init({
-        duration: 800,
-        once: true
-      });
+      if (typeof setTema === 'function') {
+        setTema();
+      }
+      if (typeof AOS !== 'undefined' && typeof AOS.init === 'function') {
+        AOS.init({
+          duration: 800,
+          once: true
+        });
+      }
     });
   </script>
 </body>
