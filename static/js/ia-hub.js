@@ -157,7 +157,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Lazy-load conteúdo da tab
     if (tabId === 'overview') loadOverviewData();
-    if (tabId === 'agents') loadAgentsStatus();
+    if (tabId === 'agents') {
+      loadAgentsStatus();
+      setTimeout(() => {
+        if (window.Escritorio3D && window.Escritorio3D.resize) window.Escritorio3D.resize();
+      }, 80);
+    }
   }
 
   tabs.forEach(tab => {
@@ -458,6 +463,8 @@ document.addEventListener('DOMContentLoaded', () => {
       // Atualizar feeds no DOM
       this.renderCardLogs(agentId);
       this.addGlobalFeedItem(agentId, text, type);
+      // Notificar Escritório 3D
+      window.dispatchEvent(new CustomEvent('ia-agent-new-log', { detail: { agentId, text, type } }));
     },
     clearLogs(agentId) {
       localStorage.removeItem(`ia_agent_logs_${agentId}`);
@@ -708,6 +715,11 @@ document.addEventListener('DOMContentLoaded', () => {
         runBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Processando...`;
       }
 
+      // Notificar início de execução para o Escritório 3D (caminhar até o quadro)
+      window.dispatchEvent(new CustomEvent('ia-agent-cycle-start', { detail: { agentId } }));
+
+      let cycleError = false;
+      let cycleSummary = 'Varredura concluída com sucesso.';
       const prefix = isAutonomous ? '🤖 [Ciclo 24/7]' : '⚡ [Manual]';
 
       // -----------------------------------------------------------------------
@@ -807,6 +819,8 @@ Nenhuma inconsistência detectada. Dados prontos para tomadas de decisão.`;
             AgentLogger.addLog(agentId, `⚠️ Erro ao consultar API de qualidade dos dados.`, 'alert');
           }
         } catch (err) {
+          cycleError = true;
+          cycleSummary = 'Falha de conexão ao auditar dados.';
           console.error(`Erro ao executar ciclo do ${agentId}:`, err);
           AgentLogger.addLog(agentId, `❌ Falha de conexão ao auditar dados.`, 'alert');
         } finally {
@@ -823,6 +837,11 @@ Nenhuma inconsistência detectada. Dados prontos para tomadas de decisão.`;
           }
           this.countdowns[agentId] = cfg.intervaloSegundos;
           this.updateCardCountdownUI(agentId);
+
+          // Notificar retorno à mesa para o Escritório 3D
+          window.dispatchEvent(new CustomEvent('ia-agent-cycle-end', {
+            detail: { agentId, success: !cycleError, summary: cycleSummary }
+          }));
         }
         return;
       }
@@ -872,9 +891,13 @@ Informe se existem dados discrepantes, faturamentos atípicos ou anomalias opera
             showToast(`🤖 ${cfg.nome}: Varredura automática concluída!`, 'info');
           }
         } else {
+          cycleError = true;
+          cycleSummary = 'Erro na resposta da API durante a varredura.';
           AgentLogger.addLog(agentId, `⚠️ Erro na resposta da API durante a varredura.`, 'alert');
         }
       } catch (err) {
+        cycleError = true;
+        cycleSummary = 'Falha de conexão na varredura.';
         console.error(`Erro ao executar ciclo do ${agentId}:`, err);
         AgentLogger.addLog(agentId, `❌ Falha de conexão na varredura.`, 'alert');
       } finally {
@@ -893,6 +916,11 @@ Informe se existem dados discrepantes, faturamentos atípicos ou anomalias opera
 
         this.countdowns[agentId] = cfg.intervaloSegundos;
         this.updateCardCountdownUI(agentId);
+
+        // Notificar retorno à mesa para o Escritório 3D
+        window.dispatchEvent(new CustomEvent('ia-agent-cycle-end', {
+          detail: { agentId, success: !cycleError, summary: cycleSummary }
+        }));
       }
     },
 
@@ -1105,6 +1133,8 @@ Informe se existem dados discrepantes, faturamentos atípicos ou anomalias opera
           AgentRuntime.stop(agentId);
           showToast(`Agente desativado.`, 'info');
         }
+
+        window.dispatchEvent(new CustomEvent('ia-agent-toggle', { detail: { agentId, isOn } }));
 
         updateHubBannerStats();
       });
@@ -1329,4 +1359,10 @@ Informe se existem dados discrepantes, faturamentos atípicos ou anomalias opera
     AgentRuntime,
     AgentLogger
   };
+
+  // Exposição global para o Escritório 3D e modais
+  window.openAgentHistoryModal = openAgentHistoryModal;
+  window.AgentRuntime = AgentRuntime;
+  window.AgentLogger = AgentLogger;
+  window.agentesConfig = agentesConfig;
 });
