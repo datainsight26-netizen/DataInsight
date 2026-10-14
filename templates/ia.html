@@ -11,12 +11,16 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='acessibilidade/acessibilidade.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/escritorio3d.css') }}" />
     <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
-      <!-- icon -->
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicons/apple-touch-icon.png') }}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicons/favicon-32x32.png') }}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicons/favicon-16x16.png') }}">
+    <!-- icon -->
+    <link rel="apple-touch-icon" sizes="180x180"
+        href="{{ url_for('static', filename='favicons/apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32"
+        href="{{ url_for('static', filename='favicons/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16"
+        href="{{ url_for('static', filename='favicons/favicon-16x16.png') }}">
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicons/favicon.ico') }}">
     <style>
         /* ================================================================
@@ -2218,8 +2222,15 @@
         }
 
         @keyframes ia-slide-down {
-            from { opacity: 0; transform: translateY(-8px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .attachment-bar-card {
@@ -2837,13 +2848,13 @@
                             <div id="ia-daily-insight">Carregando análise automática do negócio...</div>
                         </div>
 
-        
+
                         <!-- Alertas e Quick Actions -->
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;" class="ia-animate">
                             <!-- Alertas -->
                             <div class="cartao" style="border-radius:14px;padding:20px;">
                                 <div class="ia-section-header" style="margin-bottom:14px;">
-                                    <span class="ia-section-title"> 
+                                    <span class="ia-section-title">
                                         Alertas & Anomalias</span>
                                 </div>
                                 <div class="ia-alerts-grid" id="ia-status-alerts">
@@ -2856,7 +2867,7 @@
                             <!-- Ações Rápidas -->
                             <div class="cartao" style="border-radius:14px;padding:20px;">
                                 <div class="ia-section-header" style="margin-bottom:14px;">
-                                    <span class="ia-section-title">  Ações Rápidas</span>
+                                    <span class="ia-section-title"> Ações Rápidas</span>
                                 </div>
                                 <div style="display:flex;flex-direction:column;gap:9px;">
                                     <a href="{{ url_for('pagina_ia_financeiro') }}" class="ia-alert-item"
@@ -2917,10 +2928,11 @@
                                         <i class="fa-solid fa-brain" style="color:#3B82F6;"></i> Copiloto IA
                                     </span>
                                     <div style="display:flex;align-items:center;gap:6px;">
-                                        <button type="button" class="sidebar-toggle-btn" id="btn-fullscreen-sidebar" onclick="window.alternarTelaCheiaCopiloto(event)" title="Tela Cheia">
+                                        <button type="button" class="sidebar-toggle-btn" id="btn-fullscreen-sidebar"
+                                            onclick="window.alternarTelaCheiaCopiloto(event)" title="Tela Cheia">
                                             <i class="fa-solid fa-expand"></i>
                                         </button>
-                                      
+
                                     </div>
                                 </div>
 
@@ -2931,7 +2943,8 @@
                                 </button>
 
                                 <!-- Exportar Conversa em PDF / Documento -->
-                                <button type="button" id="btn-exportar-chat-pdf" title="Exportar conversa completa com análises e arquivos para PDF">
+                                <button type="button" id="btn-exportar-chat-pdf"
+                                    title="Exportar conversa completa com análises e arquivos para PDF">
                                     <i class="fa-solid fa-file-arrow-down" style="color: #ef4444;"></i>
                                     <span class="sidebar-hide-on-collapse">Exportar Conversa (PDF)</span>
                                 </button>
@@ -2971,7 +2984,7 @@
                                         class="sidebar-hide-on-collapse">
                                         <i class="fa-solid fa-trash"></i> Apagar Histórico
                                     </button>
-        
+
                                     <div class="sidebar-hide-on-collapse"
                                         style="padding:6px 4px 0;font-size:0.72rem;color:#334155;display:flex;align-items:center;gap:6px;">
                                         <i class="fa-brands fa-google" style="color:#4285F4;"></i>
@@ -2983,13 +2996,16 @@
 
                             <!-- ====== ÁREA DO CHAT ====== -->
                             <div class="chat-box" id="chat-box" style="position:relative;">
-                            
+
                                 <!-- Botão Flutuante de Sair da Tela Cheia (Aparece no modo fullscreen) -->
-                                <button type="button" id="btn-floating-exit-fullscreen" class="btn-floating-exit-fullscreen" onclick="window.sairTelaCheiaCopiloto(event)" title="Sair da Tela Cheia (ESC)">
+                                <button type="button" id="btn-floating-exit-fullscreen"
+                                    class="btn-floating-exit-fullscreen" onclick="window.sairTelaCheiaCopiloto(event)"
+                                    title="Sair da Tela Cheia (ESC)">
                                     <i class="fa-solid fa-compress"></i> <span>Sair da Tela Cheia</span>
                                 </button>
                                 <!-- Botão Flutuante de Exportação de Conversa em PDF -->
-                                <button type="button" id="btn-chat-header-pdf" class="btn-chat-header-pdf" title="Exportar conversa completa em PDF">
+                                <button type="button" id="btn-chat-header-pdf" class="btn-chat-header-pdf"
+                                    title="Exportar conversa completa em PDF">
                                     <i class="fa-solid fa-file-pdf"></i> <span>Exportar PDF</span>
                                 </button>
                                 <!-- Stream de mensagens -->
@@ -3003,7 +3019,7 @@
                                     </div>
                                 </div>
 
-                       
+
                                 <div class="copilot-input-wrap">
                                     <!-- Ferramentas rápidas acima do input -->
                                     <div class="copilot-quick-pills">
@@ -3036,22 +3052,27 @@
                                     <!-- Caixa pill flutuante -->
                                     <div class="copilot-pill-box" id="copilot-pill-box">
                                         <!-- Barra de Pré-visualização do Anexo -->
-                                        <div class="copilot-attachment-bar" id="copilot-attachment-bar" style="display: none;">
+                                        <div class="copilot-attachment-bar" id="copilot-attachment-bar"
+                                            style="display: none;">
                                             <div class="attachment-bar-card">
-                                                <div class="attachment-bar-thumb" id="attachment-bar-thumb" style="display: none;">
+                                                <div class="attachment-bar-thumb" id="attachment-bar-thumb"
+                                                    style="display: none;">
                                                     <img id="attachment-img-preview" src="" alt="Prévia" />
                                                 </div>
                                                 <div class="attachment-bar-icon" id="attachment-bar-icon">
                                                     <i class="fa-solid fa-file"></i>
                                                 </div>
                                                 <div class="attachment-bar-meta">
-                                                    <div class="attachment-bar-name" id="attachment-bar-name">arquivo.pdf</div>
+                                                    <div class="attachment-bar-name" id="attachment-bar-name">
+                                                        arquivo.pdf</div>
                                                     <div class="attachment-bar-details">
                                                         <span id="attachment-bar-size">0 KB</span>
-                                                        <span class="attachment-bar-badge" id="attachment-bar-type">PDF</span>
+                                                        <span class="attachment-bar-badge"
+                                                            id="attachment-bar-type">PDF</span>
                                                     </div>
                                                 </div>
-                                                <button type="button" class="attachment-bar-remove" id="attachment-bar-remove" title="Remover arquivo anexado">
+                                                <button type="button" class="attachment-bar-remove"
+                                                    id="attachment-bar-remove" title="Remover arquivo anexado">
                                                     <i class="fa-solid fa-xmark"></i>
                                                 </button>
                                             </div>
@@ -3164,7 +3185,8 @@
                                             <div class="copilot-box-right">
                                                 <!-- Alternar som do chat -->
                                                 <button class="copilot-icon-btn" id="copilot-sound-btn" type="button"
-                                                    title="Sons de mensagem: Ativados (Clique para silenciar)" aria-label="Alternar som do chat">
+                                                    title="Sons de mensagem: Ativados (Clique para silenciar)"
+                                                    aria-label="Alternar som do chat">
                                                     <i class="fa-solid fa-volume-high"></i>
                                                 </button>
                                                 <!-- Microfone -->
@@ -3291,7 +3313,7 @@
                             </div>
                         </div>
 
-                     
+
                     </div>
 
                     <!-- ================================================
@@ -3339,11 +3361,115 @@
                             </div>
                         </div>
 
-                        <!-- Grid de Agentes -->
-                        <div class="ia-agents-grid ia-animate" id="ia-agents-grid">
-                            <div style="padding:40px;text-align:center;color:var(--suave);grid-column:1/-1;">
-                                <i class="fa-solid fa-spinner fa-spin" style="font-size:1.5rem;margin-bottom:12px;"></i>
-                                <p>Inicializando agentes...</p>
+                        <!-- SALA DE ESCRITÓRIO 3D ISOMÉTRICA (THREE.JS) -->
+                        <div class="e3d-wrapper ia-animate" id="escritorio3d-wrapper">
+                            <!-- Top Overlay: Status e Câmera -->
+                            <div class="e3d-top-bar">
+
+                                <div class="e3d-camera-controls">
+                                    <button class="e3d-btn-cam" id="e3d-btn-focus-board"
+                                        title="Focar no telão de dados">
+                                        <i class="fa-solid fa-tv"></i> Telão
+                                    </button>
+                                    <button class="e3d-btn-cam" id="e3d-btn-reset-cam" title="Resetar visão isométrica">
+                                        <i class="fa-solid fa-rotate"></i> Resetar Visão
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Viewport do Canvas Three.js -->
+                            <div class="e3d-viewport-container" id="e3d-viewport">
+                                <div class="e3d-hover-tooltip" id="e3d-hover-tooltip"></div>
+                                <div class="e3d-hint-badge">
+                                    <i class="fa-solid fa-arrows-up-down-left-right"></i> Arraste para girar · Roda para
+                                    zoom · Clique no agente para histórico
+                                </div>
+                            </div>
+
+                            <!-- Painel Compacto de Controle dos Agentes (Dock) -->
+                            <div class="e3d-controls-dock">
+                                <div class="e3d-dock-header">
+                                    <div class="e3d-dock-title">
+                                        <span>Painel Operacional do Agente</span>
+                                    </div>
+                                    <div class="e3d-dock-tabs" id="e3d-dock-tabs">
+                                        <!-- Gerado dinamicamente via JS -->
+                                    </div>
+                                </div>
+
+                                <div class="e3d-agent-dock-panel">
+                                    <!-- Coluna Esquerda: Info, Status, Próxima Varredura e Ações -->
+                                    <div class="e3d-agent-summary">
+                                        <div class="e3d-agent-top-info">
+                                            <div class="e3d-agent-title-box">
+                                                <div class="e3d-agent-icon-badge" id="e3d-dock-agent-icon">
+                                                    <i class="fa-solid fa-robot"></i>
+                                                </div>
+                                                <div>
+                                                    <h4 class="e3d-agent-name-txt" id="e3d-dock-agent-name">Agente</h4>
+                                                    <span class="e3d-agent-role-txt"
+                                                        id="e3d-dock-agent-role">Função</span>
+                                                </div>
+                                            </div>
+                                            <label class="ia-toggle" title="Ligar/Desligar agente">
+                                                <input type="checkbox" class="ia-toggle-input"
+                                                    id="e3d-dock-toggle-input" checked>
+                                                <span class="ia-toggle-slider"></span>
+                                            </label>
+                                        </div>
+
+                                        <p class="e3d-agent-desc-txt" id="e3d-dock-agent-desc">Status da operação em
+                                            tempo real.</p>
+
+                                        <!-- Próxima Varredura -->
+                                        <div class="e3d-scan-bar-box">
+                                            <div class="e3d-scan-bar-header">
+                                                <span><i class="fa-solid fa-clock-rotate-left"></i> Próxima
+                                                    Varredura</span>
+                                                <span id="e3d-dock-countdown">Iniciando...</span>
+                                            </div>
+                                            <div class="e3d-scan-progress-track">
+                                                <div class="e3d-scan-progress-fill" id="e3d-dock-progress-fill"></div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Botões de Ação -->
+                                        <div class="e3d-agent-actions-row">
+                                            <button class="e3d-btn-action run" id="e3d-dock-run-btn">
+                                                <i class="fa-solid fa-play"></i> Executar Agora
+                                            </button>
+                                            <button class="e3d-btn-action hist" id="e3d-dock-hist-btn">
+                                                <i class="fa-solid fa-clock-rotate-left"></i> Histórico
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Coluna Direita: Logs ao Vivo -->
+                                    <div class="e3d-agent-logs-container">
+                                        <div class="e3d-logs-header">
+                                            <div class="e3d-logs-title">
+                                                <span class="agent-log-live-dot"></span>
+                                                <span>Logs de Operação ao Vivo</span>
+                                            </div>
+                                            <button class="e3d-btn-clear-logs" id="e3d-dock-clear-logs"
+                                                title="Limpar logs">Limpar</button>
+                                        </div>
+                                        <div class="e3d-logs-feed" id="e3d-dock-logs-feed">
+                                            <!-- Preenchido dinamicamente -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Fallback: Grid de Cards Clássicos (preservado e ativado se WebGL não for suportado) -->
+                        <div id="ia-agents-fallback-grid">
+                            <div class="ia-agents-grid ia-animate" id="ia-agents-grid">
+                                <div style="padding:40px;text-align:center;color:var(--suave);grid-column:1/-1;">
+                                    <i class="fa-solid fa-spinner fa-spin"
+                                        style="font-size:1.5rem;margin-bottom:12px;"></i>
+                                    <p>Inicializando agentes...</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -3401,6 +3527,8 @@
     <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     <script src="{{ url_for('static', filename='js/ia_analise_modal.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/three.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/escritorio3d.js') }}"></script>
     <script src="{{ url_for('static', filename='js/ia.js') }}?v=3.9"></script>
     <script src="{{ url_for('static', filename='js/ia-hub.js') }}?v=3.7"></script>
     <script>
@@ -3412,7 +3540,7 @@
         let _copilotOriginalParent = null;
         let _copilotOriginalNextSibling = null;
 
-        window.entrarTelaCheiaCopiloto = function(e) {
+        window.entrarTelaCheiaCopiloto = function (e) {
             if (e && e.stopPropagation) e.stopPropagation();
             const container = document.getElementById('copilot-main-container') || document.querySelector('.page-ia-container');
             if (!container || container.classList.contains('fullscreen')) return;
@@ -3457,7 +3585,7 @@
             }
         };
 
-        window.sairTelaCheiaCopiloto = function(e) {
+        window.sairTelaCheiaCopiloto = function (e) {
             if (e && e.stopPropagation) e.stopPropagation();
             const container = document.getElementById('copilot-main-container') || document.querySelector('.page-ia-container');
             if (!container || !container.classList.contains('fullscreen')) return;
@@ -3487,7 +3615,7 @@
             if (messages) messages.style.cssText = '';
         };
 
-        window.alternarTelaCheiaCopiloto = function(e) {
+        window.alternarTelaCheiaCopiloto = function (e) {
             if (e && e.stopPropagation) e.stopPropagation();
             const container = document.getElementById('copilot-main-container') || document.querySelector('.page-ia-container');
             if (!container) return;
@@ -3499,7 +3627,7 @@
         };
 
         // Escuta global da tecla ESC
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape' || e.key === 'Esc') {
                 const container = document.getElementById('copilot-main-container') || document.querySelector('.page-ia-container');
                 if (container && container.classList.contains('fullscreen')) {
@@ -3509,11 +3637,11 @@
         });
 
         // Toggle da Sidebar do Copilot
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const toggleBtn = document.getElementById('sidebar-toggle-btn');
             const sidebar = document.getElementById('chat-sidebar');
             if (toggleBtn && sidebar) {
-                toggleBtn.addEventListener('click', function(e) {
+                toggleBtn.addEventListener('click', function (e) {
                     e.stopPropagation();
                     sidebar.classList.toggle('collapsed');
                 });
