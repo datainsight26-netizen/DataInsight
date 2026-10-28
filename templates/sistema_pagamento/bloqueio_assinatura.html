@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DataInsight • Acesso Suspenso</title>
+  <title>EnterSight • Acesso Suspenso</title>
 
   <!-- Fontes & Estilos Base -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -19,7 +19,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicons/favicon-16x16.png') }}">
   <link rel="shortcut icon" href="{{ url_for('static', filename='favicons/favicon.ico') }}">
 
-  <!-- CSS DataInsight -->
+  <!-- CSS EnterSight -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/design-system.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/premium.css') }}" />
@@ -72,9 +72,20 @@
   <header class="pag-header sticky top-0 z-50 transition-colors">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-16">
-        <a class="sidebar__logo flex items-center gap-2" href="{{ url_for('pagina_landing') }}" aria-label="DataInsight - Início">
-          <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo DataInsight" style="max-width: 65px; height: auto;">
-          <span class="sidebar__logo-text text-xl font-semibold text-gray-900">DataInsight</span>
+        <a class="sidebar__logo flex items-center gap-2" href="{{ url_for('pagina_landing') }}" aria-label="EnterSight - Início">
+        <!-- Logo Hexagonal (EnterSight) -->
+            <svg viewBox="374 42 212 241" width="38" height="42" aria-label="Logo EnterSight" role="img" style="display: inline-block; flex-shrink: 0; vertical-align: middle;">
+              <g>
+                <path d="M480,52 L577,106 L577,220 L480,273 L384,220 L384,106Z" fill="#3b82f6" stroke="#3b82f6" stroke-width="10" stroke-linejoin="round"/>
+                <path d="M426,161 L460,132 L486,150 L520,115" fill="none" stroke="#ffffff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M529,112 V201 H443" fill="none" stroke="#ffffff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M463,181 L443,202 L463,222" fill="none" stroke="#ffffff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="529" cy="107" r="13" fill="#ffffff"/>
+              </g>
+            </svg>
+            <span class="sidebar__logo-text" style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 1.5rem; color:var(--texto); letter-spacing: -0.02em; white-space: nowrap; display: inline-flex;">
+              <span style="font-weight: 700;">Enter</span><span style="font-weight: 300;">Sight</span>
+            </span>
         </a>
 
         <div class="flex items-center gap-3">
@@ -109,7 +120,7 @@
         {% if motivo == 'inadimplente' %}
           Não conseguimos processar o pagamento da sua assinatura mensal no Stripe. Atualize sua forma de pagamento para restabelecer o acesso imediatamente.
         {% elif motivo == 'cancelada' %}
-          Sua assinatura do DataInsight foi cancelada. Escolha um plano para reativar seu painel e relatórios.
+          Sua assinatura do EnterSight foi cancelada. Escolha um plano para reativar seu painel e relatórios.
         {% else %}
           Para utilizar as funcionalidades de inteligência e dados da plataforma, é necessário possuir um plano ativo.
         {% endif %}

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DataInsight • Pagamento Aprovado</title>
+  <title>EnterSight • Pagamento Aprovado</title>
 
   <!-- Fontes & Estilos Base -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -18,7 +18,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicons/favicon-16x16.png') }}">
   <link rel="shortcut icon" href="{{ url_for('static', filename='favicons/favicon.ico') }}">
 
-  <!-- CSS DataInsight -->
+  <!-- CSS EnterSight -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/design-system.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/premium.css') }}" />
@@ -80,9 +80,20 @@
   <header class="pag-header sticky top-0 z-50 transition-colors">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-16">
-        <a class="sidebar__logo flex items-center gap-2" href="{{ url_for('pagina_landing') }}" aria-label="DataInsight - Início">
-          <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo DataInsight" style="max-width: 65px; height: auto;">
-          <span class="sidebar__logo-text text-xl font-semibold text-gray-900">DataInsight</span>
+        <a class="sidebar__logo flex items-center gap-2" href="{{ url_for('pagina_landing') }}" aria-label="EnterSight - Início">
+          <!-- Logo Hexagonal (EnterSight) -->
+            <svg viewBox="374 42 212 241" width="38" height="42" aria-label="Logo EnterSight" role="img" style="display: inline-block; flex-shrink: 0; vertical-align: middle;">
+              <g>
+                <path d="M480,52 L577,106 L577,220 L480,273 L384,220 L384,106Z" fill="#3b82f6" stroke="#3b82f6" stroke-width="10" stroke-linejoin="round"/>
+                <path d="M426,161 L460,132 L486,150 L520,115" fill="none" stroke="#ffffff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M529,112 V201 H443" fill="none" stroke="#ffffff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M463,181 L443,202 L463,222" fill="none" stroke="#ffffff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="529" cy="107" r="13" fill="#ffffff"/>
+              </g>
+            </svg>
+            <span class="sidebar__logo-text" style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 1.5rem; color: var(--texto); letter-spacing: -0.02em; white-space: nowrap; display: inline-flex;">
+              <span style="font-weight: 700;">Enter</span><span style="font-weight: 300;">Sight</span>
+            </span>
         </a>
 
         <div class="flex items-center gap-3">
@@ -113,7 +124,7 @@
         Pagamento Aprovado!
       </h1>
       <p class="texto-sub text-sm mb-6">
-        Parabéns! Sua assinatura do <strong class="texto-titulo">DataInsight</strong> foi ativada com sucesso.
+        Parabéns! Sua assinatura do <strong class="texto-titulo">EnterSight</strong> foi ativada com sucesso.
       </p>
 
       <!-- Recibo / Detalhes da Compra -->
@@ -133,7 +144,7 @@
 
         <div class="flex justify-between items-center">
           <span class="texto-sub">Plano Ativado:</span>
-          <span class="texto-titulo font-bold text-blue-600 dark:text-blue-400">DataInsight {{ plano|default('MEI') }}</span>
+          <span class="texto-titulo font-bold text-blue-600 dark:text-blue-400">EnterSight {{ plano|default('MEI') }}</span>
         </div>
 
         <div class="flex justify-between items-center">
@@ -154,7 +165,7 @@
 
         <div class="flex justify-between items-center">
           <span class="texto-sub">Plataforma:</span>
-          <span class="texto-titulo font-medium">DataInsight BI & IA</span>
+          <span class="texto-titulo font-medium">EnterSight BI & IA</span>
         </div>
 
         <div class="flex justify-between items-center">
@@ -166,7 +177,7 @@
       <!-- Ações -->
       <div class="space-y-3">
         <a style="color:white" href="{{ url_for('ativar_acesso', plano=plano) }}" class="w-full py-3.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2">
-          <i class="fa-solid fa-arrow-right"></i> Acessar Painel DataInsight
+          <i class="fa-solid fa-arrow-right"></i> Acessar Painel EnterSight
         </a>
 
         <a href="/" class="w-full py-2.5 px-4 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 texto-titulo font-medium text-xs transition-all inline-flex items-center justify-center gap-2">

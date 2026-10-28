@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DataInsight • Assinatura de Planos</title>
+  <title>EnterSight • Assinatura de Planos</title>
 
   <!-- Fontes & Estilos Base -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -20,7 +20,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicons/favicon-16x16.png') }}">
   <link rel="shortcut icon" href="{{ url_for('static', filename='favicons/favicon.ico') }}">
 
-  <!-- CSS DataInsight -->
+  <!-- CSS EnterSight -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/design-system.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/premium.css') }}" />
@@ -192,13 +192,24 @@
 
 <body>
 
-  <!-- Header DataInsight -->
+  <!-- Header EnterSight -->
   <header class="pag-header sticky top-0 z-50 transition-colors">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-16">
-        <a class="sidebar__logo flex items-center gap-2" href="{{ url_for('pagina_landing') }}" aria-label="DataInsight - Início">
-          <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo DataInsight" style="max-width: 65px; height: auto;">
-          <span class="sidebar__logo-text text-xl font-semibold text-gray-900">DataInsight</span>
+        <a class="sidebar__logo flex items-center gap-2" href="{{ url_for('pagina_landing') }}" aria-label="EnterSight - Início">
+             <!-- Logo Hexagonal (EnterSight) -->
+            <svg viewBox="374 42 212 241" width="38" height="42" aria-label="Logo EnterSight" role="img" style="display: inline-block; flex-shrink: 0; vertical-align: middle;">
+              <g>
+                <path d="M480,52 L577,106 L577,220 L480,273 L384,220 L384,106Z" fill="#3b82f6" stroke="#3b82f6" stroke-width="10" stroke-linejoin="round"/>
+                <path d="M426,161 L460,132 L486,150 L520,115" fill="none" stroke="#ffffff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M529,112 V201 H443" fill="none" stroke="#ffffff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M463,181 L443,202 L463,222" fill="none" stroke="#ffffff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="529" cy="107" r="13" fill="#ffffff"/>
+              </g>
+            </svg>
+            <span class="sidebar__logo-text" style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 1.9rem; color: var(--texto); letter-spacing: -0.02em; white-space: nowrap; display: inline-flex;">
+              <span style="font-weight: 700;">Enter</span><span style="font-weight: 300;">Sight</span>
+            </span>
         </a>
 
         <div class="flex items-center gap-3 text-xs sm:text-sm">
@@ -260,7 +271,7 @@
         class="plan-card card-plano p-6 flex flex-col justify-between cursor-pointer">
         <div>
           <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-bold texto-titulo">DataInsight MEI</h3>
+            <h3 class="text-lg font-bold texto-titulo">EnterSight MEI</h3>
             <span class="p-2 rounded-lg icone-caixa text-sm"><i class="fa-solid fa-user"></i></span>
           </div>
           <p class="texto-sub text-xs mb-5">Ideal para Microempreendedores Individuais (MEI).</p>
@@ -284,7 +295,7 @@
               <i class="fa-solid fa-check text-blue-500 text-xs"></i> Exportação de Relatórios PDF
             </li>
             <li class="flex items-center gap-2.5">
-              <i class="fa-solid fa-check text-blue-500 text-xs"></i> IA Assistent DataInsight
+              <i class="fa-solid fa-check text-blue-500 text-xs"></i> IA Assistent EnterSight
             </li>
             <li class="flex items-center gap-2.5">
               <i class="fa-solid fa-check text-blue-500 text-xs"></i> Análises Financeiras Avançadas
@@ -312,7 +323,7 @@
         <div>
           <div class="flex justify-between items-center mb-4 pt-2">
             <h3 class="text-lg font-bold texto-titulo flex items-center gap-2">
-              DataInsight ME
+              EnterSight ME
             </h3>
             <span class="p-2 rounded-lg bg-blue-500/20 text-blue-500 text-sm"><i
                 class="fa-solid fa-wand-magic-sparkles"></i></span>
@@ -338,7 +349,7 @@
               <i class="fa-solid fa-check text-blue-500 text-xs"></i> Exportação de Relatórios PDF
             </li>
             <li class="flex items-center gap-2.5">
-              <i class="fa-solid fa-check text-blue-500 text-xs"></i> IA Assistent DataInsight
+              <i class="fa-solid fa-check text-blue-500 text-xs"></i> IA Assistent EnterSight
             </li>
             <li class="flex items-center gap-2.5">
               <i class="fa-solid fa-check text-blue-500 text-xs"></i> Análises Financeiras Avançadas
@@ -365,7 +376,7 @@
         class="plan-card card-plano p-6 flex flex-col justify-between">
         <div>
           <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-bold texto-titulo">DataInsight Empresas</h3>
+            <h3 class="text-lg font-bold texto-titulo">EnterSight Empresas</h3>
             <span class="p-2 rounded-lg icone-caixa text-sm"><i class="fa-solid fa-building"></i></span>
           </div>
           <p class="texto-sub text-xs mb-6">Para médias e grandes Empresas com múltiplos usuários e demanda de API.</p>
@@ -437,7 +448,7 @@
         <div class="space-y-3.5 mb-6 text-sm">
           <div class="flex justify-between items-center">
             <span class="texto-sub">Plano Selecionado:</span>
-            <span id="resumo-plano-nome" class="font-semibold texto-titulo">DataInsight ME</span>
+            <span id="resumo-plano-nome" class="font-semibold texto-titulo">EnterSight ME</span>
           </div>
           <div class="flex justify-between items-center">
             <span class="texto-sub">Periodicidade:</span>
@@ -454,7 +465,7 @@
             <span id="resumo-economia">- R$ 840,00 (20% OFF)</span>
           </div>
           <div class="flex justify-between items-center">
-            <span class="texto-sub">Acesso IA DataInsight:</span>
+            <span class="texto-sub">Acesso IA EnterSight:</span>
             <span class="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
               <i class="fa-solid fa-circle-check"></i> Incluído
             </span>
@@ -507,7 +518,7 @@
 // =============================================================================
 // AVISO DE PROPRIEDADE
 // =============================================================================
-// Este código pertence à plataforma @DataInsight.
+// Este código pertence à plataforma @EnterSight.
 // Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 // em seções numeradas, exatamente como neste arquivo.
 // =============================================================================
@@ -527,7 +538,7 @@ const LOCK_PLANS = {{ block_plans| tojson }};
 const CATALOGO = {
   MEI: {
     nome: 'MEI',
-    titulo: 'DataInsight MEI',
+    titulo: 'EnterSight MEI',
     cardId: 'card-mei',
     btnId: 'btn-card-mei',
     mensal: { preco: 250.00, texto: 'R$ 250,00', periodo: '/mês', subinfo: '', economia: 0 },
@@ -535,7 +546,7 @@ const CATALOGO = {
   },
   ME: {
     nome: 'ME',
-    titulo: 'DataInsight ME',
+    titulo: 'EnterSight ME',
     cardId: 'card-me',
     btnId: 'btn-card-me',
     mensal: { preco: 350.00, texto: 'R$ 350,00', periodo: '/mês', subinfo: '', economia: 0 },

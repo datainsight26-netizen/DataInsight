@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>DataInsight • Recuperar Senha</title>
+    <title>EnterSight • Recuperar Senha</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='acessibilidade/acessibilidade.css') }}" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
@@ -16,9 +16,20 @@
   <link rel="shortcut icon" href="{{ url_for('static', filename='favicons/favicon.ico') }}">
 <body>
     <header class="barra-topo" role="banner">
-             <a class="sidebar__logo" href="{{ url_for('pagina_landing') }}" aria-label="DataInsight - Início">
-      <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo DataInsight" style="max-width: 65px; height: auto;">
-          <span class="sidebar__logo-text">DataInsight</span>
+             <a class="sidebar__logo" href="{{ url_for('pagina_landing') }}" aria-label="EnterSight - Início">
+        <!-- Logo Hexagonal (EnterSight) -->
+            <svg viewBox="374 42 212 241" width="38" height="42" aria-label="Logo EnterSight" role="img" style="display: inline-block; flex-shrink: 0; vertical-align: middle;">
+              <g>
+                <path d="M480,52 L577,106 L577,220 L480,273 L384,220 L384,106Z" fill="#3b82f6" stroke="#3b82f6" stroke-width="10" stroke-linejoin="round"/>
+                <path d="M426,161 L460,132 L486,150 L520,115" fill="none" stroke="#ffffff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M529,112 V201 H443" fill="none" stroke="#ffffff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M463,181 L443,202 L463,222" fill="none" stroke="#ffffff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="529" cy="107" r="13" fill="#ffffff"/>
+              </g>
+            </svg>
+            <span class="sidebar__logo-text" style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 1.9rem; color: var(--texto); letter-spacing: -0.02em; white-space: nowrap; display: inline-flex;">
+              <span style="font-weight: 700;">Enter</span><span style="font-weight: 300;">Sight</span>
+            </span>
         </a>
       
 

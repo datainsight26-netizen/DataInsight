@@ -1,15 +1,31 @@
-<div class="sidebar__header">
-  <a class="sidebar__logo" href="{{ url_for('pagina_landing') }}" aria-label="DataInsight - Início">
-<img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo DataInsight" style="max-width: 33px; height: auto;">
-    <span class="sidebar__logo-text">DataInsight</span>
-    {% if is_mei %}
-      <span style="display:inline-block; margin-left:6px; padding:2px 6px; border-radius:6px; font-size:10px; font-weight:800; background:#10b981; color:#ffffff; letter-spacing:0.04em;">MEI</span>
-    {% else %}
-      <span style="display:inline-block; margin-left:6px; padding:2px 6px; border-radius:6px; font-size:10px; font-weight:800; background:#3b82f6; color:#ffffff; letter-spacing:0.04em;">ME</span>
-    {% endif %}
-  </a>
-</div>
+<div class="sidebar__header" style="display: flex; justify-content: center; align-items: center; width: 100%; padding: 16px 0; margin-left: -12px; margin-right: -12px; width: calc(100% + 24px); border-bottom: 1px solid rgba(255, 255, 255, 0.08); box-sizing: border-box;">
+  <a class="sidebar__logo" href="{{ url_for('pagina_landing') }}" aria-label="EnterSight - Início" style="display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none;">
+    
+    <!-- Logo Hexagonal (EnterSight) -->
+    <svg viewBox="374 42 212 241" width="38" height="42" aria-label="Logo EnterSight" role="img" style="display: inline-block; flex-shrink: 0; vertical-align: middle;">
+      <g>
+        <path d="M480,52 L577,106 L577,220 L480,273 L384,220 L384,106Z" fill="#3b82f6" stroke="#3b82f6" stroke-width="10" stroke-linejoin="round"/>
+        <path d="M426,161 L460,132 L486,150 L520,115" fill="none" stroke="#ffffff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M529,112 V201 H443" fill="none" stroke="#ffffff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M463,181 L443,202 L463,222" fill="none" stroke="#ffffff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="529" cy="107" r="13" fill="#ffffff"/>
+      </g>
+    </svg>
+    
+    <!-- Texto e Badge -->
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span class="sidebar__logo-text" style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 1.5rem; color: var(--texto); letter-spacing: -0.02em; white-space: nowrap; display: inline-flex;">
+        <span style="font-weight: 700;">Enter</span><span style="font-weight: 300;">Sight</span>
+      </span>
+      {% if is_mei %}
+        <span style="display: inline-block; padding: 3px 6px; border-radius: 6px; font-size: 11px; font-weight: 800; background: #10b981; color: #ffffff; letter-spacing: 0.04em;">MEI</span>
+      {% else %}
+        <span style="display: inline-block; padding: 3px 6px; border-radius: 6px; font-size: 11px; font-weight: 800; background: #3b82f6; color: #ffffff; letter-spacing: 0.04em;">ME</span>
+      {% endif %}
+    </div>
 
+  </a> 
+</div>
 <nav aria-label="Navegação principal">
   <span class="nav-section-label">Principal</span>
 
