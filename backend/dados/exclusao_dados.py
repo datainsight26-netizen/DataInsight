@@ -1,7 +1,7 @@
 # ==============================================================================
 # exclusao_dados.py
 # ==============================================================================
-# Este código pertence à plataforma @DataInsight.
+# Este código pertence à plataforma @EnterSight.
 # Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 # em seções numeradas, conforme o padrão abaixo.
 #
@@ -69,7 +69,7 @@ def enviar_email_confirmacao_exclusao(email, usuario_nome, token):
         # ----------------------------------------------------------------------
         corpo_txt = f"""Ola {usuario_nome},
 
-Recebemos uma solicitacao para exclusao da sua conta e de todos os dados associados na plataforma DataInsight.
+Recebemos uma solicitacao para exclusao da sua conta e de todos os dados associados na plataforma EnterSight.
 
 Para confirmar esta operacao, clique no link abaixo ou copie e cole no seu navegador:
 {url_confirmacao}
@@ -79,8 +79,8 @@ Importante: Esta solicitacao e permanente e excluira historico, relatorios e dad
 Se voce nao solicitou a exclusao, nenhuma acao e necessaria. Sua conta continuara ativa e segura.
 
 Atenciosamente,
-Equipe DataInsight
-https://datainsight.com.br
+Equipe EnterSight
+https://entersight.com.br
 """
 
         # ----------------------------------------------------------------------
@@ -91,7 +91,7 @@ https://datainsight.com.br
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Confirmacao de Exclusao de Dados - DataInsight</title>
+  <title>Confirmacao de Exclusao de Dados - EnterSight</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f4f6f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f4f6f9; padding: 30px 15px;">
@@ -100,14 +100,14 @@ https://datainsight.com.br
         <table role="presentation" width="100%" style="max-width: 560px; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); border: 1px solid #e5e7eb; overflow: hidden;">
           <tr>
             <td style="padding: 28px 36px; background-color: #1e3a8a; text-align: center;">
-              <h1 style="margin: 0; font-size: 24px; color: #ffffff; font-weight: 700;">DataInsight</h1>
+              <h1 style="margin: 0; font-size: 24px; color: #ffffff; font-weight: 700;">EnterSight</h1>
             </td>
           </tr>
           <tr>
             <td style="padding: 36px 36px 24px;">
               <h2 style="margin: 0 0 16px; font-size: 20px; color: #111827; font-weight: 600;">Confirmação de Exclusão de Conta</h2>
               <p style="margin: 0 0 16px; font-size: 15px; color: #4b5563; line-height: 1.6;">
-                Olá, <strong>{usuario_nome}</strong>. Recebemos seu pedido para excluir seus dados e encerrar sua conta no DataInsight.
+                Olá, <strong>{usuario_nome}</strong>. Recebemos seu pedido para excluir seus dados e encerrar sua conta no EnterSight.
               </p>
               <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; margin: 20px 0;">
                 <p style="margin: 0; font-size: 14px; color: #991b1b; line-height: 1.5;">
@@ -135,7 +135,7 @@ https://datainsight.com.br
           </tr>
           <tr>
             <td style="padding: 20px 36px; border-top: 1px solid #f3f4f6; text-align: center; background-color: #fafafa;">
-              <p style="margin: 0; font-size: 12px; color: #9ca3af;">DataInsight © 2026 - Central de Privacidade e Dados</p>
+              <p style="margin: 0; font-size: 12px; color: #9ca3af;">EnterSight © 2026 - Central de Privacidade e Dados</p>
             </td>
           </tr>
         </table>
@@ -149,7 +149,7 @@ https://datainsight.com.br
         # 2.3 Envio
         # ----------------------------------------------------------------------
         msg = criar_mensagem(
-            subject="Confirmação de solicitação - DataInsight",
+            subject="Confirmação de solicitação - EnterSight",
             recipients=[email],
             body=corpo_txt,
             html=corpo_html,

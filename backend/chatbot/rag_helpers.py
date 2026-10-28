@@ -1,7 +1,7 @@
 # ==============================================================================
 # rag_helpers.py
 # ==============================================================================
-# Este código pertence à plataforma @DataInsight.
+# Este código pertence à plataforma @EnterSight.
 # Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 # em seções numeradas, conforme o padrão abaixo.
 #
@@ -132,7 +132,7 @@ def _carregar_documento_dados(
                 "planilhas_envolvidas": contexto.get("planilhas_envolvidas", []),
             }
     except Exception as e:
-        print(f"[DataInsight] Erro ao carregar dados do usuário: {e}", flush=True)
+        print(f"[EnterSight] Erro ao carregar dados do usuário: {e}", flush=True)
     return dados_colecao.find_one(
         {"usuario_id": usuario_id},
         sort=[("atualizado_em", -1), ("criado_em", -1)],
@@ -823,7 +823,7 @@ def montar_contexto_rag(
     chunks = construir_chunks_rag(usuario_id, pergunta, tabela_id=tabela_id)
     relevantes = ranquear_chunks_rag(chunks, pergunta, top_k=min(top_k, 4))
     fontes = [c["id"] for c in relevantes]
-    print(f"[DataInsight IA] usuario={usuario_id} fontes={fontes}")
+    print(f"[EnterSight IA] usuario={usuario_id} fontes={fontes}")
 
     def _truncate(text: Optional[str], max_chars: int = 1100) -> str:
         if not text:
@@ -864,7 +864,7 @@ def montar_prompt_com_rag(
         historico_bloco = f"\nHistórico recente da conversa:\n{historico_chat}\n"
 
     return (
-        "Você é o assistente de inteligência financeira da plataforma DataInsight.\n"
+        "Você é o assistente de inteligência financeira da plataforma EnterSight.\n"
         "Seu papel é analisar os dados financeiros do usuário e responder de forma clara, profissional e em português.\n\n"
 
         "REGRAS ABSOLUTAS — siga sempre:\n"

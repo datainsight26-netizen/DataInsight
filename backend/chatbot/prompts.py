@@ -1,7 +1,7 @@
 # ==============================================================================
 # prompts.py
 # ==============================================================================
-# Este código pertence à plataforma @DataInsight.
+# Este código pertence à plataforma @EnterSight.
 # Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 # em seções numeradas, conforme o padrão abaixo.
 #
@@ -10,7 +10,7 @@
 # portanto os cabeçalhos foram adaptados para "#", preservando a mesma função
 # de demarcação visual e numeração sequencial.
 #
-# Módulo de prompts isolados para IA (Gemini / Orquestrador) — DataInsight.
+# Módulo de prompts isolados para IA (Gemini / Orquestrador) — EnterSight.
 # Centraliza todos os prompts de análise financeira, diagnósticos e planejamento.
 
 # ==============================================================================
@@ -87,7 +87,7 @@ def gerar_prompt_planejamento(scenario, ia_data):
     # --------------------------------------------------------------------------
     # 3.4 Montagem do prompt
     # --------------------------------------------------------------------------
-    prompt = f"""Você é um analista financeiro sênior da equipe DataInsight.
+    prompt = f"""Você é um analista financeiro sênior da equipe EnterSight.
 Analise os dados reais do Planejamento Financeiro do cliente (Cenário: {scenario}):
 
 RESUMO ANUAL:
@@ -150,7 +150,7 @@ def gerar_prompt_analise_pagina(pagina, contexto, periodo, origem, is_usuario_me
         sld_atual = contexto.get("saldo_atual", "R$ 0,00")
         das_pago = contexto.get("das_pago", "R$ 0,00")
 
-        prompt = f"""Você é o Mentor Financeiro e Consultor Especialista em MEI da plataforma DataInsight.
+        prompt = f"""Você é o Mentor Financeiro e Consultor Especialista em MEI da plataforma EnterSight.
 Analise a situação de caixa e o enquadramento fiscal do microempreendedor individual:
 - Período Analisado: {periodo}
 - Faturamento Acumulado no Ano: {fat_ano}
@@ -183,7 +183,7 @@ DIRETRIZES DA ANÁLISE PARA O MEI:
         nome_painel = "Centro de Inteligência IA" if pagina == "ia" else "Visão Geral (Home)"
 
         if is_usuario_mei:
-            prompt = f"""Você é o Mentor Financeiro Especialista em MEI da plataforma DataInsight.
+            prompt = f"""Você é o Mentor Financeiro Especialista em MEI da plataforma EnterSight.
 Analise a saúde do microempreendedor individual no painel {nome_painel}:
 - Período Selecionado: {periodo}
 - Entradas / Faturamento: {fat} ({fat_pct})
@@ -197,7 +197,7 @@ DIRETRIZES PARA O MEI:
 3. Lembre da vigilância permanente do teto anual do MEI de R$ 81.000,00 e de nunca misturar despesas pessoais com o caixa da empresa.
 """
         else:
-            prompt = f"""Você é o consultor de BI executivo, CFO virtual e estrategista da plataforma DataInsight.
+            prompt = f"""Você é o consultor de BI executivo, CFO virtual e estrategista da plataforma EnterSight.
 Analise a performance financeira e estratégica consolidada no painel {nome_painel}:
 - Fonte de Dados / Tabela Analisada: {origem}
 - Período Selecionado: {periodo}
@@ -218,7 +218,7 @@ Analise a performance financeira e estratégica consolidada no painel {nome_pain
         colunas = contexto.get("colunas", [])
         colunas_str = ", ".join(colunas) if colunas else "Schema contábil principal"
 
-        prompt = f"""Você é o auditor de governança financeira e engenharia de dados da plataforma DataInsight.
+        prompt = f"""Você é o auditor de governança financeira e engenharia de dados da plataforma EnterSight.
 Analise a volumetria e integridade da base contábil/financeira do cliente:
 - Tabela / Base Analisada: {tabela_ativa}
 - Período de Análise: {periodo}
@@ -250,7 +250,7 @@ Analise a volumetria e integridade da base contábil/financeira do cliente:
             pro_labore = mei_info.get("pro_labore_sugerido", luc_val)
             reserva = mei_info.get("reserva_pj_recomendada", "R$ 1.500,00")
 
-            prompt = f"""Você é o Mentor Financeiro Especialista em MEI e Gestão de Microempresas da plataforma DataInsight.
+            prompt = f"""Você é o Mentor Financeiro Especialista em MEI e Gestão de Microempresas da plataforma EnterSight.
 Analise a saúde contábil, financeira e enquadramento fiscal do microempreendedor individual:
 - Fonte / Tabela Analisada: {origem}
 - Período Selecionado: {periodo} (De {data_inicio} até {data_fim})
@@ -279,7 +279,7 @@ DIRETRIZES DA ANÁLISE PARA O MEI:
             desp_fix = contabil.get("despesas_fixas", "—")
             cust_var = contabil.get("custos_variaveis", "—")
 
-            prompt = f"""Você é o CFO virtual, auditor de controladoria e consultor contábil executivo da plataforma DataInsight.
+            prompt = f"""Você é o CFO virtual, auditor de controladoria e consultor contábil executivo da plataforma EnterSight.
 Analise a Demonstração de Resultados (DRE), Ponto de Equilíbrio e Performance Contábil da empresa (ME):
 - Fonte / Tabela Analisada: {origem}
 - Período Selecionado: {periodo} (De {data_inicio} até {data_fim})
@@ -314,7 +314,7 @@ DIRETRIZES DA ANÁLISE CONTÁBIL PARA ME:
         else:
             ind_str = "Faturamento Total, Pedidos, Ticket Médio, Margem Bruta e Gastos"
 
-        prompt = f"""Você é o CFO virtual e consultor executivo da plataforma DataInsight.
+        prompt = f"""Você é o CFO virtual e consultor executivo da plataforma EnterSight.
 Analise o painel gerencial (Dashboard / Gráficos Avançados):
 - Fonte de Dados / Tabela Analisada: {origem}
 - Período Selecionado: {periodo_sel}
@@ -334,7 +334,7 @@ Analise o painel gerencial (Dashboard / Gráficos Avançados):
         gast_fix = contexto.get("gastos_fixos", "—")
         res_anu = contexto.get("resultado_anual", "—")
 
-        prompt = f"""Você é o CFO virtual e diretor financeiro estratégico da plataforma DataInsight.
+        prompt = f"""Você é o CFO virtual e diretor financeiro estratégico da plataforma EnterSight.
 Analise a projeção e viabilidade do Planejamento Financeiro de 12 Meses:
 - Fonte de Dados / Tabela Analisada: {origem}
 - Cenário Selecionado: {cenario.upper()}
@@ -356,7 +356,7 @@ Analise a projeção e viabilidade do Planejamento Financeiro de 12 Meses:
         saldo = contexto.get("saldo", "R$ 0,00")
         maior_cat = contexto.get("maior_categoria", "Geral")
 
-        prompt = f"""Você é o especialista em tesouraria e gestão de fluxo de caixa da plataforma DataInsight.
+        prompt = f"""Você é o especialista em tesouraria e gestão de fluxo de caixa da plataforma EnterSight.
 Analise a liquidez e disponibilidade de caixa da empresa:
 - Fonte de Dados / Tabela Analisada: {origem}
 - Período Selecionado: {periodo}
@@ -370,7 +370,7 @@ Analise a liquidez e disponibilidade de caixa da empresa:
     # 4.8 Fallback genérico (páginas não mapeadas)
     # --------------------------------------------------------------------------
     else:
-        prompt = f"""Você é o analista sênior de negócios e inteligência financeira da plataforma DataInsight.
+        prompt = f"""Você é o analista sênior de negócios e inteligência financeira da plataforma EnterSight.
 Analise o desempenho corporativo da página {pagina}:
 - Fonte de Dados / Tabela Analisada: {origem}
 - Período Selecionado: {periodo}

@@ -1,7 +1,7 @@
 # ==============================================================================
 # user.py
 # ==============================================================================
-# Este código pertence à plataforma @DataInsight.
+# Este código pertence à plataforma @EnterSight.
 # Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 # em seções numeradas, exatamente como neste arquivo.
 # ==============================================================================
@@ -51,7 +51,7 @@ def enviar_email_codigo(destinatario, codigo):
         # ----------------------------------------------------------------------
         corpo_txt = f"""Ola,
 
-Recebemos uma solicitacao para redefinir a senha da sua conta DataInsight.
+Recebemos uma solicitacao para redefinir a senha da sua conta EnterSight.
 
 Seu codigo de verificacao e: {codigo}
 
@@ -60,7 +60,7 @@ Este codigo e valido por 10 minutos.
 Se voce nao realizou esta solicitacao, nenhuma acao e necessaria. Sua conta continua segura.
 
 Atenciosamente,
-Equipe DataInsight
+Equipe EnterSight
 """
 
         # ----------------------------------------------------------------------
@@ -71,7 +71,7 @@ Equipe DataInsight
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Codigo de Verificacao - DataInsight</title>
+  <title>Codigo de Verificacao - EnterSight</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f4f6f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f4f6f9; padding: 30px 15px;">
@@ -80,14 +80,14 @@ Equipe DataInsight
         <table role="presentation" width="100%" style="max-width: 540px; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); border: 1px solid #e5e7eb; overflow: hidden;">
           <tr>
             <td style="padding: 32px 36px; background-color: #1e3a8a; text-align: center;">
-              <h1 style="margin: 0; font-size: 24px; color: #ffffff; font-weight: 700; letter-spacing: -0.5px;">DataInsight</h1>
+              <h1 style="margin: 0; font-size: 24px; color: #ffffff; font-weight: 700; letter-spacing: -0.5px;">EnterSight</h1>
             </td>
           </tr>
           <tr>
             <td style="padding: 36px 36px 20px;">
               <h2 style="margin: 0 0 16px; font-size: 20px; color: #111827; font-weight: 600;">Redefinição de Senha</h2>
               <p style="margin: 0 0 20px; font-size: 15px; color: #4b5563; line-height: 1.6;">
-                Recebemos um pedido para alterar a senha da sua conta no <strong>DataInsight</strong>. Utilize o código de verificação abaixo:
+                Recebemos um pedido para alterar a senha da sua conta no <strong>EnterSight</strong>. Utilize o código de verificação abaixo:
               </p>
               <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; text-align: center; margin: 24px 0;">
                 <span style="font-size: 13px; text-transform: uppercase; color: #166534; font-weight: 600; letter-spacing: 1px; display: block; margin-bottom: 6px;">Código de Confirmação</span>
@@ -101,10 +101,10 @@ Equipe DataInsight
           </tr>
           <tr>
             <td style="padding: 20px 36px 30px; border-top: 1px solid #f3f4f6; text-align: center; background-color: #fafafa;">
-              <p style="margin: 0 0 6px; font-size: 12px; color: #9ca3af;">DataInsight - Gestão e Inteligência para Empresas</p>
+              <p style="margin: 0 0 6px; font-size: 12px; color: #9ca3af;">EnterSight - Gestão e Inteligência para Empresas</p>
     
               <p style="margin:0;font-size:11px;color:#d1d5db;">
-                &copy; 2026 DataInsight. Todos os direitos reservados.
+                &copy; 2026 EnterSight. Todos os direitos reservados.
             </p>
             </td>
           </tr>
@@ -119,7 +119,7 @@ Equipe DataInsight
         # 2.3. Envio
         # ----------------------------------------------------------------------
         msg = criar_mensagem(
-            subject=f"{codigo} é o seu código de verificação DataInsight",
+            subject=f"{codigo} é o seu código de verificação EnterSight",
             recipients=[destinatario],
             body=corpo_txt,
             html=corpo_html
@@ -459,7 +459,7 @@ def login():
                 session.permanent = False
 
             # Verificação de status da assinatura (Admins ou contas ativas são liberadas)
-            if not user.get("is_admin") and user.get("email") != "admin@datainsight.com":
+            if not user.get("is_admin") and user.get("email") != "admin@EnterSight.com":
                 status = user.get("status_assinatura", "pendente")
                 if status != "ativa":
                     return redirect(url_for("pagina_bloqueio_assinatura", motivo=status))

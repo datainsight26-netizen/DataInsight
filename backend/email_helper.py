@@ -1,7 +1,7 @@
 # ==============================================================================
 # email_helper.py
 # ==============================================================================
-# Este código pertence à plataforma @DataInsight.
+# Este código pertence à plataforma @EnterSight.
 # Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 # em seções numeradas, exatamente como neste arquivo.
 # ==============================================================================
@@ -21,12 +21,12 @@ from flask_mail import Message
 # ==============================================================================
 
 def obter_remetente():
-    """Retorna a tupla de remetente formatada ('DataInsight', 'datainsight26@gmail.com')."""
+    """Retorna a tupla de remetente formatada ('EnterSight', 'entersight26@gmail.com')."""
     email_user = (
         current_app.config.get('MAIL_USERNAME')
-        or os.getenv('EMAIL_USER', 'datainsight26@gmail.com')
+        or os.getenv('EMAIL_USER', 'entersight26@gmail.com')
     )
-    return ("DataInsight", email_user)
+    return ("EnterSight", email_user)
 
 
 # ==============================================================================
@@ -64,13 +64,13 @@ def criar_mensagem(subject, recipients, body=None, html=None, reply_to=None):
     # --------------------------------------------------------------------------
     # 3.4. Reply-To
     # --------------------------------------------------------------------------
-    msg.reply_to = reply_to if reply_to else f"DataInsight <{email_sender_str}>"
+    msg.reply_to = reply_to if reply_to else f"EnterSight <{email_sender_str}>"
 
     # --------------------------------------------------------------------------
     # 3.5. Cabeçalhos anti-spam e de entregabilidade transacional
     # --------------------------------------------------------------------------
     msg.extra_headers = {
-        "X-Mailer": "DataInsight Notification Service",
+        "X-Mailer": "EnterSight Notification Service",
         "Auto-Submitted": "auto-generated",
         "X-Auto-Response-Suppress": "All",
         "Precedence": "bulk"

@@ -1,7 +1,7 @@
 # ==============================================================================
 # contato.py
 # ==============================================================================
-# Este código pertence à plataforma @DataInsight.
+# Este código pertence à plataforma @EnterSight.
 # Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 # em seções numeradas, conforme o padrão abaixo.
 #
@@ -48,7 +48,7 @@ def validar_mensagem(mensagem):
 # ==============================================================================
 
 def enviar_email_contato(nome, email_usuario, mensagem):
-    """Envia o email de contato para o DataInsight com cabeçalhos anti-spam"""
+    """Envia o email de contato para o EnterSight com cabeçalhos anti-spam"""
     try:
         mail = current_app.mail if hasattr(current_app, "mail") else None
 
@@ -58,7 +58,7 @@ def enviar_email_contato(nome, email_usuario, mensagem):
 
         from backend.email_helper import criar_mensagem
 
-        destinatario = "datainsight26@gmail.com"
+        destinatario = "entersight@gmail.com"
 
         try:
             # ------------------------------------------------------------------
@@ -73,7 +73,7 @@ Mensagem:
 {mensagem}
 
 ---
-Esta e uma mensagem do formulario de contato da plataforma DataInsight.
+Esta e uma mensagem do formulario de contato da plataforma EnterSight.
 Para responder, utilize diretamente o endereco: {email_usuario}
 """
 
@@ -100,7 +100,7 @@ Para responder, utilize diretamente o endereco: {email_usuario}
       </div>
 
       <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0 16px;">
-      <p style="font-size: 12px; color: #64748b; margin: 0;">Esta é uma mensagem gerada pelo formulário de contato do DataInsight.</p>
+      <p style="font-size: 12px; color: #64748b; margin: 0;">Esta é uma mensagem gerada pelo formulário de contato do EnterSight.</p>
     </div>
   </div>
 </body>
@@ -110,7 +110,7 @@ Para responder, utilize diretamente o endereco: {email_usuario}
             # Montagem e envio
             # ------------------------------------------------------------------
             msg = criar_mensagem(
-                subject=f"Novo contato de {nome} - DataInsight",
+                subject=f"Novo contato de {nome} - EnterSight",
                 recipients=[destinatario],
                 body=corpo_txt,
                 html=corpo_html,

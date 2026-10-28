@@ -1,13 +1,13 @@
 """
 backend/analise/analise_estrategica.py
-DataInsight — Centro de Análise Estratégica, Saúde do Negócio, Alertas e Projeções
+EnterSight — Centro de Análise Estratégica, Saúde do Negócio, Alertas e Projeções
 Federa dados de múltiplas planilhas e calcula cenários preditivos por regressão linear.
 """
 
 # ==============================================================================
 # analise_estrategica.py
 # ==============================================================================
-# Este código pertence à plataforma @DataInsight.
+# Este código pertence à plataforma @EnterSight.
 # Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 # em seções numeradas, conforme este arquivo.
 # ==============================================================================

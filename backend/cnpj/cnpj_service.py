@@ -1,7 +1,7 @@
 # ==============================================================================
 # cnpj_service.py
 # ==============================================================================
-# Este código pertence à plataforma @DataInsight.
+# Este código pertence à plataforma @EnterSight.
 # Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 # em seções numeradas, conforme o padrão abaixo.
 #
@@ -220,7 +220,7 @@ def consultar_cnpj_externo(cnpj: str) -> dict:
         req = urllib.request.Request(
             url_brasilapi,
             headers={
-                "User-Agent": "DataInsight/2.0 (FinanceBI-Platform)",
+                "User-Agent": "EnterSight/2.0 (FinanceBI-Platform)",
                 "Accept": "application/json",
             },
         )

@@ -1,7 +1,7 @@
 # ==============================================================================
 # ia_routes.py
 # ==============================================================================
-# Este código pertence à plataforma @DataInsight.
+# Este código pertence à plataforma @EnterSight.
 # Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 # em seções numeradas, exatamente como neste arquivo.
 # ==============================================================================
@@ -182,7 +182,7 @@ def api_exportar_documento():
                 metadados = compilado["metadados"]
 
         if not conteudo_html or not str(conteudo_html).strip():
-            conteudo_html = "<p>Relatório de Análise DataInsight Copiloto IA</p>"
+            conteudo_html = "<p>Relatório de Análise EnterSight Copiloto IA</p>"
 
         from backend.chatbot.document_generator import (
             gerar_documento_docx,
@@ -190,7 +190,7 @@ def api_exportar_documento():
             gerar_documento_pdf,
         )
 
-        nome_base = re.sub(r'[\\/*?:"<>| ]', '_', titulo)[:45].strip('_') or "Relatorio_DataInsight"
+        nome_base = re.sub(r'[\\/*?:"<>| ]', '_', titulo)[:45].strip('_') or "Relatorio_EnterSight"
 
         if tipo in ["docx", "word", "doc"]:
             buf = gerar_documento_docx(titulo, conteudo_html, metadados=metadados)

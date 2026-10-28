@@ -1,7 +1,7 @@
 # ==============================================================================
 # analises_routes.py
 # ==============================================================================
-# Este código pertence à plataforma @DataInsight.
+# Este código pertence à plataforma @EnterSight.
 # Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 # em seções numeradas, exatamente como neste arquivo.
 # ==============================================================================
@@ -56,13 +56,9 @@ from backend.contato.contato import enviar_mensagem_contato
 analises_bp = Blueprint("analises", __name__)
 
 
-# ==============================================================================
-# 3. LANDING PAGE
-# ==============================================================================
-
-@analises_bp.route("/", endpoint="pagina_landing")
-def pagina_landing():
-    return render_template("index.html")
+# (A rota raiz "/" foi removida deste blueprint.
+# Ela é gerenciada exclusivamente por app.py → função index(),
+# que verifica sessão e assinatura antes de redirecionar.)
 
 
 # ==============================================================================

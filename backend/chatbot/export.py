@@ -1,7 +1,7 @@
 # ==============================================================================
 # export.py
 # ==============================================================================
-# Este código pertence à plataforma @DataInsight.
+# Este código pertence à plataforma @EnterSight
 # Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 # em seções numeradas, conforme este arquivo.
 # ==============================================================================
@@ -123,7 +123,7 @@ def exportar_dados_usuario(tipo: str):
                 buffer,
                 mimetype="text/csv",
                 as_attachment=True,
-                download_name="relatorio_datainsight.csv",
+                download_name="relatorio_EnterSightcsv",
             )
 
         if tipo == "excel":
@@ -135,7 +135,7 @@ def exportar_dados_usuario(tipo: str):
                 excel_buffer,
                 mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 as_attachment=True,
-                download_name="relatorio_datainsight.xlsx",
+                download_name="relatorio_EnterSightxlsx",
             )
 
     except Exception as err:

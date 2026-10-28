@@ -1,7 +1,7 @@
 # ==============================================================================
 # auth_routes.py
 # ==============================================================================
-# Este código pertence à plataforma @DataInsight.
+# Este código pertence à plataforma @EnterSight.
 # Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 # em seções numeradas, exatamente como neste arquivo.
 # ==============================================================================
@@ -93,7 +93,7 @@ def login_required(f):
                 session["usuario_perfil"] = user.get("tipo_perfil")
 
             # Admins liberados sem restrição
-            if user.get("is_admin") or user.get("email") == "admin@datainsight.com":
+            if user.get("is_admin") or user.get("email") == "admin@EnterSight.com":
                 return f(*args, **kwargs)
 
             status = user.get("status_assinatura", "pendente")

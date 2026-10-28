@@ -1,7 +1,7 @@
 # ==============================================================================
 # criar_assinatura.py
 # ==============================================================================
-# Este código pertence à plataforma @DataInsight.
+# Este código pertence à plataforma @EnterSight.
 # Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 # em seções numeradas, conforme o padrão abaixo.
 #
@@ -60,7 +60,7 @@ def criar_assinatura_stripe():
         # ----------------------------------------------------------------------
         # 3.2 Normalização de título, plano, periodicidade e método
         # ----------------------------------------------------------------------
-        titulo = str(dados.get("titulo") or "Assinatura DataInsight ME")
+        titulo = str(dados.get("titulo") or "Assinatura EnterSight ME")
 
         plano = str(dados.get("plano") or "").strip().upper()
         if not plano:
@@ -175,7 +175,7 @@ def criar_assinatura_stripe():
                 # Modo Pagamento Único Direto via Pix no Stripe Checkout
                 desc_produto = (
                     f"Plano {plano} ({periodicidade_rotulo}) à vista via Pix "
-                    "DataInsight BI & IA"
+                    "EnterSight BI & IA"
                 )
                 session_kwargs = {
                     "payment_method_options": {
@@ -206,7 +206,7 @@ def criar_assinatura_stripe():
                 intervalo_stripe = "year" if periodicidade == "anual" else "month"
                 desc_produto = (
                     f"Plano {plano} recorrente ({periodicidade_rotulo}) "
-                    "DataInsight BI & IA"
+                    "EnterSight BI & IA"
                 )
                 session_kwargs = {
                     "line_items": [

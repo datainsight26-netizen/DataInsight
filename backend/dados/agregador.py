@@ -1,7 +1,7 @@
 # ==============================================================================
 # agregador.py
 # ==============================================================================
-# Este código pertence à plataforma @DataInsight.
+# Este código pertence à plataforma @EnterSight.
 # Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 # em seções numeradas, conforme o padrão abaixo.
 #
@@ -11,7 +11,7 @@
 # de demarcação visual e numeração sequencial.
 
 """
-Módulo de Federação e Agregação Multi-Planilhas (DataInsight Data Aggregator)
+Módulo de Federação e Agregação Multi-Planilhas (EnterSight Data Aggregator)
 Permite processar e consolidar múltiplas planilhas de domínios diferentes
 (Vendas, Aluguéis, Custos, Produtos, Geral) de forma unificada ou individual.
 """

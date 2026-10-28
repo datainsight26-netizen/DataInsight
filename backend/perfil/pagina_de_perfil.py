@@ -1,7 +1,7 @@
 # ==============================================================================
 # pagina_de_perfil.py
 # ==============================================================================
-# Este código pertence à plataforma @DataInsight.
+# Este código pertence à plataforma @EnterSight.
 # Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 # em seções numeradas, exatamente como neste arquivo.
 # ==============================================================================
@@ -186,7 +186,7 @@ def obter_uso_plataforma():
         {
             "id": "conta",
             "titulo": "Conta criada",
-            "descricao": "Você já tem acesso ao DataInsight.",
+            "descricao": "Você já tem acesso ao EnterSight.",
             "feito": True,
             "endpoint": None,
             "icone": "fa-user-check",

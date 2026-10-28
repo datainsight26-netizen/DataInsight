@@ -1,6 +1,6 @@
 """
 backend/analise/analise.py
-DataInsight — Central Executiva de Inteligência Contábil, Financeira e Análise com IA
+EnterSight — Central Executiva de Inteligência Contábil, Financeira e Análise com IA
 Suporta cálculos avançados para ME e MEI, DRE gerencial, ponto de equilíbrio,
 teto do MEI, métricas mensais/anuais, séries temporais e diagnósticos executivos.
 """
@@ -8,7 +8,7 @@ teto do MEI, métricas mensais/anuais, séries temporais e diagnósticos executi
 # ==============================================================================
 # analise.py
 # ==============================================================================
-# Este código pertence à plataforma @DataInsight.
+# Este código pertence à plataforma @EnterSight.
 # Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 # em seções numeradas, conforme este arquivo.
 # ==============================================================================

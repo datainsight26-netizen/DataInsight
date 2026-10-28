@@ -1,7 +1,7 @@
 # ==============================================================================
 # document_generator.py
 # ==============================================================================
-# Este código pertence à plataforma @DataInsight.
+# Este código pertence à plataforma @EnterSight.
 # Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 # em seções numeradas, conforme este arquivo.
 # ==============================================================================
@@ -102,7 +102,7 @@ def extrair_tabelas_html(html_content: str) -> List[pd.DataFrame]:
 def gerar_documento_docx(
     titulo: str,
     conteudo_html_ou_texto: str,
-    autor: str = "DataInsight Copiloto IA",
+    autor: str = "EnterSight Copiloto IA",
     metadados: Optional[Dict[str, Any]] = None,
 ) -> io.BytesIO:
     """Gera um documento Microsoft Word (.docx) estruturado e formatado."""
@@ -131,7 +131,7 @@ def gerar_documento_docx(
     # Cabeçalho Superior Institucional
     p_header = doc.add_paragraph()
     p_header.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    run_brand = p_header.add_run("📊 DataInsight · Centro de Inteligência Analítica")
+    run_brand = p_header.add_run("📊 EnterSight · Centro de Inteligência Analítica")
     run_brand.font.size = Pt(8.5)
     run_brand.font.bold = True
     run_brand.font.color.rgb = COR_CINZA
@@ -286,7 +286,7 @@ def gerar_documento_docx(
     p_foot = doc.add_paragraph()
     p_foot.paragraph_format.space_before = Pt(20)
     p_foot.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r_foot = p_foot.add_run("Documento Oficial · Gerado por DataInsight Copiloto IA")
+    r_foot = p_foot.add_run("Documento Oficial · Gerado por EnterSight Copiloto IA")
     r_foot.font.size = Pt(8)
     r_foot.font.italic = True
     r_foot.font.color.rgb = COR_CINZA
@@ -341,7 +341,7 @@ def gerar_documento_xlsx(
             # Título da Tabela
             ws.cell(row=1, column=1, value=f"{titulo} — {sheet_title}")
             ws.cell(row=1, column=1).font = Font(name="Calibri", size=13, bold=True, color="1E3A8A")
-            ws.cell(row=2, column=1, value=f"Gerado em {datetime.now().strftime('%d/%m/%Y %H:%M')} por DataInsight Copiloto IA")
+            ws.cell(row=2, column=1, value=f"Gerado em {datetime.now().strftime('%d/%m/%Y %H:%M')} por EnterSight Copiloto IA")
             ws.cell(row=2, column=1).font = Font(name="Calibri", size=9, italic=True, color="64748B")
 
             start_row = 4
@@ -394,7 +394,7 @@ def gerar_documento_xlsx(
 
         ws.cell(row=1, column=1, value=titulo or "Relatório Executivo")
         ws.cell(row=1, column=1).font = Font(name="Calibri", size=14, bold=True, color="1E3A8A")
-        ws.cell(row=2, column=1, value=f"DataInsight IA · {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+        ws.cell(row=2, column=1, value=f"EnterSight IA · {datetime.now().strftime('%d/%m/%Y %H:%M')}")
         ws.cell(row=2, column=1).font = Font(name="Calibri", size=9, italic=True, color="64748B")
 
         linhas_texto = _limpar_tags_html(conteudo_html_ou_texto).split("\n")
@@ -425,7 +425,7 @@ def gerar_documento_xlsx(
 def gerar_documento_pdf(
     titulo: str,
     conteudo_html_ou_texto: str,
-    autor: str = "DataInsight Copiloto IA",
+    autor: str = "EnterSight Copiloto IA",
     metadados: Optional[Dict[str, Any]] = None,
 ) -> io.BytesIO:
     """Gera um PDF oficial com capa, cabeçalho e tabelas via ReportLab."""
@@ -513,7 +513,7 @@ def gerar_documento_pdf(
     story = []
 
     # Cabeçalho Superior
-    story.append(Paragraph("📊 <b>DataInsight</b> · Centro de Inteligência Analítica", style_brand))
+    story.append(Paragraph("📊 <b>EnterSight</b> · Centro de Inteligência Analítica", style_brand))
     story.append(Paragraph(titulo or "Relatório Executivo de Análise IA", style_title))
 
     data_str = datetime.now().strftime("%d/%m/%Y às %H:%M")
@@ -612,7 +612,7 @@ def gerar_documento_pdf(
         canvas.saveState()
         canvas.setFont("Helvetica-Oblique", 8)
         canvas.setFillColor(colors.HexColor("#94a3b8"))
-        canvas.drawString(18 * mm, 10 * mm, "DataInsight Copiloto IA · Documento Confidencial")
+        canvas.drawString(18 * mm, 10 * mm, "EnterSight Copiloto IA · Documento Confidencial")
         canvas.drawRightString(A4[0] - 18 * mm, 10 * mm, f"Página {canvas._pageNumber}")
         canvas.restoreState()
 

@@ -1,7 +1,7 @@
 # ==============================================================================
 # email_assinatura.py
 # ==============================================================================
-# Este código pertence à plataforma @DataInsight.
+# Este código pertence à plataforma @EnterSight.
 # Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 # em seções numeradas, conforme o padrão abaixo.
 #
@@ -11,7 +11,7 @@
 # de demarcação visual e numeração sequencial.
 
 """
-Módulo de envio de e-mail de confirmação de assinatura DataInsight.
+Módulo de envio de e-mail de confirmação de assinatura EnterSight.
 Disparado automaticamente quando o Stripe confirma o pagamento (Mensal ou Anual / Cartão ou Pix).
 """
 
@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 PLANOS = {
     "MEI": {
-        "nome": "DataInsight MEI",
+        "nome": "EnterSight MEI",
         "valor_mensal": "R$ 250,00",
         "valor_anual": "R$ 2.400,00",
         "valor_anual_mensalizado": "R$ 200,00",
@@ -58,7 +58,7 @@ PLANOS = {
         ],
     },
     "ME": {
-        "nome": "DataInsight ME",
+        "nome": "EnterSight ME",
         "valor_mensal": "R$ 350,00",
         "valor_anual": "R$ 3.360,00",
         "valor_anual_mensalizado": "R$ 280,00",
@@ -78,15 +78,15 @@ PLANOS = {
 }
 
 _PLANO_DEFAULT = {
-    "nome": "DataInsight ME",
+    "nome": "EnterSight ME",
     "valor_mensal": "R$ 350,00",
     "valor_anual": "R$ 3.360,00",
     "valor_anual_mensalizado": "R$ 280,00",
     "economia_anual": "R$ 840,00",
-    "descricao": "Plano DataInsight",
+    "descricao": "Plano EnterSight",
     "cor": "#2563eb",
     "cor_clara": "#dbeafe",
-    "recursos": ["Acesso a plataforma DataInsight BI & IA"],
+    "recursos": ["Acesso a plataforma EnterSight BI & IA"],
 }
 
 
@@ -197,7 +197,7 @@ def _gerar_html_confirmacao(
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>{titulo_principal} - DataInsight</title>
+  <title>{titulo_principal} - EnterSight</title>
 </head>
 <body style="margin:0;padding:0;background:#f3f4f6;font-family:'Segoe UI',Arial,sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:40px 16px;">
@@ -212,7 +212,7 @@ def _gerar_html_confirmacao(
                    padding:40px 40px 32px;text-align:center;">
           <div style="margin-bottom:16px;">
             <span style="font-size:30px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">
-              DataInsight
+              EnterSight
             </span>
           </div>
           <div style="width:72px;height:72px;background:rgba(255,255,255,0.2);
@@ -339,10 +339,10 @@ def _gerar_html_confirmacao(
       <tr>
         <td style="background:#f9fafb;border-top:1px solid #f3f4f6;
                    padding:24px 40px;text-align:center;">
-          <p style="margin: 0 0 6px; font-size: 12px; color: #9ca3af;">DataInsight - Gestão e Inteligência para Empresas</p>
+          <p style="margin: 0 0 6px; font-size: 12px; color: #9ca3af;">EnterSight - Gestão e Inteligência para Empresas</p>
     
           <p style="margin:0;font-size:11px;color:#d1d5db;">
-            &copy; 2026 DataInsight. Todos os direitos reservados.
+            &copy; 2026 EnterSight. Todos os direitos reservados.
           </p>
         </td>
       </tr>
@@ -471,13 +471,13 @@ def enviar_email_confirmacao_assinatura(
         valor_str = info["valor_anual"] if is_anual else info["valor_mensal"]
 
         if is_renovacao:
-            assunto = f"Renovação de {info['nome']} ({ciclo_nome}) confirmada - DataInsight"
+            assunto = f"Renovação de {info['nome']} ({ciclo_nome}) confirmada - EnterSight"
             texto_acao = "foi renovada com sucesso"
         elif is_anual and is_pix:
-            assunto = f"Pagamento Pix {info['nome']} ({ciclo_nome}) confirmado - DataInsight"
+            assunto = f"Pagamento Pix {info['nome']} ({ciclo_nome}) confirmado - EnterSight"
             texto_acao = "foi aprovado via Pix com 20% de desconto"
         else:
-            assunto = f"Assinatura {info['nome']} ({ciclo_nome}) confirmada - DataInsight"
+            assunto = f"Assinatura {info['nome']} ({ciclo_nome}) confirmada - EnterSight"
             texto_acao = "foi confirmada com sucesso"
 
         texto_plano = (
@@ -487,8 +487,8 @@ def enviar_email_confirmacao_assinatura(
             f"{data_pagamento.strftime('%d/%m/%Y às %H:%M')}.\n\n"
             f"Forma de Pagamento: {'PIX À Vista' if is_pix else 'Cartão (Crédito/Débito)'}\n"
             f"ID do comprovante: {subscription_id or session_id or 'N/A'}\n\n"
-            "Acesse sua plataforma em: https://datainsight.com.br/home\n\n"
-            "Equipe DataInsight"
+            "Acesse sua plataforma em: https://EnterSight.com.br/home\n\n"
+            "Equipe EnterSight"
         )
 
         # ----------------------------------------------------------------------
