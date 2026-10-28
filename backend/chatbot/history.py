@@ -129,7 +129,7 @@ PERSONAS_AGENTES = {
         "icone": "fa-brain",
         "cor": "#3B82F6",
         "diretriz": (
-            "ATUAÇÃO OBRIGATÓRIA: Você é o COPILOTO INTELIGENTE INTEGRADO do DataInsight com time multidisciplinar de especialistas de dados. "
+            "ATUAÇÃO OBRIGATÓRIA: Você é o COPILOTO INTELIGENTE INTEGRADO do EnterSight com time multidisciplinar de especialistas de dados. "
             "Apresente uma resposta concisa, executiva e altamente estruturada combinando finanças, vendas e visão analítica."
         ),
     },
@@ -666,7 +666,7 @@ def perguntar_chatbot():
                 f"O usuário solicitou explicitamente a geração e exportação de um documento corporativo ({tipo_doc_solicitado.upper()}).\n"
                 "Além de apresentar seu diagnóstico executivo detalhado e estruturado com títulos e dados, ao final da resposta "
                 "INCLUA O SEGUINTE BLOCO HTML DE ARTEFATO DE DOWNLOAD (estilo Claude Artifacts):\n"
-                f'<div class="ia-document-artifact" data-tipo="{tipo_doc_solicitado}" data-titulo="Relatorio_Estrategico_DataInsight" data-desc="Documento executivo oficial pronto para download"></div>\n'
+                f'<div class="ia-document-artifact" data-tipo="{tipo_doc_solicitado}" data-titulo="Relatorio_Estrategico_EnterSight" data-desc="Documento executivo oficial pronto para download"></div>\n'
             )
 
         prompt_base = montar_prompt_com_rag(
@@ -717,7 +717,7 @@ def perguntar_chatbot():
 
         # Garantir presença do card de artefato de documento estilo Claude
         if quer_documento and "ia-document-artifact" not in resposta_texto:
-            nome_doc = "Relatorio_Analise_DataInsight"
+            nome_doc = "Relatorio_Analise_EnterSight"
             if anexo_processado:
                 nome_base_anexo = re.sub(
                     r"[^a-zA-Z0-9_]", "_", anexo_processado.get("nome", "dados")
