@@ -1,7 +1,7 @@
 # ==============================================================================
 # app.py
 # ==============================================================================
-# Este código pertence à plataforma @DataInsight.
+# Este código pertence à plataforma @EnterSight.
 # Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 # em seções numeradas, exatamente como neste arquivo.
 # ==============================================================================
@@ -11,10 +11,12 @@
 # ==============================================================================
 
 import os
+import sys
 from datetime import timedelta
 
+from bson import ObjectId
 from dotenv import load_dotenv
-from flask import Flask, session, request
+from flask import Flask, session, request, render_template, redirect, url_for
 from flask_mail import Mail
 
 
@@ -22,15 +24,30 @@ from flask_mail import Mail
 # 2. CARREGAMENTO DE VARIÁVEIS DE AMBIENTE
 # ==============================================================================
 
-load_dotenv()
+if getattr(sys, "frozen", False):
+    base_dir_app = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    env_local = os.path.join(os.path.dirname(sys.executable), ".env")
+    if os.path.exists(env_local):
+        load_dotenv(env_local)
+    else:
+        load_dotenv(os.path.join(base_dir_app, ".env"))
+else:
+    base_dir_app = os.path.dirname(os.path.abspath(__file__))
+    load_dotenv()
 
 
 # ==============================================================================
 # 3. CRIAÇÃO DA APLICAÇÃO FLASK
 # ==============================================================================
 
-app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY", "datainsight_default_secret_key_2026")
+if getattr(sys, "frozen", False):
+    template_folder = os.path.join(base_dir_app, "templates")
+    static_folder = os.path.join(base_dir_app, "static")
+    app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
+else:
+    app = Flask(__name__)
+
+app.secret_key = os.getenv("SECRET_KEY", "EnterSight_default_secret_key_2026")
 
 
 # ==============================================================================
@@ -74,7 +91,7 @@ app.config["MAIL_USE_TLS"] = True
 app.config["MAIL_USERNAME"] = os.getenv("EMAIL_USER")
 app.config["MAIL_PASSWORD"] = os.getenv("EMAIL_PASS")
 _email_user = os.getenv("EMAIL_USER", "")
-app.config["MAIL_DEFAULT_SENDER"] = ("DataInsight", _email_user)
+app.config["MAIL_DEFAULT_SENDER"] = ("EnterSight", _email_user)
 app.config["MAIL_MAX_EMAILS"] = 5
 app.config["MAIL_SUPPRESS_SEND"] = False
 app.config["MAIL_TIMEOUT"] = int(os.getenv("MAIL_TIMEOUT", 5))
@@ -94,10 +111,11 @@ except Exception as e:
 # 6. CONFIGURAÇÃO DE UPLOAD (Deploy VPS/Linux)
 # ==============================================================================
 
-UPLOAD_FOLDER = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "uploads"
-)
+if getattr(sys, "frozen", False):
+    UPLOAD_FOLDER = os.path.join(os.path.dirname(sys.executable), "uploads")
+else:
+    UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
+
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
@@ -127,7 +145,114 @@ app.register_blueprint(pagamentos_bp)
 
 
 # ==============================================================================
-# 9. ALIASES DE ENDPOINTS ENTRE BLUEPRINTS E CÓDIGO LEGADO
+# 9. ROTA INDEX / RAIZ — Verificação de sessão e assinatura
+# ==============================================================================
+
+@app.route("/", endpoint="index")
+@app.route("/inicio", endpoint="pagina_landing")   # alias: url_for('pagina_landing') continua funcionando nos templates
+def index():
+    """
+    Rota raiz da aplicação.
+
+    SEMPRE renderiza index.html (animação de entrada).
+    O `destino` passado ao template determina para onde a
+    animação redireciona automaticamente após 15 s (ou Enter):
+      → '/home'    se o usuário está logado com assinatura ativa
+      → '/landing' em todos os outros casos
+    """
+    # ------------------------------------------------------------------
+    # 9.1. Sem sessão → destino landing
+    # ------------------------------------------------------------------
+    if "usuario_id" not in session and "usuario_nome" not in session:
+        return render_template("index.html", destino="/landing")
+
+    # ------------------------------------------------------------------
+    # 9.2. Carrega o usuário do banco
+    # ------------------------------------------------------------------
+    from backend.db import usuario as usuario_col
+    from datetime import datetime as _dt
+
+    user_id   = session.get("usuario_id")
+    user_email = session.get("usuario_email")
+    user = None
+
+    try:
+        if user_id:
+            try:
+                user = usuario_col.find_one({"_id": ObjectId(str(user_id))})
+            except Exception:
+                if user_email:
+                    user = usuario_col.find_one({"email": user_email.lower()})
+        elif user_email:
+            user = usuario_col.find_one({"email": user_email.lower()})
+    except Exception as err_db:
+        print(f"[index] Erro ao consultar banco: {err_db}")
+
+    # ------------------------------------------------------------------
+    # 9.3. Sem doc no banco → destino landing
+    # ------------------------------------------------------------------
+    if not user:
+        return render_template("index.html", destino="/landing")
+
+    # ------------------------------------------------------------------
+    # 9.4. Admins: destino home
+    # ------------------------------------------------------------------
+    if user.get("is_admin") or user.get("email") == "admin@EnterSight.com":
+        if user.get("tipo_perfil"):
+            session["usuario_perfil"] = user["tipo_perfil"]
+        session.modified = True
+        return render_template("index.html", destino="/home")
+
+    # ------------------------------------------------------------------
+    # 9.5. Verifica assinatura
+    # ------------------------------------------------------------------
+    status_banco = user.get("status_assinatura", "pendente")
+    status_sessao = session.get("status_assinatura", "")
+
+    if status_banco == "ativa":
+        # Assinatura confirmada no banco → destino home
+        if user.get("tipo_perfil"):
+            session["usuario_perfil"] = user["tipo_perfil"]
+        session["status_assinatura"] = "ativa"
+        session.modified = True
+        return render_template("index.html", destino="/home")
+
+    if status_sessao == "ativa":
+        # Sessão diz ativa, banco diverge → sincroniza banco e libera
+        try:
+            usuario_col.update_one(
+                {"_id": user["_id"]},
+                {"$set": {"status_assinatura": "ativa", "atualizado_em": _dt.now()}}
+            )
+            print(f"[index] Sincronizado status->ativa para {user.get('email')} via sessão.")
+        except Exception as ex:
+            print(f"[index] Falha ao sincronizar banco: {ex}")
+        if user.get("tipo_perfil"):
+            session["usuario_perfil"] = user["tipo_perfil"]
+        session.modified = True
+        return render_template("index.html", destino="/home")
+
+    # ------------------------------------------------------------------
+    # 9.6. Assinatura pendente/cancelada → landing
+    # ------------------------------------------------------------------
+    return render_template("index.html", destino="/landing")
+
+
+# ==============================================================================
+# 10. ROTA DA LANDING PAGE (landig.html)
+# ==============================================================================
+
+@app.route("/landing", endpoint="landing")
+@app.route("/landig", endpoint="landig")
+@app.route("/landing.html")
+@app.route("/landig.html")
+def landing():
+    """Renderiza a landing page principal da plataforma EnterSight."""
+    return render_template("landig.html")
+
+
+# ==============================================================================
+# 11. ALIASES DE ENDPOINTS ENTRE BLUEPRINTS E CÓDIGO LEGADO
 # ==============================================================================
 # Registra aliases reais no url_map do Werkzeug para que
 # url_for('endpoint_sem_prefixo') funcione mesmo que a rota esteja definida
@@ -141,7 +266,7 @@ def _registrar_aliases_blueprints(application):
     o prefixo do blueprint.
     """
     # --------------------------------------------------------------------------
-    # 9.1. Coleta os aliases a registrar (evita mutação durante iteração)
+    # 11.1. Coleta os aliases a registrar (evita mutação durante iteração)
     # --------------------------------------------------------------------------
     aliases_a_registrar = []
 
@@ -154,7 +279,7 @@ def _registrar_aliases_blueprints(application):
                 aliases_a_registrar.append((rule, base_endpoint, endpoint))
 
     # --------------------------------------------------------------------------
-    # 9.2. Registra cada alias
+    # 11.2. Registra cada alias
     # --------------------------------------------------------------------------
     for rule, base_endpoint, original_endpoint in aliases_a_registrar:
         try:
@@ -173,7 +298,7 @@ _registrar_aliases_blueprints(app)
 
 
 # ==============================================================================
-# 10. INICIALIZAÇÃO
+# 12. INICIALIZAÇÃO
 # ==============================================================================
 
 if __name__ == "__main__":
