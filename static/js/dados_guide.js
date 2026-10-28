@@ -1,6 +1,6 @@
 /**
  * dados_guide.js
- * Guided tour da página Dados — DataInsight
+ * Guided tour da página Dados — EnterSight
  *
  * Percorre uma sequência de passos destacando elementos da interface,
  * com tooltip explicativo, navegação por teclado e opção de não mostrar
@@ -9,7 +9,7 @@
  * ------------------------------------------------------------------------------
  * PROPRIEDADE INTELECTUAL
  * ------------------------------------------------------------------------------
- * Este código pertence à plataforma @DataInsight. Todos os arquivos da plataforma
+ * Este código pertence à plataforma @EnterSight. Todos os arquivos da plataforma
  * devem seguir esta mesma estrutura de organização: seções numeradas
  * sequencialmente com cabeçalhos padronizados, separação clara de
  * responsabilidades e agrupamento lógico de funções afins.

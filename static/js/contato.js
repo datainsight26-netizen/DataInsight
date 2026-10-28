@@ -1,6 +1,6 @@
 /**
  * contato.js
- * Formulário de Contato — DataInsight
+ * Formulário de Contato — EnterSight
  *
  * Responsável por:
  *   - Interceptar o submit do formulário de contato
@@ -11,7 +11,7 @@
  * ------------------------------------------------------------------------------
  * PROPRIEDADE INTELECTUAL
  * ------------------------------------------------------------------------------
- * Este código pertence à plataforma @DataInsight. Todos os arquivos da plataforma
+ * Este código pertence à plataforma @EnterSight. Todos os arquivos da plataforma
  * devem seguir esta mesma estrutura de organização: seções numeradas
  * sequencialmente com cabeçalhos padronizados, separação clara de
  * responsabilidades e agrupamento lógico de funções afins.

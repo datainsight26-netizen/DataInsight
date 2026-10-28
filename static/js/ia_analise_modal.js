@@ -1,14 +1,14 @@
 // ==============================================================================
 // ia_analise_modal.js
 // ==============================================================================
-// Este código pertence à plataforma @DataInsight.
+// Este código pertence à plataforma @EnterSight.
 // Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 // em seções numeradas, conforme este arquivo.
 // ==============================================================================
 
 /**
  * ================================================================
- * DATAINSIGHT — IA ANÁLISE MODAL (ENGINE UNIVERSAL GEMINI)
+ * EnterSight — IA ANÁLISE MODAL (ENGINE UNIVERSAL GEMINI)
  * Gerencia o modal de análise com IA, varredura animada HUD,
  * integração com a API Gemini e renderização dinâmica em 6 páginas.
  * ================================================================
@@ -399,7 +399,7 @@ const IaAnaliseModal = {
     // Montar texto corrido para a área de transferência
     const periodoStr = (contexto && contexto.periodo) ? contexto.periodo : 'Período Atual';
     const paginaNome = pageId.toUpperCase();
-    this._relatorios[pageId] = `[DATAINSIGHT - ANÁLISE COMPLETA COM IA: ${paginaNome}]
+    this._relatorios[pageId] = `[EnterSight - ANÁLISE COMPLETA COM IA: ${paginaNome}]
 Período: ${periodoStr}
 Status: ${veredito.titulo} (${veredito.badge})
 

@@ -1,14 +1,14 @@
 /**
  * ==============================================================================
  * escritorio3d.js — Sala de Escritório 3D Isométrica dos Agentes Autônomos
- * DataInsight (Three.js r128 procedural)
+ * EnterSight (Three.js r128 procedural)
  * ==============================================================================
  */
 
 (function () {
   'use strict';
 
-  // Configuração dos 5 Agentes do Sistema DataInsight
+  // Configuração dos 5 Agentes do Sistema EnterSight
   const AGENT_ROLES = [
     {
       id: 'agente_dados',
@@ -67,7 +67,7 @@
     }
   ];
 
-  // Cores institucionais do tema DataInsight
+  // Cores institucionais do tema EnterSight
   const WHITE = 0xffffff;
   const BLUE = 0x1d4ed8;
   const SKY = 0x60a5fa;
@@ -96,12 +96,33 @@
   let nightLightsGroup = null;
   let isDarkTheme = false;
 
-  // Variáveis e função para Logomarca DataInsight
+  // Variáveis e função para Logomarca EnterSight (SVG Hexagonal Oficial)
   let logoTexObj = null;
   let brandImgLoaded = null;
   let logoBackBoardMesh = null;
   let logoBorderMeshes = []; // Frisos decorativos ao redor do painel
   let logoPlaneRef = null;   // Plano com textura do logo
+
+  // Logo Hexagonal Oficial EnterSight em SVG
+  const LOGO_HEX_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="374 42 212 241" width="280" height="318">' +
+    '<g>' +
+    '<path d="M480,52 L577,106 L577,220 L480,273 L384,220 L384,106Z" fill="#3b82f6" stroke="#3b82f6" stroke-width="10" stroke-linejoin="round"/>' +
+    '<path d="M426,161 L460,132 L486,150 L520,115" fill="none" stroke="#ffffff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<path d="M529,112 V201 H443" fill="none" stroke="#ffffff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<path d="M463,181 L443,202 L463,222" fill="none" stroke="#ffffff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<circle cx="529" cy="107" r="13" fill="#ffffff"/>' +
+    '</g>' +
+    '</svg>';
+
+  const brandSvgImg = new Image();
+  brandSvgImg.onload = () => {
+    brandImgLoaded = brandSvgImg;
+    if (logoTexObj) drawBrandLogo();
+  };
+  brandSvgImg.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(LOGO_HEX_SVG);
+  if (brandSvgImg.complete) {
+    brandImgLoaded = brandSvgImg;
+  }
 
   function drawBrandLogo() {
     if (!logoTexObj) return;
@@ -121,22 +142,25 @@
     ctx.lineWidth = 10;
     ctx.stroke();
 
-    // Imagem da logo
+    // Imagem da logo Hexagonal EnterSight (SVG)
     if (brandImgLoaded && brandImgLoaded.complete && brandImgLoaded.naturalWidth > 0) {
-      ctx.drawImage(brandImgLoaded, 60, 60, 320, 320);
+      ctx.drawImage(brandImgLoaded, 80, 61, 280, 318);
     } else {
-      ctx.fillStyle = '#2563eb';
+      ctx.fillStyle = '#3b82f6';
       ctx.beginPath();
-      ctx.arc(220, 220, 150, 0, Math.PI * 2);
+      ctx.arc(220, 220, 140, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // Nome "DataInsight": preto no White, branco no Dark
+    // Nome "EnterSight": Enter (700) e Sight (300)
     ctx.fillStyle = isDark ? '#ffffff' : '#000000';
-    ctx.font = 'bold 122px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText('DataInsight', 420, 220);
+    ctx.textAlign = 'left';
+    ctx.font = '700 120px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText('Enter', 410, 220);
+    const enterW = ctx.measureText('Enter').width;
+    ctx.font = '300 120px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText('Sight', 410 + enterW - 2, 220);
 
     logoTexObj.tex.needsUpdate = true;
   }
@@ -361,7 +385,7 @@
     // 5. Rodapé traseiro estilizado
     box(15, 0.28, 0.3, SKY, 0, 0.14, -5.45);
 
-    // 6. Logotipo "DataInsight" na parede lateral (sem telão) ampliado
+    // 6. Logotipo "EnterSight" na parede lateral (sem telão) ampliado
     // Painel de fundo arquitetônico azul corporativo em relevo (x = -7.46)
     logoBackBoardMesh = box(0.06, 1.76, 5.24, BLUE, -7.46, 3.6, 0);
     const logoBorderTop = box(0.08, 0.08, 5.3, SKY, -7.45, 4.49, 0);
@@ -385,18 +409,10 @@
     scene.add(logoPlane);
     logoPlaneRef = logoPlane;
 
-    // Carregamento da imagem oficial da logo
-    const brandImg = new Image();
-    brandImg.crossOrigin = 'anonymous';
-    brandImg.onload = () => {
-      brandImgLoaded = brandImg;
-      drawBrandLogo();
-    };
-    brandImg.onerror = () => {
-      console.warn('Não foi possível carregar /static/img/logo.png, usando renderizador de fallback.');
-      drawBrandLogo();
-    };
-    brandImg.src = '/static/img/logo.png';
+    // Renderização da logomarca oficial (SVG Hexagonal)
+    if (!brandImgLoaded && brandSvgImg.complete) {
+      brandImgLoaded = brandSvgImg;
+    }
     drawBrandLogo();
 
     // 7. Telão Interativo Central na Parede
@@ -485,7 +501,7 @@
     nightLightsGroup.add(spotBoard);
     nightLightsGroup.add(spotBoard.target);
 
-    // Spot Direcional na Parede do Logotipo DataInsight
+    // Spot Direcional na Parede do Logotipo EnterSight
     const spotLogo = new THREE.SpotLight(0x38bdf8, 2.6, 9.5, Math.PI / 3.4, 0.3);
     spotLogo.position.set(-4.0, 4.8, 0);
     spotLogo.target = logoPlane;
@@ -1207,7 +1223,7 @@
   }
 
   // ============================================================================
-  // SINCRONIZAÇÃO EM TEMPO REAL COM O RUNTIME DO DATAINSIGHT
+  // SINCRONIZAÇÃO EM TEMPO REAL COM O RUNTIME DO EnterSight
   // ============================================================================
 
   function syncWithAgentRuntime() {

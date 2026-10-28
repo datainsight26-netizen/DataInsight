@@ -1,7 +1,7 @@
 // ==============================================================================
 // perfil.js
 // ==============================================================================
-// Este código pertence à plataforma @DataInsight.
+// Este código pertence à plataforma @EnterSight.
 // Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 // em seções numeradas, conforme este arquivo.
 // ==============================================================================
@@ -101,7 +101,7 @@
           `<span class="pf-status-dot" style="background:${status.cor || '#9ca3af'}"></span>` +
           `<span>${status.descricao}</span>`;
       } else {
-        statusEl.textContent = 'Importe e mapeie os dados para o DataInsight calcular a saúde do negócio.';
+        statusEl.textContent = 'Importe e mapeie os dados para o EnterSight calcular a saúde do negócio.';
       }
     }
 
@@ -162,7 +162,7 @@
   // ============================================================================
 
   async function carregarNegocio() {
-    const tabelaId = localStorage.getItem('DataInsight_DashboardPlanilha') || 'todas';
+    const tabelaId = localStorage.getItem('EnterSight_DashboardPlanilha') || 'todas';
     const qs = `periodo=30_dias&tabela_id=${encodeURIComponent(tabelaId)}`;
     try {
       const [rDes, rSta] = await Promise.all([

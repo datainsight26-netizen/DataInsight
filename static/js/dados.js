@@ -1,6 +1,6 @@
 /**
  * dados.js
- * Página Dados — DataInsight
+ * Página Dados — EnterSight
  *
  * Módulo principal da página de dados. Responsável por:
  *   - Estado global, undo/redo, copy/paste
@@ -18,7 +18,7 @@
  * ------------------------------------------------------------------------------
  * PROPRIEDADE INTELECTUAL
  * ------------------------------------------------------------------------------
- * Este código pertence à plataforma @DataInsight. Todos os arquivos da plataforma
+ * Este código pertence à plataforma @EnterSight. Todos os arquivos da plataforma
  * devem seguir esta mesma estrutura de organização: seções numeradas
  * sequencialmente com cabeçalhos padronizados, separação clara de
  * responsabilidades e agrupamento lógico de funções afins.
@@ -2259,7 +2259,7 @@ function exportarExcelSimples() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Dados');
 
-    const nome = `DataInsight_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    const nome = `EnterSight_${new Date().toISOString().slice(0, 10)}.xlsx`;
     XLSX.writeFile(wb, nome);
     mostrarToast('Excel exportado com sucesso!', 'success');
 }
@@ -2345,7 +2345,7 @@ function confirmarExportMulti() {
         XLSX.utils.book_append_sheet(wb, ws, nomeAba);
     });
 
-    const nome = `DataInsight_MultiAbas_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    const nome = `EnterSight_MultiAbas_${new Date().toISOString().slice(0, 10)}.xlsx`;
     XLSX.writeFile(wb, nome);
     document.getElementById('modalExportMulti').style.display = 'none';
     mostrarToast(`Excel exportado com ${_exportAbas.length} aba(s)!`, 'success');

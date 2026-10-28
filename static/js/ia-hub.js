@@ -1,14 +1,14 @@
 // ==============================================================================
 // ia-hub.js
 // ==============================================================================
-// Este código pertence à plataforma @DataInsight.
+// Este código pertence à plataforma @EnterSight.
 // Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 // em seções numeradas, conforme este arquivo.
 // ==============================================================================
 
 /**
  * ia-hub.js — Centro de Inteligência Estratégica
- * DataInsight IA Hub — Tab navigation, Table/Period Filters, Autonomous Agents
+ * EnterSight IA Hub — Tab navigation, Table/Period Filters, Autonomous Agents
  * (24/7 Runtime, Live Logs, Real Actions, Automated Data Cleaning), Status,
  * Universal AI Analysis.
  */
@@ -36,13 +36,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatPlanilha = document.getElementById('seletorPlanilhaIa');
 
     // Carregar período salvo
-    const savedPeriodo = localStorage.getItem('DataInsight_DashboardPeriodo') || '30_dias';
+    const savedPeriodo = localStorage.getItem('EnterSight_DashboardPeriodo') || '30_dias';
     if (selectPeriodo) {
       selectPeriodo.value = savedPeriodo;
       periodoIaAtual = savedPeriodo;
       selectPeriodo.addEventListener('change', (e) => {
         periodoIaAtual = e.target.value;
-        localStorage.setItem('DataInsight_DashboardPeriodo', periodoIaAtual);
+        localStorage.setItem('EnterSight_DashboardPeriodo', periodoIaAtual);
         loadOverviewData(periodoIaAtual, tabelaIaAtualId, true);
       });
     }
@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
             selectPlanilha.appendChild(opt);
           });
 
-          const salva = localStorage.getItem('DataInsight_DashboardPlanilha');
+          const salva = localStorage.getItem('EnterSight_DashboardPlanilha');
           if (salva && (salva === 'todas' || planilhas.some(p => p.id === salva))) {
             selectPlanilha.value = salva;
             tabelaIaAtualId = salva;
@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
           selectPlanilha.addEventListener('change', (e) => {
             tabelaIaAtualId = e.target.value;
-            localStorage.setItem('DataInsight_DashboardPlanilha', tabelaIaAtualId);
+            localStorage.setItem('EnterSight_DashboardPlanilha', tabelaIaAtualId);
             if (chatPlanilha) chatPlanilha.value = tabelaIaAtualId;
             loadOverviewData(periodoIaAtual, tabelaIaAtualId, true);
           });
@@ -853,16 +853,16 @@ Nenhuma inconsistência detectada. Dados prontos para tomadas de decisão.`;
 
       try {
         const prompts = {
-          agente_financeiro: `Atue como o Agente Financeiro autônomo do DataInsight. Analise os dados financeiros atuais (período: ${periodoIaAtual}, base: ${tabelaIaAtualId}). 
+          agente_financeiro: `Atue como o Agente Financeiro autônomo do EnterSight. Analise os dados financeiros atuais (período: ${periodoIaAtual}, base: ${tabelaIaAtualId}). 
 Identifique anomalias de custos, status do saldo e emita 3 ações prioritárias para blindar o fluxo de caixa. Seja direto, executivo e claro.`,
 
-          agente_vendas: `Atue como o Agente de Vendas do DataInsight. Analise as vendas (período: ${periodoIaAtual}, base: ${tabelaIaAtualId}). 
+          agente_vendas: `Atue como o Agente de Vendas do EnterSight. Analise as vendas (período: ${periodoIaAtual}, base: ${tabelaIaAtualId}). 
 Identifique os produtos campeões de margem, tendências de consumo e oportunidades imediatas de alavancagem de receita.`,
 
-          agente_decisao: `Atue como o Agente Estratégico do DataInsight. Gere uma síntese de Análise SWOT do negócio com base nos dados (período: ${periodoIaAtual}, base: ${tabelaIaAtualId}). 
+          agente_decisao: `Atue como o Agente Estratégico do EnterSight. Gere uma síntese de Análise SWOT do negócio com base nos dados (período: ${periodoIaAtual}, base: ${tabelaIaAtualId}). 
 Destaque: 1 Força Principal, 1 Fraqueza Crítica, 1 Oportunidade Clara e 1 Ameaça a monitorar, concluindo com uma diretriz de crescimento.`,
 
-          agente_alertas: `Atue como o Sentinela de Anomalias do DataInsight. Realize uma checagem rigorosa de dados (período: ${periodoIaAtual}, base: ${tabelaIaAtualId}). 
+          agente_alertas: `Atue como o Sentinela de Anomalias do EnterSight. Realize uma checagem rigorosa de dados (período: ${periodoIaAtual}, base: ${tabelaIaAtualId}). 
 Informe se existem dados discrepantes, faturamentos atípicos ou anomalias operacionais. Se tudo estiver normal, confirme a integridade dos dados.`
         };
 

@@ -1,7 +1,7 @@
 // ==============================================================================
 // home.js
 // ==============================================================================
-// Este código pertence à plataforma @DataInsight.
+// Este código pertence à plataforma @EnterSight.
 // Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 // em seções numeradas, conforme este arquivo.
 // ==============================================================================
@@ -71,7 +71,7 @@ async function configurarSeletorPlanilhaHome() {
       select.appendChild(opt);
     });
 
-    const salva = localStorage.getItem('DataInsight_DashboardPlanilha');
+    const salva = localStorage.getItem('EnterSight_DashboardPlanilha');
     if (salva && (salva === 'todas' || planilhas.some(p => p.id === salva))) {
       select.value = salva;
       tabelaAtualId = salva;
@@ -79,7 +79,7 @@ async function configurarSeletorPlanilhaHome() {
 
     select.addEventListener('change', e => {
       tabelaAtualId = e.target.value;
-      localStorage.setItem('DataInsight_DashboardPlanilha', tabelaAtualId);
+      localStorage.setItem('EnterSight_DashboardPlanilha', tabelaAtualId);
       atualizarTudo();
       carregarStatus();
       carregarInsight();

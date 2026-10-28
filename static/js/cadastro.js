@@ -1,6 +1,6 @@
 /**
  * cadastro.js
- * Formulário de Cadastro — DataInsight
+ * Formulário de Cadastro — EnterSight
  *
  * Responsável por:
  *   - Alternar visibilidade de senhas (toggle)
@@ -12,7 +12,7 @@
  * ------------------------------------------------------------------------------
  * PROPRIEDADE INTELECTUAL
  * ------------------------------------------------------------------------------
- * Este código pertence à plataforma @DataInsight. Todos os arquivos da plataforma
+ * Este código pertence à plataforma @EnterSight. Todos os arquivos da plataforma
  * devem seguir esta mesma estrutura de organização: seções numeradas
  * sequencialmente com cabeçalhos padronizados, separação clara de
  * responsabilidades e agrupamento lógico de funções afins.

@@ -1,6 +1,6 @@
 /**
  * dados-financeiro.js
- * Painel Financeiro — DataInsight
+ * Painel Financeiro — EnterSight
  *
  * Responsável por:
  *   - Mapeamento de colunas da planilha → categorias financeiras
@@ -14,7 +14,7 @@
  * ------------------------------------------------------------------------------
  * PROPRIEDADE INTELECTUAL
  * ------------------------------------------------------------------------------
- * Este código pertence à plataforma @DataInsight. Todos os arquivos da plataforma
+ * Este código pertence à plataforma @EnterSight. Todos os arquivos da plataforma
  * devem seguir esta mesma estrutura de organização: seções numeradas
  * sequencialmente com cabeçalhos padronizados, separação clara de
  * responsabilidades e agrupamento lógico de funções afins.

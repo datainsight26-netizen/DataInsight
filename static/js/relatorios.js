@@ -1,13 +1,13 @@
 // ==============================================================================
 // relatorio.js
 // ==============================================================================
-// Este código pertence à plataforma @DataInsight.
+// Este código pertence à plataforma @EnterSight.
 // Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 // em seções numeradas, conforme este arquivo.
 // ==============================================================================
 
 /**
- * @ DataInsight — Relatórios Executivos Reais
+ * @ EnterSight — Relatórios Executivos Reais
  */
 
 // ==============================================================================
@@ -257,7 +257,7 @@ function aoMudarPlanilhaRel() {
   const sel = document.getElementById('seletorPlanilhaRel');
   if (sel) {
     estadoRelatorio.planilhaId = sel.value;
-    localStorage.setItem('DataInsight_DashboardPlanilha', sel.value);
+    localStorage.setItem('EnterSight_DashboardPlanilha', sel.value);
     gerarPreviewMelhorado();
   }
 }
@@ -346,7 +346,7 @@ async function carregarSumarioPlanilhas() {
       select.appendChild(opt);
     });
 
-    const salva = localStorage.getItem('DataInsight_DashboardPlanilha');
+    const salva = localStorage.getItem('EnterSight_DashboardPlanilha');
     if (salva && (salva === 'todas' || planilhas.some(p => p.id === salva))) {
       select.value = salva;
       estadoRelatorio.planilhaId = salva;
@@ -354,7 +354,7 @@ async function carregarSumarioPlanilhas() {
 
     select.addEventListener('change', e => {
       estadoRelatorio.planilhaId = e.target.value;
-      localStorage.setItem('DataInsight_DashboardPlanilha', estadoRelatorio.planilhaId);
+      localStorage.setItem('EnterSight_DashboardPlanilha', estadoRelatorio.planilhaId);
     });
   } catch (e) {
     console.warn('Aviso ao carregar planilhas em relatórios:', e);
@@ -574,7 +574,7 @@ function gerarInsightsReaisFluxoCaixa(dadosFc) {
     recomendacoes.push(`Plano de choque de liquidez: postergar despesas não essenciais e renegociar linhas de curto prazo para equalizar as saídas aos ${formatarMoeda(entradas)} de entradas.`);
     recomendacoes.push(`Implementar política rígida de cobrança e antecipação estratégica de recebíveis para cobrir o gap de ${formatarMoeda(Math.abs(saldo))}.`);
   }
-  recomendacoes.push(`Acompanhar semanalmente a conciliação entre previsto e realizado no painel de Fluxo de Caixa do DataInsight.`);
+  recomendacoes.push(`Acompanhar semanalmente a conciliação entre previsto e realizado no painel de Fluxo de Caixa do EnterSight.`);
 
   return { diagnostico, pontosFortes, alertasRiscos, recomendacoes };
 }
@@ -700,7 +700,7 @@ function gerarInsightsReaisConsolidado(dados) {
     recomendacoes.push(`Auditar os 3 maiores centros de despesas que compõem os ${formatarMoeda(despTotal)} para corte seletivo de gastos imediatos.`);
     recomendacoes.push(`Reavaliar a tabela de preços de venda para restabelecer a margem de contribuição positiva.`);
   }
-  recomendacoes.push(`Utilizar os cenários do Planejamento Financeiro do DataInsight para simular os próximos 6 meses.`);
+  recomendacoes.push(`Utilizar os cenários do Planejamento Financeiro do EnterSight para simular os próximos 6 meses.`);
 
   return { diagnostico, pontosFortes, alertasRiscos, recomendacoes, fatTotal, lucTotal, despTotal, cresc, mgMedia, mesMax, maxLucro };
 }

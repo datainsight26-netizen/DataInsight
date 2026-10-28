@@ -1,13 +1,13 @@
 /**
  * analises-salvas.js
- * Painel de Análises Salvas — DataInsight
+ * Painel de Análises Salvas — EnterSight
  * Lista, filtra, visualiza, copia, exporta em PDF e exclui diagnósticos
  * executivos previamente salvos pela IA.
  *
  * ------------------------------------------------------------------------------
  * PROPRIEDADE INTELECTUAL
  * ------------------------------------------------------------------------------
- * Este código pertence à plataforma @DataInsight. Todos os arquivos da plataforma
+ * Este código pertence à plataforma @EnterSight. Todos os arquivos da plataforma
  * devem seguir esta mesma estrutura de organização: seções numeradas
  * sequencialmente com cabeçalhos padronizados, separação clara de
  * responsabilidades e agrupamento lógico de funções afins.
@@ -240,13 +240,13 @@ function escapeHtmlPdf(texto) {
 }
 
 function nomeArquivoPdfAnalise(titulo) {
-    const base = String(titulo || 'analise-datainsight')
+    const base = String(titulo || 'analise-EnterSight')
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-zA-Z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '')
         .slice(0, 60);
-    return `DataInsight-${base || 'analise'}.pdf`;
+    return `EnterSight-${base || 'analise'}.pdf`;
 }
 
 // ==============================================================================
@@ -348,7 +348,7 @@ function copiarResumoRapido(index, event) {
     const item = analisesSalvasCache[index];
     if (!item) return;
 
-    const texto = `[DATAINSIGHT - ANÁLISE SALVA: ${item.pagina_nome}]
+    const texto = `[EnterSight - ANÁLISE SALVA: ${item.pagina_nome}]
 Título: ${item.titulo}
 Origem: ${item.origem} (${item.periodo})
 Data: ${item.criado_em_fmt}
@@ -372,7 +372,7 @@ ${(item.recomendacoes || []).map((r, i) => `${i + 1}. ${r}`).join('\n')}
 
 function copiarDetalheAtual() {
     if (!analiseSelecionada) return;
-    const texto = `[DATAINSIGHT - ANÁLISE SALVA: ${analiseSelecionada.pagina_nome}]
+    const texto = `[EnterSight - ANÁLISE SALVA: ${analiseSelecionada.pagina_nome}]
 Título: ${analiseSelecionada.titulo}
 Origem: ${analiseSelecionada.origem} (${analiseSelecionada.periodo})
 Data: ${analiseSelecionada.criado_em_fmt}
@@ -430,7 +430,7 @@ function baixarPdfModalAnalise() {
 
     wrap.innerHTML = `
         <div style="border-bottom:2px solid #3b82f6;padding-bottom:14px;margin-bottom:20px;">
-          <div style="font-size:11px;font-weight:800;letter-spacing:0.08em;color:#3b82f6;text-transform:uppercase;">DataInsight · Análise salva</div>
+          <div style="font-size:11px;font-weight:800;letter-spacing:0.08em;color:#3b82f6;text-transform:uppercase;">EnterSight · Análise salva</div>
           <h1 style="margin:8px 0 6px;font-size:22px;line-height:1.25;color:#0f172a;">${escapeHtmlPdf(analiseSelecionada.titulo || 'Análise Salva')}</h1>
           <p style="margin:0;font-size:12px;color:#475569;">${escapeHtmlPdf(subtitulo)}</p>
           <p style="margin:6px 0 0;font-size:12px;color:#64748b;">Salvo em ${escapeHtmlPdf(analiseSelecionada.criado_em_fmt || 'data indisponível')}</p>

@@ -1,6 +1,6 @@
 /**
  * controles_essenciais.js
- * DataInsight — Módulo de Controles Essenciais do MEI
+ * EnterSight — Módulo de Controles Essenciais do MEI
  *
  * Responsável por:
  *   - Termômetro do Limite Anual do MEI
@@ -13,7 +13,7 @@
  * ------------------------------------------------------------------------------
  * PROPRIEDADE INTELECTUAL
  * ------------------------------------------------------------------------------
- * Este código pertence à plataforma @DataInsight. Todos os arquivos da plataforma
+ * Este código pertence à plataforma @EnterSight. Todos os arquivos da plataforma
  * devem seguir esta mesma estrutura de organização: seções numeradas
  * sequencialmente com cabeçalhos padronizados, separação clara de
  * responsabilidades e agrupamento lógico de funções afins.
@@ -134,7 +134,7 @@ async function configurarSeletorPlanilhaCE() {
     });
 
     // Recuperar preferência salva no LocalStorage
-    const salva = localStorage.getItem('DataInsight_DashboardPlanilha');
+    const salva = localStorage.getItem('EnterSight_DashboardPlanilha');
     if (salva && (salva === 'todas' || planilhasCarregadas.some(p => p.id === salva))) {
       select.value = salva;
       tabelaAtualId = salva;
@@ -146,7 +146,7 @@ async function configurarSeletorPlanilhaCE() {
     // Escutar mudança de tabela
     select.addEventListener('change', async e => {
       tabelaAtualId = e.target.value;
-      localStorage.setItem('DataInsight_DashboardPlanilha', tabelaAtualId);
+      localStorage.setItem('EnterSight_DashboardPlanilha', tabelaAtualId);
 
       if (selectModal) {
         selectModal.value = (tabelaAtualId !== 'todas') ? tabelaAtualId : 'padrao';

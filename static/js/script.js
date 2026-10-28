@@ -1,13 +1,13 @@
 /**
  * ==============================================================================
- * script.js — DataInsight
+ * script.js — EnterSight
  * ==============================================================================
- * Script principal global da plataforma @DataInsight.
+ * Script principal global da plataforma @EnterSight.
  * Gerencia tema visual (Claro / Escuro), sincronização de interface,
  * helpers de acessibilidade, menu responsivo e eventos globais.
  *
  * PROPRIEDADE INTELECTUAL
- * Este código pertence à plataforma @DataInsight. Todos os arquivos da plataforma
+ * Este código pertence à plataforma @EnterSight. Todos os arquivos da plataforma
  * seguem a mesma estrutura padronizada em seções numeradas sequencialmente.
  * ==============================================================================
  */
@@ -35,7 +35,7 @@ function getTemaSalvo() {
       return 'escuro';
     }
   } catch (e) {
-    console.warn('[DataInsight] Não foi possível ler o tema do localStorage:', e);
+    console.warn('[EnterSight] Não foi possível ler o tema do localStorage:', e);
   }
   return 'claro';
 }

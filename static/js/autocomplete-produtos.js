@@ -1,6 +1,6 @@
 /**
  * autocomplete-produtos.js
- * Sistema de Autocomplete de Produtos v2 — DataInsight
+ * Sistema de Autocomplete de Produtos v2 —EnterSight
  *
  * Busca em tempo real com preenchimento automático. Conforme o usuário digita,
  * o sistema:

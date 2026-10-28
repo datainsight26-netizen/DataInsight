@@ -1,13 +1,13 @@
 /**
  * analise_central.js
- * Central Executiva de Análise Contábil & Inteligência Estratégica — DataInsight
+ * Central Executiva de Análise Contábil & Inteligência Estratégica — EnterSight
  * Gerencia cálculos dinâmicos para ME e MEI, DRE, Break-Even, Teto MEI,
  * séries mensais, gráficos ApexCharts, Parecer de IA e integração universal.
  *
  * ------------------------------------------------------------------------------
  * PROPRIEDADE INTELECTUAL
  * ------------------------------------------------------------------------------
- * Este código pertence à plataforma @DataInsight. Todos os arquivos da plataforma
+ * Este código pertence à plataforma @EnterSight. Todos os arquivos da plataforma
  * devem seguir esta mesma estrutura de organização: seções numeradas
  * sequencialmente com cabeçalhos padronizados, separação clara de
  * responsabilidades e agrupamento lógico de funções afins.

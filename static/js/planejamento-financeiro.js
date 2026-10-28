@@ -1,7 +1,7 @@
 // ==============================================================================
 // planejamento-financeiro.js
 // ==============================================================================
-// Este código pertence à plataforma @DataInsight.
+// Este código pertence à plataforma @EnterSight.
 // Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 // em seções numeradas, conforme o padrão abaixo.
 
@@ -575,9 +575,9 @@
 
         if (t.receita) {
             if (scenario === 'pessimista') {
-                reading = `No cenário pessimista, o DataInsight estima faturamento anual mínimo de ${brl(t.receita)} para manter a operação no ponto de equilíbrio. Os investimentos não essenciais são zerados e os custos variáveis acompanham proporcionalmente o faturamento.`;
+                reading = `No cenário pessimista, o EnterSight estima faturamento anual mínimo de ${brl(t.receita)} para manter a operação no ponto de equilíbrio. Os investimentos não essenciais são zerados e os custos variáveis acompanham proporcionalmente o faturamento.`;
             } else if (scenario === 'otimista') {
-                reading = `No cenário otimista, o DataInsight projeta uma maximização sustentável dentro das premissas operacionais configuradas, chegando a ${brl(t.receita)} de receita anual (+15%) e ${brl(t.resultado)} de resultado, com margem de contribuição de ${pct(t.margemPct)}.`;
+                reading = `No cenário otimista, o EnterSight projeta uma maximização sustentável dentro das premissas operacionais configuradas, chegando a ${brl(t.receita)} de receita anual (+15%) e ${brl(t.resultado)} de resultado, com margem de contribuição de ${pct(t.margemPct)}.`;
             } else {
                 const pos = m.filter(x => x.resultado > 0).length;
                 reading = t.resultado >= 0
@@ -1019,7 +1019,7 @@
         if (waitingTitle) waitingTitle.textContent = 'Processando dados financeiros...';
         if (waitingDesc) {
             waitingDesc.innerHTML =
-                'Aguarde enquanto o DataInsight AI elabora o diagnóstico executivo com base nos dados da sua Tabela Mensal. ' +
+                'Aguarde enquanto o EnterSight AI elabora o diagnóstico executivo com base nos dados da sua Tabela Mensal. ' +
                 'Isso pode levar alguns segundos.';
         }
 
@@ -1193,7 +1193,7 @@
         const source = getScenarioData(window.planejamentoFinanceiroBackend, scenario);
         renderAll(source);
 
-        window.dispatchEvent(new CustomEvent('datainsight:cenarioFinanceiroAlterado', {
+        window.dispatchEvent(new CustomEvent('EnterSight:cenarioFinanceiroAlterado', {
             detail: {
                 cenario: scenario,
                 tipo: pessimista
@@ -1258,7 +1258,7 @@
                 select.appendChild(opt);
             });
 
-            const salva = localStorage.getItem('DataInsight_DashboardPlanilha');
+            const salva = localStorage.getItem('EnterSight_DashboardPlanilha');
             if (salva && (salva === 'todas' || _planilhasSumario.some(p => p.id === salva))) {
                 select.value = salva;
             }
@@ -1361,8 +1361,8 @@
         if (!btnAuto || !btnManual || !inputPct || !btnSalvar) return;
 
         // Restaura estado persistido
-        const savedModo = localStorage.getItem('DataInsight_PE_Modo');
-        const savedPct = localStorage.getItem('DataInsight_PE_Percentual');
+        const savedModo = localStorage.getItem('EnterSight_PE_Modo');
+        const savedPct = localStorage.getItem('EnterSight_PE_Percentual');
         if (savedModo === 'manual' || savedModo === 'automatico') peModo = savedModo;
         if (savedPct && !isNaN(parseFloat(savedPct))) pePercentual = parseFloat(savedPct);
         _atualizarUiPE();
@@ -1370,8 +1370,8 @@
         btnAuto.addEventListener('click', () => {
             peModo = 'automatico';
             pePercentual = null;
-            localStorage.setItem('DataInsight_PE_Modo', peModo);
-            localStorage.removeItem('DataInsight_PE_Percentual');
+            localStorage.setItem('EnterSight_PE_Modo', peModo);
+            localStorage.removeItem('EnterSight_PE_Percentual');
             _atualizarUiPE();
             const tabelaId = $('seletorPlanilhaAnalise')?.value || 'todas';
             iaAnaliseCache = { provavel: null, otimista: null, pessimista: null };
@@ -1380,7 +1380,7 @@
 
         btnManual.addEventListener('click', () => {
             peModo = 'manual';
-            localStorage.setItem('DataInsight_PE_Modo', peModo);
+            localStorage.setItem('EnterSight_PE_Modo', peModo);
             _atualizarUiPE();
             inputPct.focus();
         });
@@ -1394,8 +1394,8 @@
             }
 
             pePercentual = Math.round(valorRaw * 100) / 100;
-            localStorage.setItem('DataInsight_PE_Percentual', String(pePercentual));
-            localStorage.setItem('DataInsight_PE_Modo', 'manual');
+            localStorage.setItem('EnterSight_PE_Percentual', String(pePercentual));
+            localStorage.setItem('EnterSight_PE_Modo', 'manual');
 
             btnSalvar.disabled = true;
             btnSalvar.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Salvando...';
@@ -1552,7 +1552,7 @@
     if (seletorPlanilha) {
         seletorPlanilha.addEventListener('change', () => {
             const novaTabelaId = seletorPlanilha.value;
-            localStorage.setItem('DataInsight_DashboardPlanilha', novaTabelaId);
+            localStorage.setItem('EnterSight_DashboardPlanilha', novaTabelaId);
             atualizarBadgeStatusPlanejamento(_planilhasSumario, novaTabelaId);
             iaAnaliseCache = { provavel: null, otimista: null, pessimista: null };
             carregarPlanejamentoFinanceiro(novaTabelaId);
@@ -1587,7 +1587,7 @@
         await configurarSeletorPlanilhaPlanejamento();
 
         const tabelaInicial = $('seletorPlanilhaAnalise')?.value
-            || localStorage.getItem('DataInsight_DashboardPlanilha')
+            || localStorage.getItem('EnterSight_DashboardPlanilha')
             || 'todas';
         await carregarPlanejamentoFinanceiro(tabelaInicial);
     }

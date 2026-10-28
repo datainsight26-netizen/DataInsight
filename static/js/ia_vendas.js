@@ -1,7 +1,7 @@
 // ==============================================================================
 // ia_vendas.js
 // ==============================================================================
-// Este código pertence à plataforma @DataInsight.
+// Este código pertence à plataforma @EnterSight.
 // Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 // em seções numeradas, conforme este arquivo.
 // ==============================================================================
@@ -32,7 +32,7 @@ async function carregarDadosOperacionais() {
   try {
     const selPeriodo = document.getElementById('modulo-periodo');
     const periodo = selPeriodo ? selPeriodo.value : '30_dias';
-    const tabelaId = localStorage.getItem('DataInsight_DashboardPlanilha') || 'todas';
+    const tabelaId = localStorage.getItem('EnterSight_DashboardPlanilha') || 'todas';
 
     const r = await fetch(`/api/produtos/overview?periodo=${periodo}&tabela_id=${tabelaId}`);
     if (r.ok) {

@@ -1,7 +1,7 @@
 // ==============================================================================
 // ia_decisao.js
 // ==============================================================================
-// Este código pertence à plataforma @DataInsight.
+// Este código pertence à plataforma @EnterSight.
 // Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 // em seções numeradas, conforme este arquivo.
 // ==============================================================================
@@ -31,7 +31,7 @@ function fecharSidebar() {
 async function carregarSwotInstantaneo() {
   const selPeriodo = document.getElementById('modulo-periodo');
   const periodo = selPeriodo ? selPeriodo.value : '30_dias';
-  const tabelaId = localStorage.getItem('DataInsight_DashboardPlanilha') || 'todas';
+  const tabelaId = localStorage.getItem('EnterSight_DashboardPlanilha') || 'todas';
 
   try {
     const [rDesemp, rProd] = await Promise.all([
@@ -118,7 +118,7 @@ async function carregarSwotInstantaneo() {
 function calcularCenarios() {
   const selPeriodo = document.getElementById('modulo-periodo');
   const periodo = selPeriodo ? selPeriodo.value : '30_dias';
-  const tabelaId = localStorage.getItem('DataInsight_DashboardPlanilha') || 'todas';
+  const tabelaId = localStorage.getItem('EnterSight_DashboardPlanilha') || 'todas';
   const crescimento = parseFloat(document.getElementById('sim-crescimento')?.value) || 15;
   const custos = parseFloat(document.getElementById('sim-custos')?.value) || 10;
 

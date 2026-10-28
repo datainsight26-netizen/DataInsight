@@ -1,7 +1,7 @@
 // ==============================================================================
 // AVISO DE PROPRIEDADE
 // ==============================================================================
-// Este código pertence à plataforma @DataInsight.
+// Este código pertence à plataforma @EnterSight.
 // Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 // em seções numeradas, conforme este arquivo.
 // ==============================================================================
@@ -141,7 +141,7 @@
     if (resultArea) { resultArea.style.display = 'none'; resultArea.innerHTML = ''; }
     resetSaveButton();
 
-    const tabela_id = localStorage.getItem('DataInsight_DashboardPlanilha') || 'todas';
+    const tabela_id = localStorage.getItem('EnterSight_DashboardPlanilha') || 'todas';
     const session_id = `modulo_${moduloId}_${Date.now()}`;
 
     try {
@@ -299,7 +299,7 @@
 
   async function reloadCharts() {
     const periodo = document.getElementById('modulo-periodo')?.value || '30_dias';
-    const tabela_id = localStorage.getItem('DataInsight_DashboardPlanilha') || 'todas';
+    const tabela_id = localStorage.getItem('EnterSight_DashboardPlanilha') || 'todas';
     const chart1El = document.getElementById('ia-chart-1');
     const chart2El = document.getElementById('ia-chart-2');
 
@@ -535,7 +535,7 @@
   }
 
   async function origemLabel() {
-    const tabela_id = localStorage.getItem('DataInsight_DashboardPlanilha') || 'todas';
+    const tabela_id = localStorage.getItem('EnterSight_DashboardPlanilha') || 'todas';
     if (!tabela_id || tabela_id === 'todas') return 'Todas as Planilhas (Visão Consolidada)';
     try {
       const r = await fetch('/api/planilhas/sumario');
@@ -628,7 +628,7 @@
         <p style="color:#888;font-size:13px;">Gerado em: ${new Date(currentAnalysis.timestamp).toLocaleString('pt-BR')}</p>
         <hr style="margin:20px 0;">
         <div>${formatAnalysisHTML(currentAnalysis.resposta)}</div>
-        <div class="footer">DataInsight — Centro de Inteligência com IA</div>
+        <div class="footer">EnterSight — Centro de Inteligência com IA</div>
     </body></html>`);
     w.document.close();
     w.print();

@@ -1,6 +1,6 @@
 /**
  * fluxo_caixa.js
- * Módulo Empresarial de Fluxo de Caixa — DataInsight
+ * Módulo Empresarial de Fluxo de Caixa — EnterSight
  *
  * Responsável por:
  *   - KPIs financeiros (Receita, Despesas, Lucro, Margem)
@@ -13,7 +13,7 @@
  * ------------------------------------------------------------------------------
  * PROPRIEDADE INTELECTUAL
  * ------------------------------------------------------------------------------
- * Este código pertence à plataforma @DataInsight. Todos os arquivos da plataforma
+ * Este código pertence à plataforma @EnterSight. Todos os arquivos da plataforma
  * devem seguir esta mesma estrutura de organização: seções numeradas
  * sequencialmente com cabeçalhos padronizados, separação clara de
  * responsabilidades e agrupamento lógico de funções afins.
@@ -380,7 +380,7 @@ async function carregarOpcoesPlanilhas() {
             select.appendChild(opt);
         });
 
-        const salva = localStorage.getItem('DataInsight_DashboardPlanilha');
+        const salva = localStorage.getItem('EnterSight_DashboardPlanilha');
         if (salva && (salva === 'todas' || _planilhasSumario.some(p => p.id === salva))) {
             select.value = salva;
         }
@@ -638,7 +638,7 @@ async function atualizarGraficosComDados() {
         const periodo  = periodoSelect.value || '30';
         const tabelaId = planilhaSelect?.value || 'todas';
 
-        localStorage.setItem('DataInsight_DashboardPlanilha', tabelaId);
+        localStorage.setItem('EnterSight_DashboardPlanilha', tabelaId);
 
         const resposta = await fetch(`/api/fluxo-caixa?periodo=${periodo}&tabela_id=${tabelaId}`);
 

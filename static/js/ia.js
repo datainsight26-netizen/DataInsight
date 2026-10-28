@@ -1,7 +1,7 @@
 // ==============================================================================
 // ia.js
 // ==============================================================================
-// Este código pertence à plataforma @DataInsight.
+// Este código pertence à plataforma @EnterSight.
 // Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 // em seções numeradas, conforme este arquivo.
 // ==============================================================================
@@ -65,14 +65,14 @@ document.addEventListener('DOMContentLoaded', () => {
         opt.textContent = `${icone} [${p.dominio_label}] ${p.nome}`;
         select.appendChild(opt);
       });
-      const salva = localStorage.getItem('DataInsight_DashboardPlanilha');
+      const salva = localStorage.getItem('EnterSight_DashboardPlanilha');
       if (salva && (salva === 'todas' || planilhas.some(p => p.id === salva))) {
         select.value = salva;
         tabelaIaAtualId = salva;
       }
       select.addEventListener('change', e => {
         tabelaIaAtualId = e.target.value;
-        localStorage.setItem('DataInsight_DashboardPlanilha', tabelaIaAtualId);
+        localStorage.setItem('EnterSight_DashboardPlanilha', tabelaIaAtualId);
       });
     } catch (e) {
       console.warn('Aviso ao carregar planilhas na IA:', e);
@@ -595,7 +595,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const payload = {
       tipo: tipo || 'pdf',
-      titulo: titulo || 'Relatorio_DataInsight',
+      titulo: titulo || 'Relatorio_EnterSight',
       conteudo_html: conteudoHtml,
       sessao_id: currentSessionId,
       metadados: metadados
@@ -622,7 +622,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const a = document.createElement('a');
     a.href = url;
     const ext = tipo === 'docx' ? 'docx' : (tipo === 'xlsx' ? 'xlsx' : 'pdf');
-    a.download = nomeArquivo || `${(titulo || 'Relatorio_DataInsight').replace(/\s+/g, '_')}.${ext}`;
+    a.download = nomeArquivo || `${(titulo || 'Relatorio_EnterSight').replace(/\s+/g, '_')}.${ext}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -635,7 +635,7 @@ document.addEventListener('DOMContentLoaded', () => {
     artifacts.forEach(card => {
       card.classList.add('artifact-renderizado');
       const tipo = (card.getAttribute('data-tipo') || 'pdf').toLowerCase();
-      const rawTitulo = card.getAttribute('data-titulo') || 'Documento_DataInsight';
+      const rawTitulo = card.getAttribute('data-titulo') || 'Documento_EnterSight';
       const desc = card.getAttribute('data-desc') || 'Documento corporativo pronto para download';
 
       let iconClass = 'fa-file-pdf';
@@ -713,7 +713,7 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify({
           tipo: tipo,
           conversa_completa: true,
-          titulo: `DataInsight_Conversa_${new Date().toISOString().slice(0, 10)}`,
+          titulo: `EnterSight_Conversa_${new Date().toISOString().slice(0, 10)}`,
           sessao_id: currentSessionId
         })
       });
@@ -731,7 +731,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `DataInsight_Conversa_${currentSessionId.slice(-6)}.${tipo}`;
+      a.download = `EnterSight_Conversa_${currentSessionId.slice(-6)}.${tipo}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -932,7 +932,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const contentEl = el.querySelector('.bot-msg-content');
           dispararDownloadDocumento({
             tipo: 'pdf',
-            titulo: 'Analise_DataInsight',
+            titulo: 'Analise_EnterSight',
             elemento: contentEl
           });
         });
@@ -943,7 +943,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const contentEl = el.querySelector('.bot-msg-content');
           dispararDownloadDocumento({
             tipo: 'docx',
-            titulo: 'Relatorio_DataInsight',
+            titulo: 'Relatorio_EnterSight',
             elemento: contentEl
           });
         });
@@ -954,7 +954,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const contentEl = el.querySelector('.bot-msg-content');
           dispararDownloadDocumento({
             tipo: 'xlsx',
-            titulo: 'Dados_DataInsight',
+            titulo: 'Dados_EnterSight',
             elemento: contentEl
           });
         });
@@ -1156,7 +1156,7 @@ document.addEventListener('DOMContentLoaded', () => {
           data.historico.forEach(h => appendMessage(h.mensagem, h.remetente, null, h.anexo));
         } else {
           appendMessage(
-            "<p>Olá! Sou seu <strong>Copiloto IA DataInsight</strong>. Posso analisar suas finanças, criar gráficos interativos, gerar tabelas de indicadores e muito mais.</p><p>Use os atalhos abaixo para começar ou escreva sua pergunta!</p>",
+            "<p>Olá! Sou seu <strong>Copiloto IA EnterSight</strong>. Posso analisar suas finanças, criar gráficos interativos, gerar tabelas de indicadores e muito mais.</p><p>Use os atalhos abaixo para começar ou escreva sua pergunta!</p>",
             'bot',
             { agente_nome: 'Copiloto IA', agente_icone: 'brain', agente_cor: '#3B82F6' }
           );
@@ -1289,7 +1289,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalPeriodoSelect = document.getElementById('modal-periodo-select');
   const btnAtualizarModal = document.getElementById('modal-btn-atualizar');
   const modalResizeHandle = document.getElementById('modal-resize-handle');
-  const IA_MODAL_STATE_KEY = 'DataInsight_IA_ModalState';
+  const IA_MODAL_STATE_KEY = 'EnterSight_IA_ModalState';
 
   if (!modalWindow) {
     modalWindow = {
@@ -1496,33 +1496,33 @@ document.addEventListener('DOMContentLoaded', () => {
     salvarEstadoModal();
   });
 
-  document.addEventListener('DataInsight_OpenIaModal', () => {
-    console.log('[IA] DataInsight_OpenIaModal recebido no document');
+  document.addEventListener('EnterSight_OpenIaModal', () => {
+    console.log('[IA] EnterSight_OpenIaModal recebido no document');
     mostrarModal();
   });
 
-  window.addEventListener('DataInsight_OpenIaModal', () => {
-    console.log('[IA] DataInsight_OpenIaModal recebido no window');
+  window.addEventListener('EnterSight_OpenIaModal', () => {
+    console.log('[IA] EnterSight_OpenIaModal recebido no window');
     mostrarModal();
   });
 
-  document.addEventListener('DataInsight_CloseIaModal', () => {
-    console.log('[IA] DataInsight_CloseIaModal recebido no document');
+  document.addEventListener('EnterSight_CloseIaModal', () => {
+    console.log('[IA] EnterSight_CloseIaModal recebido no document');
     fecharModal();
   });
 
-  window.addEventListener('DataInsight_CloseIaModal', () => {
-    console.log('[IA] DataInsight_CloseIaModal recebido no window');
+  window.addEventListener('EnterSight_CloseIaModal', () => {
+    console.log('[IA] EnterSight_CloseIaModal recebido no window');
     fecharModal();
   });
 
-  window.DataInsightOpenIaModal = function () {
-    console.log('[IA] DataInsightOpenIaModal chamada manualmente');
+  window.EnterSightOpenIaModal = function () {
+    console.log('[IA] EnterSightOpenIaModal chamada manualmente');
     mostrarModal();
   };
 
-  window.closeDataInsightIaModal = function () {
-    console.log('[IA] closeDataInsightIaModal chamada manualmente');
+  window.closeEnterSightIaModal = function () {
+    console.log('[IA] closeEnterSightIaModal chamada manualmente');
     fecharModal();
   };
 

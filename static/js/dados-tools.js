@@ -1,6 +1,6 @@
 /**
  * dados-tools.js
- * Ferramentas Empresariais — DataInsight (Página Dados)
+ * Ferramentas Empresariais — EnterSight (Página Dados)
  *
  * Módulo adicional que estende a página Dados com:
  *   - Persistência automática de estado em localStorage
@@ -20,7 +20,7 @@
  * ------------------------------------------------------------------------------
  * PROPRIEDADE INTELECTUAL
  * ------------------------------------------------------------------------------
- * Este código pertence à plataforma @DataInsight. Todos os arquivos da plataforma
+ * Este código pertence à plataforma @EnterSight. Todos os arquivos da plataforma
  * devem seguir esta mesma estrutura de organização: seções numeradas
  * sequencialmente com cabeçalhos padronizados, separação clara de
  * responsabilidades e agrupamento lógico de funções afins.
@@ -61,8 +61,8 @@ function persistirEstadoLocal() {
 
     // Expurgar qualquer resíduo legado do localStorage para garantir privacidade e conformidade com MongoDB
     try {
-        localStorage.removeItem('DataInsight_Estado');
-        localStorage.removeItem('DataInsight_TabelaAtiva');
+        localStorage.removeItem('EnterSight_Estado');
+        localStorage.removeItem('EnterSight_TabelaAtiva');
     } catch (_) {}
 }
 
@@ -117,8 +117,8 @@ const persistirTabelaAtualDebounced = debounce(() => {
 function carregarEstadoLocal() {
     // Depreciado: dados devem ser carregados exclusivamente do MongoDB via backend
     try {
-        localStorage.removeItem('DataInsight_Estado');
-        localStorage.removeItem('DataInsight_TabelaAtiva');
+        localStorage.removeItem('EnterSight_Estado');
+        localStorage.removeItem('EnterSight_TabelaAtiva');
     } catch (_) {}
     return false;
 }
@@ -126,8 +126,8 @@ function carregarEstadoLocal() {
 document.addEventListener('DOMContentLoaded', () => {
     // Garante remoção de resíduos legados de dados locais ao iniciar a página
     try {
-        localStorage.removeItem('DataInsight_Estado');
-        localStorage.removeItem('DataInsight_TabelaAtiva');
+        localStorage.removeItem('EnterSight_Estado');
+        localStorage.removeItem('EnterSight_TabelaAtiva');
     } catch (_) {}
 });
 
@@ -1426,7 +1426,7 @@ function exportarCSV() {
     const blob = new Blob(['\uFEFF' + [header, ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `DataInsight_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `EnterSight_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     mostrarToast('CSV exportado com sucesso!', 'success');
 }
@@ -1444,7 +1444,7 @@ function exportarJSON() {
     const blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `DataInsight_${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `EnterSight_${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     mostrarToast('JSON exportado com sucesso!', 'success');
 }

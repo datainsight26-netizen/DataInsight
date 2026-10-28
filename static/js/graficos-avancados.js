@@ -1,7 +1,7 @@
 // ==============================================================================
 // graficos-avancados.js
 // ==============================================================================
-// Este código pertence à plataforma @DataInsight.
+// Este código pertence à plataforma @EnterSight.
 // Todos os códigos da plataforma devem seguir a mesma estrutura de organização
 // em seções numeradas, conforme este arquivo.
 // ==============================================================================
@@ -1127,7 +1127,7 @@ async function carregarOpcoesPlanilhas() {
       select.appendChild(opt);
     });
 
-    const salva = localStorage.getItem('DataInsight_DashboardPlanilha');
+    const salva = localStorage.getItem('EnterSight_DashboardPlanilha');
     if (salva && (salva === 'todas' || _planilhasSumario.some(p => p.id === salva))) {
       select.value = salva;
     }
@@ -1195,7 +1195,7 @@ async function atualizarGraficosComDados() {
     const periodo = periodoSelect.value || '30';
     const tabelaId = planilhaSelect?.value || 'todas';
 
-    localStorage.setItem('DataInsight_DashboardPlanilha', tabelaId);
+    localStorage.setItem('EnterSight_DashboardPlanilha', tabelaId);
 
     const resposta = await fetch(`/dashboard/dados?periodo=${periodo}&tabela_id=${tabelaId}`);
 
