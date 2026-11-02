@@ -257,7 +257,7 @@
           <i class="fa-solid fa-calendar-check"></i>
           <span>Anual</span>
           <span class="px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-500 text-white shadow-sm">
-            20% OFF
+            10% OFF
           </span>
         </button>
       </div>
@@ -462,7 +462,7 @@
           </div>
           <div id="linha-economia" class="hidden flex justify-between items-center text-emerald-600 dark:text-emerald-400 font-semibold">
             <span>Desconto Anual:</span>
-            <span id="resumo-economia">- R$ 840,00 (20% OFF)</span>
+            <span id="resumo-economia">- R$ 840,00 (10% OFF)</span>
           </div>
           <div class="flex justify-between items-center">
             <span class="texto-sub">Acesso IA EnterSight:</span>
@@ -719,7 +719,7 @@ function atualizarResumo() {
   // Método
   const metodoEl = document.getElementById('resumo-metodo');
   if (periodicidadeAtual === 'anual' && metodoAtual === 'pix') {
-    metodoEl.innerHTML = '<i class="fa-solid fa-bolt text-emerald-500"></i> <span class="text-emerald-600 dark:text-emerald-400 font-semibold">PIX À Vista (20% OFF)</span>';
+    metodoEl.innerHTML = '<i class="fa-solid fa-bolt text-emerald-500"></i> <span class="text-emerald-600 dark:text-emerald-400 font-semibold">PIX À Vista (10% OFF)</span>';
   } else {
     metodoEl.innerHTML = '<i class="fa-solid fa-credit-card"></i> <span>Cartão (Crédito ou Débito)</span>';
   }
@@ -729,7 +729,7 @@ function atualizarResumo() {
   const resumoEconomia = document.getElementById('resumo-economia');
   if (periodicidadeAtual === 'anual' && info.economia > 0) {
     const economizadoStr = info.economia.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    resumoEconomia.innerText = `- ${economizadoStr} (20% OFF)`;
+    resumoEconomia.innerText = `- ${economizadoStr} (10% OFF)`;
     linhaEconomia.classList.remove('hidden');
   } else {
     linhaEconomia.classList.add('hidden');
@@ -744,9 +744,9 @@ function atualizarResumo() {
   const notaEl = document.getElementById('resumo-nota');
   if (periodicidadeAtual === 'anual') {
     if (metodoAtual === 'pix') {
-      notaEl.innerText = 'Gera QR Code Pix à vista com 20% de desconto. Liberação imediata por 12 meses.';
+      notaEl.innerText = 'Gera QR Code Pix à vista com 10% de desconto. Liberação imediata por 12 meses.';
     } else {
-      notaEl.innerText = 'Cobrança anual segura no cartão com 20% de economia via Stripe. Acesso garantido por 12 meses.';
+      notaEl.innerText = 'Cobrança anual segura no cartão com 10% de economia via Stripe. Acesso garantido por 12 meses.';
     }
   } else {
     notaEl.innerText = 'Cobrança mensal automática no Cartão (Crédito ou Débito) via Stripe. Cancele quando quiser.';
