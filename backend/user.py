@@ -30,7 +30,6 @@ from flask import (
 )
 
 from .db import usuario
-from .sessoes import iniciar_sessao_web, revogar_todas_sessoes
 
 
 # ==============================================================================
@@ -375,21 +374,6 @@ def tela_cadastro():
         # ----------------------------------------------------------------------
         # 4.5. Inicia a sessão automaticamente
         # ----------------------------------------------------------------------
-        # Cria também a sessão lógica controlada (limite de dispositivos).
-        novo_usuario["_id"] = res.inserted_id
-        resultado_sessao = iniciar_sessao_web(novo_usuario, lembrar=True)
-        if not resultado_sessao.get("ok"):
-            # A conta foi criada, mas a sessão não pôde ser aberta. O usuário
-            # pode entrar normalmente pela tela de login.
-            return render_template(
-                "login.html",
-                error=True,
-                msg=resultado_sessao.get(
-                    "mensagem",
-                    "Conta criada com sucesso. Faça login para continuar.",
-                ),
-            ), 403
-
         session["usuario_id"] = str(res.inserted_id)
         session["usuario_nome"] = nome
         session["usuario_email"] = email
@@ -456,23 +440,6 @@ def login():
             return render_template("login.html", error=True, msg="Email ou senha inválidos")
 
         if bcrypt.checkpw(senha.encode("utf-8"), user["senha"]):
-            lembrar = bool(request.form.get("lembrar"))
-
-            # ------------------------------------------------------------------
-            # Cria (ou reutiliza) a sessão lógica controlada pelo limite de
-            # dispositivos. Deve acontecer antes de gravar os dados no cookie.
-            # ------------------------------------------------------------------
-            resultado_sessao = iniciar_sessao_web(user, lembrar=lembrar)
-            if not resultado_sessao.get("ok"):
-                return render_template(
-                    "login.html",
-                    error=True,
-                    msg=resultado_sessao.get(
-                        "mensagem",
-                        "Não foi possível iniciar sua sessão. Tente novamente.",
-                    ),
-                ), 403
-
             session["usuario_id"] = str(user["_id"])
             session["usuario_nome"] = user["nome"]
             session["usuario_email"] = user["email"]
@@ -485,7 +452,11 @@ def login():
             session["limite_anual_mei"] = user.get("limite_anual_mei", 81000.0)
 
             # Lógica Lembrar de mim
-            session.permanent = lembrar
+            lembrar = request.form.get("lembrar")
+            if lembrar:
+                session.permanent = True
+            else:
+                session.permanent = False
 
             # Verificação de status da assinatura (Admins ou contas ativas são liberadas)
             if not user.get("is_admin") and user.get("email") != "admin@EnterSight.com":
@@ -674,9 +645,6 @@ def resetar_senha():
                 }
             }
         )
-
-        # Segurança: uma troca de senha invalida todas as sessões antigas.
-        revogar_todas_sessoes(user["_id"], motivo="senha_alterada")
 
         session.clear()
 

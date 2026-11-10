@@ -27,7 +27,6 @@ from flask import (
 )
 
 from backend.db import usuario
-from backend.sessoes import iniciar_sessao_web
 from backend.pagamento.criar_assinatura import (
     criar_assinatura_stripe,
     verificar_token_stripe,
@@ -223,21 +222,6 @@ def sucesso_pagamento():
                 )
             except Exception as ex:
                 print(f"[sucesso_pagamento] ERRO ao atualizar MongoDB: {ex}")
-
-            # ------------------------------------------------------------------
-            # Sessão lógica controlada: o retorno do pagamento também autentica
-            # o usuário, portanto precisa respeitar o limite de dispositivos.
-            # ------------------------------------------------------------------
-            resultado_sessao = iniciar_sessao_web(usuario_existente, lembrar=True)
-            if not resultado_sessao.get("ok"):
-                return render_template(
-                    "login.html",
-                    error=True,
-                    msg=resultado_sessao.get(
-                        "mensagem",
-                        "Não foi possível iniciar sua sessão. Faça login novamente.",
-                    ),
-                ), 403
 
             session["usuario_id"] = str(usuario_existente["_id"])
             session["usuario_nome"] = usuario_existente.get("nome", "")
