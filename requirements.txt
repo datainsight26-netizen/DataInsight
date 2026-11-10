@@ -9,6 +9,7 @@ pandas
 openpyxl
 Flask-Mail
 agno
+openai
 google-generativeai
 google-genai
 ollama
