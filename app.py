@@ -11,12 +11,22 @@
 # ==============================================================================
 
 import os
+import secrets
 import sys
 from datetime import timedelta
 
 from bson import ObjectId
 from dotenv import load_dotenv
-from flask import Flask, session, request, render_template, redirect, url_for
+from flask import (
+    Flask,
+    g,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 from flask_mail import Mail
 
 
@@ -124,7 +134,35 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 # 7. CONFIGURAÇÃO DE SESSÃO SEGURA
 # ==============================================================================
 
-app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
+def _env_int(nome, padrao, minimo=1):
+    try:
+        valor = int(str(os.getenv(nome, padrao)).strip())
+        return valor if valor >= minimo else padrao
+    except (TypeError, ValueError):
+        return padrao
+
+
+# Mantém o tempo do cookie alinhado ao TTL absoluto da sessão no MongoDB.
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(
+    days=_env_int("SESSOES_TTL_DIAS", 30)
+)
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = (
+    str(os.getenv("SESSION_COOKIE_SECURE", "false")).strip().lower()
+    in ("1", "true", "sim", "yes", "on")
+)
+
+
+# ==============================================================================
+# 7.1. ÍNDICES DO BANCO (inclui o índice atômico do controle de sessões)
+# ==============================================================================
+
+try:
+    from backend.db import criar_index
+    criar_index()
+except Exception as e_indices:
+    print(f"[AVISO] Não foi possível garantir os índices no startup: {e_indices}")
 
 
 # ==============================================================================
@@ -142,6 +180,135 @@ app.register_blueprint(dados_bp)
 app.register_blueprint(analises_bp)
 app.register_blueprint(ia_bp)
 app.register_blueprint(pagamentos_bp)
+
+
+# ==============================================================================
+# 8.1. CONTROLE GLOBAL DE SESSÕES SIMULTÂNEAS
+# ==============================================================================
+# O hook abaixo valida TODA requisição autenticada, inclusive rotas que não
+# usam o decorator @login_required. É a garantia de que uma sessão revogada
+# deixa de funcionar imediatamente em qualquer dispositivo.
+# ==============================================================================
+
+from backend.sessoes import (  # noqa: E402  (import após criação do app)
+    MENSAGEM_ERRO_INTERNO,
+    mensagem_para_motivo,
+    validar_sessao_atual,
+)
+
+_CAMINHOS_PUBLICOS = {
+    "/login",
+    "/entrar",
+    "/cadastro",
+    "/registro",
+    "/verificar_codigo",
+    "/resetar_senha",
+    "/reenviar-codigo",
+    "/logout",
+    "/sair",
+    "/landing",
+    "/landig",
+    "/landing.html",
+    "/landig.html",
+    "/assinaturas",
+    "/bloqueio-assinatura",
+    "/sucesso-pagamento",
+    "/falha-pagamento",
+    "/verificar-token-stripe",
+    "/verificar-token-mp",
+    "/favicon.ico",
+}
+
+_PREFIXOS_PUBLICOS = (
+    "/static/",
+    "/webhook",
+    "/termos",
+    "/esqueceu-senha",
+)
+
+
+def _rota_publica(caminho):
+    """Indica rotas que precisam funcionar sem uma sessão lógica válida."""
+    if caminho in _CAMINHOS_PUBLICOS:
+        return True
+    return any(caminho == prefixo or caminho.startswith(prefixo) for prefixo in _PREFIXOS_PUBLICOS)
+
+
+def _e_requisicao_api():
+    """Detecta requisições que esperam JSON (para devolver 401 em vez de HTML)."""
+    if request.path.startswith("/api/"):
+        return True
+    if request.is_json:
+        return True
+    return request.accept_mimetypes.best == "application/json"
+
+
+@app.before_request
+def _validar_sessao_logica_global():
+    """Bloqueia sessões revogadas/expiradas antes de qualquer view autenticada."""
+    if request.method == "OPTIONS":
+        return None
+    if request.path.startswith("/static/") or request.endpoint == "static":
+        return None
+
+    # Sem usuário no cookie: não há sessão lógica para validar.
+    if "usuario_id" not in session and "usuario_nome" not in session:
+        return None
+
+    # Rotas públicas continuam acessíveis (login, cadastro, recuperação etc.).
+    if _rota_publica(request.path):
+        return None
+
+    validacao = validar_sessao_atual()
+    if validacao.get("valida"):
+        return None
+
+    # Falha de infraestrutura: nega acesso, mas não apaga o cookie do usuário.
+    if validacao.get("motivo") == "erro":
+        if _e_requisicao_api():
+            return jsonify({
+                "sucesso": False,
+                "codigo": "erro_validacao_sessao",
+                "mensagem": MENSAGEM_ERRO_INTERNO,
+            }), 503
+        return render_template("login.html", error=True, msg=MENSAGEM_ERRO_INTERNO), 503
+
+    motivo = validacao.get("motivo") or "sessao_encerrada"
+    session.clear()
+
+    if _e_requisicao_api():
+        return jsonify({
+            "sucesso": False,
+            "codigo": "sessao_invalida",
+            "motivo": motivo,
+            "mensagem": mensagem_para_motivo(motivo),
+        }), 401
+
+    return redirect(url_for("pagina_login", motivo=motivo))
+
+
+@app.after_request
+def _garantir_cookie_dispositivo(response):
+    """
+    Garante o identificador persistente do dispositivo (HttpOnly).
+
+    Ele é combinado com o User-Agent para diferenciar navegadores/dispositivos
+    sem depender do IP.
+    """
+    if request.path.startswith("/static/"):
+        return response
+
+    if not request.cookies.get("ds_device_id"):
+        device_id = getattr(g, "_novo_device_id", None) or secrets.token_urlsafe(18)
+        response.set_cookie(
+            "ds_device_id",
+            device_id,
+            max_age=60 * 60 * 24 * 730,  # 2 anos
+            httponly=True,
+            samesite="Lax",
+            secure=app.config.get("SESSION_COOKIE_SECURE", False),
+        )
+    return response
 
 
 # ==============================================================================
@@ -302,4 +469,4 @@ _registrar_aliases_blueprints(app)
 # ==============================================================================
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=True, host="127.0.0.1", port=5002)

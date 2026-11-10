@@ -139,6 +139,181 @@
       .pf-stats, .pf-kpis { grid-template-columns: 1fr 1fr; }
       .pf-etapas { grid-template-columns: 1fr 1fr; }
     }
+
+    /* ── Dispositivos conectados / sessões simultâneas ── */
+    .pf-sessoes-card {
+      background: var(--cartao);
+      border: 1px solid var(--borda);
+      border-radius: 16px;
+      padding: 22px 24px;
+    }
+    .pf-sessoes-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .pf-sessoes-head h2 {
+      margin: 0 0 4px;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--texto);
+    }
+    .pf-sessoes-head p {
+      margin: 0;
+      max-width: 620px;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      color: var(--suave);
+    }
+    .pf-sessoes-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .pf-sessoes-contador {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      white-space: nowrap;
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      color: var(--primaria);
+    }
+    .pf-sessoes-contador.is-limitado {
+      background: rgba(245, 158, 11, 0.12);
+      border-color: rgba(245, 158, 11, 0.28);
+      color: #f59e0b;
+    }
+    .pf-sessoes-lista {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .pf-sessao-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding: 14px 16px;
+      border: 1px solid var(--borda);
+      border-radius: 12px;
+      background: var(--fundo);
+    }
+    .pf-sessao-item.is-atual {
+      border-color: rgba(16, 185, 129, 0.35);
+      background: rgba(16, 185, 129, 0.05);
+    }
+    .pf-sessao-info {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      min-width: 0;
+    }
+    .pf-sessao-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(59, 130, 246, 0.12);
+      color: var(--primaria);
+      font-size: 0.95rem;
+    }
+    .pf-sessao-item.is-atual .pf-sessao-icon {
+      background: rgba(16, 185, 129, 0.14);
+      color: #10b981;
+    }
+    .pf-sessao-titulo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 0 0 4px;
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: var(--texto);
+    }
+    .pf-sessao-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      background: rgba(16, 185, 129, 0.14);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+    .pf-sessao-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 14px;
+      margin: 0;
+      font-size: 0.76rem;
+      color: var(--suave);
+    }
+    .pf-sessao-meta span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .pf-sessao-acoes {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .pf-sessao-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 9px;
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      background: rgba(239, 68, 68, 0.08);
+      color: #ef4444;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .pf-sessao-btn:hover {
+      background: rgba(239, 68, 68, 0.16);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+    .pf-sessao-btn:disabled {
+      opacity: 0.55;
+      cursor: wait;
+    }
+    .pf-sessoes-vazio,
+    .pf-sessoes-feedback {
+      margin: 0;
+      padding: 12px 2px;
+      font-size: 0.84rem;
+      color: var(--suave);
+    }
+    .pf-sessoes-feedback[data-tipo="erro"] { color: #f87171; }
+    .pf-sessoes-feedback[data-tipo="sucesso"] { color: #34d399; }
+
+    @media (max-width: 640px) {
+      .pf-sessoes-card { padding: 18px; }
+      .pf-sessao-item { align-items: flex-start; }
+      .pf-sessao-acoes { width: 100%; }
+      .pf-sessao-btn { width: 100%; justify-content: center; }
+    }
   </style>
 </head>
 <body>
@@ -271,6 +446,37 @@
             {% endif %}
           </section>
 
+          <!-- ════ DISPOSITIVOS CONECTADOS / SESSÕES SIMULTÂNEAS ════ -->
+          <section class="pf-sessoes-card" aria-labelledby="titulo-sessoes" data-ia-help="perfil_sessoes">
+            <div class="pf-sessoes-head">
+              <div>
+                <h2 id="titulo-sessoes">
+                  <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                  Dispositivos conectados
+                </h2>
+                <p>
+                  Sua conta permite até <strong id="sessoes-limite">2</strong> sessões simultâneas.
+                  Se o limite for atingido, encerre uma sessão abaixo para liberar espaço.
+                </p>
+              </div>
+              <div class="pf-sessoes-actions">
+                <span class="pf-sessoes-contador" id="sessoes-contador" aria-live="polite">
+                  Carregando...
+                </span>
+                <button type="button" class="botao botao--outline" id="btnEncerrarOutrasSessoes" disabled>
+                  <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+                  Encerrar outras sessões
+                </button>
+              </div>
+            </div>
+
+            <div id="sessoes-feedback" class="pf-sessoes-feedback" role="status" aria-live="polite"></div>
+
+            <div id="sessoes-lista" class="pf-sessoes-lista">
+              <p class="pf-sessoes-vazio">Carregando dispositivos...</p>
+            </div>
+          </section>
+
           {% include 'partials/footer.html' %}
         </div>
       </main>
@@ -304,6 +510,7 @@
   <script src="{{ url_for('static', filename='acessibilidade/acessibilidade.js') }}"></script>
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
   <script src="{{ url_for('static', filename='js/perfil.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/sessoes.js') }}"></script>
   <script>
     function abrirSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sidebarOverlay').classList.add('active');}
     function fecharSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active');}
