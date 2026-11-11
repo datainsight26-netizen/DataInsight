@@ -105,45 +105,11 @@ galeria = db["galeria"]
 produtos_historico = db["produtos_historico"]
 analises_salvas_colecao = db["analises_salvas"]
 relatorios_colecao = db["relatorios"]
-sessoes = db["sessoes"]
 
 
 # ==============================================================================
 # 6. ÍNDICES
 # ==============================================================================
-
-def criar_indices_sessoes():
-    """
-    Cria os índices do controle de sessões simultâneas.
-
-    O índice único parcial (usuario_id, slot) é o mecanismo atômico que
-    impede duas sessões concorrentes ocuparem a mesma vaga. Documentos
-    revogados têm o campo `slot` removido e, por isso, saem do índice.
-    """
-    try:
-        sessoes.create_index(
-            "token_hash",
-            unique=True,
-            name="uniq_sessao_token_hash",
-        )
-        sessoes.create_index(
-            [("usuario_id", 1), ("slot", 1)],
-            unique=True,
-            name="uniq_sessao_usuario_slot",
-            partialFilterExpression={"slot": {"$exists": True}},
-        )
-        sessoes.create_index(
-            [("usuario_id", 1), ("status", 1), ("expira_em", 1)],
-            name="idx_sessao_usuario_status_expira",
-        )
-        sessoes.create_index(
-            [("usuario_id", 1), ("ultimo_acesso_em", -1)],
-            name="idx_sessao_usuario_ultimo_acesso",
-        )
-        sessoes.create_index("expira_em", name="idx_sessao_expira")
-    except Exception as err:
-        print(f"[AVISO MONGODB]: Não foi possível criar índices de sessões ({err})")
-
 
 def criar_index():
     """Cria os índices necessários nas coleções principais."""
@@ -159,10 +125,6 @@ def criar_index():
         relatorios_colecao.create_index([("usuario_id", 1), ("criado_em", -1)])
     except Exception as err:
         print(f"[AVISO MONGODB]: Não foi possível criar índices no banco ({err})")
-
-    # Executado em try separado para que uma falha nos índices antigos não
-    # impeça a criação do índice atômico do controle de sessões.
-    criar_indices_sessoes()
 
 
 # ==============================================================================
